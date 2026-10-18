@@ -56,7 +56,7 @@ let _rebuildTimer = null;
 // BUG-341: drain pending prompt_list PM cleanup when PromptManager becomes
 // available. Settings popup open is a reliable PM-available path since
 // the popup itself interacts with PM prompts.
-function drainPendingPromptListCleanup() {
+export function drainPendingPromptListCleanup() {
     if (!promptManager) return;
     const settings = getSettings();
     if (!settings._pendingPromptListCleanup) return;
@@ -609,6 +609,25 @@ const TOOL_CONNECTION_CONFIGS = {
         proxyUrlKey: 'librarianProxyUrl', modelKey: 'librarianModel',
         maxTokensKey: 'librarianSessionMaxTokens', timeoutKey: 'librarianSessionTimeout',
     },
+    // LOCAL PATCH (Miinthe, 2026-10-03): the helper that moves story trackers. Profile
+    // only — never 'inherit' (an inherited connection is how prose once ended up on
+    // the judge's model).
+    storyTracker: {
+        label: 'Story Trackers', icon: 'stairs',
+        supportedModes: ['profile'],
+        modeKey: 'storyTrackerConnectionMode', profileIdKey: 'storyTrackerProfileId',
+        proxyUrlKey: 'storyTrackerProxyUrl', modelKey: 'storyTrackerModel',
+        maxTokensKey: 'storyTrackerMaxTokens', timeoutKey: 'storyTrackerTimeout',
+    },
+    // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆, the co-writer — profile only, never inherit (design: a pinned
+    // "Co-writer" connection; reading the vault on her own later needs a tool-capable model)
+    mero: {
+        label: 'Mero ☆ (co-writer)', icon: 'star',
+        supportedModes: ['profile'],
+        modeKey: 'meroConnectionMode', profileIdKey: 'meroProfileId',
+        proxyUrlKey: 'meroProxyUrl', modelKey: 'meroModel',
+        maxTokensKey: 'meroMaxTokens', timeoutKey: 'meroTimeout',
+    },
     optimizeKeys: {
         label: 'Optimize Keys', icon: 'key',
         supportedModes: ['inherit', 'profile', 'proxy'],
@@ -794,6 +813,33 @@ function updateAccordionBadge($container, toolKey) {
     }
 }
 
+/**
+ * Send a one-line test message through a tool's connection; an ST-style green / red toast says how it went.
+ * Uses the live settings (change handlers write synchronously, before the debounced save). Shared by the old
+ * window's "Test message" and the new settings window (overhaul step 4).
+ */
+export async function testToolConnection(toolKey) {
+    const label = TOOL_CONNECTION_CONFIGS[toolKey]?.label || toolKey;
+    try {
+        const conn = resolveConnectionConfig(toolKey);
+        conn.caller = `test:${toolKey}`;
+        conn.skipThrottle = true;        // manual test must not consume the AI throttle window
+        conn.maxTokens = 64;             // connectivity check only — keep the reply tiny
+        conn.disableThinkingOnClaude = true;
+        const result = await callAI(
+            'You are a connection test. Reply with a single short word.',
+            'Reply with exactly: OK',
+            conn,
+        );
+        const reply = (result?.text || '').trim().replace(/\s+/g, ' ').slice(0, 80) || '(empty reply)';
+        toastr.success(`${label} connection OK — replied: "${reply}"`, '', { timeOut: 5000, preventDuplicates: true });
+        return true;
+    } catch (err) {
+        toastr.error(err?.message || String(err), `${label} connection test failed`, { timeOut: 9000, preventDuplicates: true });
+        return false;
+    }
+}
+
 /** Delegated on #dle-sp-ai-connections. */
 function bindAccordionEvents($container) {
     const settings = getSettings();
@@ -817,28 +863,10 @@ function bindAccordionEvents($container) {
         e.stopPropagation();
         const $btn = $(this);
         if ($btn.prop('disabled')) return;
-        const toolKey = $btn.data('tool');
-        const label = TOOL_CONNECTION_CONFIGS[toolKey]?.label || toolKey;
         const orig = $btn.html();
         $btn.prop('disabled', true).html('<goo-spinner size="18" color="currentColor" aria-hidden="true"></goo-spinner> Testing…');
-        try {
-            const conn = resolveConnectionConfig(toolKey);
-            conn.caller = `test:${toolKey}`;
-            conn.skipThrottle = true;        // manual test must not consume the AI throttle window
-            conn.maxTokens = 64;             // connectivity check only — keep the reply tiny
-            conn.disableThinkingOnClaude = true;
-            const result = await callAI(
-                'You are a connection test. Reply with a single short word.',
-                'Reply with exactly: OK',
-                conn,
-            );
-            const reply = (result?.text || '').trim().replace(/\s+/g, ' ').slice(0, 80) || '(empty reply)';
-            toastr.success(`${label} connection OK — replied: "${reply}"`, '', { timeOut: 5000, preventDuplicates: true });
-        } catch (err) {
-            toastr.error(err?.message || String(err), `${label} connection test failed`, { timeOut: 9000, preventDuplicates: true });
-        } finally {
-            $btn.prop('disabled', false).html(orig);
-        }
+        try { await testToolConnection($btn.data('tool')); }
+        finally { $btn.prop('disabled', false).html(orig); }
     });
 
     $section.on('change', 'input[type="radio"]', function () {
@@ -935,7 +963,28 @@ function updatePopupIndexStats() {
     }
 }
 
+/**
+ * Open DeepLore's settings. Overhaul step 4 (2026-10-16): the new settings window (src/settings/settings-view.js, the
+ * approved mock-up v4). Today's window below opens only if the new one fails to load — never both.
+ * navigateTo: { tab, subtab, toolKey, target } (old deep links, mapped onto the new sections) or { section }.
+ */
 export async function openSettingsPopup(navigateTo = null) {
+    let view = null;
+    try {
+        view = await import('../settings/settings-view.js');
+    } catch (err) {
+        console.warn('[DLE] new settings window did not load — opening the old one', err);
+    }
+    if (view) {
+        try { return await view.openSettingsView(navigateTo); } catch (err) {
+            console.warn('[DLE] new settings window failed — opening the old one', err);
+        }
+    }
+    return openOldSettingsPopup(navigateTo);
+}
+
+/** Today's settings window (before the overhaul) — the fallback. */
+export async function openOldSettingsPopup(navigateTo = null) {
     // BUG-341: PromptManager is now likely available — drain queued prompt_list cleanup.
     drainPendingPromptListCleanup();
     const html = await renderExtensionTemplateAsync(
@@ -944,6 +993,12 @@ export async function openSettingsPopup(navigateTo = null) {
     );
     const $container = $(html);
     applyHtmlI18n($container[0]); // markup-bearing locale strings (data-i18n-html) — ST's data-i18n is textContent-only
+
+    // LOCAL PATCH (Miinthe, 2026-10-03): on a phone the popup fills the screen and
+    // SillyTavern's corner ✕ sits partly off it — this header button closes it instead.
+    $container.find('.dle-settings-close-mobile').on('click', function () {
+        $(this).closest('.popup').find('.popup-button-close').first().trigger('click');
+    });
 
     // ── Sidebar accordion groups (collapse state persists via accountStorage) ──
     const NAV_GROUPS_KEY = 'dle-settings-nav-groups';
@@ -1558,6 +1613,233 @@ function loadPopupSettings($container) {
     }
 }
 
+/** Show exactly what the judge would be sent for this chat (old window: Preview; new window: The judge ▸ Its prompt). */
+export async function previewJudgePrompt() {
+    const settings = getSettings();
+    if (!chat || chat.length === 0) { toastr.info('No active chat.', 'DeepLore'); return; }
+    await ensureIndexFresh();
+    if (vaultIndex.length === 0) { toastr.info('No entries indexed.', 'DeepLore'); return; }
+    let candidateManifest, candidateHeader, modeLabel;
+    if (settings.aiSearchMode === 'ai-only') { const r = buildCandidateManifest(vaultIndex); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = 'AI-only (full vault)'; }
+    else { const kr = matchEntries(chat); const nc = kr.matched.filter(e => !e.constant); if (nc.length === 0) { toastr.warning('No entries matched the current chat. Try /dle-simulate for details.', 'DeepLore'); return; } const r = buildCandidateManifest(kr.matched); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = `Two-stage (${nc.length} candidates)`; }
+    const chatContext = buildAiChatContext(chat, settings.aiSearchScanDepth);
+    const maxE = settings.unlimitedEntries ? 'as many as are relevant' : String(settings.maxEntries);
+    // Preview-only AI search prompt (Settings popup). Same fallback chain
+    // as the live path in src/ai/ai.js — user override → vault override
+    // → compiled-in EN dict.
+    let sp = resolvePromptOrOverride('AI_SEARCH_SYSTEM_PROMPT', settings.aiSearchSystemPrompt);
+    if (settings.aiSearchClaudeCodePrefix && settings.aiSearchConnectionMode === 'proxy' && !sp.startsWith('You are Claude Code')) sp = 'You are Claude Code. ' + sp;
+    sp = sp.replace(/\{\{maxEntries\}\}/g, maxE);
+    const hdr = candidateHeader ? `## Manifest Info\n${candidateHeader}\n\n` : '';
+    const um = `${hdr}## Recent Chat\n${chatContext}\n\n## Candidate Lore Entries\n${candidateManifest}\n\nSelect the relevant entries as a JSON array.`;
+    callGenericPopup(`<div class="dle-popup"><h3>Mode: ${escapeHtml(modeLabel)}</h3><h3>System Prompt</h3><div class="dle-preview dle-preview--short" style="margin-bottom:15px">${escapeHtml(sp)}</div><h3>User Message</h3><div class="dle-preview dle-preview--tall">${escapeHtml(um)}</div></div>`, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
+}
+
+/** Download the diagnostics files and say what was anonymized. → true when the files were made. */
+export async function exportDiagnosticsFlow() {
+    try {
+        const { triggerDiagnosticDownload } = await import('../diagnostics/ui.js');
+        const { scrubStats } = await triggerDiagnosticDownload();
+
+        const statParts = [];
+        if (scrubStats.ips > 0) statParts.push(`${scrubStats.ips} IPs`);
+        if (scrubStats.ipv6s > 0) statParts.push(`${scrubStats.ipv6s} IPv6`);
+        if (scrubStats.hosts > 0) statParts.push(`${scrubStats.hosts} hostnames`);
+        if (scrubStats.emails > 0) statParts.push(`${scrubStats.emails} emails`);
+        if (scrubStats.userPaths > 0) statParts.push(`${scrubStats.userPaths} user paths`);
+        if (scrubStats.titles > 0) statParts.push(`${scrubStats.titles} titles`);
+        if (scrubStats.sensitiveFields > 0) statParts.push(`${scrubStats.sensitiveFields} sensitive fields`);
+        if (scrubStats.bearerTokens > 0) statParts.push(`${scrubStats.bearerTokens} bearer tokens`);
+        if (scrubStats.openaiKeys > 0) statParts.push(`${scrubStats.openaiKeys} API keys`);
+        if (scrubStats.longTokens > 0) statParts.push(`${scrubStats.longTokens} long tokens`);
+        const statsHtml = statParts.length > 0
+            ? `<p style="margin: 8px 0; padding: 8px 12px; background: var(--SmartThemeBlurTintColor); border-radius: 6px; font-size: 0.9em;"><strong>Anonymized:</strong> ${statParts.join(', ')}. Profile names, vault names, and character names were partially masked.</p>`
+            : '<p style="margin: 8px 0; padding: 8px 12px; background: var(--SmartThemeBlurTintColor); border-radius: 6px; font-size: 0.9em;"><em>No sensitive data patterns detected.</em> Profile names, vault names, and character names were still partially masked as a precaution.</p>';
+
+        await callGenericPopup(
+            `<div class="dle-diag-done">
+                <h3>2 files downloaded</h3>
+                <p><strong><code>dle-diagnostics-*.md</code></strong> — Anonymized report, safe to share on GitHub issues.
+                Drop it into a flagship LLM (Claude, GPT-5, Gemini) for self-diagnosis.</p>
+                <p><strong><code>dle-connections-reference-*.md</code></strong> — Your real connection data (profile names,
+                URLs, models). <strong>Do NOT share this file.</strong> It's for your own reference when reading the anonymized report.</p>
+                ${statsHtml}
+                <p><strong>Please verify the diagnostic file before sharing.</strong>
+                The format is plain markdown around a base64 blob — any LLM can audit it:</p>
+                <p><em>"Decode the base64 blob in this DLE diagnostic report and tell me
+                everything personally identifiable that's still in it."</em></p>
+                <p>If you find anything we missed, that's a bug — please open an issue.</p>
+                <p style="margin-top: 14px;">
+                    <a href="https://github.com/pixelnull/sillytavern-DeepLore/issues/new"
+                       target="_blank" rel="noopener noreferrer"
+                       class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span>Open New Issue on GitHub</span>
+                    </a>
+                </p>
+            </div>`,
+            POPUP_TYPE.TEXT, '', { wide: false, large: false, allowVerticalScrolling: true }
+        );
+        return true;
+    } catch (err) {
+        console.error('[DLE] Diagnostic export failed:', err);
+        const msg = String(err?.message || '');
+        const hint = msg.includes('CompressionStream') || msg.includes('CompressionStream')
+            ? 'Your browser may not support gzip compression. Try a recent Chrome, Firefox, or Safari.'
+            : msg.includes('SecurityError') || msg.includes('NotAllowed')
+                ? 'Browser blocked the file download. Check pop-up blocker or security settings.'
+                : 'Try /dle-diagnostics in chat instead, or check browser console (F12) for details.';
+        try { toastr.error(`Diagnostic export failed. ${hint}`, 'DeepLore', { timeOut: 10000 }); } catch {}
+    }
+    return false;
+}
+
+/** Look for Obsidian vaults near the first one's port and add the one picked. → true when one was added. */
+export async function scanForVaultFlow() {
+    const settings = getSettings();
+    try {
+        const { openVaultScanPopup } = await import('./vault-scan-popup.js');
+        const first = (settings.vaults || []).find(v => v.enabled) || (settings.vaults || [])[0] || {};
+        const picked = await openVaultScanPopup({
+            host: first.host || '127.0.0.1',
+            apiKey: first.apiKey || '',
+            portCenter: first.port || 27124,
+            radius: 25,
+        });
+        if (!picked) return false;
+        settings.vaults = settings.vaults || [];
+        settings.vaults.push({
+            name: picked.vaultName || `Vault ${picked.port}`,
+            host: picked.host,
+            port: picked.port,
+            apiKey: first.apiKey || '',
+            https: picked.scheme === 'https',
+            enabled: true,
+        });
+        saveSettingsDebounced();
+        toastr.success(`Added ${picked.vaultName} (${picked.host}:${picked.port}) — fill in the API key if needed.`, 'DeepLore');
+        return true;
+    } catch (err) {
+        console.error('[DLE] Vault scan error:', err);
+        toastr.error('Vault scan didn\'t find anything. Make sure Obsidian is running.', 'DeepLore');
+        return false;
+    }
+}
+
+/** Reset every DeepLore setting (asks first); vaults, AI connections, prompt presets and analytics stay. → true when reset. */
+export async function resetAllSettingsFlow() {
+    const settings = getSettings();
+    const confirmed = await callGenericPopup(
+        '<div style="text-align:center;"><p><strong>Reset all DeepLore settings to defaults?</strong></p><p>This cannot be undone. Your vault connections and AI connection profiles will be preserved.</p></div>',
+        POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
+    );
+    if (!confirmed) return false;
+
+    // BUG-AUDIT-H21: preserve user-created data (promptPresets, analyticsData)
+    // alongside connections — wiping them on "reset settings" would be data loss.
+    const savedPromptPresets = JSON.parse(JSON.stringify(settings.promptPresets || {}));
+    const savedOwnPrompts = JSON.parse(JSON.stringify(settings.ownPrompts || []));   // her own prompt pieces are her writing (2026-10-17)
+    const savedAnalyticsData = JSON.parse(JSON.stringify(settings.analyticsData || {}));
+    const savedVaults = JSON.parse(JSON.stringify(settings.vaults || []));
+    const savedPort = settings.obsidianPort;
+    const savedKey = settings.obsidianApiKey;
+    const savedConnections = {
+        aiSearchConnectionMode: settings.aiSearchConnectionMode,
+        aiSearchProfileId: settings.aiSearchProfileId,
+        aiSearchProxyUrl: settings.aiSearchProxyUrl,
+        aiSearchModel: settings.aiSearchModel,
+        scribeConnectionMode: settings.scribeConnectionMode,
+        scribeProfileId: settings.scribeProfileId,
+        scribeProxyUrl: settings.scribeProxyUrl,
+        scribeModel: settings.scribeModel,
+        autoSuggestConnectionMode: settings.autoSuggestConnectionMode,
+        autoSuggestProfileId: settings.autoSuggestProfileId,
+        autoSuggestProxyUrl: settings.autoSuggestProxyUrl,
+        autoSuggestModel: settings.autoSuggestModel,
+        librarianConnectionMode: settings.librarianConnectionMode,
+        librarianProfileId: settings.librarianProfileId,
+        librarianProxyUrl: settings.librarianProxyUrl,
+        librarianModel: settings.librarianModel,
+        aiNotepadConnectionMode: settings.aiNotepadConnectionMode,
+        aiNotepadProfileId: settings.aiNotepadProfileId,
+        aiNotepadProxyUrl: settings.aiNotepadProxyUrl,
+        aiNotepadModel: settings.aiNotepadModel,
+        optimizeKeysConnectionMode: settings.optimizeKeysConnectionMode,
+        optimizeKeysProfileId: settings.optimizeKeysProfileId,
+        optimizeKeysProxyUrl: settings.optimizeKeysProxyUrl,
+        optimizeKeysModel: settings.optimizeKeysModel,
+        // overhaul step 4: the story helper's and Mero's pinned connections are AI connection profiles too
+        storyTrackerConnectionMode: settings.storyTrackerConnectionMode,
+        storyTrackerProfileId: settings.storyTrackerProfileId,
+        storyTrackerModel: settings.storyTrackerModel,
+        meroConnectionMode: settings.meroConnectionMode,
+        meroProfileId: settings.meroProfileId,
+        meroModel: settings.meroModel,
+    };
+
+    for (const [key, value] of Object.entries(defaultSettings)) {
+        settings[key] = (typeof value === 'object' && value !== null)
+            ? JSON.parse(JSON.stringify(value))
+            : value;
+    }
+
+    settings.vaults = savedVaults;
+    settings.promptPresets = savedPromptPresets;
+    settings.ownPrompts = savedOwnPrompts;
+    settings.analyticsData = savedAnalyticsData;
+    settings.obsidianPort = savedPort;
+    settings.obsidianApiKey = savedKey;
+    settings._vaultsMigrated = true;
+    Object.assign(settings, savedConnections);
+
+    invalidateSettingsCache();
+    saveSettingsDebounced();
+
+    // Q10b — vault prompt overrides are user-owned files, not extension
+    // settings. Settings reset leaves them untouched by default. If any
+    // exist, offer a second confirm to also bulk-delete them through the
+    // six-layer cage (mirrors the Prompts tab "Reset All Prompts" button).
+    const connection = buildPromptsConnection(settings);
+    if (connection) {
+        try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
+        const overrideKeys = getDlePromptStatusGrid().filter(r => r.source === 'vault').map(r => r.key);
+        if (overrideKeys.length > 0) {
+            const alsoClear = await callGenericPopup(
+                `<div style="text-align:center;"><p><strong>Also delete ${overrideKeys.length} customized prompt file(s) from your vault?</strong></p><p>Prompt files live in your Obsidian vault, not extension settings, so they survive Reset All Settings. Delete them too?</p><p>Each delete will pass through the six-layer safety cage.</p></div>`,
+                POPUP_TYPE.CONFIRM, '', { okButton: 'Delete prompt files', cancelButton: 'Keep prompt files' },
+            );
+            if (alsoClear) {
+                const { deleted, failures } = await bulkDeletePromptsThroughCage(connection, overrideKeys);
+                try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
+                if (failures.length === 0) {
+                    toastr.success(`Deleted ${deleted} prompt file(s).`, 'DeepLore');
+                } else {
+                    toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'DeepLore');
+                    console.warn('[DLE prompts] reset-settings prompt cleanup failures:', failures);
+                }
+            }
+        }
+    }
+
+    toastr.success('All settings reset to defaults. Connections preserved.', 'DeepLore');
+    return true;
+}
+
+/** Clear the AI pause DeepLore sets after repeated AI errors (asks first). */
+export async function resetAiBreakerFlow() {
+    const confirmed = await callGenericPopup(
+        '<div style="text-align:center;"><p><strong>Reset the AI pause?</strong></p><p>After repeated AI errors DeepLore pauses its AI for a short while. Reset, and it tries again right away.</p></div>',
+        POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
+    );
+    if (!confirmed) return;
+    const result = resetAiCircuitBreaker();
+    if (result.wasOpen) {
+        toastr.success('The AI pause is over: DeepLore tries its AI again with the next reply.', 'DeepLore');
+    } else {
+        toastr.info('The AI was not paused.', 'DeepLore');
+    }
+}
+
 // ── Popup: Bind Events ──
 
 /** Returns fallback only for truly non-numeric input — preserves 0 as a valid value. */
@@ -1646,8 +1928,11 @@ function getFuzzyToyScores() {
 function runFuzzyPreview() {
     const $results = $('#dle-sp-fuzzy-preview-results');
     if (!$results.length) return;
+    $results.html(fuzzyPreviewHtml(getSettings().fuzzySearchMinScore || 0.5));
+}
 
-    const minScore = getSettings().fuzzySearchMinScore || 0.5;
+/** The loose-matching preview: sample entries (not the vault) and which pass at `minScore`. Shared with the new window. */
+export function fuzzyPreviewHtml(minScore) {
     const scores = getFuzzyToyScores();
 
     let html = '<div style="margin-bottom:4px;">';
@@ -1672,7 +1957,7 @@ function runFuzzyPreview() {
         html += '</tr>';
     }
     html += '</table>';
-    $results.html(html);
+    return html;
 }
 
 function bindPopupEvents($container) {
@@ -1735,58 +2020,7 @@ function bindPopupEvents($container) {
         $btn.prop('disabled', true).addClass('disabled');
         $label.text('Processing...');
         try {
-            const { triggerDiagnosticDownload } = await import('../diagnostics/ui.js');
-            const { scrubStats } = await triggerDiagnosticDownload();
-            $label.text('Done');
-
-            const statParts = [];
-            if (scrubStats.ips > 0) statParts.push(`${scrubStats.ips} IPs`);
-            if (scrubStats.ipv6s > 0) statParts.push(`${scrubStats.ipv6s} IPv6`);
-            if (scrubStats.hosts > 0) statParts.push(`${scrubStats.hosts} hostnames`);
-            if (scrubStats.emails > 0) statParts.push(`${scrubStats.emails} emails`);
-            if (scrubStats.userPaths > 0) statParts.push(`${scrubStats.userPaths} user paths`);
-            if (scrubStats.titles > 0) statParts.push(`${scrubStats.titles} titles`);
-            if (scrubStats.sensitiveFields > 0) statParts.push(`${scrubStats.sensitiveFields} sensitive fields`);
-            if (scrubStats.bearerTokens > 0) statParts.push(`${scrubStats.bearerTokens} bearer tokens`);
-            if (scrubStats.openaiKeys > 0) statParts.push(`${scrubStats.openaiKeys} API keys`);
-            if (scrubStats.longTokens > 0) statParts.push(`${scrubStats.longTokens} long tokens`);
-            const statsHtml = statParts.length > 0
-                ? `<p style="margin: 8px 0; padding: 8px 12px; background: var(--SmartThemeBlurTintColor); border-radius: 6px; font-size: 0.9em;"><strong>Anonymized:</strong> ${statParts.join(', ')}. Profile names, vault names, and character names were partially masked.</p>`
-                : '<p style="margin: 8px 0; padding: 8px 12px; background: var(--SmartThemeBlurTintColor); border-radius: 6px; font-size: 0.9em;"><em>No sensitive data patterns detected.</em> Profile names, vault names, and character names were still partially masked as a precaution.</p>';
-
-            await callGenericPopup(
-                `<div class="dle-diag-done">
-                    <h3>2 files downloaded</h3>
-                    <p><strong><code>dle-diagnostics-*.md</code></strong> — Anonymized report, safe to share on GitHub issues.
-                    Drop it into a flagship LLM (Claude, GPT-5, Gemini) for self-diagnosis.</p>
-                    <p><strong><code>dle-connections-reference-*.md</code></strong> — Your real connection data (profile names,
-                    URLs, models). <strong>Do NOT share this file.</strong> It's for your own reference when reading the anonymized report.</p>
-                    ${statsHtml}
-                    <p><strong>Please verify the diagnostic file before sharing.</strong>
-                    The format is plain markdown around a base64 blob — any LLM can audit it:</p>
-                    <p><em>"Decode the base64 blob in this DLE diagnostic report and tell me
-                    everything personally identifiable that's still in it."</em></p>
-                    <p>If you find anything we missed, that's a bug — please open an issue.</p>
-                    <p style="margin-top: 14px;">
-                        <a href="https://github.com/pixelnull/sillytavern-DeepLore/issues/new"
-                           target="_blank" rel="noopener noreferrer"
-                           class="menu_button menu_button_icon">
-                            <i class="fa-solid fa-up-right-from-square"></i>
-                            <span>Open New Issue on GitHub</span>
-                        </a>
-                    </p>
-                </div>`,
-                POPUP_TYPE.TEXT, '', { wide: false, large: false, allowVerticalScrolling: true }
-            );
-        } catch (err) {
-            console.error('[DLE] Diagnostic export failed:', err);
-            const msg = String(err?.message || '');
-            const hint = msg.includes('CompressionStream') || msg.includes('CompressionStream')
-                ? 'Your browser may not support gzip compression. Try a recent Chrome, Firefox, or Safari.'
-                : msg.includes('SecurityError') || msg.includes('NotAllowed')
-                    ? 'Browser blocked the file download. Check pop-up blocker or security settings.'
-                    : 'Try /dle-diagnostics in chat instead, or check browser console (F12) for details.';
-            try { toastr.error(`Diagnostic export failed. ${hint}`, 'DeepLore', { timeOut: 10000 }); } catch {}
+            if (await exportDiagnosticsFlow()) $label.text('Done');
         } finally {
             $btn.prop('disabled', false).removeClass('disabled');
             // Restore label after a beat so the user sees "Done" briefly.
@@ -1841,31 +2075,7 @@ function bindPopupEvents($container) {
         if ($btn.prop('disabled')) return;
         $btn.prop('disabled', true).addClass('disabled');
         try {
-            const { openVaultScanPopup } = await import('./vault-scan-popup.js');
-            const first = (settings.vaults || []).find(v => v.enabled) || (settings.vaults || [])[0] || {};
-            const picked = await openVaultScanPopup({
-                host: first.host || '127.0.0.1',
-                apiKey: first.apiKey || '',
-                portCenter: first.port || 27124,
-                radius: 25,
-            });
-            if (picked) {
-                settings.vaults = settings.vaults || [];
-                settings.vaults.push({
-                    name: picked.vaultName || `Vault ${picked.port}`,
-                    host: picked.host,
-                    port: picked.port,
-                    apiKey: first.apiKey || '',
-                    https: picked.scheme === 'https',
-                    enabled: true,
-                });
-                saveSettingsDebounced();
-                bindVaultListEvents(settings, $c('#dle-sp-vault-list'), $c('#dle-sp-add-vault'));
-                toastr.success(`Added ${picked.vaultName} (${picked.host}:${picked.port}) — fill in the API key if needed.`, 'DeepLore');
-            }
-        } catch (err) {
-            console.error('[DLE] Vault scan error:', err);
-            toastr.error('Vault scan didn\'t find anything. Make sure Obsidian is running.', 'DeepLore');
+            if (await scanForVaultFlow()) bindVaultListEvents(settings, $c('#dle-sp-vault-list'), $c('#dle-sp-add-vault'));
         } finally {
             $btn.prop('disabled', false).removeClass('disabled');
         }
@@ -2196,25 +2406,7 @@ function bindPopupEvents($container) {
         finally { if (_testAiAbortCtrl === ctrl) _testAiAbortCtrl = null; $btn.removeClass('dle-testing'); }
     });
 
-    $c('#dle-sp-preview-ai').on('click', async function () {
-        if (!chat || chat.length === 0) { toastr.info('No active chat.', 'DeepLore'); return; }
-        await ensureIndexFresh();
-        if (vaultIndex.length === 0) { toastr.info('No entries indexed.', 'DeepLore'); return; }
-        let candidateManifest, candidateHeader, modeLabel;
-        if (settings.aiSearchMode === 'ai-only') { const r = buildCandidateManifest(vaultIndex); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = 'AI-only (full vault)'; }
-        else { const kr = matchEntries(chat); const nc = kr.matched.filter(e => !e.constant); if (nc.length === 0) { toastr.warning('No entries matched the current chat. Try /dle-simulate for details.', 'DeepLore'); return; } const r = buildCandidateManifest(kr.matched); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = `Two-stage (${nc.length} candidates)`; }
-        const chatContext = buildAiChatContext(chat, settings.aiSearchScanDepth);
-        const maxE = settings.unlimitedEntries ? 'as many as are relevant' : String(settings.maxEntries);
-        // Preview-only AI search prompt (Settings popup). Same fallback chain
-        // as the live path in src/ai/ai.js — user override → vault override
-        // → compiled-in EN dict.
-        let sp = resolvePromptOrOverride('AI_SEARCH_SYSTEM_PROMPT', settings.aiSearchSystemPrompt);
-        if (settings.aiSearchClaudeCodePrefix && settings.aiSearchConnectionMode === 'proxy' && !sp.startsWith('You are Claude Code')) sp = 'You are Claude Code. ' + sp;
-        sp = sp.replace(/\{\{maxEntries\}\}/g, maxE);
-        const hdr = candidateHeader ? `## Manifest Info\n${candidateHeader}\n\n` : '';
-        const um = `${hdr}## Recent Chat\n${chatContext}\n\n## Candidate Lore Entries\n${candidateManifest}\n\nSelect the relevant entries as a JSON array.`;
-        callGenericPopup(`<div class="dle-popup"><h3>Mode: ${escapeHtml(modeLabel)}</h3><h3>System Prompt</h3><div class="dle-preview dle-preview--short" style="margin-bottom:15px">${escapeHtml(sp)}</div><h3>User Message</h3><div class="dle-preview dle-preview--tall">${escapeHtml(um)}</div></div>`, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
-    });
+    $c('#dle-sp-preview-ai').on('click', () => previewJudgePrompt());
 
     // ── Features — Notebook ──
     $c('#dle-sp-notebook-enabled').on('change', function () {
@@ -2312,107 +2504,11 @@ function bindPopupEvents($container) {
     });
 
     $c('#dle-sp-reset-defaults').on('click', async function () {
-        const confirmed = await callGenericPopup(
-            '<div style="text-align:center;"><p><strong>Reset all DeepLore settings to defaults?</strong></p><p>This cannot be undone. Your vault connections and AI connection profiles will be preserved.</p></div>',
-            POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
-        );
-        if (!confirmed) return;
-
-        // BUG-AUDIT-H21: preserve user-created data (promptPresets, analyticsData)
-        // alongside connections — wiping them on "reset settings" would be data loss.
-        const savedPromptPresets = JSON.parse(JSON.stringify(settings.promptPresets || {}));
-        const savedAnalyticsData = JSON.parse(JSON.stringify(settings.analyticsData || {}));
-        const savedVaults = JSON.parse(JSON.stringify(settings.vaults || []));
-        const savedPort = settings.obsidianPort;
-        const savedKey = settings.obsidianApiKey;
-        const savedConnections = {
-            aiSearchConnectionMode: settings.aiSearchConnectionMode,
-            aiSearchProfileId: settings.aiSearchProfileId,
-            aiSearchProxyUrl: settings.aiSearchProxyUrl,
-            aiSearchModel: settings.aiSearchModel,
-            scribeConnectionMode: settings.scribeConnectionMode,
-            scribeProfileId: settings.scribeProfileId,
-            scribeProxyUrl: settings.scribeProxyUrl,
-            scribeModel: settings.scribeModel,
-            autoSuggestConnectionMode: settings.autoSuggestConnectionMode,
-            autoSuggestProfileId: settings.autoSuggestProfileId,
-            autoSuggestProxyUrl: settings.autoSuggestProxyUrl,
-            autoSuggestModel: settings.autoSuggestModel,
-            librarianConnectionMode: settings.librarianConnectionMode,
-            librarianProfileId: settings.librarianProfileId,
-            librarianProxyUrl: settings.librarianProxyUrl,
-            librarianModel: settings.librarianModel,
-            aiNotepadConnectionMode: settings.aiNotepadConnectionMode,
-            aiNotepadProfileId: settings.aiNotepadProfileId,
-            aiNotepadProxyUrl: settings.aiNotepadProxyUrl,
-            aiNotepadModel: settings.aiNotepadModel,
-            optimizeKeysConnectionMode: settings.optimizeKeysConnectionMode,
-            optimizeKeysProfileId: settings.optimizeKeysProfileId,
-            optimizeKeysProxyUrl: settings.optimizeKeysProxyUrl,
-            optimizeKeysModel: settings.optimizeKeysModel,
-        };
-
-        for (const [key, value] of Object.entries(defaultSettings)) {
-            settings[key] = (typeof value === 'object' && value !== null)
-                ? JSON.parse(JSON.stringify(value))
-                : value;
-        }
-
-        settings.vaults = savedVaults;
-        settings.promptPresets = savedPromptPresets;
-        settings.analyticsData = savedAnalyticsData;
-        settings.obsidianPort = savedPort;
-        settings.obsidianApiKey = savedKey;
-        settings._vaultsMigrated = true;
-        Object.assign(settings, savedConnections);
-
-        invalidateSettingsCache();
-        saveSettingsDebounced();
-
-        // Q10b — vault prompt overrides are user-owned files, not extension
-        // settings. Settings reset leaves them untouched by default. If any
-        // exist, offer a second confirm to also bulk-delete them through the
-        // six-layer cage (mirrors the Prompts tab "Reset All Prompts" button).
-        const connection = buildPromptsConnection(settings);
-        if (connection) {
-            try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
-            const overrideKeys = getDlePromptStatusGrid().filter(r => r.source === 'vault').map(r => r.key);
-            if (overrideKeys.length > 0) {
-                const alsoClear = await callGenericPopup(
-                    `<div style="text-align:center;"><p><strong>Also delete ${overrideKeys.length} customized prompt file(s) from your vault?</strong></p><p>Prompt files live in your Obsidian vault, not extension settings, so they survive Reset All Settings. Delete them too?</p><p>Each delete will pass through the six-layer safety cage.</p></div>`,
-                    POPUP_TYPE.CONFIRM, '', { okButton: 'Delete prompt files', cancelButton: 'Keep prompt files' },
-                );
-                if (alsoClear) {
-                    const { deleted, failures } = await bulkDeletePromptsThroughCage(connection, overrideKeys);
-                    try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
-                    if (failures.length === 0) {
-                        toastr.success(`Deleted ${deleted} prompt file(s).`, 'DeepLore');
-                    } else {
-                        toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'DeepLore');
-                        console.warn('[DLE prompts] reset-settings prompt cleanup failures:', failures);
-                    }
-                }
-            }
-        }
-
-        loadPopupSettings($container);
-        toastr.success('All settings reset to defaults. Connections preserved.', 'DeepLore');
+        if (await resetAllSettingsFlow()) loadPopupSettings($container);
     });
 
     // PR #28.1 — Settings-side Reset AI Breaker.
-    $c('#dle-sp-reset-ai-breaker').on('click', async function () {
-        const confirmed = await callGenericPopup(
-            '<div style="text-align:center;"><p><strong>Reset AI breaker?</strong></p><p>Pending cooldown will be discarded. Next AI call attempts immediately.</p></div>',
-            POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
-        );
-        if (!confirmed) return;
-        const result = resetAiCircuitBreaker();
-        if (result.wasOpen) {
-            toastr.success(result.hadPendingCooldown ? 'AI breaker reset — pending cooldown discarded.' : 'AI breaker reset.', 'DeepLore');
-        } else {
-            toastr.info('AI breaker was already closed.', 'DeepLore');
-        }
-    });
+    $c('#dle-sp-reset-ai-breaker').on('click', () => resetAiBreakerFlow());
 
     const clampMap = {
         'dle-sp-scan-depth': 'scanDepth', 'dle-sp-max-entries': 'maxEntries', 'dle-sp-token-budget': 'maxTokensBudget',

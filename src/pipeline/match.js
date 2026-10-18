@@ -84,6 +84,7 @@ export function passesRuntimeGates(entry, { probabilitySkipped, warmupFailed }, 
 export function matchEntries(chat, snapshot = null, { settings, characterName } = {}) {
     if (!settings) throw new Error('matchEntries: settings parameter is required when called from match.js');
     const entries = snapshot || vaultIndex;
+    const entrySet = new Set(entries);   // LOCAL PATCH (Miinthe): fuzzy matches stay inside the snapshot
     const activeCharName = characterName !== undefined ? characterName : null;
     /** @type {Set<VaultEntry>} */
     const matchedSet = new Set();
@@ -211,9 +212,20 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
         // already catches this, but the explicit cascade-side filter is
         // defense-in-depth so a future refactor of the recursion text gathering
         // cannot silently leak cascade-pulled excluded content for one step.
+        // LOCAL PATCH 2026-08-03 (Miinthe): cascade now follows the whole chain, not one hop.
+        // This was `const cascadeSource = [...matchedSet]` — a snapshot taken BEFORE the
+        // loop, so entries pulled in by a cascade never had their own cascade_links read.
+        // A -> B -> C pulled B and silently stopped. Replaced with a worklist: every entry
+        // a cascade adds is itself queued. Termination is guaranteed by the matchedSet
+        // membership check below — each entry can be added (and therefore queued) at most
+        // once, so a cycle A -> B -> A ends on the second visit rather than looping.
+        // Entries that fail the runtime gates are neither added nor queued, so a blocked
+        // entry does not propagate its own cascades. Gates, trace recording and the
+        // warmup/refine bypasses are unchanged.
         const cascadeExcludedFromRecursion = new Set();
-        const cascadeSource = [...matchedSet];
-        for (const entry of cascadeSource) {
+        const cascadeQueue = [...matchedSet];
+        while (cascadeQueue.length > 0) {
+            const entry = cascadeQueue.shift();
             if (!entry.cascadeLinks || entry.cascadeLinks.length === 0) continue;
             for (const linkTitle of entry.cascadeLinks) {
                 const linkedCandidates = getTitleMap().get(linkTitle.toLowerCase()) || [];
@@ -234,6 +246,7 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
                     matchedSet.add(linked);
                     matchedKeys.set(trackerKey(linked), `(cascade from: ${entry.title})`);
                     if (linked.excludeRecursion) cascadeExcludedFromRecursion.add(linked);
+                    cascadeQueue.push(linked); // follow this entry's own cascade_links
                 }
             }
         }
@@ -298,6 +311,10 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
         for (const result of bm25Results) {
             const entry = result.entry;
             if (matchedSet.has(entry)) continue;
+            // LOCAL PATCH (Miinthe, 2026-10-03): the fuzzy index covers the whole vault;
+            // only entries in this run's snapshot may match (tracker-step filter,
+            // and the writer-visible contract that keeps guides out).
+            if (!entrySet.has(entry)) continue;
             if (entry.constant) continue;
 
             // #12: unified runtime gates. BM25 probability skips are now recorded in

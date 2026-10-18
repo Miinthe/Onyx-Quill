@@ -4,9 +4,11 @@
 import { getTokenCountAsync } from '../../../../../tokenizers.js';
 import { oai_settings } from '../../../../../openai.js';
 import { main_api, amount_gen } from '../../../../../../script.js';
-import { getSettings } from '../../settings.js';
+import { getSettings, getVaultByName } from '../../settings.js';
 import { simpleHash } from '../../core/utils.js';
-import { fetchAllMdFiles, fetchFieldDefinitions, diagnoseFetchFailure } from './obsidian-api.js';
+import { moveEntry } from './move-entry-pure.js';
+import { fetchAllMdFiles, fetchFieldDefinitions, diagnoseFetchFailure, readNote, writeNote } from './obsidian-api.js';
+import { deleteNote } from './delete-note.js';
 import {
     vaultIndex, indexTimestamp, indexing, buildPromise,
     aiSearchCache, previousIndexSnapshot, trackerKey,
@@ -292,14 +294,10 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
 
     setIndexEverLoaded(true);
 
-    if (entries.length >= 500 && !finalizeIndex._largeVaultWarned) {
-        finalizeIndex._largeVaultWarned = true;
-        toastr.info(
-            `Large vault detected (${entries.length} entries). Consider using folder filtering or reducing scan depth for better performance.`,
-            'DeepLore',
-            { timeOut: 8000 },
-        );
-    }
+    // LOCAL PATCH 2026-08-02 (Miinthe): removed the `entries.length >= 500` "Large vault
+    // detected" toastr.info. It fired on every page load, was gated by no setting, and
+    // never checked whether folder filtering was already in use — so following its own
+    // advice could not silence it.
 
     // BUG-026: Mutates the live settings.analyticsData; persisted later by
     // saveSettingsDebounced(). Without this, renamed/deleted entries grow unboundedly.
@@ -1396,4 +1394,55 @@ export async function ensureIndexFresh() {
         await buildIndex();
         setLastIndexGenerationCount(generationCount);
     }
+}
+
+/**
+ * LOCAL PATCH 2026-08-03 (Miinthe): move one vault entry into another folder.
+ *
+ * Added so entries can be re-filed from the DeepLore side panel — previously the only
+ * way to move an entry into an instance folder was Obsidian on the desktop, which made
+ * filing impossible from a phone.
+ *
+ * THE SAFETY CONTRACT. This is the only feature in DeepLore that deletes a lore file,
+ * so the order of operations is the point, not an implementation detail:
+ *
+ *   1. refuse a no-op (same folder)
+ *   2. refuse if ANYTHING already exists at the destination — never overwrite, never merge
+ *   3. read the original; abort if it can't be read
+ *   4. write the copy to the destination
+ *   5. read the copy BACK and compare it byte-for-byte with the original
+ *   6. only if that comparison passes, delete the original
+ *
+ * If step 4 or 5 fails, nothing is deleted and the vault is exactly as it was. If step 6
+ * fails, the entry now exists in BOTH places — that is reported explicitly, with both
+ * paths, because a silent duplicate is the one outcome that would quietly corrupt the
+ * index (duplicate titles are a health-check error).
+ *
+ * Deliberately NOT done here: creating the destination folder. Obsidian's REST API
+ * creates missing folders implicitly on write, and inventing folders from a text field
+ * is how vaults grow junk directories — the caller passes a folder that already exists,
+ * chosen from the folder picker.
+ *
+ * @param {object} entry - VaultEntry to move (uses .filename, .title, .vaultSource)
+ * @param {string} destFolder - vault-relative destination folder, '' for vault root
+ * @returns {Promise<{ok: boolean, from?: string, to?: string, error?: string, orphaned?: boolean}>}
+ */
+export async function moveEntryToFolder(entry, destFolder, io = null) {
+    const settings = getSettings();
+    const vault = getVaultByName(settings, entry.vaultSource);
+    // LOCAL PATCH 2026-08-04: the safety sequence lives in move-entry-pure.js so it can be
+    // tested in Node — the ordering (never delete before a verified copy) IS the feature,
+    // and it cannot be asserted against live HTTP. This wrapper only resolves credentials.
+    // `io` is for tests; production passes nothing and gets the real vault calls.
+    const bound = io || {
+        read: (p) => readNote(vault.host, vault.port, vault.apiKey, p, !!vault.https),
+        write: (p, c) => writeNote(vault.host, vault.port, vault.apiKey, p, c, !!vault.https),
+        del: (p) => deleteNote(vault.host, vault.port, vault.apiKey, p, !!vault.https),
+    };
+    return moveEntry({
+        from: entry.filename,
+        destFolder,
+        io: bound,
+        log: (m) => console.log(`[DLE] ${m}`),
+    });
 }

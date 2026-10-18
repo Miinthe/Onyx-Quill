@@ -150,12 +150,39 @@ export const defaultSettings = {
     optimizeKeysModel: '',
     optimizeKeysMaxTokens: 1024,
     optimizeKeysTimeout: 30000,
+    // LOCAL PATCH (Miinthe, 2026-10-03): story trackers that follow the story. Its own
+    // pinned connection — no 'inherit', so it can never silently follow another tool.
+    storyTrackerConnectionMode: 'profile',
+    storyTrackerProfileId: '',
+    storyTrackerProxyUrl: '',
+    storyTrackerModel: '',
+    storyTrackerMaxTokens: 400,
+    storyTrackerTimeout: 20000,
+    // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆, the co-writer — her own pinned connection (no inherit)
+    meroConnectionMode: 'profile',
+    meroProfileId: '',
+    meroProxyUrl: '',
+    meroModel: '',
+    meroMaxTokens: 1500,
+    meroTimeout: 120000,
+    // LOCAL PATCH (Miinthe, 2026-10-13): one summary notice per message ('summary') or one per change ('each') — the rest in the What changed tab
+    noticeStyle: 'summary',
+    // overhaul step 4 (Miinthe, 2026-10-15): Settings → Interface → "Ask before removing" = every removal asks first.
+    // Off: small things go at once with Undo, big ones ask. The board's Edit ▸ Ask before removing is the same switch.
+    askBeforeRemoving: false,
     characterContextScan: false,
     // Fuzzy BM25 — TF-IDF supplement to keyword matching.
     fuzzySearchEnabled: false,
     fuzzySearchMinScore: 0.5,
     vaults: [],
     drawerPinned: false,
+    drawerSide: 'right',                   // overhaul 2a (Miinthe, 2026-10-15): the side panel on the 'left' or 'right', remembered
+    kitNoAsk: {},
+    dkTheme: 'follow',                     // overhaul: DeepLore's look — 'follow' SillyTavern's theme, or always 'light' / 'dark'
+    barShow: true,                         // overhaul: the DeepLore bar above the message box
+    barHideStQr: true,                     // overhaul: SillyTavern's own Quick Reply row steps aside while the bar holds starred ones                          // overhaul: the shared parts' "Don't ask me again" answers (per kind of removal)
+    barHot: [],                            // overhaul 2a: the bar's starred quick replies, [{ set, label }] (SillyTavern's own Quick Replies)
+    barDraft: '',                          // overhaul 2a: the bar's saved reply draft (kept with the account, so it follows her to the phone)
     drawerCompactTabs: false,              // false = icon + text (default), true = icon-only
     // Authoring leniency: parser auto-fixes case-mismatched field names, quoted numbers, and
     // comma-string keys, recording a warning. False = pre-v2 strict mode (silent drops).
@@ -174,6 +201,18 @@ export const defaultSettings = {
     indexRebuildGenerationInterval: 10,
     autoSuggestSkipReview: false,          // E11
     promptPresets: {},                     // { [toolKey]: { [presetName]: promptText } }
+    // overhaul (built 2026-10-17): a character's own lore budget, { [avatar]: { tokens?, entries? } } (0 = no limit;
+    // a chat's own is in its chat_metadata.deeplore_budget) — the most specific wins (src/budget-pure.js)
+    characterBudgets: {},
+    // overhaul (built 2026-10-17): where Auto Lorebook's new entries go — 'about': about the run → the run's folder,
+    // otherwise the character's base folder (none: the Target folder) · 'target': always the Target folder (autoSuggestFolder)
+    newEntryPlacement: 'about',
+    newEntryMark: true,                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
+    ownPrompts: [],                        // her own prompt pieces: [{ id, name, text, position, depth, role }] (src/own-prompts-pure.js)
+    // where the story / tracker block goes (was fixed: in the chat, depth 4, as system)
+    storyBlockPosition: 1,
+    storyBlockDepth: 4,
+    storyBlockRole: 0,
     // Graph
     graphRepulsion: 0.3,               // FA2 repulsion coefficient (0.1-5.0)
     graphGravity: 11.0,                // FA2 strong gravity (0.1-20)
@@ -280,6 +319,8 @@ const TOOL_SETTINGS_KEYS = {
     aiNotepad:  { mode: 'aiNotepadConnectionMode', profileId: 'aiNotepadProfileId', proxyUrl: 'aiNotepadProxyUrl', model: 'aiNotepadModel', maxTokens: 'aiNotepadMaxTokens', timeout: 'aiNotepadTimeout' },
     librarian:  { mode: 'librarianConnectionMode', profileId: 'librarianProfileId', proxyUrl: 'librarianProxyUrl', model: 'librarianModel', maxTokens: 'librarianSessionMaxTokens', timeout: 'librarianSessionTimeout' },
     optimizeKeys: { mode: 'optimizeKeysConnectionMode', profileId: 'optimizeKeysProfileId', proxyUrl: 'optimizeKeysProxyUrl', model: 'optimizeKeysModel', maxTokens: 'optimizeKeysMaxTokens', timeout: 'optimizeKeysTimeout' },
+    storyTracker: { mode: 'storyTrackerConnectionMode', profileId: 'storyTrackerProfileId', proxyUrl: 'storyTrackerProxyUrl', model: 'storyTrackerModel', maxTokens: 'storyTrackerMaxTokens', timeout: 'storyTrackerTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-03)
+    mero: { mode: 'meroConnectionMode', profileId: 'meroProfileId', proxyUrl: 'meroProxyUrl', model: 'meroModel', maxTokens: 'meroMaxTokens', timeout: 'meroTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-05)
 };
 
 /**
@@ -336,6 +377,7 @@ export const settingsConstraints = {
     injectionDepth: { min: 0, max: 9999 },
     notebookDepth: { min: 0, max: 9999 },
     aiNotepadDepth: { min: 0, max: 9999 },
+    storyBlockDepth: { min: 0, max: 9999 },
     maxRecursionSteps: { min: 1, max: 10 },
     cacheTTL: { min: 0, max: 86400 },
     reviewResponseTokens: { min: 0, max: 100000 },
@@ -365,6 +407,10 @@ export const settingsConstraints = {
     autoSuggestTimeout: { min: 5000, max: 999999 },
     optimizeKeysMaxTokens: { min: 256, max: 8192 },
     optimizeKeysTimeout: { min: 5000, max: 999999 },
+    storyTrackerMaxTokens: { min: 100, max: 4096 },     // LOCAL PATCH (Miinthe, 2026-10-03)
+    storyTrackerTimeout: { min: 3000, max: 120000 },
+    meroMaxTokens: { min: 200, max: 8192 },          // LOCAL PATCH (Miinthe, 2026-10-05): Mero
+    meroTimeout: { min: 5000, max: 300000 },
     graphRepulsion: { min: 0.1, max: 5.0 },
     graphGravity: { min: 0.1, max: 20 },
     graphDamping: { min: 0.3, max: 0.98 },
@@ -390,6 +436,8 @@ export const settingsConstraints = {
     indexRebuildGenerationInterval: { min: 1, max: 100 },
     // BUG-344: string-enum whitelist — validateSettings resets to defaults on mismatch.
     injectionMode: { enum: ['extension', 'prompt_list'] },
+    drawerSide: { enum: ['left', 'right'] },
+    dkTheme: { enum: ['follow', 'light', 'dark'] },
     // L-41: aiSearch is the inheritance ROOT — it must never be 'inherit' (a tool
     // resolving 'inherit' cascades to s[aiSearch.mode]; if that were 'inherit' too,
     // callAI receives 'inherit' and throws "unknown connection mode"). The UI only
@@ -397,6 +445,10 @@ export const settingsConstraints = {
     // an enum whitelist an import/migration could land 'inherit'/'st'. Reset to the
     // 'profile' default on mismatch.
     aiSearchConnectionMode: { enum: ['profile', 'proxy'] },
+    storyTrackerConnectionMode: { enum: ['profile'] },   // LOCAL PATCH (Miinthe, 2026-10-03)
+    noticeStyle: { enum: ['summary', 'each'] },   // LOCAL PATCH (Miinthe, 2026-10-13)
+    newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
+    meroConnectionMode: { enum: ['profile'] },           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
     librarianConnectionMode: { enum: ['inherit', 'profile', 'proxy'] },
     librarianSystemPromptMode: { enum: ['default', 'append', 'override', 'strict-override'] },
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an
@@ -572,4 +624,23 @@ export function resolveWriteVault(toolKey, settings, overrideName) {
         if (match) return match;
     }
     return getPrimaryVault(s);
+}
+
+/**
+ * "Ask before removing" (overhaul step 4): on when the setting is on, or when the board's own Edit ▸ Ask before
+ * removing was ticked before the setting existed (the board kept it in this browser as sb-ask-remove = 'all').
+ * Both places read and write through these two, so they always agree.
+ */
+export function askBeforeRemoving() {
+    if (getSettings().askBeforeRemoving === true) return true;
+    try { return localStorage.getItem('sb-ask-remove') === 'all'; } catch { return false; }
+}
+export function setAskBeforeRemoving(on) {
+    getSettings().askBeforeRemoving = !!on;
+    try {
+        const was = localStorage.getItem('sb-ask-remove');
+        if (on) localStorage.setItem('sb-ask-remove', 'all');
+        else if (was === 'all') localStorage.setItem('sb-ask-remove', 'big');
+    } catch { /* private window */ }
+    saveSettingsDebounced();
 }

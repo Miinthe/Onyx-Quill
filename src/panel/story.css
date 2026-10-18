@@ -1,0 +1,53 @@
+/* Overhaul — the side panel's Story tab (src/panel/story-view.js). Colors only from --dk-*; a tracker's own color is --tc. */
+.dle-sv { display: flex; flex-direction: column; gap: 8px; font-size: var(--dk-fs); color: var(--dk-ink); }
+.dle-sv-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dle-sv-tools .dk-seg { flex: none; }
+.dle-sv-sp { flex: 1; }
+.dle-sv-empty { margin: 4px 2px; }
+
+/* a tracker card */
+.dle-sv-card { display: grid; gap: 4px; padding: 8px 10px 9px; border: 1px solid var(--dk-line); border-top: 3px solid var(--tc); border-radius: 10px; background: var(--dk-page); cursor: pointer; min-width: 0; }
+.dle-sv-card:hover { border-color: color-mix(in oklab, var(--tc) 50%, var(--dk-line)); border-top-color: var(--tc); }
+.dle-sv-card.sel { background: color-mix(in oklab, var(--tc) 12%, var(--dk-page)); border-color: var(--tc); }
+.dle-sv-card.dim { opacity: .6; }
+.dle-sv-card.dim.sel { opacity: .85; }
+.dle-sv-hd { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.dle-sv-ic { flex: none; }
+.dle-sv-nm { flex: 1; min-width: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-sv-stepline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dle-sv .dle-sv-arrow { flex: none; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 6px; background: var(--dk-page); color: var(--dk-muted); font-size: 11px; line-height: 1; }
+.dle-sv .dle-sv-arrow:hover:not([disabled]) { color: var(--dk-ink); border-color: var(--tc); }
+.dle-sv .dle-sv-arrow[disabled] { opacity: .35; cursor: default; }
+.dle-sv-pips { display: flex; gap: 3px; flex: 0 1 auto; min-width: 0; }
+.dle-sv-pips i { flex: 0 1 14px; min-width: 3px; height: 5px; border-radius: 3px; background: var(--dk-line); }
+.dle-sv-pips i.f { background: var(--tc); }
+.dle-sv-cur { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-sv-of { flex: none; font-size: var(--dk-fs-s); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+.dle-sv-note { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.dle-sv-note > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dle-sv-note .dk-btn.dk-quiet { height: auto; min-height: 0; padding: 0 2px; border: 0; color: var(--dk-accent-ink); font-weight: 700; font-size: var(--dk-fs-s); }
+.dle-sv-note-fork { color: var(--dk-ink); }
+.dle-sv-branches { display: flex; flex-wrap: wrap; gap: 4px; flex-basis: 100%; }
+.dle-sv-branches .dk-btn { height: 24px; font-size: var(--dk-fs-s); }
+.dle-sv-steps { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.dle-sv .dle-sv-steps button { height: 22px; display: inline-flex; align-items: center; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-page); font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-sv .dle-sv-steps button:hover { color: var(--dk-ink); border-color: var(--tc); }
+.dle-sv .dle-sv-steps button.on { border-color: var(--tc); color: var(--dk-ink); background: color-mix(in oklab, var(--tc) 20%, var(--dk-page)); font-weight: 700; }
+
+/* the folds */
+.dle-sv-held.dim, .dle-changes-item.dim { opacity: .6; }
+.dle-sv-held .dk-end, .dle-sv-find .dk-end { display: flex; gap: 2px; align-items: center; }
+.dle-sv-find { padding-left: 22px; }
+.dle-sv-find .dk-btn { height: 24px; font-size: var(--dk-fs-s); }
+.dle-sv-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 6px; }
+.dle-sv-foot > .dk-hint:first-child { flex: 1; min-width: 0; }
+.dle-sv-half { margin: 6px 8px 2px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dle-changes-item .dk-s { white-space: normal; }
+.dle-sv-flash { box-shadow: 0 0 0 2px var(--dk-accent); transition: box-shadow .3s; border-radius: 8px; }
+.dle-sv-off { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dle-sv-off > span { flex: 1; min-width: 0; }
+
+/* a selected tracker's bar, at the bottom of the panel while it is selected */
+.dle-sv-selbar { position: sticky; bottom: 0; margin: 0 -2px; padding: 8px 10px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 10px 10px 0 0; box-shadow: 0 -8px 18px rgba(0, 0, 0, .25); z-index: 4; }
+.dle-sv-what { flex: 1 0 100%; display: flex; align-items: center; font: 700 var(--dk-fs)/1.2 var(--dk-f-body); }
+.dle-sv-what > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -219,14 +219,9 @@ export function registerGatingCommands() {
         const ctx = ensureCtx();
         const valueMap = collectFieldValues(entryField);
 
-        if (valueMap.size === 0) {
-            await callGenericPopup(
-                `<div class="dle-popup"><p>No entries have a <strong>${label.toLowerCase()}</strong> field set.</p></div>`,
-                POPUP_TYPE.TEXT, '', { wide: false },
-            );
-            return;
-        }
-
+        // LOCAL PATCH 2026-08-02 (Miinthe): the empty case used to be a dead end — "No entries
+        // have a <field> set" and nothing to do about it. With free text below, an empty list
+        // is just an empty list; you can still type a value.
         const sorted = [...valueMap.entries()].sort((a, b) => b[1].count - a[1].count || a[1].display.localeCompare(b[1].display));
 
         // BUG-AUDIT-10: handle scalar AND array context values — multi-value
@@ -234,9 +229,28 @@ export function registerGatingCommands() {
         const rawCurrentValue = ctx[ctxField] || '';
         const currentDisplay = Array.isArray(rawCurrentValue) ? rawCurrentValue.join(', ') : String(rawCurrentValue);
         const currentLower = Array.isArray(rawCurrentValue) ? rawCurrentValue.map(v => String(v).toLowerCase()) : [];
+        const fdDef = (fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS)
+            .find(d => d.name === entryField || d.contextKey === ctxField);
+        const isMulti = !!fdDef?.multi;
+
         let html = `<div class="dle-popup"><h4>Select ${label}</h4>`;
         if (currentDisplay) {
             html += `<p class="dle-mb-2">Current: <strong>${escapeHtml(currentDisplay)}</strong></p>`;
+        }
+        // LOCAL PATCH 2026-08-02 (Miinthe): free-text entry. The list is built from values that
+        // already exist on indexed entries, so a value nothing carries yet — a fresh instance
+        // letter, a renamed character — could not be chosen at all; only the slash command
+        // could set one. Type here and press Enter (or the tick).
+        html += `<div class="dle-flex-row dle-gap-1 dle-mb-2" style="display:flex;gap:4px;">
+            <input type="text" class="text_pole dle-field-freetext" style="flex:1 1 auto;min-width:0;"
+                placeholder="${isMulti ? 'Type value(s), comma separated…' : 'Type a value…'}"
+                aria-label="Set ${escapeHtml(label)} to a new value" />
+            <button type="button" class="menu_button dle-field-freetext-go" title="Set this value" style="flex:0 0 auto;">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+            </button>
+        </div>`;
+        if (sorted.length === 0) {
+            html += `<p class="dle-text-xs dle-mb-2" style="opacity:0.6;">No entry carries a ${escapeHtml(label.toLowerCase())} yet — type one above.</p>`;
         }
         html += '<div class="dle-flex-col dle-gap-1">';
         html += `<button type="button" class="menu_button dle-field-select dle-flex-between dle-w-full" data-value="">Clear filter</button>`;
@@ -254,6 +268,26 @@ export function registerGatingCommands() {
             wide: false,
             onOpen: (popup) => {
                 const root = popup?.dlg || document;
+                // LOCAL PATCH 2026-08-02 (Miinthe): wire the free-text box.
+                const input = root.querySelector('.dle-field-freetext');
+                const goBtn = root.querySelector('.dle-field-freetext-go');
+                const applyTyped = () => {
+                    const raw = (input?.value || '').trim();
+                    if (!raw) return;
+                    ctx[ctxField] = isMulti
+                        ? raw.split(',').map(v => v.trim()).filter(Boolean)
+                        : raw;
+                    saveMetadataDebounced();
+                    notifyGatingChanged();
+                    toastr.success(`${label} set to "${raw}" for this chat.`, 'DeepLore');
+                    (root.querySelector('.popup-button-ok') || document.querySelector('.popup-button-ok'))?.click();
+                };
+                goBtn?.addEventListener('click', applyTyped);
+                input?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); applyTyped(); }
+                });
+                setTimeout(() => input?.focus(), 50);
+
                 const buttons = root.querySelectorAll('.dle-field-select');
                 for (const btn of buttons) {
                     btn.addEventListener('click', () => {
@@ -611,12 +645,24 @@ export function registerGatingCommands() {
                 const currentSet = new Set(current);
                 let html = '<div class="dle-popup"><h4>Select Folders</h4>';
                 if (current.length) html += `<p class="dle-mb-2">Active: <strong>${escapeHtml(current.join(', '))}</strong></p>`;
-                html += '<div class="dle-flex-col dle-gap-1">';
+                // LOCAL PATCH 2026-08-02 (Miinthe): search box — mirrors the drawer's folder picker.
+                html += '<input type="text" class="text_pole dle-folder-search" placeholder="Type to filter folders…" aria-label="Filter folders" style="margin-bottom:8px;" />';
+                html += '<div class="dle-folder-search-empty dle-text-xs" style="display:none;opacity:0.6;padding:4px 2px;">No folder matches that.</div>';
+                html += '<div class="dle-flex-col dle-gap-1 dle-folder-list">';
                 html += '<button type="button" class="menu_button dle-field-select dle-folder-cmd-select dle-flex-between dle-w-full" data-value="">Clear all folders</button>';
-                for (const { path, entryCount } of folderList) {
+                // LOCAL PATCH 2026-08-02 (Miinthe): sort by path, not entry count — mirrors the drawer picker.
+                const sortedFolders = [...folderList].sort((a, b) =>
+                    a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' }));
+                for (const { path, entryCount } of sortedFolders) {
                     const isActive = currentSet.has(path);
                     const activeClass = isActive ? ' dle-field-select--active' : '';
-                    html += `<button type="button" class="menu_button dle-field-select dle-folder-cmd-select dle-flex-between dle-w-full${activeClass}" data-value="${escapeHtml(path)}">${escapeHtml(path)}<span class="dle-text-xs" style="opacity:0.5;margin-left:auto;padding-left:8px;">${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}</span></button>`;
+                    const depth = path.split('/').length - 1;
+                    const style = depth
+                        ? ` style="padding-left:${6 + depth * 16}px;border-left:2px solid var(--SmartThemeQuoteColor,#888);opacity:0.92;"`
+                        : ' style="font-weight:600;margin-top:4px;"';
+                    const leaf = depth ? path.split('/').pop() : path;
+                    const parent = depth ? path.slice(0, path.lastIndexOf('/')) : '';
+                    html += `<button type="button" class="menu_button dle-field-select dle-folder-cmd-select dle-flex-between dle-w-full${activeClass}" data-value="${escapeHtml(path)}" data-search="${escapeHtml(leaf.toLowerCase())}" data-parent="${escapeHtml(parent)}"${style} title="${escapeHtml(path)}"><span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;">${escapeHtml(leaf)}</span><span class="dle-folder-ctx dle-text-xs" style="display:none;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.45;margin-left:8px;font-weight:400;">in ${escapeHtml(parent)}</span><span class="dle-text-xs" style="flex:0 0 auto;white-space:nowrap;opacity:0.5;margin-left:8px;">${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}</span></button>`;
                 }
                 html += '</div></div>';
 
@@ -627,6 +673,48 @@ export function registerGatingCommands() {
                     onOpen: (popup) => {
                         const root = popup?.dlg || document;
                         const buttons = root.querySelectorAll('.dle-folder-cmd-select');
+                        // LOCAL PATCH 2026-08-03 (Miinthe): lock the list's height at open time.
+                        // The list had no height of its own, so filtering it removed rows and the
+                        // whole popup collapsed downwards while you were still typing — the OK
+                        // button moving out from under your finger. Measuring once and pinning
+                        // the height keeps the popup a fixed size and turns filtering into a
+                        // scroll inside a stable box. Measured rather than hard-coded so a small
+                        // vault doesn't get a tall empty panel; capped so a large one doesn't
+                        // outgrow the screen.
+                        const list = root.querySelector('.dle-folder-list');
+                        if (list) {
+                            const cap = Math.min(window.innerHeight * 0.55, 420);
+                            list.style.height = Math.min(list.scrollHeight, cap) + 'px';
+                        }
+
+                        // LOCAL PATCH 2026-08-02 (Miinthe): wire the search box.
+                        const search = root.querySelector('.dle-folder-search');
+                        const emptyMsg = root.querySelector('.dle-folder-search-empty');
+                        if (search) {
+                            const applyFilter = () => {
+                                const q = search.value.trim().toLowerCase();
+                                let shown = 0;
+                                for (const b of buttons) {
+                                    const hay = b.getAttribute('data-search');
+                                    const match = hay === null || !q || hay.includes(q);
+                                    b.style.display = match ? '' : 'none';
+                                    if (match && hay !== null) shown++;
+                                    const ctx = b.querySelector('.dle-folder-ctx');
+                                    const parent = b.getAttribute('data-parent');
+                                    if (ctx) ctx.style.display = (q && parent) ? 'inline-block' : 'none';
+                                    if (parent) b.style.paddingLeft = q ? '10px' : '';
+                                }
+                                if (emptyMsg) emptyMsg.style.display = (q && shown === 0) ? '' : 'none';
+                            };
+                            search.addEventListener('input', applyFilter);
+                            search.addEventListener('keydown', (e) => {
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                const visible = [...buttons].filter(b => b.style.display !== 'none' && b.getAttribute('data-search') !== null);
+                                if (visible.length === 1) visible[0].click();
+                            });
+                            setTimeout(() => search.focus(), 50);
+                        }
                         for (const btn of buttons) {
                             btn.addEventListener('click', () => {
                                 const selected = btn.getAttribute('data-value');

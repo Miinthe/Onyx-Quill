@@ -1014,7 +1014,11 @@ export function checkHealthPure(vaultIndex, settings = {}) {
     const titleCounts = new Map();
 
     for (const entry of vaultIndex) {
-        titleCounts.set(entry.title, (titleCounts.get(entry.title) || 0) + 1);
+        // per run: the same title in run A and run B is that run's own copy, not a duplicate (Miinthe 2026-10-18)
+        const inst = entry.customFields?.instance;
+        const run = (Array.isArray(inst) ? inst : inst ? [inst] : []).map(x => String(x).trim().toLowerCase()).filter(Boolean).sort().join(',');
+        const tk = `${run}\u0000${entry.title}`;
+        titleCounts.set(tk, (titleCounts.get(tk) || 0) + 1);
 
         for (const req of entry.requires) {
             const target = vaultIndex.find(e => e.title.toLowerCase() === req.toLowerCase());
@@ -1056,9 +1060,9 @@ export function checkHealthPure(vaultIndex, settings = {}) {
         }
     }
 
-    for (const [title, count] of titleCounts) {
+    for (const [tk, count] of titleCounts) {
         if (count > 1) {
-            issues.push({ type: 'duplicate_title', entry: title });
+            issues.push({ type: 'duplicate_title', entry: tk.split('\u0000')[1] });
         }
     }
 
@@ -1163,6 +1167,12 @@ export function categorizeRejections(trace, injectedKeys) {
         // Entries already attributed to another stage shouldn't double-count here.
         const accountedKeys = new Set([
             ...(trace.gatedOut || []).map(k),
+            // LOCAL PATCH 2026-08-04: entries the FOLDER FILTER removed were never shown to
+            // the AI, so blaming them on it is simply wrong. They were previously unaccounted
+            // — the folder filter only recorded a count — and every one of them landed in
+            // "AI Rejected". On a vault with a large lorebook filtered out that is hundreds
+            // of phantom rows, drowning the entries the AI genuinely declined.
+            ...(trace.folderFilterRemoved || []).map(k),
             ...(trace.contextualGatingRemoved || []).map(k),
             ...(trace.cooldownRemoved || []).map(k),
             ...(trace.stripDedupRemoved || []).map(k),

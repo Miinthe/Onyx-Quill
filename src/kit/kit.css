@@ -1,0 +1,286 @@
+/* ============================================================================
+ * DeepLore — shared parts (overhaul step 1, 2026-10-15)
+ *
+ * One look for the side panel, the bar, settings, the board and Mero's window. Every color is a --dk-* variable
+ * that src/kit/theme.js works out from SillyTavern's live theme (any theme, including colors changed by hand),
+ * so nothing below names a color of its own except the fallbacks here, used only until that script has run.
+ * Every class starts with dk- so nothing here can touch SillyTavern's own look or the old DeepLore styles.
+ * Built from the approved mock-ups: side panel + bar v13, board v28, settings v4, Add window v3, entries window.
+ * ============================================================================ */
+
+:root {
+    --dk-desk: #101216; --dk-page: #1a1c22; --dk-menu: #15171c; --dk-ink: #dcdcd2; --dk-muted: #9a9a95;
+    --dk-line: #34363b; --dk-line-strong: #55575b;
+    --dk-accent: #8f95d8; --dk-accent-ink: #9fa5e8; --dk-on-accent: #101216; --dk-accent-soft: #272a3c; --dk-selected: #353a5c;
+    --dk-mero: #ff79b0; --dk-on-mero: #101216; --dk-mero-soft: #3b2130;
+    --dk-good: #6fd19c; --dk-good-soft: #1f3329; --dk-wait: #e2b04f; --dk-wait-soft: #3a2f17;
+    --dk-bad: #ff8a8a; --dk-bad-soft: #3f2225; --dk-info: #6cc4f2; --dk-info-soft: #1d3240;
+    /* lane / kind colors (board v27); not theme colors, they mean a kind of thing */
+    --dk-l1: #f0b54d; --dk-l2: #5fd0a2; --dk-l3: #a36bff; --dk-l4: #ff4f98; --dk-l5: #6cc4f2; --dk-l6: #a4acba;
+
+    --dk-f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --dk-f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    --dk-f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+    /* follows SillyTavern's own text size setting */
+    --dk-fs: calc(13px * var(--fontScale, 1));
+    --dk-fs-s: calc(11.5px * var(--fontScale, 1));
+    --dk-fs-xs: calc(10.5px * var(--fontScale, 1));
+    --dk-fs-l: calc(15px * var(--fontScale, 1));
+    --dk-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+    --dk-z: 31000;   /* above SillyTavern's drawers and popups, below its toasts */
+}
+:root[data-dk-scheme="light"] {
+    --dk-l1: #c27c0e; --dk-l2: #2f8f6b; --dk-l3: #7232e0; --dk-l4: #d0145e; --dk-l5: #2a86b8; --dk-l6: #6b7280;
+    --dk-shadow: 0 1px 2px rgba(20, 30, 60, .1), 0 10px 30px rgba(20, 30, 60, .16);
+}
+
+/* ── base: a dk piece brings its own font and colors wherever it sits ───── */
+.dk, .dk-win, .dk-menu, .dk-epick, .dk-swpick, .dk-notices {
+    font: var(--dk-fs)/1.45 var(--dk-f-body); color: var(--dk-ink); letter-spacing: normal; text-transform: none;
+}
+.dk *, .dk-win *, .dk-menu *, .dk-epick *, .dk-swpick *, .dk-notices * { box-sizing: border-box; }
+.dk :is(button, input, select, textarea), .dk-win :is(button, input, select, textarea), .dk-menu button, .dk-epick :is(button, input), .dk-swpick button, .dk-notices button {
+    font: inherit; color: inherit; margin: 0;
+}
+.dk :is(button, [role="button"]), .dk-win button, .dk-menu button, .dk-epick button, .dk-swpick button, .dk-notices button { cursor: pointer; }
+.dk :focus-visible, .dk-win :focus-visible, .dk-menu :focus-visible, .dk-epick :focus-visible, .dk-swpick :focus-visible, .dk-notices :focus-visible {
+    outline: 2px solid var(--dk-accent-ink); outline-offset: 2px;
+}
+/* long names cut off with … inside a piece instead of pushing whatever holds it wider (grid and flex parents) */
+.dk-fold, .dk-row, .dk-tiles, .dk-chips, .dk-sugg, .dk-state, .dk-set, .dk-seg, .dk-labeled { min-width: 0; }
+.dk-i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+.dk-label { margin: 0; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dk-muted { color: var(--dk-muted); }
+.dk-hint { margin: 0; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+.dk-btn {
+    height: 28px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink);
+    font: var(--dk-fs)/1 var(--dk-f-body); white-space: nowrap; cursor: pointer;
+}
+.dk-btn:hover { background: var(--dk-menu); border-color: var(--dk-line-strong); }
+.dk-btn .dk-i { width: 14px; height: 14px; }
+.dk-btn.dk-primary { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
+.dk-btn.dk-primary:hover { background: color-mix(in oklab, var(--dk-accent) 88%, var(--dk-ink)); }
+.dk-btn.dk-mero { background: var(--dk-mero); border-color: var(--dk-mero); color: var(--dk-on-mero); font-weight: 700; }
+.dk-btn.dk-mero-line { border-color: color-mix(in oklab, var(--dk-mero) 55%, var(--dk-line)); color: var(--dk-mero); }
+.dk-btn.dk-mero-line:hover { background: var(--dk-mero-soft); }
+.dk-btn.dk-danger { color: var(--dk-bad); }
+.dk-btn.dk-danger:hover { background: var(--dk-bad-soft); border-color: var(--dk-bad); }
+.dk-btn.dk-quiet { border-color: transparent; background: transparent; }
+.dk-btn.dk-quiet:hover { background: var(--dk-menu); }
+.dk-btn[disabled], .dk-btn[aria-disabled="true"] { opacity: .45; cursor: default; pointer-events: none; }
+/* a square icon-only button (headers, rows, ⋯) */
+.dk-ib {
+    width: 28px; height: 28px; flex: none; display: inline-grid; place-items: center; padding: 0;
+    border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dk-muted); cursor: pointer;
+}
+.dk-ib:hover { color: var(--dk-ink); background: var(--dk-page); border-color: var(--dk-line); }
+.dk-ib.on, .dk-ib[aria-expanded="true"] { color: var(--dk-accent-ink); background: var(--dk-page); border-color: var(--dk-line); }
+.dk-link { border: 0; background: transparent; padding: 0; color: var(--dk-accent-ink); font: 600 var(--dk-fs-s)/1.2 var(--dk-f-body); cursor: pointer; }
+.dk-link:hover { text-decoration: underline; }
+
+/* ── chips and segmented choices ─────────────────────────────────────────── */
+.dk-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.dk-chip {
+    height: 24px; display: inline-flex; align-items: center; gap: 5px; padding: 0 9px;
+    border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-page); color: var(--dk-ink);
+    font: var(--dk-fs-s)/1 var(--dk-f-body); white-space: nowrap; cursor: pointer;
+}
+.dk-chip:hover { border-color: var(--dk-line-strong); }
+.dk-chip.on, .dk-chip[aria-pressed="true"] { background: var(--dk-selected); border-color: var(--dk-accent); }
+.dk-chip .dk-n { margin-right: -4px; }
+.dk-chip .dk-x { border: 0; background: none; padding: 0; margin-right: -3px; color: var(--dk-muted); font-size: 14px; line-height: 1; }
+.dk-chip .dk-x:hover { color: var(--dk-bad); }
+.dk-n {
+    flex: none; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center;
+    border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu);
+    font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); color: var(--dk-muted); font-variant-numeric: tabular-nums;
+}
+.dk-tag {
+    flex: none; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; border: 1px solid var(--dk-line); border-radius: 4px;
+    font: 700 calc(10px * var(--fontScale, 1))/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted);
+}
+.dk-seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); }
+.dk-seg button { flex: 1; height: 26px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
+.dk-seg button:hover { color: var(--dk-ink); }
+.dk-seg button[aria-pressed="true"] { background: var(--dk-page); color: var(--dk-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+
+/* ── switch (on/off) ─────────────────────────────────────────────────────── */
+.dk-switch { width: 34px; height: 20px; flex: none; position: relative; padding: 0; border: 0; border-radius: 999px; background: var(--dk-line-strong); cursor: pointer; }
+.dk-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--dk-page); transition: left .15s; }
+.dk-switch[aria-checked="true"] { background: var(--dk-accent); }
+.dk-switch[aria-checked="true"]::after { left: 17px; background: var(--dk-on-accent); }
+.dk-switch[disabled] { opacity: .45; cursor: default; }
+/* a setting: words on the left, the control on the right */
+.dk-set { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 7px 8px; }
+.dk-set > span:first-child { min-width: 0; }
+.dk-set small { display: block; font-size: var(--dk-fs-s); color: var(--dk-muted); line-height: 1.35; }
+
+/* ── folds ───────────────────────────────────────────────────────────────── */
+.dk-fold { border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); }
+.dk-fh { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--dk-ink); text-align: left; cursor: pointer; }
+.dk-fh:hover { background: var(--dk-menu); }
+.dk-fh .dk-ft { flex: none; font: 700 var(--dk-fs-s)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dk-fh .dk-sum { flex: 1; min-width: 0; font-size: var(--dk-fs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-fh .dk-chev { color: var(--dk-muted); transition: transform .15s; }
+.dk-fold.open > .dk-fh { border-radius: 10px 10px 0 0; }
+.dk-fold.open > .dk-fh .dk-chev { transform: rotate(180deg); }
+.dk-fb { display: none; border-top: 1px solid var(--dk-line); padding: 4px; }
+.dk-fold.open > .dk-fb { display: block; }
+
+/* ── rows ────────────────────────────────────────────────────────────────── */
+.dk-row { min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border-radius: 6px; }
+.dk-row.dk-pick { cursor: pointer; }
+.dk-row.dk-pick:hover { background: var(--dk-accent-soft); }
+.dk-row.sel, .dk-row[aria-selected="true"] { background: var(--dk-selected); }
+.dk-row .dk-lead { width: 22px; flex: none; display: grid; place-items: center; font-size: calc(15px * var(--fontScale, 1)); }
+.dk-row .dk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dk-row .dk-t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-row .dk-s { font-size: var(--dk-fs-s); color: var(--dk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-row .dk-end { flex: none; display: flex; align-items: center; gap: 6px; font-size: var(--dk-fs-s); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+.dk-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; display: inline-block; background: var(--dk-muted); }
+.dk-state { font-size: var(--dk-fs-s); border-radius: 7px; padding: 5px 8px; }
+.dk-state.dk-wait { background: var(--dk-wait-soft); color: var(--dk-wait); }
+.dk-state.dk-good { background: var(--dk-good-soft); color: var(--dk-good); }
+.dk-state.dk-bad { background: var(--dk-bad-soft); color: var(--dk-bad); }
+.dk-state.dk-info { background: var(--dk-info-soft); color: var(--dk-info); }
+
+/* ── fields ──────────────────────────────────────────────────────────────── */
+.dk-field { width: 100%; min-height: 30px; padding: 5px 9px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs)/1.4 var(--dk-f-body); }
+.dk-field:hover { border-color: var(--dk-line-strong); }
+.dk-field:focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
+textarea.dk-field { resize: vertical; }
+.dk-field::placeholder { color: var(--dk-muted); opacity: .8; }
+.dk-labeled { display: flex; flex-direction: column; gap: 4px; font-size: var(--dk-fs); }
+.dk-labeled > span { color: var(--dk-muted); }
+
+/* ── ⋯ menus ─────────────────────────────────────────────────────────────── */
+.dk-menu {
+    position: fixed; z-index: calc(var(--dk-z) + 10); min-width: 200px; max-width: min(320px, calc(100vw - 16px)); max-height: min(calc(100dvh - 16px), 760px);   /* the side panel's ⋯ is ~700px: no scrolling on a PC (bug hunt 2026-10-17) */ overflow-y: auto;
+    padding: 4px 0; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow);
+}
+.dk-mi { width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 7px 12px; border: 0; background: transparent; color: var(--dk-ink); text-align: left; font-size: var(--dk-fs); line-height: 1.35; }
+.dk-mi:hover, .dk-mi:focus-visible { background: var(--dk-accent-soft); outline: none; }
+.dk-mi .dk-i { color: var(--dk-muted); margin-top: 1px; }
+.dk-mi .dk-memo { flex: none; width: 16px; text-align: center; }
+.dk-mi > span { flex: 1; min-width: 0; }
+.dk-mi small { display: block; color: var(--dk-muted); font-size: var(--dk-fs-s); }
+.dk-mi.dk-danger, .dk-mi.dk-danger .dk-i { color: var(--dk-bad); }
+.dk-mi.dk-mero, .dk-mi.dk-mero .dk-i { color: var(--dk-mero); }
+.dk-mi[aria-checked="true"]::after { content: '✓'; color: var(--dk-accent-ink); font-weight: 700; }
+.dk-mi[disabled] { opacity: .45; pointer-events: none; }
+.dk-mlab { padding: 8px 12px 3px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dk-msep { height: 1px; background: var(--dk-line); margin: 4px 0; }
+
+/* ── popup windows ───────────────────────────────────────────────────────── */
+.dk-scrim { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: var(--dk-z); display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: rgba(8, 10, 14, .5); }
+.dk-win {
+    position: relative; width: min(560px, 100%); max-height: min(720px, 100%); display: flex; flex-direction: column;
+    border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow);
+}
+.dk-win.dk-wide { width: min(820px, 100%); }
+.dk-win.dk-small { width: min(400px, 100%); }
+.dk-whead { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 10px 10px 16px; border-bottom: 1px solid var(--dk-line); }
+.dk-whead h2 { flex: 1; min-width: 0; margin: 0; font: 700 calc(17px * var(--fontScale, 1))/1.2 var(--dk-f-display); color: var(--dk-ink); overflow-wrap: anywhere; }
+.dk-wbody { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+.dk-wbody > * { flex-shrink: 0; }
+/* the footer stays in view however long the window gets (Add window decision, 2026-10-15) */
+.dk-wfoot { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px 12px; border-top: 1px solid var(--dk-line); }
+.dk-wfoot .dk-sp { flex: 1; }
+.dk-wfoot .dk-btn { height: 32px; padding: 0 14px; }
+.dk-ask-again { display: flex; align-items: center; gap: 8px; font-size: var(--dk-fs-s); color: var(--dk-muted); cursor: pointer; }
+.dk-ask-again input { width: 16px; height: 16px; margin: 0; accent-color: var(--dk-accent); }
+/* phone: the window is a sheet from the bottom, full width */
+@media (max-width: 600px) {
+    .dk-scrim { align-items: flex-end; padding: 12px 0 0; }
+    .dk-win, .dk-win.dk-wide, .dk-win.dk-small { width: 100%; max-height: 100%; border-radius: 14px 14px 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+/* ── mini tiles (steps, places, states) ──────────────────────────────────── */
+.dk-tiles { display: flex; flex-wrap: wrap; align-items: center; row-gap: 8px; padding: 2px 0; }
+.dk-tile {
+    position: relative; display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 88px; max-width: 160px; min-height: 42px; padding: 4px 10px;
+    border: 1.5px solid var(--dk-line); border-top: 3px solid var(--dk-tc, var(--dk-l5)); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); text-align: left; cursor: pointer; user-select: none;
+}
+.dk-tile .dk-tn { font: var(--dk-fs-xs) var(--dk-f-mono); color: var(--dk-muted); }
+.dk-tile .dk-tt { max-width: 100%; font-size: var(--dk-fs); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-tile:hover { border-color: var(--dk-accent); border-top-color: var(--dk-tc, var(--dk-l5)); }
+.dk-tile.on { background: var(--dk-accent-soft); border-color: var(--dk-accent); border-top-color: var(--dk-tc, var(--dk-l5)); }
+.dk-tile.dk-dragging { opacity: .4; }
+.dk-tile.dk-drop-before { box-shadow: -4px 0 0 -1px var(--dk-accent); }
+.dk-tile.dk-drop-after { box-shadow: 4px 0 0 -1px var(--dk-accent); }
+.dk-tile.dk-tadd { border-style: dashed; border-top: 1.5px dashed var(--dk-line); color: var(--dk-muted); align-items: center; min-width: 72px; }
+.dk-tile.dk-tadd:hover { color: var(--dk-accent-ink); border-color: var(--dk-accent); }
+input.dk-tile.dk-tin { width: 140px; font-size: var(--dk-fs); font-weight: 700; outline: none; border-color: var(--dk-accent); border-top-color: var(--dk-tc, var(--dk-l5)); cursor: text; }
+.dk-tj { width: 12px; height: 2px; flex: none; background: var(--dk-line); }
+.dk-tbar { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px; padding: 6px 8px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); font-size: var(--dk-fs); }
+.dk-tbar b { margin-right: 4px; min-width: 0; overflow-wrap: anywhere; }
+.dk-tbar .dk-btn { height: 26px; }
+
+/* ── icon picker and color picker ────────────────────────────────────────── */
+.dk-iconfield { width: 40px; height: 32px; padding: 0; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); font-size: 18px; line-height: 1; cursor: pointer; }
+.dk-iconfield:hover, .dk-colorfield:hover { border-color: var(--dk-accent); }
+.dk-iconfield:empty::before { content: '+'; color: var(--dk-muted); font-size: 15px; }
+.dk-colorfield { width: 32px; height: 32px; padding: 5px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); cursor: pointer; }
+.dk-colorfield i { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--dk-wc, var(--dk-l6)); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18); }
+.dk-epick, .dk-swpick { position: fixed; z-index: calc(var(--dk-z) + 10); border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow); }
+.dk-epick { width: 316px; max-width: calc(100vw - 24px); max-height: min(380px, 70vh); display: flex; flex-direction: column; }
+.dk-epick .dk-ehead { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid var(--dk-line); }
+.dk-epick .dk-ehead input { flex: 1; min-width: 0; height: 28px; padding: 0 11px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-desk); font-size: var(--dk-fs); }
+.dk-epick .dk-ebody { overflow: auto; padding: 4px 8px 8px; }
+.dk-epick h5 { margin: 8px 2px 4px; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--dk-muted); }
+.dk-epick .dk-egrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.dk-epick .dk-egrid button { height: 34px; padding: 0; border: 0; border-radius: 8px; background: none; font-size: 20px; line-height: 1; }
+.dk-epick .dk-egrid button:hover, .dk-epick .dk-egrid button:focus-visible { background: var(--dk-accent-soft); outline: none; }
+.dk-epick .dk-egrid button.on { background: var(--dk-selected); }
+.dk-epick .dk-enone { padding: 14px 4px; font-size: var(--dk-fs); color: var(--dk-muted); }
+.dk-swpick { width: 252px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.dk-swpick .dk-swgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.dk-swpick .dk-swgrid button { width: 26px; height: 26px; padding: 0; border: 2px solid transparent; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18); }
+.dk-swpick .dk-swgrid button:hover, .dk-swpick .dk-swgrid button:focus-visible { outline: 2px solid var(--dk-accent-ink); outline-offset: 1px; }
+.dk-swpick .dk-swgrid button.on { border-color: var(--dk-page); outline: 2px solid var(--dk-ink); }
+.dk-swpick .dk-swfoot { display: flex; align-items: center; gap: 8px; }
+.dk-swpick .dk-swfoot input[type="color"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ── Mero ☆: her suggestions, and what she filled in ─────────────────────── */
+.dk-sugg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 7px 9px; border: 1px dashed color-mix(in oklab, var(--dk-mero) 55%, var(--dk-line)); border-radius: 8px; background: color-mix(in oklab, var(--dk-mero-soft) 45%, var(--dk-page)); font-size: var(--dk-fs); }
+.dk-sugg .dk-who { flex: 0 0 100%; font: 700 var(--dk-fs-s)/1.2 var(--dk-f-display); color: var(--dk-mero); }
+.dk-sugg .dk-what { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+.dk-sugg .dk-acts { display: flex; gap: 6px; margin-left: auto; }
+/* a field Mero filled stays pink until someone changes it (entries window decision, 2026-10-15) */
+.dk-by-mero { border-color: var(--dk-mero) !important; box-shadow: 0 0 0 1px var(--dk-mero) inset; background: color-mix(in oklab, var(--dk-mero-soft) 35%, var(--dk-page)); }
+.dk-made { font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); color: var(--dk-mero); }
+
+/* ── notices (small, with Undo) ──────────────────────────────────────────── */
+/* placed from the top: on a phone SillyTavern's page is 0px tall, so "bottom: …" put the notices above the screen (bug hunt 2026-10-17) */
+.dk-notices { position: fixed; z-index: calc(var(--dk-z) + 20); left: 50%; top: calc(100dvh - var(--bottomFormBlockSize, 0px) - 24px); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
+/* while a window is open, notices go to the top: at the bottom they covered its buttons (bug hunt 2026-10-16:
+   "Settings back to default." lay over Cancel / Replace it in Mero's narrow side panel, where windows are bottom sheets) */
+body:has(.dk-scrim) .dk-notices { top: 12px; transform: translateX(-50%); }
+.dk-notice { pointer-events: auto; display: flex; align-items: center; gap: 10px; max-width: 420px; padding: 8px 10px 8px 12px; border: 1px solid var(--dk-line); border-left: 3px solid var(--dk-accent); border-radius: 10px; background: var(--dk-page); color: var(--dk-ink); box-shadow: var(--dk-shadow); font-size: var(--dk-fs); }
+.dk-notice.dk-good { border-left-color: var(--dk-good); }
+.dk-notice.dk-wait { border-left-color: var(--dk-wait); }
+.dk-notice.dk-bad { border-left-color: var(--dk-bad); }
+.dk-notice.dk-mero { border-left-color: var(--dk-mero); }
+.dk-notice > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dk-notice b { display: block; font-size: var(--dk-fs-s); }
+.dk-notice .dk-ib { width: 24px; height: 24px; margin-right: -4px; }
+
+/* ── phone and touch ─────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+    .dk-mi { padding-block: 10px; }
+    .dk-ib { width: 34px; height: 34px; }
+    .dk-btn { height: 34px; }
+    .dk-chip { height: 30px; padding: 0 11px; }
+    .dk-switch { width: 40px; height: 24px; }
+    .dk-switch::after { width: 18px; height: 18px; }
+    .dk-switch[aria-checked="true"]::after { left: 19px; }
+    .dk-epick .dk-egrid button { height: 40px; }
+    .dk-swpick .dk-swgrid button { width: 30px; height: 30px; }
+    .dk-swpick { width: 280px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dk-switch::after, .dk-fh .dk-chev { transition: none; }
+}

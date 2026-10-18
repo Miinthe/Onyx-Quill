@@ -536,7 +536,7 @@ export function initRender(gs) {
         ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.lineWidth = 1; ctx.shadowBlur = 0;
 
         // Two-pass node render: bg-color mask first (covers underlying edge alpha) then colored disc on top.
-        const bgColor = computedStyle.getPropertyValue('--dle-bg-surface').trim() || '#1a1a2e';
+        const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--dk-desk').trim() || computedStyle.getPropertyValue('--dle-bg-surface').trim() || '#1a1a2e';
         for (const n of nodes) {
             if (n.hidden || n._revealScale < 0.01) continue;
             const s = toScreen(n.x, n.y);
@@ -650,7 +650,12 @@ export function initRender(gs) {
         }
 
         if (showLabels) {
-            ctx.font = `500 ${Math.max(9, 11 * zoom)}px system-ui, -apple-system, sans-serif`; ctx.textAlign = 'center';
+            // label colors from the kit (the light / dark look), with a halo in the graph's background
+            const rootCS = getComputedStyle(document.documentElement);
+            const inkC = rootCS.getPropertyValue('--dk-ink').trim() || '#ddd';
+            const mutedC = rootCS.getPropertyValue('--dk-muted').trim() || '#888';
+            const haloC = rootCS.getPropertyValue('--dk-desk').trim() || 'rgba(0, 0, 0, 0.7)';
+            ctx.font = `500 ${Math.min(16, Math.max(9, 11 * zoom))}px "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif`; ctx.textAlign = 'center';
             ctx.lineJoin = 'round';
             for (const n of nodes) {
                 if (n.hidden || n._revealScale < 0.5) continue;
@@ -665,7 +670,7 @@ export function initRender(gs) {
                 if (focusTreeRoot || inHoverLabelSet || zoom > 0.7 || (zoom > 0.4 && (isHub || matchesFilter))) {
                     if (inHoverLabelSet && !focusTreeRoot) {
                         const isHovered = n === hoverNode;
-                        ctx.fillStyle = isHovered ? '#fff' : '#ddd';
+                        ctx.fillStyle = inkC;
                         ctx.globalAlpha = isHovered ? 1.0 : 0.85;
                     } else if (focusTreeRoot) {
                         const isHovered = n === hoverNode;
@@ -674,10 +679,10 @@ export function initRender(gs) {
                             treeEdgeSet.has(`${hoverNode.id}:${n.id}`) &&
                             (focusTreeRoot._depthMap.get(n.id) ?? 0) > (focusTreeRoot._depthMap.get(hoverNode.id) ?? 0));
                         const bright = isHovered || n === focusTreeRoot || isTreeNeighbor;
-                        ctx.fillStyle = (isHovered || n === focusTreeRoot) ? '#fff' : isTreeNeighbor ? '#ccc' : '#888';
+                        ctx.fillStyle = (isHovered || n === focusTreeRoot || isTreeNeighbor) ? inkC : mutedC;
                         ctx.globalAlpha = bright ? 1.0 : 0.6;
                     } else {
-                        ctx.fillStyle = '#ddd';
+                        ctx.fillStyle = inkC;
                         ctx.globalAlpha = 1;
                     }
                     const labelOffset = (getNodeRadius(n) + 4) * zoom;
@@ -686,7 +691,7 @@ export function initRender(gs) {
                         ? `${n.title} [+${hoverDist}]`
                         : n.title;
                     // Dark stroke around label provides contrast on any theme background.
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.strokeStyle = haloC;
                     ctx.lineWidth = 3;
                     ctx.strokeText(labelText, s.x, s.y - labelOffset);
                     ctx.fillText(labelText, s.x, s.y - labelOffset);

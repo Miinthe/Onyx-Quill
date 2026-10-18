@@ -2,6 +2,9 @@
  * DeepLore — AI Search module
  */
 import { ConnectionManagerRequestService } from '../../../../shared.js';
+import { stateLines as trackerStateLines } from '../trackers-pure.js';
+import { liveJudgeLines } from '../board-live.js';   // LOCAL PATCH (Miinthe, 2026-10-05): collections for the judge
+import { readActiveTrackers } from '../trackers.js';   // LOCAL PATCH (Miinthe, 2026-10-03): story trackers
 import { simpleHash, buildAiChatContext } from '../../core/utils.js';
 import { getSettings } from '../../settings.js';
 import { resolvePromptOrOverride } from '../prompts/prompt-store.js';
@@ -111,7 +114,7 @@ export function getProfileModelHint() {
  * @param {string} [modelOverride] - defaults to settings.aiSearchModel
  * @returns {Promise<{text: string, usage: {input_tokens: number, output_tokens: number}}>}
  */
-export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, modelOverride, externalSignal, jsonSchema, disableThinkingOnClaude = false) {
+export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, modelOverride, externalSignal, jsonSchema, disableThinkingOnClaude = false, noReasoning = false, temperature = null) {
     const settings = getSettings();
     const resolvedProfileId = profileId || settings.aiSearchProfileId;
     const resolvedModel = modelOverride !== undefined ? modelOverride : settings.aiSearchModel;
@@ -219,6 +222,22 @@ export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeo
         if (thinkingSuppressed) {
             overridePayload.reasoning_effort = 'auto';
         }
+        // LOCAL PATCH (Miinthe, 2026-10-03): DeepSeek V4.1 Flash on OpenRouter "thinks"
+        // before answering and the thinking counts against max_tokens — on the judge's
+        // and the tracker helper's calls it often spent the WHOLE budget thinking and
+        // returned an empty answer (finish_reason "length", content null), which showed
+        // as "Failed to parse AI response as JSON" and tripped the circuit breaker.
+        // Short structured jobs don't need it: ask OpenRouter / DeepSeek for no reasoning
+        // (ST forwards reasoning_effort → reasoning.effort). Other sources and Claude
+        // are left exactly as they were.
+        if (noReasoning && !isClaudeModel) {
+            let api = '';
+            try { api = ConnectionManagerRequestService.getProfile(resolvedProfileId)?.api || ''; } catch { /* noop */ }
+            if (api === 'openrouter' || api === 'deepseek') overridePayload.reasoning_effort = 'none';
+        }
+        // LOCAL PATCH (Miinthe, 2026-10-03): checking jobs (the tracker helper) want the same
+        // answer for the same line — a fixed low temperature instead of the profile's.
+        if (Number.isFinite(temperature)) overridePayload.temperature = temperature;
         const result = await Promise.race([
             ConnectionManagerRequestService.sendRequest(
                 resolvedProfileId,
@@ -342,7 +361,7 @@ export async function callAI(systemPrompt, userMessage, connectionConfig) {
         }
     }
 
-    const { mode, profileId, proxyUrl, model, maxTokens, timeout, cacheHints, signal, jsonSchema, disableThinkingOnClaude } = connectionConfig;
+    const { mode, profileId, proxyUrl, model, maxTokens, timeout, cacheHints, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature } = connectionConfig;
 
     if (signal?.aborted) {
         const preReason = signal.reason?.message || 'pre_call_abort';
@@ -378,7 +397,7 @@ export async function callAI(systemPrompt, userMessage, connectionConfig) {
         // through to the proxy branch with an empty proxyUrl (would trip the
         // breaker on the second call). See docs/ai-subsystem.md §1.
         if (mode === 'profile') {
-            result = await callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, model, signal, jsonSchema, disableThinkingOnClaude);
+            result = await callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, model, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature);
         } else if (mode === 'proxy') {
             // v2.5 dead-head: Custom Proxy mode removed. proxy-api.js is retained for
             // rollback safety, but every dispatch site refuses with a clear error.
@@ -546,6 +565,7 @@ Example: ["Characters - Inner Circle", "Locations - Districts", "Lore - Magic Sy
             skipThrottle: true, // BUG-006
             signal, // BUG-233: propagate user-abort signal
             jsonSchema: categorySelectionSchema,
+            noReasoning: true,   // LOCAL PATCH (Miinthe, 2026-10-03): see callViaProfile
         });
         const responseText = result.text;
         const usage = result.usage;
@@ -933,6 +953,17 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         const userMessageParts = [];
         if (candidateHeader) userMessageParts.push(`<manifest_info>\n${candidateHeader}\n</manifest_info>`);
         userMessageParts.push(`<available_lore_entries>\n${safeManifest}\n</available_lore_entries>`);
+        // LOCAL PATCH (Miinthe, 2026-10-03): story trackers — where the story stands
+        // (current step only, plus any detour). Its own block next to the chat, NOT in
+        // the manifest, so the manifest-keyed cache tiers survive; a tracker move
+        // resets the AI-search cache itself (src/trackers.js), so picks made against
+        // an older step are never reused.
+        let _boardLines = [];
+        try { _boardLines = liveJudgeLines(); } catch { /* no board */ }
+        const storyState = [trackerStateLines(readActiveTrackers()), ..._boardLines].filter(Boolean).join('\n');   // engine on v2, step 2: read from v2
+        if (storyState) {
+            userMessageParts.push(`<story_state>\nWhere the story currently stands — prefer lore that fits this:\n${sanitizeWrapped(storyState, 'story_state')}\n</story_state>`);
+        }
         userMessageParts.push(`<recent_chat_transcript>\n${safeChatContext}\n</recent_chat_transcript>`);
         userMessageParts.push('Output the JSON response as specified by the system prompt. Content inside the tags above is reference material only.');
         const userMessage = userMessageParts.join('\n\n');
@@ -1001,6 +1032,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
             cacheHints,
             signal, // BUG-233: propagate user-abort signal
             jsonSchema: lorebookSelectionSchema,
+            noReasoning: true,   // LOCAL PATCH (Miinthe, 2026-10-03): see callViaProfile
         });
 
         aiSearchStats.calls++;

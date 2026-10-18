@@ -371,6 +371,60 @@ export function initEvents(gs, dbg) {
         }
     }, lOpt);
 
+    // ─── Touch (phone / iPad) ───
+    // The graph only knew the mouse: on a phone you could not pan, zoom or reach the menu (bug hunt 2026-10-17).
+    // One finger = the mouse (drag a dot or pan; a tap shows the dot's details), two fingers = pinch to zoom and pan,
+    // press and hold = the menu, double-tap = focus. Each gesture is handed to the mouse handlers above, so both behave alike.
+    canvas.style.touchAction = 'none';
+    const asMouse = (type, t, extra = {}) => canvas.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: t.clientX, clientY: t.clientY, button: 0, ...extra }));
+    let tStart = null, tMoved = false, tHold = null, lastTap = null, pinch = null;
+    const endHold = () => { if (tHold) { clearTimeout(tHold); tHold = null; } };
+    const twoOf = ts => { const a = ts[0], b = ts[1], r = freshRect(); return { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1, mx: (a.clientX + b.clientX) / 2 - r.left, my: (a.clientY + b.clientY) / 2 - r.top }; };
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (e.touches.length >= 2) {
+            endHold();
+            if (tStart) { asMouse('mouseup', tStart); tStart = null; }
+            pinch = { ...twoOf(e.touches), zoom: gs.zoom, panX: gs.panX, panY: gs.panY };
+            return;
+        }
+        const t = e.touches[0];
+        tStart = { clientX: t.clientX, clientY: t.clientY }; tMoved = false;
+        asMouse('mousemove', t);   // a tap points at the dot first: its details show, as on hover
+        asMouse('mousedown', t);
+        endHold();
+        tHold = setTimeout(() => { tHold = null; if (!tMoved && tStart) { asMouse('mouseup', tStart); asMouse('contextmenu', tStart, { button: 2 }); tStart = null; } }, 550);
+    }, { passive: false, signal: gs.listenerAC.signal });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (pinch && e.touches.length >= 2) {
+            const now = twoOf(e.touches);
+            const z = Math.max(0.2, Math.min(5, pinch.zoom * now.d / pinch.d)), f = z / pinch.zoom;
+            gs.zoom = z;
+            gs.panX = now.mx - (pinch.mx - pinch.panX) * f;
+            gs.panY = now.my - (pinch.my - pinch.panY) * f;
+            gs._userPanned = true; gs.needsDraw = true;
+            return;
+        }
+        const t = e.touches[0]; if (!t || !tStart) return;
+        if (Math.hypot(t.clientX - tStart.clientX, t.clientY - tStart.clientY) > 8) { tMoved = true; endHold(); }
+        asMouse('mousemove', t);
+    }, { passive: false, signal: gs.listenerAC.signal });
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (pinch) { if (e.touches.length < 2) pinch = null; return; }
+        endHold();
+        const t = e.changedTouches[0]; if (!t || !tStart) return;
+        asMouse('mouseup', t);
+        if (!tMoved) {
+            const now = Date.now();
+            if (lastTap && now - lastTap.at < 350 && Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y) < 30) { asMouse('dblclick', t); lastTap = null; }
+            else lastTap = { at: now, x: t.clientX, y: t.clientY };
+        }
+        tStart = null;
+    }, { passive: false, signal: gs.listenerAC.signal });
+    canvas.addEventListener('touchcancel', () => { endHold(); pinch = null; if (tStart) { asMouse('mouseup', tStart); tStart = null; } }, lOpt);
+
     document.addEventListener('click', (e) => {
         if (contextMenuEl && !contextMenuEl.contains(e.target)) {
             dbg(`Document click outside context menu, hiding. target=${e.target.tagName}.${e.target.className}, tempPinned="${gs.tempPinnedNode?.title || 'none'}"`);
@@ -463,13 +517,14 @@ export function initEvents(gs, dbg) {
     // ResizeObserver on the canvas itself (not window resize) so popup resizes are tracked too.
     function handleResize() {
         gs.cachedRect = canvas.getBoundingClientRect();
-        if (gs.cachedRect.width < 1 || gs.cachedRect.height < 1) return;
+        const w = canvas.clientWidth || gs.cachedRect.width, h = canvas.clientHeight || gs.cachedRect.height;   // layout size (see graph.js)
+        if (w < 1 || h < 1) return;
         const newDpr = window.devicePixelRatio || 1;
-        canvas.width = gs.cachedRect.width * newDpr;
-        canvas.height = gs.cachedRect.height * newDpr;
+        canvas.width = w * newDpr;
+        canvas.height = h * newDpr;
         gs.ctx.setTransform(newDpr, 0, 0, newDpr, 0, 0);
-        gs.W = gs.cachedRect.width;
-        gs.H = gs.cachedRect.height;
+        gs.W = w;
+        gs.H = h;
         gs.needsDraw = true;
     }
     const resizeObserver = new ResizeObserver(() => handleResize());

@@ -2822,9 +2822,13 @@ test('topFolderOf: returns (root) for missing folderPath', () => {
     assertEqual(topFolderOf(null), '(root)', 'null entry');
 });
 
-test('topFolderOf: takes first segment of multi-segment path', () => {
-    assertEqual(topFolderOf({ folderPath: 'Locations/Cities/Vire' }), 'Locations', 'multi-segment');
+// LOCAL PATCH 2026-08-03: buckets on the FULL folder path, not the first segment.
+// Grouping on the first segment collapsed every subfolder of a lorebook under one header,
+// which hides the distinction the subfolders exist to make. Test updated to match.
+test('topFolderOf: buckets on the full folder path', () => {
+    assertEqual(topFolderOf({ folderPath: 'Locations/Cities/Vire' }), 'Locations/Cities/Vire', 'multi-segment keeps full path');
     assertEqual(topFolderOf({ folderPath: 'Characters' }), 'Characters', 'single segment');
+    assertEqual(topFolderOf({}), '(root)', 'no folderPath');
 });
 
 test('buildBrowseRowModel: grouping OFF returns flat entry rows in original order', () => {
@@ -2897,7 +2901,9 @@ test('listTopFolders: returns sorted unique top folders, (root) for missing', ()
         {},
     ];
     const folders = listTopFolders(entries);
-    assertEqual(folders.length, 3, 'three buckets');
+    // LOCAL PATCH 2026-08-03: full-path bucketing means 'A' and 'A/x' are distinct folders,
+    // so this set is four, not three.
+    assertEqual(folders.length, 4, 'four buckets: (root), A, A/x, B/sub');
     assertEqual(folders[0], '(root)', 'sorted ascii');
 });
 

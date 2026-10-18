@@ -8,6 +8,7 @@ import { truncateToSentence, escapeXml } from '../../core/utils.js';
 import { neutralizeClosingTag } from '../helpers.js';
 import { queryBM25, tokenize } from '../vault/bm25.js';
 import { getSettings } from '../../settings.js';
+import { effectiveFolderFilter } from '../characters.js';   // LOCAL PATCH (Miinthe, 2026-10-05): search only the chat's folders
 import {
     loreGaps, setLoreGaps,
     loreGapSearchCount, setLoreGapSearchCount,
@@ -403,8 +404,15 @@ export async function searchLoreAction(args) {
     // BUG-AUDIT-P1: O(1) lookups for resolveLinkedEntries.
     // gotcha #50 (P3-7): Map<titleLower, Entry[]> — push ALL same-titled entries so a
     // cross-vault related link surfaces every matching vault's entry, not just the first.
+    // LOCAL PATCH (Miinthe, 2026-10-05): search only the chat's folders (character / run / chat folders —
+    // characters.js), like the lore selection. Before, search_lore looked through the whole vault, so another
+    // story's entry could come back to the writer. Root entries pass, as in the folder filter.
+    let _folders = null;
+    try { _folders = effectiveFolderFilter(); } catch { _folders = null; }
+    const inChatFolders = e => !_folders?.length || !e.folderPath || _folders.some(f => e.folderPath === f || e.folderPath.startsWith(f + '/'));
     const titleMap = new Map();
     for (const e of vaultIndex) {
+        if (!inChatFolders(e)) continue;
         const lk = e.title.toLowerCase();
         const bucket = titleMap.get(lk);
         if (bucket) bucket.push(e);
@@ -471,9 +479,10 @@ export async function searchLoreAction(args) {
     for (const query of queries) {
         const hits = queryBM25(
             fuzzySearchIndex, query,
-            settings.librarianMaxResults,
+            // with folders set, ask for more and keep the chat's own (the index holds the whole vault)
+            _folders?.length ? settings.librarianMaxResults * 6 : settings.librarianMaxResults,
             settings.fuzzySearchMinScore || 0.5,
-        );
+        ).filter(h => inChatFolders(h.entry)).slice(0, settings.librarianMaxResults);
         const filtered = hits.filter(h => !shownTitles.has(`${h.entry.vaultSource || ''}:${h.entry.title.toLowerCase()}`) && !h.entry.guide);
 
         if (debug) console.debug('[DLE] searchLore: query="%s" — %d BM25 hits after filter', query, filtered.length);

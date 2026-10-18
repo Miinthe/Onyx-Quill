@@ -298,6 +298,7 @@ export async function showGraphPopup() {
             <span class="dle-graph-toolbar-sep"></span>
             <button type="button" id="dle-graph-analyze" class="menu_button dle-graph-toolbar-btn" title="Find gaps in your vault — highlights orphans, weak bridges, and missing connections" data-i18n="[title]dle_graph_button_analyze_title"><i class="fa-solid fa-magnifying-glass-chart"></i> <span data-i18n="dle_graph_button_analyze">Find Gaps</span></button>
             <button type="button" id="dle-graph-health" class="menu_button dle-graph-toolbar-btn" title="Vault Health — surface broken refs, orphans, contradictory gating, and budget hogs" data-i18n="[title]dle_graph_button_health_title"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="dle_graph_button_health">Health</span></button>
+            <button type="button" id="dle-graph-close" class="menu_button dle-graph-toolbar-btn"><i class="fa-solid fa-xmark"></i> <span data-i18n="dle_graph_button_close">Close</span></button>
         </div>
         <div class="dle-graph-canvas-wrap">
             <canvas id="dle-graph-canvas" class="dle-graph-canvas" tabindex="-1" width="900" height="550" aria-label="${escapeHtml(trf('dle_graph_aria_label', nodes.length, edges.length))}"></canvas>
@@ -306,7 +307,7 @@ export async function showGraphPopup() {
                 <div class="dle-graph-legend-section dle-graph-legend-section--edges">
                     <div class="dle-graph-legend-section-label" data-i18n="dle_graph_legend_section_edges">Edge types (click to toggle)</div>
                     <div class="dle-graph-legend-edges">
-                        <span class="dle-graph-legend-item" data-edge-type="link" role="button" tabindex="0" aria-label="Toggle link edges" data-i18n="[aria-label]dle_graph_legend_toggle_link_aria"><span class="dle-graph-legend-dash" style="color: #aac8ff;">—</span> <span data-i18n="dle_graph_legend_link">Link</span></span>
+                        <span class="dle-graph-legend-item" data-edge-type="link" role="button" tabindex="0" aria-label="Toggle link edges" data-i18n="[aria-label]dle_graph_legend_toggle_link_aria"><span class="dle-graph-legend-dash" style="color: var(--dk-info, #aac8ff);">—</span> <span data-i18n="dle_graph_legend_link">Link</span></span>
                         <span class="dle-graph-legend-item" data-edge-type="requires" role="button" tabindex="0" aria-label="Toggle requires edges" data-i18n="[aria-label]dle_graph_legend_toggle_requires_aria"><span class="dle-graph-legend-dash dle-success">—</span> <span data-i18n="dle_graph_legend_requires">Requires</span></span>
                         <span class="dle-graph-legend-item" data-edge-type="excludes" role="button" tabindex="0" aria-label="Toggle excludes edges" data-i18n="[aria-label]dle_graph_legend_toggle_excludes_aria"><span class="dle-graph-legend-dash dle-error">—</span> <span data-i18n="dle_graph_legend_excludes">Excludes</span></span>
                         <span class="dle-graph-legend-item" data-edge-type="cascade" role="button" tabindex="0" aria-label="Toggle cascade edges" data-i18n="[aria-label]dle_graph_legend_toggle_cascade_aria"><span class="dle-graph-legend-dash dle-warning">—</span> <span data-i18n="dle_graph_legend_cascade">Cascade</span></span>
@@ -425,6 +426,8 @@ export async function showGraphPopup() {
     `;
 
     callGenericPopup(container, POPUP_TYPE.DISPLAY, '', { wide: true, large: true, allowVerticalScrolling: false });
+    // a Close in reach on a phone: SillyTavern's ✕ sits in the corner, under an iPhone's status bar (Miinthe 2026-10-18)
+    container.querySelector('#dle-graph-close')?.addEventListener('click', () => container.closest('dialog')?.querySelector('.popup-button-close')?.click());
 
     // Poll for canvas with non-zero layout — popup body may be present but unmeasured for a frame or two.
     let canvas = null;
@@ -439,14 +442,18 @@ export async function showGraphPopup() {
         return;
     }
     const ctx = canvas.getContext('2d');
+    // a phone / iPad gets the touch words in the hint line (bug hunt 2026-10-17: it said right-click and scroll)
+    if (window.matchMedia?.('(pointer: coarse)').matches) { const h = document.getElementById('dle-graph-hints'); if (h) { h.setAttribute('data-i18n', 'dle_graph_hints_touch'); h.textContent = tr('dle_graph_hints_touch'); } }
 
     let cachedRect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = cachedRect.width * dpr;
-    canvas.height = cachedRect.height * dpr;
+    // the layout size, not the on-screen box: while the pop-up still animates open its box is scaled, and on a phone the
+    // graph came out squashed into slivers (bug hunt 2026-10-17)
+    const W = canvas.clientWidth || cachedRect.width;
+    const H = canvas.clientHeight || cachedRect.height;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
     ctx.scale(dpr, dpr);
-    const W = cachedRect.width;
-    const H = cachedRect.height;
     dbg(`Canvas initialized: ${W}x${H} CSS px, DPR=${dpr}, buffer=${canvas.width}x${canvas.height}`);
 
     // ========================================================================
@@ -699,21 +706,23 @@ export async function showGraphPopup() {
 
     // ─── Theme-aware colors ───
     const computedStyle = getComputedStyle(document.documentElement);
+    // Overhaul 2026-10-16: the kit's kind colors (--dk-l*, they follow the light / dark look), hex for toPastel()
+    const dkHex = (name, fb) => { const v = computedStyle.getPropertyValue(name).trim(); return /^#[0-9a-f]{6}$/i.test(v) ? v : fb; };
     const nodeColors = {
-        constant: '#ff9800',
-        seed: '#2196f3',
-        bootstrap: '#9c27b0',
-        regular: '#4caf50',
+        constant: dkHex('--dk-l1', '#ff9800'),
+        seed: dkHex('--dk-l5', '#2196f3'),
+        bootstrap: dkHex('--dk-l3', '#9c27b0'),
+        regular: dkHex('--dk-l2', '#4caf50'),
     };
     // BUG-361: edgeColors is re-read every frame so theme swaps propagate to canvas-drawn edges
     // without subscribing to a theme-change event we don't own.
     function readEdgeColors() {
         const cs = getComputedStyle(document.documentElement);
         return {
-            link: '#aac8ff',
-            requires: cs.getPropertyValue('--dle-success').trim() || '#4caf50',
-            excludes: cs.getPropertyValue('--dle-error').trim() || '#f44336',
-            cascade: cs.getPropertyValue('--dle-warning').trim() || '#ff9800',
+            link: cs.getPropertyValue('--dk-info').trim() || '#aac8ff',
+            requires: cs.getPropertyValue('--dk-good').trim() || cs.getPropertyValue('--dle-success').trim() || '#4caf50',
+            excludes: cs.getPropertyValue('--dk-bad').trim() || cs.getPropertyValue('--dle-error').trim() || '#f44336',
+            cascade: cs.getPropertyValue('--dk-wait').trim() || cs.getPropertyValue('--dle-warning').trim() || '#ff9800',
         };
     }
     const edgeColors = readEdgeColors();
@@ -905,7 +914,7 @@ export async function showGraphPopup() {
         gs.alpha = 1.0;
         gs.simFrame = 0;
         gs.simulationStartTime = Date.now();
-        gs.settlingUntil = Date.now() + 91_000;
+        gs.settlingUntil = Date.now() + 21_000;   // 1s past the 20s hard clamp
         gs.layoutSaved = false;
         gs.panX = gs.W / 2; gs.panY = gs.H / 2; gs.zoom = 1;
         gs.needsDraw = true;
@@ -1031,7 +1040,7 @@ export async function showGraphPopup() {
         </div>`;
         canvas.parentNode.style.position = 'relative'; // anchor for absolutely-positioned overlay.
         canvas.parentNode.appendChild(layoutOverlay);
-        gs.settlingUntil = Date.now() + 91_000; // 1s past the 90s hard clamp in physics.simulate()
+        gs.settlingUntil = Date.now() + 21_000; // 1s past the 20s hard clamp in physics.simulate() (was 91s for the old 90s clamp)
         const layoutStart = Date.now();
         layoutTimerInterval = setInterval(() => {
             const msgEl = layoutOverlay?.querySelector('.dle-graph-layout-overlay-msg');

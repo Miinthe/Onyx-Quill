@@ -11,6 +11,7 @@ export const MODULE_NAME = 'deeplore-enhanced';
 // .dle-tab-label, so these English strings are reached only if that text node is missing. Kept in
 // sync with the canonical visible names (injection → "Injection", not the old "Why?").
 export const TAB_LABELS = {
+    story: 'Story',   // LOCAL PATCH (Miinthe): story trackers
     injection: 'Injection',
     browse: 'Browse',
     gating: 'Filters',
@@ -42,16 +43,17 @@ export const EXPAND_ACTIONS = {
     'gating': '/dle-context-state',
 };
 
+// the same words as Settings › How lore is picked (bug hunt 2026-10-17: Diagnostics said "AI Only")
 export const MODE_LABELS = {
-    'two-stage': 'Two-Stage',
-    'ai-only': 'AI Only',
-    'keywords-only': 'Keywords',
+    'two-stage': 'keywords, then the judge',
+    'ai-only': 'the judge only',
+    'keywords-only': 'keywords only',
 };
 
 export const MODE_DESCRIPTIONS = {
-    'two-stage': 'keywords narrow the field, then AI picks the best matches',
-    'ai-only': 'AI evaluates the full vault directly (slower, more thorough)',
-    'keywords-only': 'matching by keywords only (AI disabled)',
+    'two-stage': 'keywords narrow the field, then the judge picks the best matches',
+    'ai-only': 'the judge reads the whole vault directly (slower, more thorough)',
+    'keywords-only': 'matching by keywords only (the judge is off)',
 };
 
 export const STATUS_DESCRIPTIONS = {
@@ -105,7 +107,10 @@ export const ds = {
     browseStatusFilter: 'all',
     browseTagFilter: '',
     browseFolderFilter: '',
-    browseSort: 'priority_asc',
+    // LOCAL PATCH 2026-08-02 (Miinthe): browse defaults to a readable tree — grouped by folder,
+    // A-Z inside each. Priority ordering answers "what wins the token budget", which is the
+    // Injection tab's question, not a browsing one; the P-badge stays on every row regardless.
+    browseSort: 'alpha_asc',
     /** @type {Object<string, string>} { fieldName: selectedValue } */
     browseCustomFieldFilters: {},
 
@@ -136,7 +141,7 @@ export const ds = {
     browseNavigateVault: null,
 
     // #13 — folder grouping (session-only state; BUG-042 may migrate to accountStorage later)
-    browseFolderGrouping: false,
+    browseFolderGrouping: true,   // LOCAL PATCH (Miinthe): folder headers on by default
     /** Top-folder names currently expanded (null/empty Set means all-expanded fallback in pure helper). */
     browseExpandedFolders: new Set(),
     // #26 — batch selection

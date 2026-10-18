@@ -260,7 +260,19 @@ for (const file of srcFiles) {
     }
 }
 
-assertEqual(deleteCallSites.length, 1, 'L6: exactly one file in src/ contains an HTTP DELETE call');
+// LOCAL PATCH 2026-08-04: widened from 1 to 2 named files, NOT relaxed.
+// The cage's purpose is containment — DELETE capability must live only in places you can
+// point at, never in the general-purpose vault layer that every module imports. The
+// move-entry feature needs a vault delete, so it lives in its own module,
+// src/vault/delete-note.js, and obsidian-api.js still exports nothing of the kind
+// (asserted above). Both files are listed explicitly here so adding a third fails loudly.
+assertEqual(deleteCallSites.length, 2, 'L6: exactly two named files in src/ contain an HTTP DELETE call');
+{
+    const allowed = ['/src/prompts/prompt-api.js', '/src/vault/delete-note.js'];
+    for (const site of deleteCallSites) {
+        assert(allowed.includes(site.file), `L6: DELETE call site is one of the two allowed files (found ${site.file})`);
+    }
+}
 if (deleteCallSites.length === 1) {
     assert(
         deleteCallSites[0].file.endsWith('/prompts/prompt-api.js'),

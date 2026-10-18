@@ -41,7 +41,7 @@ import {
     applyStripDedup, trackGeneration, decrementTrackers, recordAnalytics,
 } from './src/stages.js';
 import { clearPrompts } from './core/pipeline.js';
-import { getSettings, PROMPT_TAG_PREFIX, PROMPT_TAG, invalidateSettingsCache, resolveConnectionConfig, PROXY_DEPRECATION_MODE_KEYS } from './settings.js';
+import { getSettings, PROMPT_TAG_PREFIX, PROMPT_TAG, invalidateSettingsCache, resolveConnectionConfig, PROXY_DEPRECATION_MODE_KEYS, askBeforeRemoving } from './settings.js';
 import { resolvePromptOrOverride, loadPromptsForBoot } from './src/prompts/prompt-store.js';
 import {
     vaultIndex, getWriterVisibleEntries, indexEverLoaded, indexing, buildEpoch,
@@ -78,13 +78,31 @@ import { pushEvent, consoleBuffer, networkBuffer, errorBuffer, aiCallBuffer, aiP
 import { scrubDeep } from './src/diagnostics/scrubber.js';
 import { generationBuffer } from './src/diagnostics/flight-recorder.js';
 import { runAutoSuggest, showSuggestionPopup } from './src/ai/auto-suggest.js';
-import { injectSourcesButton, showSourcesPopup, resetCartographer } from './src/ui/cartographer.js';
+import { showSourcesPopup, resetCartographer } from './src/ui/cartographer.js';
 import { loadSettingsUI, bindSettingsEvents, teardownSettingsUI } from './src/ui/settings-ui.js';
 import { registerSlashCommands } from './src/ui/commands.js';
+import { maybeOfferBranchRun, registerBranchRunCommand } from './src/branch-run.js';   // LOCAL PATCH (Miinthe, 2026-10-03): branch → new run
+import { chatStatus, effectiveFolderFilter, registerCharacterCommands, autoRun } from './src/characters.js';
+import { authorNotesForGeneration, routeOoc } from './src/mero.js';   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
+import { initMeroTab } from './src/mero-window.js';   // LOCAL PATCH (Miinthe, 2026-10-04)
+const chatIsOn = () => { try { return chatStatus().on; } catch { return true; } };
+import { registerTrackerCommands, reconcileTrackers, notifyTrackersView, syncBoardOnOpen, boardTick, readTrackers, readActiveTrackers } from './src/trackers.js';   // LOCAL PATCH (Miinthe): story trackers
+import { writerBlock, filterByStoryStep } from './src/trackers-pure.js';
+import { budgetOverlay } from './src/budget.js';   // overhaul (2026-10-17): budgets per chat / character
+import { ownInjections } from './src/own-prompts-pure.js';   // overhaul (2026-10-17): her own prompt pieces
+import { filterByBranch } from './src/forks-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-05): fork branch entries
+import { liveWriterLines, filterLiveEntries, liveBoardPins, syncLiveLocation } from './src/board-live.js';   // LOCAL PATCH (Miinthe, 2026-10-05): collections
+import { runAutoTrack } from './src/autotrack.js';   // LOCAL PATCH (Miinthe, 2026-10-03): trackers follow the story
+import { runDirector } from './src/cast.js';   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast's director
+import { pitchTurn } from './src/pitches.js';   // LOCAL PATCH (Miinthe, 2026-10-14): Mero's hidden pitches wait for their moment
+import { initCastVoice, npcTurnActive } from './src/cast-voice.js';   // LOCAL PATCH (Miinthe, 2026-10-13): NPCs' own messages
+import { initCastQueue, takeOverSend, takeOverRegen } from './src/cast-queue.js';
+import { initCastTab } from './src/cast-tab.js';
+import { initChangesTab } from './src/changes-tab.js';   // LOCAL PATCH (Miinthe, 2026-10-13): What changed
 import { dedupError, dedupWarning } from './src/toast-dedup.js';
 import { createDrawerPanel, resetDrawerState, destroyDrawerPanel } from './src/drawer/drawer.js';
 import { pushActivity } from './src/drawer/drawer-state.js';
-import { extractAiNotes, normalizeLoreGap, normalizeNotepadLine } from './src/helpers.js';
+import { extractAiNotes, normalizeLoreGap, normalizeNotepadLine, normalizePinBlock as _dlePinNorm, matchesNormalizedPinBlock as _dlePinMatch } from './src/helpers.js';   // LOCAL PATCH: pin helpers for the step filter
 import { clearSessionActivityLog, persistGaps } from './src/librarian/librarian-tools.js';
 import { injectLibrarianDropdown, removeLibrarianDropdown } from './src/librarian/librarian-ui.js';
 import { clearSessionState as clearLibrarianSessionState } from './src/librarian/librarian-session.js';
@@ -101,6 +119,11 @@ import {
     clearChatIdb,
 } from './src/verdict/verdict-store.js';
 import { tr, trf } from './src/i18n/i18n.js';
+import { followTheme, configureTheme, repaintTheme } from './src/kit/theme.js';
+import { initLegacySkin } from './src/kit/legacy-skin.js';
+import { configureKit } from './src/kit/kit.js';   // overhaul step 4: the shared parts read "Ask before removing" from settings
+import { initBar } from './src/bar/bar.js';               // overhaul 2a: the DeepLore bar above the message box
+import { initReplyMenu } from './src/reply-menu.js';      // overhaul 2a: one DeepLore ⋯ on each reply
 
 // ============================================================================
 // BUG-063: Lifecycle / teardown infrastructure.
@@ -254,6 +277,8 @@ const PM_ENTRY_IDS = ['constants', 'lore'];
 const PM_DISPLAY_NAMES_BASE = {
     'deeplore_notebook': 'DLE Author\'s Notebook',
     'deeplore_ai_notepad': 'DLE AI Notepad',
+    'deeplore_story_trackers': 'DLE Story Trackers',   // LOCAL PATCH (Miinthe, 2026-10-03)
+    'deeplore_author_notes': 'DLE Author\'s Notes (Mero)',   // LOCAL PATCH (Miinthe, 2026-10-05)
 };
 
 /**
@@ -270,6 +295,8 @@ function ensurePmEntriesRegistered() {
         `${PROMPT_TAG_PREFIX}lore`,
         'deeplore_notebook',
         'deeplore_ai_notepad',
+        'deeplore_story_trackers',   // LOCAL PATCH (Miinthe, 2026-10-03): story trackers
+        'deeplore_author_notes',     // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes
     ];
     const displayNames = {
         [`${PROMPT_TAG_PREFIX}constants`]: 'DLE Constants',
@@ -598,7 +625,8 @@ function _updatePipelineStatus(text, phaseKey = null) {
 function _renderPipelineToast(text, phaseKey = null) {
     let el = document.getElementById('dle-pipeline-status');
     if (!el) {
-        const target = document.getElementById('form_sheld') || document.body;
+        // overhaul 2a (2026-10-15): inside the DeepLore bar when it is there (src/bar/bar.js), above the message box otherwise
+        const target = document.getElementById('dle-bar-work') || document.getElementById('form_sheld') || document.body;
         if (!target) return; // No DOM at all — skip (test envs / cold-boot).
         el = document.createElement('div');
         el.id = 'dle-pipeline-status';
@@ -652,7 +680,9 @@ function _renderPipelineToast(text, phaseKey = null) {
     // _startPipelineElapsed is idempotent for the same phase and stops the timer (+ clears
     // the span text) for non-elapsed phases, so the counter never lingers on 'choosing'.
     _startPipelineElapsed(phaseKey, elapsedSpan);
-    const full = trf('dle_status_header', text); // "DeepLore: ${text}" — localizable prefix.
+    // "DeepLore: ${text}" — localizable prefix; inside DeepLore's own bar the bar says whose it is, and on a phone the
+    // prefix left only "Deep…" (Miinthe 2026-10-18)
+    const full = el.closest('#dle-bar-work') ? text : trf('dle_status_header', text);
     if (span.textContent === full) return;       // unchanged → keep spin smooth, skip re-fade.
     span.textContent = full;
     // Re-trigger the cross-fade keyframe: remove → reflow → re-add.
@@ -931,7 +961,32 @@ function swipeTargetFor(chatArr, idx) {
     return { idx, swipeId, key: `${idx}|${swipeId}` };
 }
 
+// LOCAL PATCH (Miinthe, 2026-10-03): run once per generation. SillyTavern calls the
+// interceptor once per installed manifest that names it — disabled copies included —
+// so with two DeepLore copies installed (test-user: the normal one switched off + the
+// dev copy) every reply ran the whole pipeline, the judge and the tracker helper
+// twice. Same chat array within one generation → skip the repeat.
+const _dleSeenGenerations = new WeakSet();
+
+// LOCAL PATCH (Miinthe, 2026-10-14): was the last message yours when a regenerate began (before SillyTavern deletes the reply
+// it redoes)? Then there was no reply to redo — it never came — and the helper and the director run as for a first reply.
+let _regenWithoutReply = false;
+eventSource.on(event_types.GENERATION_STARTED, (type, _o, dryRun) => {
+    if (dryRun) return;
+    try { const c = SillyTavern.getContext()?.chat; _regenWithoutReply = type === 'regenerate' && !!c?.at(-1)?.is_user; } catch { _regenWithoutReply = false; }
+});
+
 async function onGenerate(chatMessages, contextSize, abort, type) {
+    if (chatMessages && typeof chatMessages === 'object') {
+        if (_dleSeenGenerations.has(chatMessages)) return;
+        _dleSeenGenerations.add(chatMessages);
+    }
+    // LOCAL PATCH (Miinthe, 2026-10-13): an NPC is writing her own message — her prompt replaces everything (cast-voice.js),
+    // so no lore pipeline, no helper, no director for it.
+    if (npcTurnActive()) return;
+    // LOCAL PATCH (Miinthe, 2026-10-13): Send while someone is in the Cast's round plays the round (cast-queue.js) — this
+    // reply stops here, before the helper or the lore run.
+    try { if (takeOverSend(type, abort) || takeOverRegen(type, abort)) return; } catch (err) { console.warn('[DLE] cast round take-over skipped:', err?.message || err); }
     const settings = getSettings();
 
     if (type === 'quiet' || !settings.enabled) {
@@ -942,6 +997,31 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         }
         return;
     }
+
+    // LOCAL PATCH (Miinthe, 2026-10-04): DeepLore can be off for this chat or its character, and a
+    // character with no folders anywhere doesn't use it (characters.js). Off = nothing at all:
+    // no lore, no trackers, no helper — and nothing left over from an earlier reply.
+    try { autoRun(); } catch (err) { console.warn('[DLE] automatic run letter skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): a new chat gets its run letter
+    try {
+        const _cs = chatStatus();
+        if (!_cs.on) {
+            clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
+            setExtensionPrompt(PREFILL_ID, '', extension_prompt_types.NONE, 0);
+            if (settings.debugMode) console.debug('[DLE] off for this chat:', _cs.why);
+            return;
+        }
+    } catch (err) { console.warn('[DLE] character switch check failed:', err?.message || err); }
+
+    // LOCAL PATCH (Miinthe, 2026-10-05): Miinthe's [OOC: …] brackets go to Mero and are taken out of what the writer sees
+    // (the stored message stays as she wrote it). A message that is only [OOC] starts no story reply.
+    try {
+        const _ooc = routeOoc(chatMessages);
+        if (_ooc.onlyOoc && (type === 'normal' || !type)) {
+            abort(true);
+            try { toastr.info('That was only for Mero — no story reply. Her answer is in the ☆ Mero tab.', 'DeepLore', { timeOut: 6000 }); } catch { /* noop */ }
+            return;
+        }
+    } catch (err) { console.warn('[DLE] [OOC] routing skipped:', err?.message || err); }
 
     // Run BEFORE the skip guards so prefill survives stepped-thinking,
     // skipNextPipeline, and tool-call continuation generations (those still
@@ -1135,7 +1215,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // Snapshot vaultIndex at pipeline start to avoid races with background rebuilds.
         // getWriterVisibleEntries filters out lorebook-guide — those are Librarian-only and
         // must never reach the writing AI through any path.
-        const vaultSnapshot = getWriterVisibleEntries();
+        let vaultSnapshot = getWriterVisibleEntries();   // LOCAL PATCH (Miinthe): let — narrowed by tracker steps below
 
         if (vaultSnapshot.length === 0) {
             if (!indexEverLoaded) {
@@ -1211,19 +1291,67 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             }
         }
 
+        // LOCAL PATCH (Miinthe, 2026-10-03): story trackers follow the story. Before the
+        // pipeline, so the judge and the writer block already see the new state. A
+        // failure only means no move this turn — never a failed generation.
+        // LOCAL PATCH (Miinthe, 2026-10-14): a regenerate whose last message is still yours (the reply never came — e.g. the
+        // model crashed) is a first reply, not a redo: the helper and the director run for it.
+        const _turnType = type === 'regenerate' && _regenWithoutReply ? 'normal' : type;
+        try { await runAutoTrack(chatMessages, _turnType, pipelineAbort.signal); }
+        catch (err) { console.warn('[DLE] story tracker step skipped:', err?.message || err); }
+        // LOCAL PATCH (Miinthe, 2026-10-13): the Cast — after the helper said who is here, the director updates their plans
+        // and thoughts, so the writer block below already carries this turn's plans.
+        try { await runDirector(chatMessages, _turnType, pipelineAbort.signal); }
+        catch (err) { console.warn('[DLE] cast director skipped:', err?.message || err); }
+        // LOCAL PATCH (Miinthe, 2026-10-14): a 🙈 hidden pitch whose moment came goes to the writer with this reply (a hidden
+        // ⚡ flash note — before the [Author's notes] block below is built)
+        try { await pitchTurn(chatMessages, _turnType, pipelineAbort.signal); }
+        catch (err) { console.warn('[DLE] hidden pitches skipped:', err?.message || err); }
+        // LOCAL PATCH (Miinthe, 2026-10-04): the board's own turn (triggers + odds) on every reply —
+        // a failed roll may roll again after N messages even when nothing moved.
+        try { boardTick(); } catch (err) { console.warn('[DLE] board turn skipped:', err?.message || err); }
+
+        // LOCAL PATCH (Miinthe, 2026-10-03): entries linked to a tracker step other than the
+        // current one leave the snapshot — the judge never sees them, keywords can't pull
+        // them, nothing re-adds them. After runAutoTrack, so a move this turn counts.
+        // Pinned entries stay (her explicit choice wins).
+        try {
+            // LOCAL PATCH (Miinthe, 2026-10-05): + the board's pins (the place the scene is at)
+            let _boardPinsF = [];
+            try { _boardPinsF = liveBoardPins(); } catch { /* no board */ }
+            const _pins = [...(chat_metadata.deeplore_pins || []), ..._boardPinsF].map(_dlePinNorm);
+            // An ended tracker (forks-pure.js) keeps its entries on the board but sends none (Miinthe, 2026-10-05).
+            const _all = readTrackers(), _active = new Set(readActiveTrackers().filter(t => !t.ended).map(t => t.name));   // engine on v2, step 2: read from v2
+            vaultSnapshot = filterByStoryStep(vaultSnapshot, _all, e => _pins.some(pb => _dlePinMatch(pb, e)), t => _active.has(t.name));
+            // LOCAL PATCH (Miinthe, 2026-10-05): entries named on a fork branch exist once that branch was taken.
+            vaultSnapshot = filterByBranch(vaultSnapshot, _all, e => _pins.some(pb => _dlePinMatch(pb, e)), t => _active.has(t.name));
+            // LOCAL PATCH (Miinthe, 2026-10-05): entries linked on an item exist once it is found / kept.
+            vaultSnapshot = filterLiveEntries(vaultSnapshot, e => _pins.some(pb => _dlePinMatch(pb, e)));
+        } catch (err) { console.warn('[DLE] story-step filter skipped:', err?.message || err); }
+
+        // LOCAL PATCH (Miinthe, 2026-10-05): places — "here" sets the location filter before gating reads it.
+        try { syncLiveLocation(); } catch (err) { console.warn('[DLE] board location skipped:', err?.message || err); }
         // ctx is passed to pipeline (pre-filter) AND post-pipeline stages (applyContextualGating).
         const ctx = chat_metadata.deeplore_context || {};
 
-        const pins = chat_metadata.deeplore_pins || [];
+        // LOCAL PATCH (Miinthe, 2026-10-05): the board pins the place the scene is at — for this
+        // generation only, added to the chat's own pins (never written into them).
+        let _boardPins = [];
+        try { _boardPins = liveBoardPins(); } catch { /* no board */ }
+        const pins = [...(chat_metadata.deeplore_pins || []), ..._boardPins];
         const blocks = chat_metadata.deeplore_blocks || [];
-        const folderFilter = chat_metadata.deeplore_folder_filter || null;
+        // LOCAL PATCH (Miinthe, 2026-10-04): the character's base folders + its run's + the chat's own (characters.js)
+        let folderFilter = chat_metadata.deeplore_folder_filter || null;
+        try { folderFilter = effectiveFolderFilter(); } catch (err) { console.warn('[DLE] character folders skipped:', err?.message || err); }
+        // overhaul (2026-10-17): this chat's budget — the most specific wins: the chat's own → its character's → Everywhere
+        const _budget = budgetOverlay(settings);
 
         const _pipelineStartMs = performance.now();
         // C3: runPipeline emits canonical PHASE KEYS ('prefilter', 'consulting') — set the
         // phase deterministically and derive the toast label from the same map. No more
         // `text.includes('Consulting')` sniff (broke on relabel/localization).
         const _pipelineOnStatus = (phase) => { setPipelinePhase(phase); _updatePipelineStatus(pipelineLabelFor(phase), phase); };
-        const { finalEntries: pipelineEntries, matchedKeys, trace } = await runPipeline(chatMessages, vaultSnapshot, ctx, { pins, blocks, folderFilter, signal: pipelineAbort.signal, onStatus: _pipelineOnStatus, genId });
+        const { finalEntries: pipelineEntries, matchedKeys, trace } = await runPipeline(chatMessages, vaultSnapshot, ctx, { pins, blocks, folderFilter, signal: pipelineAbort.signal, onStatus: _pipelineOnStatus, genId, budget: _budget });
         trace.totalMs = Math.round(performance.now() - _pipelineStartMs);
         trace.ensureIndexFreshMs = _indexFreshMs;
         if (pipelineAbort.signal.aborted) {
@@ -1407,8 +1535,9 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
 
         // Stage 6: format with budget, grouped by injection position.
         // BUG-014: use the captured `settings` object so the whole pipeline sees consistent values.
+        // overhaul (2026-10-17): the budget of this chat — its own, its character's, or Everywhere (src/budget-pure.js)
         const { groups, count: injectedCount, totalTokens, acceptedEntries } = timeStage('formatGroupMs',
-            () => formatAndGroup(postDedup, settings, PROMPT_TAG_PREFIX));
+            () => formatAndGroup(postDedup, { ...settings, ..._budget }, PROMPT_TAG_PREFIX));
 
         injectedEntries = acceptedEntries;
 
@@ -1435,7 +1564,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 outlet: !!e.outlet,
             }));
             trace.totalTokens = totalTokens;
-            trace.budgetLimit = settings.maxTokensBudget;
+            trace.budgetLimit = _budget.maxTokensBudget ?? settings.maxTokensBudget;
             // B2: pre-cap positional candidate count. budgetCut holds positional entries
             // dropped by the entry-count cap OR the token budget (outlets are never cut),
             // so positionalCandidates = positional injected + budgetCut. The header entries
@@ -1477,7 +1606,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         if (groups.length > 0) {
             clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
             if (settings.injectionMode === 'prompt_list' && promptManager) {
-                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad']) {
+                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
                     const pmEntry = promptManager.getPromptById(id);
                     if (pmEntry) pmEntry.content = '';
                 }
@@ -1540,7 +1669,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // No lore groups → still clear stale prompts from the previous generation.
             clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
             if (settings.injectionMode === 'prompt_list' && promptManager) {
-                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad']) {
+                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
                     const pmEntry = promptManager.getPromptById(id);
                     if (pmEntry) pmEntry.content = '';
                 }
@@ -1575,6 +1704,21 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             }
             setExtensionPrompt(id, content, position, depth, allowWIScan, role);
         };
+
+        // LOCAL PATCH (Miinthe, 2026-10-02): story trackers tell the writer where the
+        // story stands — current step only, never the next. Always called, so an
+        // empty string clears the block once the last tracker is removed.
+        let _boardLines = [];
+        try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[DLE] board lines skipped:', err?.message || err); }
+        _injectAuxPrompt('deeplore_story_trackers', writerBlock(readActiveTrackers(), _boardLines),   // engine on v2, step 2: read from v2
+            settings.storyBlockPosition ?? extension_prompt_types.IN_CHAT, settings.storyBlockDepth ?? 4, settings.storyBlockRole ?? extension_prompt_roles.SYSTEM);   // overhaul (2026-10-17): its place is a setting (was fixed: in chat, depth 4, system)
+        // overhaul (2026-10-17): her own prompt pieces (Settings › Prompts › + Your own prompt), each where it says
+        try { for (const o of ownInjections(settings.ownPrompts)) setExtensionPrompt(o.slot, o.text, o.position, o.depth, false, o.role); }
+        catch (err) { console.warn('[DLE] own prompts skipped:', err?.message || err); }
+        // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes Miinthe kept — one [Author's notes] block close to the reply
+        // (models follow instructions best there). Always called, so an empty string clears it.
+        _injectAuxPrompt('deeplore_author_notes', authorNotesForGeneration(type),
+            extension_prompt_types.IN_CHAT, 1, extension_prompt_roles.SYSTEM);
 
         // Author's Notebook — independent of entry pipeline.
         if (settings.notebookEnabled && chat_metadata?.deeplore_notebook?.trim()) {
@@ -1825,12 +1969,12 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 pmContents: {},
             };
             for (const key of Object.keys(extension_prompts)) {
-                if (key.startsWith(PROMPT_TAG_PREFIX) || key === 'deeplore_notebook' || key === 'deeplore_ai_notepad') {
+                if (key.startsWith(PROMPT_TAG_PREFIX) || key === 'deeplore_notebook' || key === 'deeplore_ai_notepad' || key === 'deeplore_story_trackers' || key === 'deeplore_author_notes') {
                     _promptsSnapshot.extPrompts[key] = extension_prompts[key];
                 }
             }
             if (promptManager) {
-                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad']) {
+                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
                     const pmEntry = promptManager.getPromptById(id);
                     if (pmEntry) _promptsSnapshot.pmContents[id] = pmEntry.content;
                 }
@@ -1846,7 +1990,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 }
             }
             // Also clear aux prompts (notebook, notepad) — they're in the agentic system prompt too
-            for (const auxId of ['deeplore_notebook', 'deeplore_ai_notepad']) {
+            for (const auxId of ['deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
                 if (extension_prompts[auxId]) delete extension_prompts[auxId];
                 if (promptManager) {
                     const pmEntry = promptManager.getPromptById(auxId);
@@ -2234,7 +2378,42 @@ async function _doInit() {
 
         loadSettingsUI();
         bindSettingsEvents(buildIndex);
+        // overhaul step 4: Settings → Interface → Ask before removing (= the board's Edit ▸ Ask before removing) makes every removal ask
+        // Settings › Interface › Look: follow SillyTavern's theme, or always light / dark
+        try { configureTheme({ scheme: () => { const v = getSettings().dkTheme; return v === 'light' || v === 'dark' ? v : null; } }); eventSource.on(event_types.SETTINGS_UPDATED, () => repaintTheme()); } catch (err) { console.warn('[DLE] theme choice not wired', err); }
+        // "Don't ask me again" answers are kept with the settings (settings.kitNoAsk), so they survive a reload
+        try { configureKit({ alwaysAsk: () => askBeforeRemoving(), get: k => getSettings().kitNoAsk?.[k], set: (k, v) => { const st = getSettings(); st.kitNoAsk = { ...(st.kitNoAsk || {}), [k]: v }; saveSettingsDebounced(); } }); } catch (err) { console.warn('[DLE] shared parts: ask-before-removing not wired', err); }
         registerSlashCommands();
+        // LOCAL PATCH (Miinthe, 2026-10-03): branch → new run, and story trackers.
+        // One coordinated CHAT_CHANGED step, deferred so the chat and its metadata
+        // have settled: a branch opened for the first time is offered as its own run;
+        // if Miinthe starts it, its trackers roll back to the branch point without a second
+        // question; otherwise (an ordinary chat, or a branch she declined) trackers ask
+        // first whenever they are further along than the chat. A delete rewinds
+        // trackers at once.
+        registerBranchRunCommand();
+        registerTrackerCommands();
+        registerCharacterCommands();   // LOCAL PATCH (Miinthe, 2026-10-04): characters own their folders (WIP commands)
+        try { initMeroTab(); } catch (err) { console.warn('[DLE] Mero tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
+        try { initBar(); } catch (err) { console.warn('[DLE] bar skipped:', err?.message || err); }   // overhaul 2a (2026-10-15)
+        try { initReplyMenu(); } catch (err) { console.warn('[DLE] reply menu skipped:', err?.message || err); }   // overhaul 2a
+        try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
+        // LOCAL PATCH (Miinthe, 2026-10-04): Re-evaluate + swipe (WIP command; its real home is the DeepLore bar)
+        import('./src/reevaluate.js').then(m => m.registerReevaluateCommand()).catch(err => console.warn('[DLE] re-evaluate command not registered:', err?.message));
+        _registerEs(event_types.MESSAGE_DELETED, () => {
+            reconcileTrackers({ prune: true }).catch(err => console.warn('[DLE] tracker rewind failed:', err?.message));
+        });
+        _registerEs(event_types.CHAT_CHANGED, () => {
+            setTimeout(async () => {
+                let startedRun = false;
+                try { startedRun = await maybeOfferBranchRun(); } catch (err) { console.warn('[DLE] branch-run check failed:', err?.message); }
+                // LOCAL PATCH (Miinthe, 2026-10-03): storyboards — migrate, apply the character's default, or sync.
+                try { syncBoardOnOpen(); } catch (err) { console.warn('[DLE] storyboard sync failed:', err?.message); }
+                reconcileTrackers({ confirm: !startedRun })
+                    .catch(err => console.warn('[DLE] tracker check failed:', err?.message))
+                    .finally(() => notifyTrackersView());
+            }, 600);
+        });
         setupSyncPolling(buildIndex, buildIndexWithReuse);
 
         // Boot-time prompt cache load. Pulls vault overrides if a vault is
@@ -2452,7 +2631,7 @@ async function _doInit() {
                 clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
                 const _settings = getSettings();
                 if (_settings.injectionMode === 'prompt_list' && promptManager) {
-                    for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad']) {
+                    for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
                         const pmEntry = promptManager.getPromptById(id);
                         if (pmEntry) pmEntry.content = '';
                     }
@@ -2585,7 +2764,7 @@ async function _doInit() {
                             saveMetadataDebounced();
                         }
                     }
-                    injectSourcesButton(messageId);
+                    // overhaul 2a (2026-10-15): no separate Why? button; Why these entries is in the reply's ⋯ (src/reply-menu.js)
                 }
             } catch (err) { console.warn('[DLE] Cartographer render-handler failed:', err?.message); }
 
@@ -2617,7 +2796,7 @@ async function _doInit() {
 
             // --- Session Scribe auto-trigger ---
             try {
-                if (settings.enabled && settings.scribeEnabled && settings.scribeInterval > 0) {
+                if (settings.enabled && settings.scribeEnabled && settings.scribeInterval > 0 && chatIsOn()) {
                     const newMessages = chat.length - lastScribeChatLength;
                     if (newMessages >= settings.scribeInterval && !scribeInProgress) {
                         // Surface failures via dedup'd toast — silent fire-and-forget would
@@ -2636,7 +2815,7 @@ async function _doInit() {
 
             // --- Auto Lorebook every N messages ---
             try {
-                if (settings.enabled && settings.autoSuggestEnabled && settings.autoSuggestInterval > 0) {
+                if (settings.enabled && settings.autoSuggestEnabled && settings.autoSuggestInterval > 0 && chatIsOn()) {
                     setAutoSuggestMessageCount(autoSuggestMessageCount + 1);
                     if (autoSuggestMessageCount >= settings.autoSuggestInterval) {
                         setAutoSuggestMessageCount(0);
@@ -3144,13 +3323,7 @@ async function _doInit() {
                         }
                     }
 
-                    if (settings.showLoreSources) {
-                        for (let i = start; i < chat.length; i++) {
-                            if (chat[i]?.extra?.deeplore_sources) {
-                                injectSourcesButton(i);
-                            }
-                        }
-                    }
+                    // overhaul 2a (2026-10-15): the Why? button became an item in the reply's ⋯ (src/reply-menu.js)
 
                     if (settings.librarianEnabled && settings.librarianShowToolCalls) {
                         for (let i = start; i < chat.length; i++) {
@@ -3264,6 +3437,10 @@ async function _doInit() {
 }
 
 jQuery(async function () {
+    // Overhaul step 1: load the shared parts' stylesheet and keep their colors in step with SillyTavern's theme.
+    try { followTheme(document, { frame: true }); } catch (err) { console.warn('[DLE] shared parts: theme colors not loaded', err); }
+    // DeepLore's older pop-ups (graph, Browse, Why, health, notebooks, wizard, confirms…) in the new look
+    try { initLegacySkin(); } catch (err) { console.warn('[DLE] older pop-ups: new look not applied', err); }
     // Boot-MED-1 (2026-05-22): promise-based init latch.
     // If a second jQuery dispatch fires while the first init is mid-await (HMR,
     // duplicate dispatch, fast double-load), await the in-flight init and return

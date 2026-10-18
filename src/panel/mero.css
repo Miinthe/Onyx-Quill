@@ -1,0 +1,25 @@
+/* Overhaul — the side panel's Mero tab (src/panel/mero-view.js), side panel + bar v13. Mero's talk itself is her
+   own page (mero/mero.html); this is only what lives in SillyTavern's page. Colors: --dk-* (src/kit/kit.css). */
+
+/* the small dot on the Mero tab while she has something for you; amber while the reply waits */
+#deeplore-panel #dle-tab-mero { position: relative; }
+#deeplore-panel #dle-tab-mero > .dle-tab-dot { position: absolute; top: 6px; right: calc(50% - 14px); width: 7px; height: 7px; border-radius: 50%; background: var(--dk-mero); box-shadow: 0 0 0 2px var(--dk-page); pointer-events: none; }
+#deeplore-panel #dle-tab-mero > .dle-tab-dot.hold { background: var(--dk-wait); }
+/* the glow (a big moment to talk about) in Mero's color, not a fixed pink */
+#deeplore-panel #dle-tab-mero.dle-mero-glow { box-shadow: inset 0 0 0 2px var(--dk-mero), 0 0 12px color-mix(in oklab, var(--dk-mero) 60%, transparent); border-radius: 8px; }
+
+/* her box: no padding around it, fitted to the panel's bottom edge by fitMount (src/mero-window.js) */
+#deeplore-panel #dle-panel-mero { padding: 0; }
+#deeplore-panel #dle-panel-mero .dle-mero-mount { min-height: 300px; overflow: hidden; }
+#deeplore-panel #dle-panel-mero .dle-mero-frame { background: var(--dk-page); }
+
+/* while she is popped out, the tab says where she is */
+#deeplore-panel #dle-panel-mero .dle-mero-away { color: var(--dk-ink); font: var(--dk-fs)/1.45 var(--dk-f-body); }
+#deeplore-panel #dle-panel-mero .dle-mero-away .dle-mero-back { border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); }
+
+/* her own window (pop-out) in DeepLore's colors */
+#dle-mero-float { background: var(--dk-page); color: var(--dk-ink); border: 1px solid var(--dk-line); box-shadow: var(--dk-shadow); }
+#dle-mero-float .dle-mero-float-head { background: var(--dk-menu); border-bottom-color: var(--dk-line); font-family: var(--dk-f-body); }
+#dle-mero-float .dle-mero-float-head b { color: var(--dk-mero); font-family: var(--dk-f-display); }
+#dle-mero-float .dle-mero-float-head span { color: var(--dk-muted); opacity: 1; }
+#dle-mero-float .dle-mero-float-head button { border-color: var(--dk-line); background: var(--dk-page); color: var(--dk-ink); }

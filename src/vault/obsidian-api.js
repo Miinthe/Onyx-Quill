@@ -46,6 +46,22 @@ export function validateObsidianHost(host) {
     }
     // Allow named localhost.
     if (raw === 'localhost' || raw === 'localhost.localdomain') return;
+    // LOCAL PATCH (tailnet support): allow Tailscale MagicDNS names, served via
+    // `tailscale serve` -> local REST API. Upstream blocks these, so the vault is
+    // unreachable from any device that isn't on the LAN (phone, tablet, laptop away
+    // from home). Re-apply after DeepLore updates.
+    //
+    // Why a whole-suffix rule rather than one hardcoded hostname: a `*.ts.net` MagicDNS
+    // name only resolves inside the tailnet that owns it — there is no public DNS for
+    // it, so allowing the suffix does not widen what an outside host can reach. It also
+    // keeps this file free of any specific machine's name, which matters because this
+    // patch set is mirrored to a git remote.
+    //
+    // Deliberately NOT relaxed: the CGNAT 100.64.0.0/10 block further down still stands.
+    // Tailscale assigns addresses from that range, but so do ISPs, and a bare 100.x
+    // address carries none of the ownership proof a MagicDNS name does. Reach the vault
+    // by its MagicDNS name, not its tailnet IP.
+    if (/^[a-z0-9-]+(\.[a-z0-9-]+)*\.ts\.net$/.test(raw)) return;
     // Allow IPv6 loopback and private ranges.
     if (raw === '::1') return;
     if (/^fd[0-9a-f]{2}:/.test(raw)) return;        // ULA fd00::/8
@@ -390,6 +406,64 @@ export async function listAllFiles(host, port, apiKey, directory = '', depth = 0
 }
 
 /**
+ * LOCAL PATCH 2026-08-03 (Miinthe): list every FOLDER in the vault, including empty ones.
+ *
+ * `listAllFiles` above recurses through directories but returns only files, so a folder
+ * containing no notes leaves no trace. The index's `folderList` is derived from entry
+ * paths and inherits the same blind spot — which meant the move picker could not offer
+ * `00 Inbox/Review`, an empty folder that exists precisely to receive things.
+ *
+ * Hidden directories (leading `.`) are skipped: `.obsidian`, `.trash`, `.stfolder` and
+ * friends are not lore destinations.
+ *
+ * Failures are swallowed per-branch rather than thrown — a partial folder list is far
+ * better than a picker that won't open, and the caller unions this with `folderList`
+ * anyway, so anything that actually holds entries is present regardless.
+ *
+ * @param {string} host
+ * @param {number} port
+ * @param {string} apiKey
+ * @param {string} [directory] - vault-relative folder to start from ('' = vault root)
+ * @param {number} [depth]
+ * @param {boolean} [useHttps]
+ * @returns {Promise<string[]>} vault-relative folder paths, unsorted
+ */
+export async function listAllFolders(host, port, apiKey, directory = '', depth = 0, useHttps = false) {
+    if (depth >= 20) return [];
+    const urlPath = directory ? `/vault/${encodeVaultPath(directory)}/` : '/vault/';
+    let res;
+    try {
+        res = await obsidianFetch({ host, port, apiKey, https: useHttps, path: urlPath });
+    } catch {
+        return [];
+    }
+    if (res.status !== 200) return [];
+
+    let listing;
+    try { listing = JSON.parse(res.data); } catch { return []; }
+
+    const files = (Array.isArray(listing.files) ? listing.files : []).filter(f => typeof f === 'string');
+    const prefix = directory ? directory + '/' : '';
+    const here = [];
+    for (const f of files) {
+        if (!f.endsWith('/')) continue;
+        const name = f.slice(0, -1);
+        if (!name || name.startsWith('.')) continue;
+        here.push(prefix + name);
+    }
+
+    const out = [...here];
+    const BATCH = 10;
+    for (let i = 0; i < here.length; i += BATCH) {
+        const settled = await Promise.allSettled(
+            here.slice(i, i + BATCH).map(d => listAllFolders(host, port, apiKey, d, depth + 1, useHttps)),
+        );
+        for (const r of settled) if (r.status === 'fulfilled') out.push(...r.value);
+    }
+    return out;
+}
+
+/**
  * Test connection to the Obsidian REST API.
  * @param {number} port
  * @param {string} apiKey
@@ -615,6 +689,7 @@ export async function writeNote(host, port, apiKey, filename, content, useHttps 
         return { ok: false, error: err.message };
     }
 }
+
 
 /**
  * Read a single vault note's raw markdown.

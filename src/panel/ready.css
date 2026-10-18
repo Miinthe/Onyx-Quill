@@ -1,0 +1,18 @@
+/* Overhaul — "Ready": this reply's numbers and health (src/panel/ready-view.js), mock-up v13 spot 3. */
+.dle-rv { display: grid; gap: 8px; }
+.dle-rv h4 { margin: 2px 0 0; }
+.dle-rv p { margin: 0; }
+.dle-rv-meters { display: grid; gap: 9px; }
+.dle-rv-m { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: var(--dk-fs); }
+.dle-rv-m b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dle-rv-bar { grid-column: 1 / 3; height: 5px; border-radius: 3px; background: var(--dk-line); overflow: hidden; }
+.dle-rv-bar i { display: block; height: 100%; background: var(--dk-muted); }
+.dle-rv-m.wait .dle-rv-bar i { background: var(--dk-wait); }
+.dle-rv-m.bad .dle-rv-bar i { background: var(--dk-bad); }
+.dle-rv-health { display: grid; gap: 1px; }
+.dle-rv-health .dk-row { min-height: 32px; }
+.dle-rv-health .dk-btn { justify-self: start; margin: 4px 8px; }
+.dle-rv .dle-activity-feed { font-size: var(--dk-fs-s); }
+.dle-rv-session:empty { display: none; }
+/* today's pieces stay in the pop-up, hidden; this view reads them */
+.dle-readypop > #dle-drawer-status[hidden], .dle-readypop > #dle-drawer-footer[hidden] { display: none !important; }

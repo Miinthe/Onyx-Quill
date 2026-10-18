@@ -4,6 +4,8 @@
 import { getContext } from '../../../../../extensions.js';
 import { chat_metadata } from '../../../../../../script.js';
 import { getPrompt, resolvePromptOrOverride } from '../prompts/prompt-store.js';
+import { writerBlock } from '../trackers-pure.js';
+import { readActiveTrackers } from '../trackers.js';   // LOCAL PATCH (Miinthe, 2026-10-03)
 
 /**
  * Indexed-placeholder interpolation: `interp("${0} of ${1}", "A", "B")` → `"A of B"`.
@@ -108,6 +110,14 @@ export function buildSystemPromptForLoop(pipelineContext, injectedTitles, settin
         if (notebook?.trim()) {
             sections.push(fence('notebook', getPrompt('AGENTIC_FENCE_NOTEBOOK_HEADER'), notebook, nonce));
         }
+    }
+
+    // LOCAL PATCH (Miinthe, 2026-10-03): story trackers — where the story stands, current
+    // step only. The normal path injects this as its own prompt block; when the
+    // Librarian writes the reply that block is cleared, so it travels here instead.
+    {
+        const block = writerBlock(readActiveTrackers());   // engine on v2, step 2: read from v2
+        if (block) sections.push(block);
     }
 
     // Section 6: AI Notepad

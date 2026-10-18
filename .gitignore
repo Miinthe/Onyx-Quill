@@ -16,6 +16,13 @@
 !CHANGELOG-archive.md
 
 # Extension source
+# LOCAL PATCH (Miinthe, 2026-10-05): the storyboard window (+ the page that plays DeepLore for browser tests)
+!board/
+# LOCAL PATCH (Miinthe, 2026-10-05): Mero's tab page
+!mero/
+!mero/**
+!board/board.html
+!board/_harness.html
 !index.js
 !settings.js
 !manifest.json

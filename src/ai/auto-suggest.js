@@ -7,14 +7,37 @@ import {
     saveSettingsDebounced,
     eventSource,
     event_types,
+    chat_metadata,
 } from '../../../../../../script.js';
 import { escapeHtml } from '../../../../../utils.js';
+import { getContext } from '../../../../../extensions.js';
 import { callGenericPopup, POPUP_TYPE } from '../../../../../popup.js';
 import { getSettings, resolveConnectionConfig, resolveWriteVault } from '../../settings.js';
 import { writeNote } from '../vault/obsidian-api.js';
 import { buildAiChatContext, yamlEscape, classifyError } from '../../core/utils.js';
 import { callAI, isExcludedFromBreaker } from './ai.js';
 import { extractAiResponseClient, stripObsidianSyntax } from '../helpers.js';
+
+// LOCAL PATCH (Miinthe, 2026-07-28): stamp the chat's declared gating context onto entries
+// born from play, so play-born lore is world-walled and run-scoped without hand-tagging.
+// DeepLore itself writes no context fields. Re-apply after a DeepLore update.
+// LOCAL PATCH 2026-08-03: stamp `character` instead of the retired `world`.
+//
+// Both write paths below call this with ['character', 'instance']. It used to be
+// ['world', 'instance'], which is now dead weight: the vault's filtering moved to
+// folders and `world:` was stripped from every entry, so the field it wrote gates
+// nothing. `character` is what the chat actually filters on, and it was the one
+// piece of context a suggested entry never carried — which is why the Auto Lorebook
+// prompt had to ask the model to write the character name into the entry BODY as a
+// bookkeeping line for the curator to delete by hand. Writing it to frontmatter here
+// is deterministic (no AI involved), lands where gating can read it, and removes that
+// manual step. Mirrors what Session Scribe already does.
+// LOCAL PATCH 2026-10-03: the stamp now lives in src/ai/run-stamp-pure.js (runStampYaml),
+// which also adds `date:` so a later branch can tell which entries came before it.
+
+import { runStampYaml } from './run-stamp-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-03): run stamp + date
+import { newEntryFolder, entryMarks, marksYaml } from '../new-entry-pure.js';   // overhaul (2026-10-17): where new entries go, their marks
+import { chatStatus } from '../characters.js';
 import { getWriterVisibleEntries, chatEpoch, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
 import { ensureIndexFresh, buildIndex } from '../vault/vault.js';
 import { pushEvent } from '../diagnostics/interceptors.js';
@@ -173,8 +196,10 @@ export async function runAutoSuggest() {
  * Shared by the review-popup path and the skip-review batch path.
  * @returns {{ filename: string, fileContent: string, safeTitle: string }}
  */
-function _buildSuggestionFile(s, settings) {
-    const folder = settings.autoSuggestFolder || '';
+function _buildSuggestionFile(s, settings, place = null) {
+    // overhaul (2026-10-17): where it goes (by what it's about, or always the Target folder) and its marks
+    const folder = place ? newEntryFolder({ type: s.type, mode: settings.newEntryPlacement, target: settings.autoSuggestFolder, base: place.base, run: place.run }).folder : (settings.autoSuggestFolder || '');
+    const marks = place && settings.newEntryMark !== false ? entryMarks({ chat: place.chat, message: place.message }) : null;
     let safeTitle = s.title.replace(/[<>:"/\\|?*]/g, '_');
     safeTitle = safeTitle.replace(/^\.+|\.+$/g, '');
     safeTitle = safeTitle.trimEnd();
@@ -183,25 +208,37 @@ function _buildSuggestionFile(s, settings) {
     const filename = folder ? `${folder}/${safeTitle}.md` : `${safeTitle}.md`;
     const keysYaml = (s.keys || []).map(k => `  - ${yamlEscape(k)}`).join('\n');
     const safeContent = stripObsidianSyntax(s.content || '').replace(/^---$/gm, '- - -');
+    const tagLines = [settings.lorebookTag, ...(marks?.tags || [])].map(t => `  - ${t}`).join('\n');
     const fileContent = `---
 type: ${yamlEscape(s.type || 'lore')}
 priority: 50
 tags:
-  - ${settings.lorebookTag}
+${tagLines}
 keys:
 ${keysYaml}
 summary: "${(s.summary || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"
----
+${marksYaml(marks)}${runStampYaml(chat_metadata?.deeplore_context, ['character', 'instance'])}---
 # ${s.title}
 
 ${safeContent}`;
-    return { filename, fileContent, safeTitle };
+    return { filename, fileContent, safeTitle, folder };
+}
+
+/**
+ * overhaul (2026-10-17): what the open chat says about where new entries go — its character's base folders, its
+ * run's folders, the chat's name and the latest message (for the marks). Taken when the suggestions are shown.
+ */
+function placeHere() {
+    try {
+        const cs = chatStatus();
+        return { base: cs.setup?.folders || [], run: cs.run ? cs.setup?.runs?.[cs.run]?.folders || [] : [], chat: getContext()?.getCurrentChatId?.() || '', message: Math.max(0, (chat?.length || 1) - 1) };
+    } catch { return { base: [], run: [], chat: '', message: null }; }
 }
 
 /** Write a single suggestion to the vault; returns outcome shape. */
-async function writeSuggestionToVault(s, settings) {
+async function writeSuggestionToVault(s, settings, place = null) {
     try {
-        const { filename, fileContent } = _buildSuggestionFile(s, settings);
+        const { filename, fileContent } = _buildSuggestionFile(s, settings, place);
         const suggestVault = resolveWriteVault('autoSuggest', settings);
         const data = await writeNote(suggestVault.host, suggestVault.port, suggestVault.apiKey, filename, fileContent, !!suggestVault.https);
         if (data?.ok) return { ok: true, title: s.title, filename };
@@ -227,6 +264,7 @@ export async function showSuggestionPopup(suggestions) {
     const popupEpoch = chatEpoch;
 
     const settings = getSettings();
+    const place = placeHere();
 
     if (settings.autoSuggestSkipReview) {
         // Continue-on-failure: write all, summarize at end.
@@ -237,7 +275,7 @@ export async function showSuggestionPopup(suggestions) {
                 toastr.warning(tr('dle_suggest_toast_chat_changed'), 'DeepLore');
                 break;
             }
-            const r = await writeSuggestionToVault(s, settings);
+            const r = await writeSuggestionToVault(s, settings, place);
             results.push(r);
         }
         const successes = results.filter(r => r.ok);
@@ -279,6 +317,7 @@ export async function showSuggestionPopup(suggestions) {
                 <div class="dle-text-sm dle-mb-1">
                     <strong>Summary:</strong> ${escapeHtml(s.summary || '')}
                 </div>
+                <div class="dle-text-xs dle-muted dle-mb-1">Goes to: ${escapeHtml(_buildSuggestionFile(s, settings, place).folder || 'the top of the vault')}</div>
                 <details>
                     <summary class="dle-text-sm dle-cursor-pointer">Content preview</summary>
                     <div class="dle-preview dle-preview--short dle-mt-1">${escapeHtml(s.content || '')}</div>
@@ -329,32 +368,8 @@ export async function showSuggestionPopup(suggestions) {
                     const card = document.getElementById(`dle-suggest-${idx}`);
                     if (!card) { this.disabled = false; return; }
 
-                    const folder = settings.autoSuggestFolder || '';
-                    // Filesystem-safe title (same pattern as Scribe).
-                    let safeTitle = s.title.replace(/[<>:"/\\|?*]/g, '_');
-                    safeTitle = safeTitle.replace(/^\.+|\.+$/g, '');
-                    safeTitle = safeTitle.trimEnd();
-                    if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeTitle)) safeTitle = '_' + safeTitle;
-                    if (!safeTitle) safeTitle = 'Untitled';
-                    const filename = folder
-                        ? `${folder}/${safeTitle}.md`
-                        : `${safeTitle}.md`;
-
-                    const keysYaml = (s.keys || []).map(k => `  - ${yamlEscape(k)}`).join('\n');
-                    // Strip Obsidian syntax + neutralize bare YAML delimiters in AI content.
-                    const safeContent = stripObsidianSyntax(s.content || '').replace(/^---$/gm, '- - -');
-                    const fileContent = `---
-type: ${yamlEscape(s.type || 'lore')}
-priority: 50
-tags:
-  - ${settings.lorebookTag}
-keys:
-${keysYaml}
-summary: "${(s.summary || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"
----
-# ${s.title}
-
-${safeContent}`;
+                    // overhaul (2026-10-17): the same file as the skip-review path (where it goes, its marks)
+                    const { filename, fileContent } = _buildSuggestionFile(s, settings, place);
 
                     try {
                         const suggestVault = resolveWriteVault('autoSuggest', settings);

@@ -195,11 +195,12 @@ export function initFocus(gs, dbg) {
     function updateHints(focusMode) {
         const el = document.getElementById('dle-graph-hints');
         if (!el) return;
+        const touch = window.matchMedia?.('(pointer: coarse)').matches;   // a phone / iPad: the touch words (bug hunt 2026-10-17)
         if (focusMode) {
             // Focus exit: Esc (intercepted before it reaches ST's popup-close) or `e`. See graph-events.js keydown handler.
-            el.textContent = tr('dle_graph_hints_focus');
+            el.textContent = tr(touch ? 'dle_graph_hints_focus_touch' : 'dle_graph_hints_focus');
         } else {
-            el.textContent = tr('dle_graph_hints_normal');
+            el.textContent = tr(touch ? 'dle_graph_hints_touch' : 'dle_graph_hints_normal');
         }
     }
 

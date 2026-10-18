@@ -1127,9 +1127,12 @@ function wireDoneActions() {
                     import('./settings-ui.js').then(m => m.openSettingsPopup?.()).catch(() => {});
                     break;
                 case 'meet-emma':
-                    import('../librarian/librarian-review.js')
-                        .then(m => m.openLibrarianPopup(null, { mode: 'guide-firstrun' }))
-                        .catch(err => console.warn('[DLE] Meet Emma open failed:', err));
+                    // "Meet Mero" (Miinthe, 2026-10-16: the wizard says Mero, not the old Librarian / Emma): open Mero's tab
+                    try {
+                        const pnl = document.getElementById('deeplore-panel');
+                        if (pnl && !pnl.classList.contains('openDrawer')) document.querySelector('#deeploreDrawerIcon')?.closest('.drawer-toggle')?.click();
+                        setTimeout(() => document.getElementById('dle-tab-mero')?.click(), 150);
+                    } catch (err) { console.warn('[DLE] Meet Mero open failed:', err); }
                     break;
             }
         }, 300);

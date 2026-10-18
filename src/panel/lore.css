@@ -1,0 +1,120 @@
+/* Overhaul — the side panel's Lore tab (src/panel/lore-view.js), drawn to the mock-up (side panel + bar v13). Theme colors only (--dk-*). */
+
+/* today's Injection and Browse panels stay in the page (their renderers still work out the lists), hidden */
+#deeplore-panel.dle-lv-on #dle-panel-injection,
+#deeplore-panel.dle-lv-on #dle-panel-browse { display: none !important; }
+
+.dle-lv { display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 14px; }
+.dle-lv[hidden], .dle-lv [hidden] { display: none !important; }
+.dle-lv > * { flex-shrink: 0; }
+.dle-lv-body, .dle-lv-top { display: flex; flex-direction: column; gap: 8px; }
+.dle-lv-top:empty { display: none; }
+
+/* the bar and tool lines */
+.dle-lv-vtools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dle-lv-grow { flex: 1 0 auto; white-space: nowrap; }
+.dle-lv-vtools > .dk-btn.dk-quiet { padding: 0 6px; gap: 5px; }
+.dle-lv-seg { flex: 1; min-width: 0; }
+.dle-lv-seg button { min-width: 0; padding: 0 6px; overflow: hidden; text-overflow: ellipsis; }
+.dle-lv-new.dk-btn { padding: 0 8px; gap: 5px; }
+.dle-lv-new { flex: none; }
+.dle-lv-bar .dk-ib { flex: none; }
+.dle-lv .dk-btn.dk-quiet.on { background: var(--dk-selected); border-color: var(--dk-accent); }
+.dle-lv-mini { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-lv-mini code, .dle-lv-help code, .dle-lv-empty code { font: var(--dk-fs-s) var(--dk-f-mono); color: var(--dk-accent-ink); }
+.dle-lv-note b { color: var(--dk-ink); font-weight: 600; }
+.dle-lv-good { color: var(--dk-good); }
+.dle-lv-muted { color: var(--dk-muted); }
+
+/* Sent: the funnel line, copy at its end */
+.dle-lv-funnel { flex: 1; min-width: 0; padding: 0 2px; font-size: var(--dk-fs-s); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+.dle-lv-funnel b { color: var(--dk-ink); }
+
+/* rows (kit rows) and what they carry */
+.dle-lv-rows { display: flex; flex-direction: column; }
+.dle-lv .dk-row .dk-end { gap: 6px; }
+.dle-lv-tok, .dle-lv-prio { font-variant-numeric: tabular-nums; }
+.dle-lv-state { display: inline-grid; place-items: center; color: var(--dk-l1); }
+.dle-lv-state.bad { color: var(--dk-bad); }
+.dle-lv-state.good { color: var(--dk-good); }
+.dle-lv-state.quiet { color: var(--dk-muted); }
+.dle-lv-tok.hot { color: var(--dk-l4); font-weight: 700; }
+.dle-lv-tok.cold { color: var(--dk-l5); }
+.dle-lv-state .dk-i { width: 13px; height: 13px; }
+.dle-lv-pill { height: 18px; max-width: 120px; padding: 0 6px; display: inline-flex; align-items: center; border: 1px solid var(--dk-line); border-radius: 999px; font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); color: var(--dk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-lv-pill.g { color: var(--dk-l5); border-color: color-mix(in oklab, var(--dk-l5) 50%, var(--dk-line)); }
+
+/* how sure: three bars (the reason is the tooltip; on a phone a tap on the row shows it) */
+.dle-lv-conf { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.dle-lv-conf i { width: 4px; border-radius: 1px; background: var(--dk-line); }
+.dle-lv-conf i:nth-child(1) { height: 5px; } .dle-lv-conf i:nth-child(2) { height: 8px; } .dle-lv-conf i:nth-child(3) { height: 11px; }
+.dle-lv-conf.c3 i { background: var(--dk-good); }
+.dle-lv-conf.c2 i:nth-child(-n+2) { background: var(--dk-wait); }
+.dle-lv-conf.c1 i:nth-child(1) { background: var(--dk-muted); }
+.dle-lv-conf em { font-style: normal; font-size: var(--dk-fs-xs); margin-left: 4px; width: 38px; }
+#deeplore-panel.dle-mobile .dle-lv-conf em { display: none; }
+
+/* a tapped row opens under itself */
+.dle-lv-expand { margin: 0 8px 6px 39px; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); font-size: var(--dk-fs); display: grid; gap: 6px; min-width: 0; }
+.dle-lv-expand .dle-lv-why b { font-weight: 600; }
+.dle-lv-prev { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.dle-lv-rel { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.dle-lv .dk-chip.dle-lv-c22 { height: 22px; padding: 0 8px; font-size: var(--dk-fs-s); max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* the selection bar: stays at the bottom of the panel */
+.dle-lv-selbar { position: sticky; bottom: 0; z-index: 4; margin: 0 -10px -14px; padding: 8px 10px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: var(--dk-page); border-top: 1px solid var(--dk-line); box-shadow: 0 -8px 18px rgba(0, 0, 0, .25); }
+.dle-lv-what { flex: 1 0 100%; display: flex; align-items: center; min-width: 0; font: 700 var(--dk-fs)/1.2 var(--dk-f-body); }
+.dle-lv-what span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-lv-selbar .dk-btn { height: 26px; }
+
+/* All entries: search, search tricks, chips */
+.dle-lv-srch { position: relative; display: flex; gap: 6px; align-items: center; }
+.dle-lv-search { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); color: var(--dk-muted); font-size: var(--dk-fs); cursor: text; }
+.dle-lv-search:focus-within { border-color: var(--dk-accent); }
+.dle-lv-search input { flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--dk-ink); font: inherit; box-shadow: none; }
+.dk .dle-lv-search input:focus, .dk .dle-lv-search input:focus-visible { outline: none; box-shadow: none; border: 0; background: transparent; }
+.dle-lv-search input::placeholder { color: var(--dk-muted); opacity: 1; }
+.dle-lv-srch .dk-ib b { font: 700 var(--dk-fs)/1 var(--dk-f-body); }
+.dle-lv-help { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 6; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); box-shadow: var(--dk-shadow); font-size: var(--dk-fs-s); display: grid; gap: 3px; }
+.dle-lv-filters { display: flex; flex-direction: column; gap: 6px; }
+.dle-lv-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.dle-lv-ftoggle { align-self: flex-start; }
+.dle-lv-clear.dk-btn { height: 22px; padding: 0 8px; font-size: var(--dk-fs-s); color: var(--dk-accent-ink); }
+.dle-lv-more { align-self: center; }
+.dle-lv-expall .dk-i { transition: transform .15s; }
+.dle-lv-expall.on .dk-i { transform: rotate(180deg); }
+
+/* group by folder */
+.dle-lv-grp { margin: 6px 4px 2px; min-height: 26px; display: flex; align-items: center; gap: 6px; border-radius: 6px; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); cursor: pointer; }
+.dle-lv-grp:hover { color: var(--dk-ink); }
+.dle-lv-grp .dk-n { margin-left: auto; letter-spacing: 0; }
+.dle-lv-gname { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: ltr; }
+.dle-lv-gchev { width: 13px; height: 13px; transform: rotate(-90deg); transition: transform .15s; }
+.dle-lv-grp.open .dle-lv-gchev { transform: none; }
+.dle-lv-ctx { color: var(--dk-muted); font-weight: 400; opacity: .8; }
+
+/* select several */
+.dle-lv-ck { width: 16px; height: 16px; flex: none; border: 1.5px solid var(--dk-line-strong); border-radius: 4px; display: inline-grid; place-items: center; font: 700 11px/1 var(--dk-f-body); color: var(--dk-on-accent); background: var(--dk-page); letter-spacing: 0; }
+.dle-lv-ck.on, .dle-lv-ck.part { background: var(--dk-accent); border-color: var(--dk-accent); }
+
+/* empty lists */
+.dle-lv-empty { padding: 14px 8px; text-align: center; color: var(--dk-muted); display: grid; gap: 8px; justify-items: center; }
+.dle-lv-empty p { margin: 0; }
+
+/* the folder picker window */
+.dle-lv-fp { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.dle-lv-fpq { width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); color: var(--dk-ink); }
+.dle-lv-fpl { display: flex; flex-direction: column; gap: 1px; }
+.dle-lv-mlab { padding: 8px 8px 2px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dle-lv-mrow { width: 100%; min-height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-ink); text-align: left; font-size: var(--dk-fs); }
+.dle-lv-mrow > span:first-child { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-lv-mrow:hover { background: var(--dk-accent-soft); }
+.dle-lv-mrow.on { background: var(--dk-selected); }
+.dle-lv-cnt { margin-left: auto; font-size: var(--dk-fs-s); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+
+/* phone: second lines wrap, rows grow (mock-up .phone .row) */
+#deeplore-panel.dle-mobile .dle-lv .dk-row { align-items: flex-start; padding-block: 6px; }
+#deeplore-panel.dle-mobile .dle-lv .dk-row .dk-s { white-space: normal; }
+#deeplore-panel.dle-mobile .dle-lv .dk-row .dk-end { margin-top: 2px; }
+#deeplore-panel.dle-mobile .dle-lv-expand { margin-left: 8px; }
+@media (prefers-reduced-motion: reduce) { .dle-lv-gchev, .dle-lv-expall .dk-i { transition: none; } }

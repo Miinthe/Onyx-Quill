@@ -1,0 +1,222 @@
+/* ============================================================================
+ * DeepLore — the new look for the older pop-ups (overhaul, 2026-10-16)
+ *
+ * Every SillyTavern pop-up DeepLore opens carries `dle-skin` (src/kit/legacy-skin.js). Inside it the old --dle-*
+ * colors and SillyTavern's theme variables point at the kit's --dk-* colors, and the old buttons, fields, tables
+ * and headings take the kit's shapes (kit.css). The "Lore gaps and drafts" tab in the side panel gets the same.
+ * Nothing here changes what a pop-up does; only how it looks.
+ * ============================================================================ */
+
+/* ── the colors: old names → the kit's ───────────────────────────────────── */
+dialog.popup.dle-skin, [id="dle-panel-librarian"] {
+    --SmartThemeBodyColor: var(--dk-ink); --SmartThemeEmColor: var(--dk-muted); --SmartThemeQuoteColor: var(--dk-accent-ink);
+    --SmartThemeUnderlineColor: var(--dk-accent); --SmartThemeBorderColor: var(--dk-line); --SmartThemeBlurTintColor: var(--dk-page);
+    --SmartThemeShadowColor: rgba(0, 0, 0, .3); --SmartThemeChatMesColorFill: var(--dk-menu);
+    --dle-success: var(--dk-good); --dle-error: var(--dk-bad); --dle-warning: var(--dk-wait); --dle-info: var(--dk-info);
+    --dle-accent: var(--dk-accent); --dle-border: var(--dk-line); --dle-bg-surface: var(--dk-page);
+    --dle-bg-1: var(--dk-menu); --dle-bg-2: var(--dk-menu); --dle-bg-3: var(--dk-accent-soft); --dle-bg-hover: var(--dk-accent-soft);
+    --dle-text: var(--dk-ink); --dle-text-muted: var(--dk-muted);
+    --dle-focus: var(--dk-accent-ink); --dle-focus-halo: transparent;
+    --dle-success-fg: var(--dk-good); --dle-error-fg: var(--dk-bad); --dle-warning-fg: var(--dk-wait); --dle-info-fg: var(--dk-info); --dle-accent-fg: var(--dk-accent-ink);
+    --dle-cat-constant: var(--dk-l1); --dle-cat-seed: var(--dk-l5); --dle-cat-bootstrap: var(--dk-l3);
+    --dle-cat-error: var(--dk-bad); --dle-cat-warning: var(--dk-wait); --dle-cat-pinned: var(--dk-info);
+    --dle-on-accent: var(--dk-on-accent); --dle-on-success: var(--dk-ink); --dle-on-error: var(--dk-ink);
+    --dle-guide-fg: var(--dk-info); --dle-guide-bg: var(--dk-info-soft); --dle-guide-border: color-mix(in oklab, var(--dk-info) 45%, var(--dk-line));
+    --dle-librarian-accent: var(--dk-mero); --dle-librarian-tint: var(--dk-mero);
+    --dle-text-xs: var(--dk-fs-xs); --dle-text-sm: var(--dk-fs-s); --dle-text-base: var(--dk-fs); --dle-text-lg: var(--dk-fs-l); --dle-text-xl: calc(17px * var(--fontScale, 1));
+    --dle-font-mono: var(--dk-f-mono); --dle-text-code: var(--dk-fs-s);
+    --dle-radius-sm: 4px; --dle-radius-md: 8px; --dle-radius-lg: 12px;
+    --dle-shadow-sm: none; --dle-shadow-md: var(--dk-shadow); --dle-shadow-lg: var(--dk-shadow);
+    --mainFontSize: var(--dk-fs); --mainFontFamily: var(--dk-f-body); --monoFontFamily: var(--dk-f-mono);
+}
+
+/* ── the window itself ───────────────────────────────────────────────────── */
+dialog.popup.dle-skin {
+    padding: 0; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); color: var(--dk-ink);
+    box-shadow: var(--dk-shadow); font: var(--dk-fs)/1.45 var(--dk-f-body); letter-spacing: normal; text-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+dialog.popup.dle-skin[open]::backdrop { background: rgba(8, 10, 14, .5); backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+dialog.popup.dle-skin .popup-body { padding: 0; gap: 0; }
+dialog.popup.dle-skin .popup-content { margin: 0; padding: 14px 16px 12px; text-align: left; font: inherit; }
+dialog.popup.dle-skin:not(.left_aligned_dialogue_popup) .popup-content > p:only-child { text-align: left; }
+dialog.popup.dle-skin .popup-controls {
+    align-self: stretch; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; padding: 10px 16px 12px; border-top: 1px solid var(--dk-line);
+}
+dialog.popup.dle-skin .popup-controls .menu_button { height: 32px; padding: 0 14px; }
+dialog.popup.dle-skin .popup-controls .menu_button { margin: 0; letter-spacing: normal; }
+dialog.popup.dle-skin .popup-controls .popup-button-ok { order: 2; min-width: 0; background: var(--dk-accent) !important; border-color: var(--dk-accent) !important; color: var(--dk-on-accent); font-weight: 700; }
+dialog.popup.dle-skin .popup-controls .popup-button-ok:is(:hover, :focus-visible) { background: color-mix(in oklab, var(--dk-accent) 88%, var(--dk-ink)) !important; }
+dialog.popup.dle-skin .popup-input.text_pole { margin: 0 16px 8px; width: calc(100% - 32px); }
+dialog.popup.dle-skin .popup-button-close {
+    top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; z-index: 30;
+    border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dk-muted); filter: none; font-size: 16px;
+}
+dialog.popup.dle-skin .popup-button-close:hover { color: var(--dk-ink); background: var(--dk-menu); border-color: var(--dk-line); }
+dialog.popup.dle-skin .popup-content > :first-child:is(h2, h3), dialog.popup.dle-skin .popup-content > :first-child > :first-child:is(h2, h3) { padding-right: 34px; }
+/* the old "hidden" switches keep working over the shapes below */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.dle-hidden, [hidden]) { display: none !important; }
+
+/* ── text ────────────────────────────────────────────────────────────────── */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(h1, h2, h3) {
+    margin: 0 0 8px; padding: 0; border: 0; color: var(--dk-ink); text-align: left;
+    font: 700 calc(17px * var(--fontScale, 1))/1.25 var(--dk-f-display); letter-spacing: normal; text-transform: none;
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(h4, h5, h6) {
+    margin: 12px 0 6px; padding: 0; border: 0; color: var(--dk-muted);
+    font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase;
+}
+dialog.dle-skin p { margin: 0 0 8px; }
+dialog.dle-skin :is(a, a:visited) { color: var(--dk-accent-ink); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(code, kbd) { padding: 1px 5px; border: 1px solid var(--dk-line); border-radius: 4px; background: var(--dk-menu); font: var(--dk-fs-s) var(--dk-f-mono); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) pre { padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-desk); color: var(--dk-ink); font: var(--dk-fs-s)/1.5 var(--dk-f-mono); white-space: pre-wrap; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) hr { border: 0; border-top: 1px solid var(--dk-line); margin: 10px 0; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(small, .dle-muted, .dle-dimmed) { color: var(--dk-muted); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) details > summary { cursor: pointer; color: var(--dk-ink); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) details > summary:hover { color: var(--dk-accent-ink); }
+
+/* ── buttons: the kit's shapes ───────────────────────────────────────────── */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button {
+    width: auto; min-height: 28px; height: auto; margin: 0; padding: 4px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--dk-line) !important; border-radius: 8px; background: var(--dk-page) !important; color: var(--dk-ink); filter: none; opacity: 1;
+    font: var(--dk-fs)/1.2 var(--dk-f-body); letter-spacing: normal; text-shadow: none; box-shadow: none !important; white-space: nowrap; cursor: pointer; transition: background-color .12s, border-color .12s;
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button:is(:hover, :focus-visible) { background: var(--dk-menu) !important; border-color: var(--dk-line-strong) !important; color: var(--dk-ink); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button:is(.dle-btn-primary, .dle-primary, .dle-btn--primary, .primary) { background: var(--dk-accent) !important; border-color: var(--dk-accent) !important; color: var(--dk-on-accent); font-weight: 700; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button:is(.dle-danger, .dle-btn-danger, .redWarningBG, .danger) { background: var(--dk-page) !important; color: var(--dk-bad); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button:is(.dle-danger, .dle-btn-danger, .redWarningBG, .danger):hover { background: var(--dk-bad-soft) !important; border-color: var(--dk-bad) !important; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button:is(.active, .toggleEnabled, [aria-pressed="true"], .dle-field-select--active, .dle-active, .dle-wiz-preset--active) { background: var(--dk-selected) !important; border-color: var(--dk-accent) !important; color: var(--dk-ink); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.menu_button, button):is([disabled], .disabled, .dle-disabled) { opacity: .45; cursor: default; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .menu_button.dle-w-full { width: 100%; justify-content: space-between; }
+/* the small icon-only buttons on rows (Browse: pin / block / copy …) */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) button.menu_button_icon:not(.menu_button) {
+    width: 26px; height: 26px; min-height: 0; margin: 0; padding: 0; display: inline-grid; place-items: center;
+    border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs-s); cursor: pointer;
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) button.menu_button_icon:not(.menu_button):hover { color: var(--dk-ink); background: var(--dk-menu); border-color: var(--dk-line); }
+/* a plain <button> the old markup left unstyled */
+/* Browse: the row's pin / block / copy stay whole next to a long title */
+dialog.dle-skin .dle-browse-row-actions { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: middle; }
+dialog.dle-skin .dle-browse-row-actions button { overflow: visible; text-overflow: clip; }
+dialog.dle-skin button:not([class]) { min-height: 28px; padding: 0 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs) var(--dk-f-body); cursor: pointer; }
+
+/* ── fields ──────────────────────────────────────────────────────────────── */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.text_pole, input[type="text"], input[type="search"], input[type="number"], input[type="url"], input[type="password"], select, textarea):not(.dk-field) {
+    min-height: 30px; margin: 0; padding: 5px 9px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink);
+    font: var(--dk-fs)/1.4 var(--dk-f-body); box-shadow: none; filter: none;
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.text_pole, input, select, textarea):not(.dk-field):hover { border-color: var(--dk-line-strong); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.text_pole, input, select, textarea):not(.dk-field):focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(input, textarea)::placeholder { color: var(--dk-muted); opacity: .8; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) textarea { resize: vertical; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) textarea:is(.dle-mono, [class*="notebook"], [class*="notepad"]) { font-family: var(--dk-f-body); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) select option { background: var(--dk-page); color: var(--dk-ink); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--dk-accent); min-height: 0; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) label { color: inherit; }
+
+/* ── tables ──────────────────────────────────────────────────────────────── */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) table { width: 100%; border-collapse: collapse; border: 0; font-size: var(--dk-fs); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) th {
+    padding: 6px 8px; border: 0; border-bottom: 1px solid var(--dk-line); background: transparent; text-align: left;
+    font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted);
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) td { padding: 6px 8px; border: 0; border-bottom: 1px solid color-mix(in oklab, var(--dk-line) 70%, transparent); vertical-align: top; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) tbody tr:hover > td { background: color-mix(in oklab, var(--dk-accent-soft) 55%, transparent); }
+
+/* ── old boxes, cards and notices ────────────────────────────────────────── */
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.dle-card, .dle-popup-section, .dle-connection-card, .dle-wiz-card, .dle-info-box, .dle-preview) {
+    border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); box-shadow: none;
+}
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) :is(.dle-info-box, .dle-notice, .dle-info-notice) { border-radius: 8px; background: var(--dk-info-soft); color: var(--dk-ink); border-color: transparent; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-badge { border-radius: 999px; font: 600 var(--dk-fs-xs)/1.4 var(--dk-f-body); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-success { color: var(--dk-good); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-error { color: var(--dk-bad); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-warning { color: var(--dk-wait); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-info { color: var(--dk-info); }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-empty-state { color: var(--dk-muted); text-align: center; padding: 18px 8px; }
+:is(dialog.dle-skin, [id="dle-panel-librarian"]) .dle-empty-state > i { font-size: 22px; color: var(--dk-muted); }
+/* FontAwesome glyphs that stay FontAwesome (no line icon for them): at least the kit's quiet color */
+dialog.dle-skin :is(.fa-solid, .fa-regular):not(.fa-spinner):not(.fa-circle-notch) { color: inherit; }
+
+/* ── the relationship graph: toolbar, legend, side info like the side panel ─ */
+dialog.dle-skin .dle-graph-popup { gap: 8px; }
+dialog.dle-skin .dle-graph-title { margin: 0; }
+dialog.dle-skin .dle-graph-toolbar { gap: 6px; margin: 0; }
+dialog.dle-skin .dle-graph-toolbar--secondary { padding-bottom: 2px; }
+dialog.dle-skin .dle-graph-toolbar .text_pole { height: 30px; min-height: 30px; padding: 0 9px; }
+dialog.dle-skin .dle-graph-toolbar select.text_pole { padding-right: 24px; }
+dialog.dle-skin .dle-graph-search-wrap { position: relative; display: flex; align-items: center; }
+dialog.dle-skin .dle-graph-search-wrap input { padding-right: 28px; border-radius: 999px; min-width: 180px; }
+dialog.dle-skin .dle-graph-search-clear { position: absolute; z-index: 1; right: 4px; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--dk-muted); cursor: pointer; }
+dialog.dle-skin .dle-graph-search-clear:hover { color: var(--dk-ink); background: var(--dk-menu); }
+dialog.dle-skin .dle-graph-toolbar-sep { height: 20px; background: var(--dk-line); margin: 0 2px; }
+dialog.dle-skin .dle-graph-toolbar .menu_button { height: 28px; min-height: 28px; padding: 0 10px; }
+dialog.dle-skin #dle-graph-settings-btn { width: 30px; padding: 0; }
+dialog.dle-skin #dle-graph-settings-btn:is(.active, [aria-expanded="true"]) { color: var(--dk-accent-ink); border-color: var(--dk-accent); }
+dialog.dle-skin .dle-graph-back-btn--accent { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
+dialog.dle-skin .dle-graph-back-caption { opacity: .75; font-size: var(--dk-fs-xs); }
+dialog.dle-skin .dle-graph-depth-display { font: 600 var(--dk-fs-s)/1 var(--dk-f-body); color: var(--dk-muted); }
+dialog.dle-skin .dle-graph-canvas-wrap { border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); overflow: hidden; }
+dialog.dle-skin .dle-graph-canvas { background: transparent; }
+/* legend: a small card in the corner, like a fold in the side panel */
+dialog.dle-skin .dle-graph-legend-panel {
+    top: 10px; left: 10px; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 10px;
+    background: color-mix(in oklab, var(--dk-page) 94%, transparent); box-shadow: var(--dk-shadow); color: var(--dk-ink); font-size: var(--dk-fs-s);
+}
+dialog.dle-skin .dle-graph-legend-panel-heading, dialog.dle-skin .dle-graph-legend-section-label { font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+dialog.dle-skin .dle-graph-legend-section-label { margin: 6px 0 4px; letter-spacing: .04em; text-transform: none; }
+dialog.dle-skin .dle-graph-legend-edges, dialog.dle-skin .dle-graph-legend-color { gap: 4px; }
+dialog.dle-skin .dle-graph-legend-item, dialog.dle-skin .dle-graph-legend-swatch {
+    display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-page); font-size: var(--dk-fs-s);
+}
+dialog.dle-skin .dle-graph-legend-item:hover { border-color: var(--dk-line-strong); background: var(--dk-menu); }
+dialog.dle-skin .dle-graph-legend-item--disabled { opacity: .45; text-decoration: line-through; }
+dialog.dle-skin .dle-graph-swatch-dot { border-radius: 50%; }
+/* the info strip under the graph and the hover card */
+dialog.dle-skin .dle-graph-tooltip { padding: 8px 12px; border-top: 1px solid var(--dk-line); background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); }
+dialog.dle-skin .dle-graph-tooltip-badge { border-radius: 999px; padding: 1px 8px; font: 700 var(--dk-fs-xs)/1.5 var(--dk-f-body); letter-spacing: .05em; }
+dialog.dle-skin :is(.dle-graph-tooltip-stats, .dle-graph-layout-notice) { color: var(--dk-muted); font-size: var(--dk-fs-s); font-style: normal; }
+dialog.dle-skin .dle-graph-tooltip-gating { color: var(--dk-info); font-size: var(--dk-fs-s); font-style: normal; }
+dialog.dle-skin .dle-graph-detail-panel { border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); box-shadow: var(--dk-shadow); color: var(--dk-ink); font-size: var(--dk-fs); }
+dialog.dle-skin .dle-graph-layout-overlay { background: color-mix(in oklab, var(--dk-desk) 55%, transparent); }
+dialog.dle-skin .dle-graph-layout-overlay-text { border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); box-shadow: var(--dk-shadow); color: var(--dk-ink); font: var(--dk-fs-l)/1.3 var(--dk-f-body); }
+/* right-click menu: the kit's ⋯ menu */
+dialog.dle-skin .dle-graph-context-menu { padding: 4px 0; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow); color: var(--dk-ink); font-size: var(--dk-fs); min-width: 200px; max-width: 280px; }
+dialog.dle-skin .dle-graph-ctx-header { padding: 8px 12px 4px; border: 0; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+dialog.dle-skin .dle-graph-ctx-item { padding: 7px 12px; }
+dialog.dle-skin .dle-graph-ctx-item:hover, dialog.dle-skin .dle-graph-ctx-item:focus-visible { background: var(--dk-accent-soft); }
+dialog.dle-skin .dle-graph-ctx-sep { background: var(--dk-line); margin: 4px 0; }
+/* graph settings: a card like the side panel's folds */
+dialog.dle-skin .dle-graph-settings-panel { border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow); color: var(--dk-ink); font-size: var(--dk-fs); overflow: hidden; }
+dialog.dle-skin .dle-graph-settings-titlebar { padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--dk-line); background: var(--dk-page); font: 700 var(--dk-fs)/1.2 var(--dk-f-display); color: var(--dk-ink); }
+dialog.dle-skin .dle-graph-settings-close { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 8px; color: var(--dk-muted); }
+dialog.dle-skin .dle-graph-settings-close:hover { color: var(--dk-ink); background: var(--dk-menu); }
+dialog.dle-skin .dle-graph-settings-section-label { font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+dialog.dle-skin .dle-graph-settings-sep { background: var(--dk-line); }
+dialog.dle-skin .dle-gs-caption, dialog.dle-skin .dle-gs-value { color: var(--dk-muted); font-size: var(--dk-fs-xs); }
+dialog.dle-skin .dle-graph-footer { color: var(--dk-muted); font-size: var(--dk-fs-s); }
+
+/* ── the setup wizard: step dots and cards in the kit's colors ─────────── */
+dialog.dle-skin [class*="dle-wiz-step"][class*="--active"], dialog.dle-skin [class*="dle-wiz-step"].active { color: var(--dk-accent-ink); border-color: var(--dk-accent); }
+dialog.dle-skin [class*="dle-wiz-step"][class*="--done"] { color: var(--dk-good); border-color: var(--dk-good); }
+
+/* phone: the window fills the width like the kit's sheets */
+@media (max-width: 600px) {
+    dialog.popup.dle-skin .popup-content { padding: 12px; }
+    dialog.popup.dle-skin .popup-controls { padding: 8px 12px 10px; }
+}
+
+/* ── DeepLore's messages (toastr) in the notice look (bug hunt 2026-10-17) ──── */
+body #toast-container > div.dle-toast {
+    background: var(--dk-page) !important; background-image: none !important; color: var(--dk-ink);
+    border: 1px solid var(--dk-line); border-left: 3px solid var(--dk-accent); border-radius: 10px; box-shadow: var(--dk-shadow);
+    padding: 9px 12px; opacity: 1;
+}
+body #toast-container > div.dle-toast.dle-toast-success { border-left-color: var(--dk-good); }
+body #toast-container > div.dle-toast.dle-toast-warning { border-left-color: var(--dk-wait); }
+body #toast-container > div.dle-toast.dle-toast-error { border-left-color: var(--dk-bad); }
+body #toast-container > div.dle-toast .toast-title { font-weight: 700; font-size: var(--dk-fs-s); color: var(--dk-ink); }
+body #toast-container > div.dle-toast .toast-message { color: var(--dk-ink); font-size: var(--dk-fs); }
+body #toast-container > div.dle-toast .toast-message u, body #toast-container > div.dle-toast .toast-message a { color: var(--dk-accent-ink); }
+body #toast-container > div.dle-toast .toast-close-button { color: var(--dk-muted); text-shadow: none; opacity: .8; }
+body #toast-container > div.dle-toast .toast-progress { background: var(--dk-accent); opacity: .5; }

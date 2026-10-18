@@ -1,0 +1,140 @@
+/* ============================================================================
+ * DeepLore — the frame (overhaul round 2a, 2026-10-15): the bar above the message box, the side panel's header,
+ * "Ready", ⋯, the lock, left / right, and the ⋯ on each reply. Colors from kit.css (SillyTavern's live theme).
+ * Mock-up: side panel + bar v13 (https://claude.ai/artifact/U4Kz8JeJWJfaMGB71ZYHTa).
+ * ============================================================================ */
+
+/* ── the bar ─────────────────────────────────────────────────────────────── */
+#dle-bar { position: relative; display: flex; align-items: center; gap: 5px; width: 100%; min-height: 36px; padding: 4px 6px 2px; order: -1; }
+#dle-bar .dle-bar-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
+.dle-db { position: relative; flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); cursor: pointer; }
+.dle-db .dk-i { width: 17px; height: 17px; }
+.dle-db:hover { border-color: var(--dk-line-strong); }
+/* a pressed bar button is a quiet raised gray, no blue (Miinthe, 2026-10-15) */
+.dle-db.on { background: color-mix(in oklab, var(--dk-ink) 14%, var(--dk-page)); border-color: color-mix(in oklab, var(--dk-ink) 40%, var(--dk-line)); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .25); }
+.dle-db.small { width: 30px; height: 30px; }
+.dle-db.env { color: var(--dk-muted); }
+.dle-db.env.mero { color: var(--dk-mero); }
+.dle-db.env.hold { color: var(--dk-wait); }
+.dle-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--dk-mero); box-shadow: 0 0 0 2px var(--dk-page); }
+.dle-dot.hold { background: var(--dk-wait); }
+.dle-dot.draft { background: var(--dk-good); width: 7px; height: 7px; }
+@media (prefers-reduced-motion: no-preference) {
+    /* the wiggle means "the reply waits for you"; ordinary requests only show the dot */
+    .dle-db.wiggle { animation: dle-wiggle 4s ease-in-out infinite; }
+    @keyframes dle-wiggle { 0%, 88%, 100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
+}
+.dle-hot { flex: 1; min-width: 0; display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; padding: 1px; }
+.dle-hot::-webkit-scrollbar { display: none; }
+.dle-qr { flex: none; min-width: 34px; height: 34px; padding: 0 9px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs)/1 var(--dk-f-body); white-space: nowrap; cursor: pointer; }
+.dle-qr:hover { border-color: var(--dk-accent); }
+.dle-vsep { width: 1px; height: 22px; flex: none; margin: 0 3px; background: var(--dk-line); }
+.dle-bar-bubble { position: absolute; left: 44px; bottom: calc(100% + 4px); z-index: 4; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--dk-wait-soft); color: var(--dk-wait); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); cursor: pointer; }
+.dle-bar-bubble[hidden] { display: none; }
+/* phone: the Quick Replies or the special buttons take over the row; pull the handle for more rows */
+.dle-take { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.dle-take.wrapped { flex-wrap: wrap; align-content: flex-start; overflow-y: auto; }
+.dle-grab { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 60px; height: 14px; display: grid; place-items: center; cursor: ns-resize; touch-action: none; z-index: 3; }
+.dle-grab::before { content: ""; width: 36px; height: 5px; border-radius: 3px; background: var(--dk-muted); }
+#dle-bar.phone .dle-bar-main > .dle-db:not(.small) { flex: 1; max-width: 64px; height: 38px; width: auto; }
+/* while DeepLore works on a reply: its status line takes the bar's middle (book and side panel stay) */
+#dle-bar-work { display: contents; }
+#dle-bar:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main > :not([data-b="book"]):not([data-b="panel"]) { display: none; }
+/* the line starts right after those two buttons, not halfway along the bar (Miinthe 2026-10-18) */
+#dle-bar:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main { flex: 0 0 auto; }
+#dle-bar-work #dle-pipeline-status goo-spinner { flex: none; }
+#dle-bar.phone:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main > .dle-db:not(.small) { flex: 0 0 44px; }
+#dle-bar.phone #dle-bar-work #dle-pipeline-status { gap: 6px; padding: 0 4px; }
+#dle-bar-work #dle-pipeline-status {
+    position: static; flex: 1; min-width: 0; height: 34px; padding: 0 8px; gap: 8px; border: 0; border-radius: 8px; background: transparent;
+    color: var(--dk-muted); font: var(--dk-fs)/1 var(--dk-f-body); font-style: normal; pointer-events: auto;
+    animation: dle-bar-in .2s ease-out forwards;
+}
+#dle-bar-work #dle-pipeline-status.dle-toast-out { animation: dle-bar-out .2s ease-in forwards; }
+#dle-bar-work .dle-pipeline-status-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dle-bar-work .dle-pipeline-cancel { margin-left: auto; height: 28px; padding: 0 10px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); }
+@keyframes dle-bar-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dle-bar-out { from { opacity: 1; } to { opacity: 0; } }
+/* SillyTavern's own Quick Reply row steps aside while the bar holds starred ones (her design) */
+body.dle-bar-has-hot #qr--bar { display: none !important; }
+
+/* the Quick Reply drawer (PC) */
+.dle-bar-pop { position: absolute; left: 6px; right: 6px; bottom: calc(100% + 4px); z-index: 20; max-width: 560px; max-height: min(60vh, 460px); overflow-y: auto; padding-bottom: 10px; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow); }
+.dle-pophead { display: flex; align-items: center; gap: 8px; padding: 8px 6px 4px 14px; }
+.dle-pophead h3 { margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); }
+.dle-pophead .dk-hint { flex: 1; }
+.dle-qrsets { padding: 0 12px; display: grid; gap: 6px; }
+.dle-qrsets h4 { margin: 6px 0 2px; }
+.dle-qrgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.dle-dq { display: flex; border: 1px solid var(--dk-line); border-radius: 8px; overflow: hidden; }
+.dle-dq .run { flex: 1; min-width: 0; padding: 7px 9px; border: 0; background: transparent; color: var(--dk-ink); text-align: left; font-size: var(--dk-fs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.dle-dq .run:hover { background: var(--dk-accent-soft); }
+.dle-dq .star { width: 34px; flex: none; border: 0; border-left: 1px solid var(--dk-line); background: transparent; color: var(--dk-muted); cursor: pointer; }
+.dle-dq .star.on { color: var(--dk-l1); background: var(--dk-accent-soft); }
+
+/* ── the side panel's header ─────────────────────────────────────────────── */
+#deeplore-panel.dle-framed .dle-ph { flex: none; height: 40px; display: flex; align-items: center; gap: 2px; padding: 0 6px; margin: -5px -5px 0; border-bottom: 1px solid var(--dk-line); border-radius: 10px 10px 0 0; background: var(--dk-menu); }
+.dle-ph .dle-statusbtn { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--dk-ink); font: 700 var(--dk-fs)/1 var(--dk-f-body); text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; }
+.dle-ph .dle-statusbtn:hover, .dle-ph .dle-statusbtn[aria-expanded="true"] { background: var(--dk-page); }
+.dle-statusbtn .dle-st { flex: 0 1 auto; min-width: 2.5em; overflow: hidden; text-overflow: ellipsis; }
+.dle-statusbtn .dle-sq { flex: 0 1000 auto; }
+.dle-statusbtn .dle-sq { color: var(--dk-muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.dle-sdot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--dk-good); }
+.dle-sdot.warn { background: var(--dk-wait); } .dle-sdot.bad { background: var(--dk-bad); } .dle-sdot.busy { background: var(--dk-accent); }
+@media (prefers-reduced-motion: no-preference) { .dle-sdot.busy { animation: dle-pulse 1.2s ease-in-out infinite; } @keyframes dle-pulse { 50% { opacity: .35; } } }
+.dle-ph .dk-ib .dle-li { display: grid; place-items: center; font-style: normal; }
+.dle-ph .dk-ib[disabled] { opacity: .5; }
+.dle-ph .dk-ib .dle-btn-goo { position: absolute; }
+.dle-ph .dk-ib { position: relative; }
+.dle-ph .dle-lock.on { color: var(--dk-wait); }
+.dle-ph .dle-close-ph { display: none; }
+#deeplore-panel.dle-mobile .dle-ph .dle-lock { display: none; }
+#deeplore-panel.dle-mobile .dle-ph .dle-close-ph, #deeplore-panel.dle-overlay-mode .dle-ph .dle-close-ph { display: inline-grid; }
+#deeplore-panel.dle-framed .dle-drawer-controls[hidden], #deeplore-panel.dle-framed #dle-drawer-actions[hidden], #deeplore-panel.dle-framed .dle-zone-divider[hidden] { display: none !important; }
+/* Scribe's own "working" spin, on a line icon */
+.dle-ph .dle-li.fa-spin { animation: fa-spin 2s linear infinite; }
+
+/* "Ready": the numbers and health, today's pieces in a pop-up */
+.dle-readypop { position: absolute; top: 40px; left: 6px; z-index: 30; width: min(380px, calc(100% - 12px)); max-height: calc(100% - 52px); overflow-y: auto; padding: 8px; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-page); box-shadow: var(--dk-shadow); }
+.dle-readypop[hidden] { display: none; }
+.dle-readypop #dle-drawer-footer { position: static; margin-top: 8px; border-top: 1px solid var(--dk-line); padding-top: 6px; }
+.dle-readypop .dle-zone-status { padding: 0; }
+
+/* ⋯ at the end of the tabs (instead of the Tools tab) */
+.dle-ph .dle-tab-more { flex: none; }
+#dle-tab-tools[hidden] { display: none !important; }
+
+/* ── left or right ───────────────────────────────────────────────────────── */
+#deeplore-panel.dle-left:not(.pinnedOpen) { z-index: 3000; }
+#deeplore-panel.dle-left.dle-overlay-mode { left: 0 !important; right: auto !important; border-left: 0; border-right: 1px solid var(--SmartThemeBorderColor); }
+
+/* ── the ⋯ on each reply ─────────────────────────────────────────────────── */
+/* DeepLore's own mark (the 📖 book of the bar), never a second ⋯ beside SillyTavern's (Miinthe 2026-10-18: "the same '...' for both") */
+.mes_button.mes_dle_more { color: var(--dk-accent); display: inline-flex; align-items: center; justify-content: center; vertical-align: top; }
+.mes:hover .mes_button.mes_dle_more, .mes_button.mes_dle_more:hover, .mes_button.mes_dle_more:focus-visible { opacity: 1 !important; }
+.mes_button.mes_dle_more .dk-i { width: 1em; height: 1em; display: block; }
+
+/* the old panel button in SillyTavern's top bar: the bar's side panel button replaces it (Miinthe 2026-10-18); back when the bar is off */
+body.dle-bar-on #top-settings-holder .drawer-toggle:has(> #deeploreDrawerIcon) { display: none; }
+
+/* tab icons (line icons inside the tab buttons) */
+.dle-tab .dle-li { display: inline-grid; place-items: center; font-style: normal; }
+.dle-tab .dle-li .dk-i { width: 1.05em; height: 1.05em; }
+
+/* ── the tab row (mock-up v13): five tabs, icon over word, then ⋯ ───────────────────────────────────────── */
+#deeplore-panel.dle-framed .dle-tab-bar.dle-tabs5 { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) 44px; gap: 0; padding: 0; overflow: visible !important; border-bottom: 1px solid var(--dk-line); flex-wrap: nowrap; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab { position: relative; height: 46px; min-width: 0; margin: 0; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--dk-muted); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); box-shadow: none; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab[hidden] { display: none !important; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab:hover { color: var(--dk-ink); }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab.active { color: var(--dk-accent-ink); border-bottom-color: var(--dk-accent); background: transparent; }
+#deeplore-panel.dle-framed .dle-tabs5 #dle-tab-mero.active { color: var(--dk-mero); border-bottom-color: var(--dk-mero); }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab .dle-tab-text { display: block !important; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab .dle-li .dk-i { width: 17px; height: 17px; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab .dle-tab-badge { position: absolute !important; top: 3px; right: calc(50% - 24px); margin: 0 !important; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab .dle-tab-badge:empty { display: none !important; }
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab-more { justify-self: center; align-self: center; }
+#deeplore-panel.dle-framed .dle-tab-label { display: none !important; }
+
+/* iPhone Safari may enlarge text on its own after a layout change (Miinthe 2026-10-18: "closing the side panel makes the
+   font in the messages HUGE"; not reproducible headless) — the page keeps the sizes it was given */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }

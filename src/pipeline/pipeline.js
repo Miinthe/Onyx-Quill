@@ -69,17 +69,18 @@ function resolveAiFallback(aiResult, trace, settings, { bootstrapActive, vaultSn
  * Records a trace for the Pipeline Inspector (/dle-inspect).
  * @returns {Promise<{ finalEntries: VaultEntry[], matchedKeys: Map<string, string>, trace: object }>}
  */
-export async function runPipeline(chat, externalSnapshot, contextualGatingContext, { pins = [], blocks = [], folderFilter = null, signal = null, onStatus = null, genId = null } = {}) {
+export async function runPipeline(chat, externalSnapshot, contextualGatingContext, { pins = [], blocks = [], folderFilter = null, signal = null, onStatus = null, genId = null, budget = null } = {}) {
     // Shallow-snapshot settings so every stage in this run reads one consistent view
     // even if the user edits settings mid-generation. The snapshot is THREADED into
     // matchEntries / hierarchicalPreFilter / buildCandidateManifest / aiSearch below —
     // without the explicit parameter each of those re-reads live getSettings() and the
     // consistent-view promise silently breaks (gotcha #94). Top-level scalars are
     // frozen-in-time; nested objects still share refs (runPipeline never mutates them).
-    const settings = { ...getSettings() };
+    // overhaul (2026-10-17): `budget` = this chat's budget keys (its own / its character's), laid over Everywhere's
+    const settings = { ...getSettings(), ...(budget || {}) };
     // External snapshots are assumed already-filtered (caller used getWriterVisibleEntries()).
     // Otherwise filter out lorebook-guide here — Librarian-only, must never reach the writing AI.
-    const vaultSnapshot = externalSnapshot || getWriterVisibleEntries();
+    const fullSnapshot = externalSnapshot || getWriterVisibleEntries();
     const bootstrapActive = chat.length <= settings.newChatThreshold;
 
     // BUG-AUDIT-P2 (Wave C): build the exemption policy ONCE per pipeline run.
@@ -92,7 +93,17 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
     // Stages H-3 / gotcha #60: bootstrapActive is gen-scoped and must be threaded
     // here so post-keyword stages match the pre-pipeline `alwaysInject` filter
     // (mirrors `helpers.js:isForceInjected`).
-    const exemptionPolicy = buildExemptionPolicy(vaultSnapshot, pins, blocks, bootstrapActive);
+    const exemptionPolicy = buildExemptionPolicy(fullSnapshot, pins, blocks, bootstrapActive);
+
+    // LOCAL PATCH (Miinthe, 2026-10-05) — the folder filter FIRST. Before, keyword matching, wiki-link expansion and
+    // the AI category pre-filter all ran over the whole vault and the folders were applied afterwards: the
+    // pre-filter's AI call saw other stories' categories, and could narrow the candidates toward them before the
+    // folder cut removed them (Miinthe: "DeepLore still seemed to go through entries that are not in those filtered
+    // folders"). Now nothing in this run looks past the chat's folders; pinned / constant / bootstrap entries keep
+    // their exemption (applyFolderFilter), exactly as before. The later folder calls below stay as a no-op guard.
+    const vaultSnapshot = folderFilter && folderFilter.length > 0
+        ? applyFolderFilter(fullSnapshot, folderFilter, exemptionPolicy, settings.debugMode)
+        : fullSnapshot;
 
     const trace = {
         genId,
@@ -146,6 +157,22 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         });
     }
 
+    // LOCAL PATCH 2026-08-04: record WHICH entries the folder filter removed, not just how
+    // many. categorizeRejections() subtracts every other stage from the keyword matches to
+    // work out what "the AI rejected" — but the folder filter only ever wrote a count, so
+    // entries it removed were blamed on the AI, which never saw them. On a vault with one
+    // large lorebook filtered out, that meant hundreds of phantom "AI did not select" rows.
+    trace.folderFilterRemoved = [];
+    if (folderFilter && folderFilter.length > 0) trace.folderFilter = { folders: folderFilter, before: fullSnapshot.length, after: vaultSnapshot.length, removed: fullSnapshot.length - vaultSnapshot.length, first: true };
+    const folderFiltered = (before, after) => {
+        if (before.length === after.length) return after;
+        const kept = new Set(after);
+        for (const e of before) {
+            if (!kept.has(e)) trace.folderFilterRemoved.push({ title: e.title, vaultSource: e.vaultSource || '' });
+        }
+        return after;
+    };
+
     let finalEntries;
     let matchedKeys = new Map();
 
@@ -176,7 +203,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
 
         // Pre-filter by folder so AI doesn't see entries from excluded folders.
         if (folderFilter && folderFilter.length > 0) {
-            aiOnlyCandidates = applyFolderFilter(aiOnlyCandidates, folderFilter, exemptionPolicy, settings.debugMode);
+            aiOnlyCandidates = folderFiltered(aiOnlyCandidates, applyFolderFilter(aiOnlyCandidates, folderFilter, exemptionPolicy, settings.debugMode));
         }
 
         const { manifest: candidateManifest, header: candidateHeader } = buildCandidateManifest(aiOnlyCandidates, bootstrapActive, settings);
@@ -308,7 +335,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         }
 
         if (folderFilter && folderFilter.length > 0) {
-            twoStageCandidates = applyFolderFilter(twoStageCandidates, folderFilter, exemptionPolicy, settings.debugMode);
+            twoStageCandidates = folderFiltered(twoStageCandidates, applyFolderFilter(twoStageCandidates, folderFilter, exemptionPolicy, settings.debugMode));
         }
 
         const { manifest: candidateManifest, header: candidateHeader } = buildCandidateManifest(twoStageCandidates, bootstrapActive, settings);
@@ -365,10 +392,25 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         }
     }
 
+    // LOCAL PATCH 2026-08-02 (Miinthe): final-pass contextual gating.
+    // Field gating used to run ONLY mid-pipeline, on the AI candidate set. Every fallback
+    // path returns raw `keywordResult.matched` instead — which is ungated — so an empty
+    // candidate manifest (gating removed everything) or any AI error silently restored the
+    // entries gating had just dropped. Net effect: a filter that matched nothing switched
+    // itself off. This mirrors the folder filter below, which has always been applied to
+    // the final set and therefore never had this hole. Re-running on the happy path is a
+    // no-op (already-gated entries pass again; force-injected ones stay exempt).
+    if (contextualGatingContext) {
+        const beforeGating = finalEntries.length;
+        const fieldDefsFinal = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
+        finalEntries = applyContextualGating(finalEntries, contextualGatingContext, exemptionPolicy, settings.debugMode, settings, fieldDefsFinal);
+        trace.contextualGatingFinal = { before: beforeGating, after: finalEntries.length, removed: beforeGating - finalEntries.length };
+    }
+
     if (folderFilter && folderFilter.length > 0) {
         const beforeFolder = finalEntries.length;
-        finalEntries = applyFolderFilter(finalEntries, folderFilter, exemptionPolicy, settings.debugMode);
-        trace.folderFilter = { folders: folderFilter, before: beforeFolder, after: finalEntries.length, removed: beforeFolder - finalEntries.length };
+        finalEntries = folderFiltered(finalEntries, applyFolderFilter(finalEntries, folderFilter, exemptionPolicy, settings.debugMode));
+        trace.folderFilter = { ...(trace.folderFilter || { folders: folderFilter }), finalBefore: beforeFolder, finalAfter: finalEntries.length, finalRemoved: beforeFolder - finalEntries.length };
     }
 
     // Restore user priority after AI modes — confidence sort may have overridden it,

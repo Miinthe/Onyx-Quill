@@ -1267,14 +1267,34 @@ dle-notes { display: none !important; }
 .dle-tab-panel {
     display: none;
     padding: var(--dle-space-2);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    /* LOCAL PATCH 2026-08-03b (Miinthe) — the actual root cause of the dead mouse wheel.
+       History: this was `overflow-y: auto; overscroll-behavior: contain`. Patch 11 relaxed
+       the second property to `auto`, which helped only while the panel had EXACTLY zero
+       scrollable overflow. The panel was still a scroll container, so the moment it had
+       even 1-2px of overflow (padding, sub-pixel rounding, the tab-switch animation) the
+       browser LATCHED the wheel gesture to it: it consumed those 2px, hit its own end, and
+       refused to chain the rest of the gesture up to .dle-drawer-inner. That is why the
+       failure looked random, why it returned after a few seconds, and why stress-scrolling
+       broke it faster — more gestures, more chances to latch.
+       Fix: stop being a scroll container at all, so .dle-drawer-inner is the drawer's ONE
+       scroller. Same fix already proven on .dle-browse-list (2026-08-02).
+       `contain: paint` had to go with it — paint containment clips overflow, so keeping it
+       would hide the spilled content instead of letting the ancestor scroll it. `layout`
+       is retained; it is what isolates the panel from ST's scrollableInner. */
+    overflow-y: visible;
+    /* LOCAL PATCH 2026-08-03c (Miinthe): horizontal spill, a regression from dropping
+       `contain: paint` above. Paint containment was silently clipping content that was too
+       wide; without it the panel could grow sideways and the whole drawer slid horizontally —
+       barely visible on desktop, very obvious on a phone.
+       `clip` NOT `hidden`: setting one axis to hidden/auto/scroll forces a `visible` sibling
+       axis to compute as `auto`, which would make this a scroll container again and undo the
+       wheel fix. `clip` is the one value that does not, so the Y axis stays genuinely visible.
+       Browsers without `overflow: clip` simply fall back to `visible` — the pre-patch
+       behaviour, so nothing regresses for them. */
+    overflow-x: clip;
     flex: 1;
     min-height: 0; /* Allow flex item to shrink below content height for proper scrolling */
-    /* Isolate scroll/layout from ST's scrollableInner so the panel is the sole
-       scroll container for its content (prevents double-allocated scroll chain
-       where sticky footers would scroll away with content). */
-    contain: layout paint;
+    contain: layout;
 }
 
 .dle-tab-panel.active {
@@ -1548,6 +1568,14 @@ button.dle-chip-x:hover {
     padding-left: 8px;
     padding-right: 8px;
 }
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): quick-tool buttons are icon-only everywhere, not only on
+   mobile. Just three of the seven carried text (Refresh / Reroll Lore / Skip Librarian), so
+   the row was a mixed bag that wrapped onto a second line at the panel's normal width, with
+   Skip Librarian stranded underneath. Dropping those three labels fits all seven on one row.
+   Every button keeps its `title` and `aria-label`, so the name survives on hover and for
+   screen readers — and on desktop, where hover exists, nothing is lost at all. */
+.dle-action-label { display: none; }
 
 .dle-action-label {
     font-size: var(--dle-text-sm);
@@ -1978,8 +2006,52 @@ button.dle-chip-x:hover {
        when the flex chain changes shape. Without min-height: 0, a flex item defaults
        to min-content and the container can grow unbounded. */
     min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain; /* Issue #39: keep over-scroll from chaining into ST chat */
+    /* LOCAL PATCH 2026-08-02 (Miinthe): was `overflow-y: auto`, which made the list its OWN
+       scroll container. The JS sets its min-height to the full virtual height (see
+       renderBrowseTab), so it is meant to be tall inside a scrolling ancestor — with
+       overflow-y:auto the mouse wheel scrolled the list internally instead. Its box then
+       never moves, so the virtual scroller's rect maths saw no movement, never repainted,
+       and you scrolled into blank space. Dragging the outer scrollbar moved the box and
+       appeared to "fix" it. Visible lets the wheel reach the real scroller. */
+    overflow-y: visible;
+    /* LOCAL PATCH 2026-08-03 (Miinthe): `overscroll-behavior: contain` removed. It only has
+       any effect on a scroll container, and the line above stopped this being one on
+       2026-08-02 — so it was dead. Issue #39's chain-stop lives on .dle-drawer-inner. */
+}
+
+/* ---- LOCAL PATCH 2026-08-03 (Miinthe): folder banding -----------------------------------
+   The left accent bar ran unbroken down the whole list, so on a phone it was hard to see
+   where one folder ended and the next began. Consecutive folders now alternate between two
+   tones of the SAME accent — a header and all of its entries share a band, so each folder
+   reads as one block and the seam between folders is visible.
+   Parity comes from the row model's groupIndex, never from the render loop: the list is
+   virtualised, so a loop index would flip every band as you scrolled.
+   Deliberately two tones of one colour rather than two colours — this is a separator, not a
+   status signal, and the entry rows already use their left border to mean injected / seed /
+   over-budget.
+   PLACEMENT IS LOAD-BEARING: these rules sit ABOVE the entry state rules on purpose. They
+   match at the same specificity (.dle-browse-entry.dle-band-x vs .dle-browse-entry.dle-…),
+   so whichever comes last wins — placed after, the band would repaint an injected entry's
+   green border and destroy the status signal. Do not move this block down the file. */
+.dle-browse-entry.dle-band-a,
+.dle-browse-folder-header.dle-band-a { border-left: 3px solid var(--dle-accent); }
+.dle-browse-entry.dle-band-b,
+.dle-browse-folder-header.dle-band-b {
+    border-left: 3px solid color-mix(in srgb, var(--dle-accent) 38%, transparent);
+}
+/* Entries sit slightly inset from their header so the header still reads as the group's
+   title rather than just another banded row. */
+.dle-browse-entry.dle-band-a,
+.dle-browse-entry.dle-band-b { border-left-width: 3px; }
+
+/* On a phone the bar is the main navigation cue, so make it wider and raise the contrast
+   between the two bands. */
+#deeplore-panel.dle-mobile .dle-browse-entry.dle-band-a,
+#deeplore-panel.dle-mobile .dle-browse-folder-header.dle-band-a { border-left-width: 4px; }
+#deeplore-panel.dle-mobile .dle-browse-entry.dle-band-b,
+#deeplore-panel.dle-mobile .dle-browse-folder-header.dle-band-b {
+    border-left-width: 4px;
+    border-left-color: color-mix(in srgb, var(--dle-accent) 22%, transparent);
 }
 
 .dle-browse-entry {
@@ -2046,6 +2118,31 @@ button.dle-chip-x:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* LOCAL PATCH 2026-08-03: the entry's origin (character · instance) on the collapsed row.
+   Triaging a folder of unsorted entries used to mean opening each one to find out where it
+   belonged, because custom fields only rendered in the expanded preview. Styled quieter than
+   the keys line so it reads as provenance, not content, and it shares the row's single line
+   budget — the keys ellipsis first, since the origin is the shorter and more decisive of the
+   two when deciding which folder something goes in. */
+.dle-browse-subline {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dle-space-2);
+    min-width: 0;
+}
+.dle-browse-origin {
+    font-size: var(--dle-text-xs);
+    color: var(--dle-text-muted);
+    opacity: .65;
+    line-height: 1.3;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
 .dle-browse-keys {
@@ -2208,6 +2305,10 @@ button.dle-browse-block.dle-block-active {
     align-items: center;
     gap: var(--dle-space-1);
     height: 38px; /* MUST match BROWSE_ROW_HEIGHT */
+    /* The two stacked lines fit 38px at normal and 115% theme font scale, but overflow at
+       ~130%. Clip rather than spill into the row below, which the virtual scroller positions
+       absolutely and would overlap. */
+    overflow: hidden;
     padding: 0 var(--dle-space-2);
     box-sizing: border-box;
     background: color-mix(in srgb, var(--SmartThemeQuoteColor, #444) 8%, transparent);
@@ -2229,12 +2330,53 @@ button.dle-browse-block.dle-block-active {
 .dle-browse-folder-header[data-expanded="true"] .dle-browse-folder-caret {
     transform: rotate(90deg);
 }
+/* LOCAL PATCH 2026-08-03 (Miinthe): the leaf keeps the space, the parent path gives it up.
+   A single ellipsis over the whole path cuts the TAIL — the only part that differs between
+   sibling folders — so six subfolders of one lorebook all rendered as
+   "05 Aldric; Between Duty and Env…". Flex lets the parent shrink to nothing while the
+   leaf holds its width. */
+/* Two stacked lines: parent path on top in the dim tone, the folder's own name below with
+   its entry count beside it. Same palette as before, only rearranged — nothing is shrunk for
+   readability's sake; the leaf keeps the header's normal size and weight.
+   Both lines fit the fixed 38px row (BROWSE_ROW_HEIGHT), which entry rows already use for two
+   lines, so the virtual scroller's maths is untouched. */
 .dle-browse-folder-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    line-height: 1.25;
+}
+.dle-browse-folder-parent {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: .45;
+    font-weight: 400;
+    font-size: var(--dle-text-xs);
+}
+.dle-browse-folder-leafrow {
+    display: flex;
+    align-items: baseline;
+    gap: var(--dle-space-2);
+    min-width: 0;
+}
+.dle-browse-folder-leaf {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+}
+/* The count now lives on the name's second line, so it must not also be stretched by the
+   header's own flex row. */
+.dle-browse-folder-leafrow .dle-browse-folder-count {
+    flex: 0 0 auto;
+    margin-left: auto;
 }
 .dle-browse-folder-count {
     font-size: var(--dle-text-xs);
@@ -2277,7 +2419,11 @@ button.dle-browse-block.dle-block-active {
 }
 .dle-gating-group {
     display: flex;
-    align-items: center;
+    /* LOCAL PATCH 2026-08-02 (Miinthe): flex-start, not center. A long chip makes
+       .dle-gating-value wrap to two lines; centering then floats its first line
+       ABOVE the label, which is why "None set" appeared over "Stage". */
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: var(--dle-space-2);
     padding: var(--dle-space-2) var(--dle-space-1);
     border-radius: var(--dle-radius-sm, 4px);
@@ -2323,8 +2469,10 @@ button.dle-browse-block.dle-block-active {
     font-weight: 500;
     /* BUG-179: was min-width 70px + flex-shrink: 0; overflowed rows below ~250px drawer width. */
     min-width: 0;
-    flex: 0 1 120px;
-    max-width: 150px;
+    /* LOCAL PATCH 2026-08-02 (Miinthe): let the label use more of a narrow drawer
+       before truncating — "Character (s..." was unreadable. Still ellipsises. */
+    flex: 0 1 auto;
+    max-width: 60%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2335,6 +2483,17 @@ button.dle-browse-block.dle-block-active {
     align-items: center;
     gap: var(--dle-space-1);
     flex-wrap: wrap;
+    /* LOCAL PATCH 2026-08-02 (Miinthe): without min-width:0 a flex child refuses to
+       shrink below its content, so long chips overflowed the drawer instead of
+       wrapping inside it. */
+    min-width: 0;
+    flex: 1 1 auto;
+}
+/* LOCAL PATCH 2026-08-02 (Miinthe): chips wrap their own text rather than pushing
+   the row wider than the drawer. */
+.dle-gating-value .dle-chip {
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .dle-gating-empty {
@@ -2555,8 +2714,14 @@ button.dle-browse-block.dle-block-active {
 }
 
 /* Issue #39: on a narrow drawer the wrapping tab bar climbs onto 2-3 rows and eats scarce
-   vertical space. Keep it a single scannable row that scrolls horizontally instead of wrapping.
-   Labels stay available (better for i18n/discoverability than forcing icon-only). */
+   vertical space.
+   LOCAL PATCH 2026-08-03 (Miinthe): this used to keep the labels and scroll the row sideways,
+   on the reasoning that labels beat icon-only for discoverability. In practice a bar you
+   have to drag left and right to find a tab is worse than five fixed icons — the tabs move
+   under your thumb and you can't see them all at once. Now the labels are dropped and the
+   five icons share the width, so nothing scrolls and nothing moves. Discoverability is
+   preserved by `.dle-tab-label` below the bar, which switchTab() already fills in with the
+   active tab's localized name, and by each button's aria-label for screen readers. */
 @container (max-width: 360px) {
     .dle-tab-bar {
         flex-wrap: nowrap;
@@ -2617,6 +2782,23 @@ button.dle-browse-block.dle-block-active {
     #deeplore-panel.dle-overlay-mode::before {
         background: rgba(0, 0, 0, 0.5);
     }
+}
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): full width on a phone. Overlay mode is `min(380px, 90dvw)`,
+   and on a narrow screen that 90dvw leaves a useless ~10% sliver of chat down the left —
+   too thin to read, wide enough to cost the panel real room. Below 500px the panel takes the
+   whole width instead.
+   Dismissal still works: the panel is positioned below `--topBarBlockSize`, so ST's top bar
+   (and the DeepLore toggle icon in it) stays visible and tappable. The click-outside handler
+   in drawer.js simply has nothing left to click, which is why the toggle mattered enough to
+   check before making this change. The scrim and left border are dropped — with no visible
+   backdrop they only draw a line down the screen edge. */
+#deeplore-panel.dle-mobile.dle-overlay-mode {
+    width: 100dvw !important;
+    border-left: none;
+}
+#deeplore-panel.dle-mobile.dle-overlay-mode::before {
+    display: none;
 }
 
 /* --- Empty states (class-based visibility for animation) --- */
@@ -3827,6 +4009,9 @@ button.dle-browse-block.dle-block-active {
 /* ============================================================================
  * Graph Popup (Phase 2)
  * ============================================================================ */
+
+/* SillyTavern's ✕ clear of an iPhone's status bar (Miinthe 2026-10-18: "cannot close graph on phone"); Close in the toolbar too */
+dialog:has(.dle-graph-popup) .popup-button-close { top: calc(env(safe-area-inset-top, 0px) + 8px); }
 
 .dle-graph-popup {
     display: flex;
@@ -5401,12 +5586,367 @@ button.dle-chip-x:focus-visible { outline: 2px solid var(--dle-focus); outline-o
 .dle-browse-entry:hover .dle-browse-actions-cluster,
 .dle-browse-actions:focus-within .dle-browse-actions-cluster,
 .dle-browse-actions.dle-actions-open .dle-browse-actions-cluster,
-.dle-browse-actions.dle-actions-pinned-open .dle-browse-actions-cluster { max-width: 120px; opacity: 1; }
+/* LOCAL PATCH 2026-08-03 (Miinthe): 120px -> 168px. The cluster is a max-width transition, and
+   120px was sized for three buttons (pin / block / copy) at ~28px each. Patch 15 added the
+   move button as a fourth, which landed at ~118px + gaps — right on the limit, so it was
+   clipped at the trailing edge. 168px leaves room for four with margin to spare.
+   DO NOT put another rule between these four selectors — they are ONE comma-separated group.
+   Splitting it (which a comment inserted here did on 2026-08-03) leaves the first three
+   dangling, so `.dle-actions-open` never gets a max-width, the cluster stays at 0, and the
+   kebab menu silently opens nothing. */
+.dle-browse-actions.dle-actions-pinned-open .dle-browse-actions-cluster { max-width: 168px; opacity: 1; }
 .dle-browse-kebab { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; min-height: 28px; padding: 4px; background: none; border: none; color: inherit; opacity: var(--dle-opacity-ghost, .35); cursor: pointer; border-radius: var(--dle-radius-sm); }
 .dle-browse-entry:hover .dle-browse-kebab, .dle-browse-kebab:focus-visible, .dle-browse-actions.dle-actions-open .dle-browse-kebab { opacity: 1; }
 .dle-browse-kebab:hover { background: var(--dle-bg-hover); }
 .dle-browse-kebab:focus-visible { outline: 2px solid var(--dle-focus); outline-offset: 1px; }
 .dle-browse-actions.dle-actions-pinned-open .dle-browse-kebab { opacity: .5; }
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): the inbox jump button in the Browse filter row. Sized to
+   match the filter selects beside it so the row doesn't grow a taller element. The active
+   state is a filled accent rather than a border change, so it is obvious at a glance which
+   scope you are in — the whole point of the button is knowing you are "in the inbox". */
+.dle-browse-inbox-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    /* Match .dle-browse-filter-select exactly — same font-size and padding — and stretch to
+       the flex row's height. It previously used --dle-text-sm with line-height 1.6, which
+       computed a different box height than the selects beside it and sat visibly off. Height
+       comes from align-self: stretch rather than a fixed value, so it tracks the selects if
+       they ever change. margin: 0 overrides ST's .menu_button. */
+    /* Sized to the filter selects beside it, not stretched to the row. `align-self: stretch`
+       made it as tall as the tallest thing in the row, which read as an oversized block next
+       to a slim dropdown. `center` keeps it visually on the same line without inheriting
+       someone else's height. */
+    align-self: center;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 2px 6px;
+    min-height: 0;
+    height: auto;
+    line-height: 1.4;
+    font-size: var(--dle-text-xs);
+    white-space: nowrap;
+}
+.dle-browse-inbox-btn .dle-inbox-count { font-size: .85em; opacity: .75; }
+.dle-browse-inbox-btn.dle-inbox-active {
+    background: var(--dle-accent, var(--SmartThemeQuoteColor, #6c8cff));
+    color: var(--dle-on-accent, #fff);
+}
+.dle-browse-inbox-btn.dle-inbox-active .dle-inbox-count { opacity: .9; }
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): icon-only tabs on TOUCH devices only.
+   First attempt used `@container (max-width: 480px)`, which was wrong: the container is the
+   panel, and the panel is roughly the same width on a desktop (overlay mode is ~380px) as on
+   a phone — so it stripped the labels on desktop too. Panel width cannot tell the two apart.
+   Pointer type can. On a phone this replaces the drag-sideways tab row with five fixed icons;
+   on desktop nothing changes and the labels stay. */
+#deeplore-panel.dle-mobile .dle-tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: clip;       /* clip, not auto — the row must not become draggable */
+    padding: 0;
+}
+#deeplore-panel.dle-mobile .dle-tab {
+    flex: 1 1 0;            /* five equal columns, all visible at once */
+    min-width: 0;
+    padding: var(--dle-space-2) 2px;
+    gap: 0;
+    position: relative;     /* anchor for the badge below */
+}
+#deeplore-panel.dle-mobile .dle-tab-text {
+    display: none;
+}
+/* Without a label the badge has nothing to sit beside, and inline it shoved the icon
+   off-centre — worst on Browse, whose badge is a four-digit entry count. Float it above
+   the icon as a corner chip instead. */
+#deeplore-panel.dle-mobile .dle-tab-badge:not(:empty) {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(2px);
+    font-size: 9px;
+    line-height: 1.2;
+    padding: 0 3px;
+    border-radius: 6px;
+    pointer-events: none;
+}
+#deeplore-panel.dle-mobile .dle-tab-label {
+    display: block;         /* the active tab's name, so the icons are never a guess */
+    text-align: center;
+    font-size: var(--dle-text-xs);
+    opacity: .6;
+    padding: 2px 0 0;
+}
+
+/* ---- Compact status zone (Miinthe, 2026-08-03) --------------------------------------
+   On a phone the status block cost four stacked rows plus two rows of buttons before
+   a single entry was visible. Nothing here is removed — only the decoration that
+   repeats information the content already carries. Touch-only; desktop is untouched.
+   Tap targets are NOT reduced: the 44px floor set earlier in this file still applies. */
+
+#deeplore-panel.dle-mobile .dle-drawer-zone { padding: var(--dle-space-1) var(--dle-space-2); }
+#deeplore-panel.dle-mobile .dle-zone-actions { padding: var(--dle-space-1) var(--dle-space-2); }
+
+/* The "BUDGET" heading and its divider are pure labelling — both bars already say what
+   they are ("Budget: 0 / 6.1k", "Entries | 0 / 15"). Two rows recovered. */
+#deeplore-panel.dle-mobile .dle-budget-cluster-label,
+#deeplore-panel.dle-mobile .dle-zone-divider.dle-budget-divider { display: none; }
+
+/* Header per Miinthe's layout sketch (2026-08-03): ONE row — the status phrase on the left with
+   room to grow, both bars stacked to its right at a readable size.
+   Grid rather than markup surgery: the zone's children are flat siblings (status row,
+   divider, cluster label, token bar, note, entries bar, note), so named areas can rearrange
+   them without touching drawer.html. The divider/label/notes are display:none above, which
+   removes them from grid flow entirely. */
+#deeplore-panel.dle-mobile .dle-zone-status {
+    display: grid;
+    /* FIXED first column, not auto. The phase label ranges from "Idle" (4 chars) to
+       "Narrowing categories…" (21), so an auto column re-measures on every phase change and
+       the bars resize and jump underneath it — the "clipping into the bars / wacky stuff".
+       8.5rem fits every common label ("Indexing…", "Writing…", "Generating…"); the two long
+       ones ellipsis, and their full text is already on the status dot's title/aria-label. */
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    grid-template-areas:
+        "status token"
+        "status entries";
+    align-items: center;
+    column-gap: var(--dle-space-2);
+    row-gap: 5px;   /* the bars were touching; they read as one block at 2px */
+}
+/* "971" and "Two-Stage" are reference numbers, not live state — they cost the width the
+   bars actually need to be legible. Dropped on mobile; both are still in /dle-status and
+   the entry count is on the Browse tab badge. */
+#deeplore-panel.dle-mobile .dle-status-stats { display: none; }
+#deeplore-panel.dle-mobile .dle-status-row {
+    grid-area: status;
+    /* "enough space for all the words that appear here" — the phase label runs long
+       ("Consulting the AI…", longer again in DE/RU). Size to content, never wrap mid-phrase;
+       the bars take whatever width is left. */
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+#deeplore-panel.dle-mobile .dle-pipeline-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+#deeplore-panel.dle-mobile .dle-status-activity { min-width: 0; }
+#deeplore-panel.dle-mobile .dle-token-bar-container {
+    grid-area: token;
+    width: auto;
+    margin: 0;
+    height: 20px;   /* "font big enough to read" — these carry real numbers */
+}
+#deeplore-panel.dle-mobile .dle-entries-bar-container {
+    grid-area: entries;
+    width: auto;
+    margin: 0;
+    height: 20px;
+}
+#deeplore-panel.dle-mobile .dle-token-bar-label,
+#deeplore-panel.dle-mobile .dle-entries-bar-label { font-size: var(--dle-text-sm); }
+
+/* The labels are dropped globally now (see .dle-action-label above); mobile only tightens
+   the gap on top of that. */
+#deeplore-panel.dle-mobile .dle-action-row { gap: 4px; }
+/* Dropping the labels narrows these buttons, and .dle-action-btn is NOT covered by the
+   44px touch block earlier in this file — so give it its own floor rather than trading
+   vertical space for missed taps. */
+#deeplore-panel.dle-mobile .dle-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- LOCAL PATCH 2026-08-03 (Miinthe): one scroller on mobile ----------------------------
+   Several panels cap their own height and scroll internally. On a desktop that is sensible —
+   it keeps a short drawer usable. On a phone it means two scroll surfaces stacked on top of
+   each other, and with a finger you cannot tell which one you are dragging: the inner one
+   swallows the gesture, hits its end, and the page stops moving for no visible reason. Miinthe
+   hit this in the Filters tab, where .dle-gating-fields-container caps at min(320px, 40dvh).
+   On mobile these grow to their natural height and let .dle-drawer-inner — the drawer's one
+   real scroller — do the scrolling.
+   NOT included on purpose: inline snippets inside a row (.dle-browse-preview-text,
+   .dle-preview) and the Librarian chat transcript. Uncapping those would inflate individual
+   rows rather than remove a scroll surface, which is a different problem. */
+#deeplore-panel.dle-mobile .dle-gating-fields-container,
+#deeplore-panel.dle-mobile .dle-scroll-region,
+#deeplore-panel.dle-mobile .dle-librarian-content,
+#deeplore-panel.dle-mobile .dle-librarian-queue,
+#deeplore-panel.dle-mobile .dle-lib-activity-log,
+#deeplore-panel.dle-mobile .dle-lib-tool-result {
+    max-height: none;
+    overflow-y: visible;
+}
+
+/* ---- LOCAL PATCH 2026-08-03 (Miinthe): collapsible filter block (mobile only) ------------
+   On a phone the search box plus five dropdowns cost most of a screen before a single entry
+   was visible. The toggle is hidden entirely on desktop, where there is room and the row has
+   never been the problem — so this changes nothing there.
+   The count is the safety half: a filter you cannot see is what left three chats injecting
+   nothing at all, so the collapsed bar always says how many are active. */
+.dle-filters-toggle { display: none; }
+
+#deeplore-panel.dle-mobile .dle-filters-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 40px;
+    padding: 4px var(--dle-space-2);
+    margin-bottom: var(--dle-space-1);
+    background: none;
+    border: 1px solid var(--dle-border);
+    border-radius: var(--dle-radius-sm);
+    color: inherit;
+    font-size: var(--dle-text-sm);
+    cursor: pointer;
+}
+#deeplore-panel.dle-mobile .dle-filters-toggle-label { flex: 1 1 auto; text-align: left; }
+#deeplore-panel.dle-mobile .dle-filters-count { flex: 0 0 auto; opacity: .5; font-size: var(--dle-text-xs); }
+#deeplore-panel.dle-mobile .dle-filters-count.dle-filters-count-on {
+    opacity: 1;
+    background: var(--dle-accent, var(--SmartThemeQuoteColor, #6c8cff));
+    color: var(--dle-on-accent, #fff);
+    border-radius: 8px;
+    padding: 0 6px;
+    font-weight: 600;
+}
+#deeplore-panel.dle-mobile .dle-filters-caret {
+    flex: 0 0 auto;
+    opacity: .5;
+    transition: transform var(--dle-dur-fast, 120ms) var(--dle-ease-out, ease-out);
+}
+
+/* Collapsed by default. The search box stays visible — it is the one control worth having
+   to hand, and hiding it would make the collapsed state feel broken rather than tidy. */
+#deeplore-panel.dle-mobile .dle-browse-filters,
+#deeplore-panel.dle-mobile .dle-browse-search-help-popover { display: none; }
+#deeplore-panel.dle-mobile.dle-filters-open .dle-browse-filters { display: flex; }
+#deeplore-panel.dle-mobile.dle-filters-open .dle-browse-search-help-popover { display: block; }
+#deeplore-panel.dle-mobile.dle-filters-open .dle-filters-caret { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+    #deeplore-panel.dle-mobile .dle-filters-caret { transition: none; }
+}
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): the folder-filter picker's list (Patch 5). Its height is
+   pinned in JS at open time — see the onOpen handlers in drawer-events.js and
+   commands-gating.js — because filtering used to remove rows and collapse the popup
+   downwards mid-type, moving the buttons out from under the pointer. These rules supply the
+   scrolling that the pinned height then needs. */
+.dle-folder-list {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 600px), (pointer: coarse) {
+    .dle-folder-list .dle-folder-select,
+    .dle-folder-list .dle-folder-cmd-select { min-height: 40px; }
+}
+
+/* ---- LOCAL PATCH 2026-08-03 (Miinthe): move-entry destination picker ----------------------
+   Previously all of this was inline styles built in drawer-events.js. Inline styles cannot
+   answer a media query, and several elements combined `width: 100%` with padding while
+   inheriting an unknown box-sizing — on a phone that overflowed the popup and made the
+   fields slide sideways. Everything below is explicitly border-box and width-constrained. */
+.dle-move-dialog,
+.dle-move-dialog * { box-sizing: border-box; max-width: 100%; }
+.dle-move-dialog { text-align: left; }
+.dle-move-title { margin: 0 0 .25em; }
+.dle-move-entry { margin: .25em 0; overflow-wrap: anywhere; }
+.dle-move-from { margin: .25em 0 1em; opacity: .75; overflow-wrap: anywhere; }
+.dle-move-from code { overflow-wrap: anywhere; }
+
+input.dle-move-search { width: 100%; margin-bottom: .5em; }
+
+#dle-move-picker {
+    max-height: min(45vh, 320px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--dle-border, rgba(255, 255, 255, .15));
+    border-radius: 6px;
+    padding: 4px;
+    width: 100%;
+}
+
+.dle-move-row { display: flex; align-items: stretch; gap: 2px; width: 100%; }
+.dle-move-row button { border: none; background: none; color: inherit; cursor: pointer; border-radius: 4px; }
+
+button.dle-move-opt {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;          /* lets the label ellipsis instead of forcing the row wider */
+    text-align: left;
+    padding: 5px 10px;
+    font-size: 1em;
+    line-height: 1.5;
+}
+.dle-move-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-move-ctx { opacity: .4; }
+.dle-move-marker { opacity: .55; font-size: .8em; }
+.dle-move-count { flex: 0 0 auto; min-width: 4.5ch; text-align: right; opacity: .4; font-size: .85em; }
+
+button.dle-move-into {
+    flex: 0 0 auto;
+    width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: .35;
+    font-size: .9em;
+}
+button.dle-move-into:hover, button.dle-move-into:focus-visible { opacity: 1; background: var(--dle-bg-hover); }
+
+.dle-move-head {
+    opacity: .55;
+    font-size: .8em;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 8px 8px 4px;
+}
+
+#dle-move-create {
+    display: none;                     /* toggled to flex by the search handler */
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    border: 1px dashed var(--dle-border, rgba(255, 255, 255, .25));
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-bottom: .4em;
+    font-size: 1em;
+}
+#dle-move-create > i { opacity: .6; flex: 0 0 auto; }
+.dle-move-create-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-move-create-hint { flex: 0 0 auto; opacity: .5; font-size: .85em; }
+
+.dle-move-status { margin: .6em 0 0; font-size: .9em; overflow-wrap: anywhere; }
+.dle-move-status #dle-move-count { opacity: .6; }
+.dle-move-note { margin-top: .6em; opacity: .7; font-size: .85em; }
+
+/* Touch: bigger targets, more room for the list, and the tree indent capped so a deep path
+   doesn't push the label off the side of a narrow screen. */
+@media (max-width: 600px), (pointer: coarse) {
+    #dle-move-picker { max-height: 50vh; }
+    button.dle-move-opt { padding: 10px; min-height: 44px; align-items: center; }
+    button.dle-move-into { width: 44px; min-height: 44px; opacity: .6; }
+    .dle-move-head { padding: 10px 8px 4px; }
+    #dle-move-create { padding: 10px; min-height: 44px; align-items: center; }
+    .dle-move-count { min-width: 4ch; }
+}
 /* footer diagnostics dock (.dle-health-icons / .dle-health-icon:hover dock props
    folded into their canonical rules in ZONE 3 footer to avoid duplicate selectors). */
 .dle-diag-dock { display: flex; flex-direction: column; gap: 2px; }
@@ -7001,6 +7541,36 @@ button.dle-browse-copy-title-btn:focus-visible {
     border-radius: var(--dle-radius-sm);
 }
 
+/* LOCAL PATCH 2026-08-03 (Miinthe): the move button, styled as a ghost icon to match its three
+   siblings. It had NO rule at all, so it fell back to the browser's default button chrome —
+   a bordered, filled box sitting next to three borderless icons. That box was the "weird
+   icon"; the glyph itself was fine. Same declarations as .dle-browse-copy-title-btn above;
+   any restyle of the cluster needs to cover this selector too. */
+button.dle-browse-move-btn {
+    font-size: var(--dle-text-base);
+    cursor: pointer;
+    opacity: var(--dle-opacity-muted);
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+button.dle-browse-move-btn:hover {
+    opacity: 1;
+    background: var(--dle-bg-hover);
+    border-radius: var(--dle-radius-sm);
+}
+button.dle-browse-move-btn:focus-visible {
+    outline: 2px solid var(--dle-focus);
+    outline-offset: 2px;
+    border-radius: var(--dle-radius-sm);
+}
+
 /* Item 10: gating-clear-btn — × dismiss matching chip dismiss style */
 .dle-gating-clear-btn {
     display: inline-flex;
@@ -7140,3 +7710,285 @@ button.dle-browse-copy-title-btn:focus-visible {
 .dle-import-recovery-status-fail { color: var(--dle-error-fg); }
 .dle-import-recovery-status-dismissed { color: var(--dle-text-muted); opacity: var(--dle-opacity-muted); }
 @media (max-width: 600px) { .dle-import-recovery-table th:nth-child(2), .dle-import-recovery-table td.dle-import-recovery-reason { font-size: var(--dle-text-xs); } }
+
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): the drawer's real scroll viewport. Issue #39 wanted
+   over-scroll kept out of ST's chat — that belongs HERE, on the element that actually
+   scrolls, rather than on .dle-tab-panel where it only blocked the wheel from ever
+   reaching this one. */
+#deeplore-panel .dle-drawer-inner {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* LOCAL PATCH 2026-08-03 (Miinthe): the dead space below the content, and the unpinned footer.
+   The panel is full height (100dvh - top bar) but was not a flex column, so .dle-drawer-inner
+   was only as tall as whatever it contained. The footer — deliberately moved out of the
+   scroller by drawer.js so it can stay put during scroll — then sat immediately underneath,
+   and everything below that was empty panel you could scroll into for no reason. Visible on
+   desktop, glaring on a phone.
+   Making the open panel a column and letting the scroller grow fixes both at once: the
+   viewport fills the available height, and the footer lands on the bottom border where it
+   belongs. Scoped to .openDrawer so a closed/animating panel keeps ST's own layout.
+   min-height: 0 is load-bearing — without it a flex item refuses to shrink below its content
+   and the scroller would push the footer back off the bottom edge. */
+#deeplore-panel.openDrawer {
+    display: flex;
+    flex-direction: column;
+    /* ST's own rule is `.drawer-content.openDrawer { display: block; overflow-y: auto }`.
+       That `auto` made the PANEL a second scroll container stacked on top of
+       .dle-drawer-inner, which is why the whole panel could be scrolled with nothing to
+       scroll to. With the column layout below, the children exactly fill the panel, so
+       hidden here costs nothing and guarantees exactly one scroller. Our selector is
+       id+class, so it beats ST's class+class without !important. */
+    overflow: hidden;
+}
+#deeplore-panel.openDrawer > .dle-drawer-inner {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+#deeplore-panel.openDrawer > #dle-drawer-footer {
+    flex: 0 0 auto;
+    margin-top: auto;   /* pins to the bottom even if the scroller is shorter than the panel */
+}
+
+/* LOCAL PATCH (Miinthe, 2026-10-03): phones.
+   1. The drawer would not close on a tap. SillyTavern closes every open drawer on a tap
+      "outside" it, and recognises a tap on a drawer's own icon by the .drawer-icon box
+      (public/script.js, the html touchstart/mousedown handler). DeepLore's icon is an SVG
+      inside that box, so the tap target was the SVG — counted as outside, the drawer
+      closed, and DeepLore's click handler reopened it in the same tap. Letting taps pass
+      through the drawing makes the box itself the target.
+   2. Ten top-bar icons at ~41px each need ~410px; a phone has 320–390, so the row
+      overflowed and DeepLore, last in line, was pushed off the right edge. On narrow
+      screens every icon shares the width instead. */
+#deeploreDrawerIcon > * {
+    pointer-events: none;
+}
+@media (max-width: 480px) {
+    #top-settings-holder > .drawer {
+        flex: 1 1 0;
+        min-width: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #top-settings-holder > .drawer > .drawer-toggle {
+        display: flex;
+        justify-content: center;
+    }
+}
+
+/* LOCAL PATCH (Miinthe, 2026-10-03): "Show N unused fields" toggle in the Filters tab. */
+.dle-gating-unused-toggle {
+    margin: 6px 0 2px 4px;
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    color: var(--dle-text-muted);
+    font-size: var(--dle-text-xs);
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+.dle-gating-unused-toggle:hover, .dle-gating-unused-toggle:focus-visible { color: inherit; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-03): DeepLore settings on phones.
+   The settings window is a SillyTavern DISPLAY popup — no buttons, only the corner ✕,
+   which SillyTavern places 6px OUTSIDE the corner (popup.css .popup-button-close).
+   On a phone the popup fills the screen, so that ✕ ended up partly off-screen and could
+   not be tapped: there was no way out. Narrow screens get the ✕ inside and larger, plus
+   a plain Close button in DeepLore's own header that does not depend on it. */
+.dle-settings-close-mobile { display: none; }
+@media (max-width: 600px) {
+    dialog.popup:has(.dle-settings-popup) .popup-button-close {
+        top: 8px;
+        right: 8px;
+        width: 36px;
+        height: 36px;
+        font-size: 30px;
+        z-index: 10;
+    }
+    .dle-settings-popup .dle-settings-header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .dle-settings-popup .dle-version-chip { display: none; }
+    .dle-settings-close-mobile {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex: none;
+        margin-left: 6px;
+        padding: 6px 12px;
+    }
+}
+
+/* LOCAL PATCH (Miinthe, 2026-10-03): Story tab — story trackers. */
+.dle-story-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 4px; }
+.dle-story-empty, .dle-story-hint { padding: 6px 8px; font-size: var(--dle-text-xs); }
+.dle-tracker {
+    padding: 8px 10px;
+    border: 1px solid var(--dle-border);
+    border-left: 3px solid var(--dle-accent);
+    border-radius: var(--dle-radius-sm);
+}
+.dle-tracker-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.dle-tracker-name { font-weight: 600; }
+.dle-tracker-tools { display: inline-flex; gap: 2px; }
+.dle-tracker-tool, .dle-tracker-step, .dle-tracker-aside-clear {
+    background: none; border: none; cursor: pointer; color: var(--dle-text-muted);
+    border-radius: var(--dle-radius-sm); padding: 2px 5px;
+}
+.dle-tracker-tool:hover, .dle-tracker-tool:focus-visible,
+.dle-tracker-step:hover, .dle-tracker-step:focus-visible,
+.dle-tracker-aside-clear:hover, .dle-tracker-aside-clear:focus-visible { color: inherit; outline: 1px solid var(--dle-border); }
+.dle-tracker-main { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.dle-tracker-move { min-width: 28px; }
+.dle-tracker-move[disabled] { opacity: .35; cursor: default; }
+.dle-tracker-dots { letter-spacing: 1px; color: var(--dle-accent); }
+.dle-tracker-value { font-weight: 600; }
+.dle-tracker-pos { color: var(--dle-text-muted); font-size: var(--dle-text-xs); }
+.dle-tracker-aside-note { margin-top: 4px; font-size: var(--dle-text-sm); font-style: italic; }
+.dle-tracker-aside-clear { font-size: var(--dle-text-xs); text-decoration: underline dotted; font-style: normal; }
+.dle-tracker-steps { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: var(--dle-text-xs); }
+.dle-tracker-step--current { color: var(--dle-accent); font-weight: 600; }
+.dle-tracker-sep { color: var(--dle-text-muted); opacity: .5; }
+.dle-autotrack-toggle { font-size: var(--dle-text-xs); padding: 2px 8px; margin-left: auto; opacity: .75; }
+.dle-autotrack-toggle.dle-autotrack-on { opacity: 1; color: var(--dle-accent); }
+.dle-tracker-direction { font-size: var(--dle-text-xs); }
+.dle-tracker-auto-note { margin-top: 4px; font-size: var(--dle-text-xs); color: var(--dle-text-muted); }
+.dle-find-acts { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.dle-find-acts button { font-size: var(--dle-text-xs); padding: 2px 8px; border: 1px solid currentColor; border-radius: 4px; background: none; color: var(--dle-accent); cursor: pointer; }   /* LOCAL PATCH (Miinthe, 2026-10-04): collections that grow — WIP look */
+.dle-tracker-undo, .dle-col-undo {   /* LOCAL PATCH (Miinthe, 2026-10-05): + collection undo */
+    background: none; border: none; cursor: pointer; color: var(--dle-accent);
+    font-size: var(--dle-text-xs); text-decoration: underline dotted; padding: 0 4px;
+}
+
+/* LOCAL PATCH (Miinthe, 2026-10-05): the storyboard window — full screen over SillyTavern, its own page in an iframe. */
+#dle-board-window { position: fixed !important; top: 0 !important; left: 0 !important; z-index: 40000;   /* above floating extension buttons (TunnelVision: 31000), below toasts */
+    width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: none !important; margin: 0 !important; padding: 0 !important; background: #f4f5f8; }   /* ST's phone layout otherwise squeezes it to height 0 */
+#dle-board-window iframe { border: 0; width: 100%; height: 100%; display: block; }
+body.dle-board-open { overflow: hidden; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-05): a tracker waiting at a fork — its ways as small pill buttons. */
+.dle-tracker-branch { font: inherit; font-size: var(--dle-text-xs); padding: 1px 9px; margin: 2px 2px 0 0; border-radius: 999px; border: 1px solid var(--dle-border); background: transparent; color: inherit; cursor: pointer; }
+.dle-tracker-branch:hover, .dle-tracker-branch:focus-visible { border-color: var(--dle-accent); color: var(--dle-accent); outline: none; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-05): a collection's name in the Story tab opens it on the board. */
+.dle-col-open { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.dle-col-open:hover, .dle-col-open:focus-visible { text-decoration: underline dotted; outline: none; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-04): a work-in-progress control (its real place is still being designed) */
+.dle-wip { font-size: 9px; font-weight: 700; letter-spacing: .04em; margin-left: 3px; padding: 0 4px; border-radius: 4px; border: 1px dashed currentColor; opacity: .75; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-04): "This character" card in the Filters tab (WIP until the Filters hub) */
+.dle-char-card { border: 1px solid var(--SmartThemeBorderColor, #555); border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; display: grid; gap: 5px; }
+.dle-char-card:empty { display: none; }
+.dle-char-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dle-char-state { margin-left: auto; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.dle-char-state.on { color: #4caf7d; } .dle-char-state.off { color: #d9822b; }
+.dle-char-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dle-char-k { font-size: 11px; opacity: .7; min-width: 86px; }
+.dle-char-chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-width: 0; }
+.dle-char-chip { font-size: 11px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--SmartThemeBorderColor, #555); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-char-switches { justify-content: space-between; }
+.dle-char-switches select { width: auto; max-width: 100%; margin: 0; }
+/* LOCAL PATCH (Miinthe, 2026-10-04): pause / abandon / board off in the Story tab — WIP look */
+.dle-run-undo, .dle-board-on, .dle-board-offbtn { background: none; border: none; cursor: pointer; color: var(--dle-accent); font-size: var(--dle-text-xs); text-decoration: underline dotted; padding: 0 4px; }
+.dle-tracker-aside-note .dle-run { background: none; border: none; cursor: pointer; color: var(--dle-accent); font-size: var(--dle-text-xs); text-decoration: underline dotted; padding: 0 4px; }
+.dle-board-offrow { text-align: right; opacity: .8; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆ — the tab holds one iframe sized to the panel (one scroll area per drawer
+   inside it — the v6 lesson), and her own window when popped out */
+#dle-panel-mero { padding: 0; }
+#dle-panel-mero .dle-mero-mount { height: 60dvh; min-height: 340px; }   /* fitted to the space left by mero-window.js fitMount */
+#dle-panel-mero .dle-mero-mount[hidden], #dle-panel-mero .dle-mero-away[hidden] { display: none !important; }
+#dle-panel-mero .dle-mero-away { padding: var(--dle-space-3); display: grid; gap: var(--dle-space-2); }
+.dle-mero-frame { width: 100%; height: 100%; border: 0; display: block; background: transparent; }
+#dle-mero-float { position: fixed; left: 8vw; top: 8vh; width: min(780px, 92vw); height: min(620px, 84vh); min-width: 320px; min-height: 360px; z-index: 39000; resize: both; overflow: hidden; display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--SmartThemeBorderColor, #444); background: var(--SmartThemeBlurTintColor, #1b1f29); box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+#dle-mero-float[hidden] { display: none !important; }
+.dle-mero-float-head { display: flex; gap: 8px; align-items: center; padding: 6px 8px 6px 12px; cursor: move; user-select: none; border-bottom: 1px solid var(--SmartThemeBorderColor, #444); font-size: 13px; }
+.dle-mero-float-head b { flex: 1; }
+.dle-mero-float-head span { opacity: .6; font-size: 12px; }
+.dle-mero-float-head button { background: none; border: 1px solid var(--SmartThemeBorderColor, #444); border-radius: 6px; color: inherit; cursor: pointer; padding: 0 8px; }
+.dle-mero-float-body { flex: 1; min-height: 0; }
+@media (max-width: 700px) { #dle-mero-float { left: 0 !important; top: 0 !important; width: 100vw; height: 100dvh; border-radius: 0; resize: none; } }
+.dle-mero-flash { box-shadow: 0 0 0 2px var(--dle-accent); transition: box-shadow .3s; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-05) — Mero's 📬 on the quick-action row: count dot; while the reply waits for an answer an
+   amber dot, a gentle wiggle every few seconds and a small ticker (mock-ups v9–v12). Reduced motion: still, shortened. */
+.dle-mailwrap { position: relative; display: inline-flex; }
+.dle-mail-btn { position: relative; }
+.dle-mail-dot { position: absolute; top: -3px; right: -3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; font-size: 10px; line-height: 15px; font-weight: 700; text-align: center; background: #d4557a; color: #fff; }
+.dle-mailwrap.hold .dle-mail-dot { background: #d98a16; }
+.dle-mail-bubble { position: absolute; left: -2px; bottom: calc(100% + 8px); z-index: 30; width: 150px; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 999px; padding: 2px 8px; font-size: 11px; background: #d98a16; color: #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.dle-mail-bubble[hidden] { display: none !important; }
+.dle-mail-bubble .ic { flex: none; }
+.dle-mail-bubble .tw { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dle-mail-bubble .tick span + span { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .dle-mailwrap.hold .dle-mail-btn { animation: dle-wiggle 4s ease-in-out infinite; }
+  .dle-mail-bubble .tw { text-overflow: clip; }
+  .dle-mail-bubble .tick { display: inline-block; animation: dle-tick 7s linear infinite; }
+  .dle-mail-bubble .tick span + span { display: inline; padding-left: 28px; }
+  .dle-mail-bubble .tick span:first-child { padding-left: 0; }
+  @keyframes dle-wiggle { 0%, 88%, 100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
+  @keyframes dle-tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+}
+
+/* LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆'s glow on the side panel's tab — a big moment, want to talk about it? */
+#dle-tab-mero.dle-mero-glow { box-shadow: 0 0 0 2px #ff79b0, 0 0 12px #ff79b0; border-radius: 8px; }
+
+/* LOCAL PATCH (Miinthe, 2026-10-13) — the 🎭 Cast tab (src/cast-tab.js): a working look until the UI tidy-up */
+#dle-panel-cast .dle-cast-mount { display: flex; flex-direction: column; gap: 10px; padding: 6px 2px; }
+#dle-panel-cast .dle-cast-dim { opacity: .65; font-size: .85em; font-weight: normal; }
+#dle-panel-cast .dle-cast-empty { opacity: .8; padding: 6px; }
+#dle-panel-cast .dle-cast-queue { border: 1px solid var(--SmartThemeBorderColor); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+#dle-panel-cast .dle-cast-h { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+#dle-panel-cast .dle-cast-ql { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#dle-panel-cast .dle-cast-qi { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "n name btns" "n sub btns" "w w w"; align-items: center; column-gap: 6px; padding: 4px 6px; border-radius: 6px; background: color-mix(in srgb, var(--SmartThemeBodyColor) 6%, transparent); }
+#dle-panel-cast .dle-cast-qi.auto { border-left: 3px solid var(--SmartThemeQuoteColor); }
+#dle-panel-cast .dle-cast-qn { grid-area: n; opacity: .6; }
+#dle-panel-cast .dle-cast-qname { grid-area: name; text-align: left; background: none; border: 0; padding: 0; color: inherit; font-weight: 600; cursor: pointer; }
+#dle-panel-cast span.dle-cast-qname { cursor: default; }
+#dle-panel-cast .dle-cast-qsub { grid-area: sub; font-size: .82em; opacity: .7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dle-panel-cast .dle-cast-qbtns { grid-area: btns; display: flex; gap: 2px; }
+#dle-panel-cast .dle-cast-qbtns .menu_button, #dle-panel-cast .dle-cast-ph .menu_button { padding: 2px 7px; margin: 0; min-width: 0; }
+#dle-panel-cast .dle-cast-writeas { grid-area: w; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+#dle-panel-cast .dle-cast-qa { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#dle-panel-cast .dle-cast-qa select { flex: 1; min-width: 120px; margin: 0; }
+#dle-panel-cast .dle-cast-people { display: flex; flex-direction: column; gap: 6px; }
+#dle-panel-cast .dle-cast-person { border: 1px solid var(--SmartThemeBorderColor); border-radius: 8px; padding: 6px 8px; }
+#dle-panel-cast .dle-cast-person.here { border-left: 3px solid var(--SmartThemeQuoteColor); }
+#dle-panel-cast .dle-cast-ph { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#dle-panel-cast .dle-cast-open { background: none; border: 0; color: inherit; padding: 0; cursor: pointer; text-align: left; }
+#dle-panel-cast .dle-cast-sum { flex: 1; min-width: 80px; font-size: .82em; opacity: .7; }
+#dle-panel-cast .dle-cast-here { margin: 0; font-size: .85em; }
+#dle-panel-cast .dle-cast-pb { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+#dle-panel-cast .dle-cast-pb > label { font-weight: 600; margin-top: 4px; }
+#dle-panel-cast .dle-cast-row { display: flex; gap: 4px; align-items: center; }
+#dle-panel-cast .dle-cast-row > input, #dle-panel-cast .dle-cast-row > span { flex: 1; min-width: 0; margin: 0; }
+#dle-panel-cast .dle-cast-row .menu_button { padding: 2px 7px; margin: 0; }
+#dle-panel-cast .dle-cast-q { display: block; font-style: italic; opacity: .65; }
+#dle-panel-cast .dle-cast-thought { margin: 0; padding: 4px 8px; border-left: 3px solid var(--SmartThemeBorderColor); font-style: italic; }
+#dle-panel-cast .dle-cast-veil { filter: blur(4px); user-select: none; opacity: .7; padding: 4px; border: 1px dashed var(--SmartThemeBorderColor); border-radius: 6px; }
+#dle-panel-cast .dle-cast-off { font-size: .9em; padding: 2px 0 2px 8px; border-left: 2px solid var(--SmartThemeBorderColor); }
+
+/* LOCAL PATCH (Miinthe, 2026-10-13) — the What changed tab (src/changes-tab.js) */
+#dle-panel-changes .dle-changes-mount { display: flex; flex-direction: column; gap: 10px; padding: 6px 2px; }
+#dle-panel-changes .dle-changes-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+#dle-panel-changes .dle-changes-head select { margin: 0 0 0 6px; width: auto; }
+#dle-panel-changes .dle-changes-dim { opacity: .65; }
+#dle-panel-changes .dle-changes-group { display: flex; flex-direction: column; gap: 4px; }
+#dle-panel-changes .dle-changes-at { font-size: .78em; letter-spacing: .06em; text-transform: uppercase; opacity: .6; padding-top: 4px; }
+#dle-panel-changes .dle-changes-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title undo" "text undo"; gap: 2px 8px; padding: 6px 8px; border: 1px solid var(--SmartThemeBorderColor); border-radius: 6px; align-items: center; }
+#dle-panel-changes .dle-changes-item.undone { opacity: .5; text-decoration: line-through; }
+#dle-panel-changes .dle-changes-title { grid-area: title; font-size: .75em; opacity: .6; }
+#dle-panel-changes .dle-changes-text { grid-area: text; font-size: .9em; min-width: 0; overflow-wrap: anywhere; }
+#dle-panel-changes .dle-changes-item > .menu_button, #dle-panel-changes .dle-changes-item > .dle-changes-dim { grid-area: undo; margin: 0; padding: 2px 8px; font-size: .85em; }
+#dle-panel-cast .dle-cast-half { font-size: .75em; letter-spacing: .08em; text-transform: uppercase; opacity: .65; margin-top: 4px; }
+#dle-panel-cast .dle-cast-none { font-size: .85em; padding: 2px 6px; }
+#dle-panel-cast .dle-cast-qi.mine { border-left: 3px solid var(--SmartThemeQuoteColor); }
+#dle-panel-cast .dle-cast-qi.ai { border-left: 3px solid var(--SmartThemeBorderColor); }
+#dle-panel-cast .dle-cast-sugg { display: flex; flex-wrap: wrap; gap: 4px; }
+#dle-panel-cast .dle-cast-sugg .menu_button { margin: 0; font-size: .85em; }
+#dle-panel-cast .dle-cast-lastoff { font-size: .82em; opacity: .8; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--SmartThemeBorderColor); }

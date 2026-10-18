@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>harness</title>
+<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%}</style>
+<script type="module">
+import { normalizeBoard, freshState } from '../src/board-model-pure.js';
+import { toWindowBoard, fromWindowBoard, toWindowChat, fromWindowChat } from '../src/board-window-pure.js';
+const b = normalizeBoard({ v: 2, name: 'Real board', folders: ['Plot/'], trackers: [
+  { id: 'rel', name: 'Relationship', icon: '💞', steps: [{ id: 's1', name: 'Strangers' }, { id: 's2', name: 'Friends', fork: { branches: [{ id: 'b1', name: 'Yes' }, { id: 'b2', name: 'No' }] } }, { id: 's3', name: 'Lovers' }] },
+  { id: 'plot', name: 'Plot', starts: [{ tracker: 'rel', step: 's2' }], steps: [{ id: 'p1', name: 'Calm' }, { id: 'p2', name: 'Storm' }] },
+  { id: 'bag', kind: 'collection', name: 'Bag', states: [{ id: 'no', label: 'not yet' }, { id: 'have', label: 'have' }], items: [{ id: 'key', name: 'Rusty key' }] },
+]});
+const st = freshState(b); st.trackers.rel = { at: 's2', forks: { s2: 'b1' } };
+window.SAVED = []; window.CLOSED = 0;
+window.__dleBoardHost = {
+  load: () => JSON.parse(JSON.stringify(location.search.includes('empty') ? { boards: { 'test bot 1': toWindowBoard(fromWindowBoard({ name: 'test bot 1', trackers: [], folders: [] }, 'test bot 1')) }, current: 'test bot 1', chat: 'Claude test', bag: {},
+    targets: ['Claude test'], run: 'A', vault: [], links: {}, tree: { name: 'Vault' }, changed: [] } : { boards: { 'Real board': toWindowBoard(b) }, current: 'Real board', chat: 'Some other chat', bag: toWindowChat(b, st),
+    targets: ['test bot 1 (character)', 'Some other chat'], run: 'B', vault: [{ title: 'Rung 1', folder: 'Plot/', summary: 'x' }], links: {}, tree: { name: 'Vault', kids: [{ name: 'Plot', value: 'Plot/' }] }, changed: [] })),
+  save: (name, doc, bag) => { const nb = fromWindowBoard(doc, name); window.SAVED.push({ name, board: nb, state: fromWindowChat(nb, bag, st) }); },
+  rename: () => {}, apply: () => {}, close: () => { window.CLOSED++; }, setPref: (k, v) => { window.PREF = [k, v]; },
+};
+const f = document.createElement('iframe'); f.src = 'board.html'; document.body.appendChild(f);
+</script>

@@ -7,6 +7,7 @@ import { escapeHtml } from '../../../../../utils.js';
 import { yamlEscape, classifyError } from '../../core/utils.js';
 import { stripObsidianSyntax, sanitizeFilename, mergePreservingExtraFrontmatter } from '../helpers.js';
 import { writeNote, readNote } from '../vault/obsidian-api.js';
+import { runStampYaml, insertIntoFrontmatter } from '../ai/run-stamp-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-03)
 import { getSettings, resolveWriteVault } from '../../settings.js';
 import { getContext } from '../../../../../extensions.js';
 import { accountStorage } from '../../../../../util/AccountStorage.js';
@@ -1234,12 +1235,22 @@ async function writeToVault(session, opts = {}) {
     // write would silently strip everything else off disk. Read the current
     // file and re-append its extra top-level keys verbatim. A 404 (new entry)
     // or any read failure falls through to the plain write — never blocks.
+    let isNewEntry = true;
     try {
         const existing = await readNote(vault.host, vault.port, vault.apiKey, filename, !!vault.https);
         if (existing.ok && typeof existing.content === 'string') {
+            isNewEntry = false;
             fileContent = mergePreservingExtraFrontmatter(fileContent, existing.content);
         }
     } catch { /* read failure → write draft as-is */ }
+
+    // LOCAL PATCH (Miinthe, 2026-10-03): a NEW entry born in play is stamped with its run
+    // (character, instance) and date, like Auto Lorebook — Emma's entries used to carry
+    // no run letter at all. Never on an existing entry (authored lore carries no
+    // instance), and never over frontmatter the user edited by hand.
+    if (isNewEntry && !session.frontmatterUserEdited) {
+        fileContent = insertIntoFrontmatter(fileContent, runStampYaml(getContext()?.chatMetadata?.deeplore_context, ['character', 'instance']));
+    }
 
     // Confirm preview — nested dialog stacked over the Librarian popup.
     const lineCount = fileContent.split('\n').length;

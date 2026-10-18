@@ -94,7 +94,11 @@ export function runHealthCheck() {
     let constantTokenTotal = 0;
 
     for (const entry of vaultIndex) {
-        const tk = `${entry.vaultSource || ''}:${entry.title}`;
+        // the same title in different runs (instance a / b / c) is a run's own copy, not a duplicate — a branch carries
+        // its notes over under the same names (Miinthe 2026-10-18: errors for session notes in Sessions/A, B and C)
+        const inst = entry.customFields?.instance;
+        const run = (Array.isArray(inst) ? inst : inst ? [inst] : []).map(x => String(x).trim().toLowerCase()).filter(Boolean).sort().join(',');
+        const tk = `${entry.vaultSource || ''}\u0000${run}\u0000${entry.title}`;
         titleCounts.set(tk, (titleCounts.get(tk) || 0) + 1);
         if (!inVaultDupes.has(entry.title)) inVaultDupes.set(entry.title, new Set());
         inVaultDupes.get(entry.title).add(entry.vaultSource || '');
@@ -223,9 +227,8 @@ export function runHealthCheck() {
 
     for (const [tk, count] of titleCounts) {
         if (count > 1) {
-            const colonIdx = tk.indexOf(':');
-            const titleOnly = colonIdx >= 0 ? tk.slice(colonIdx + 1) : tk;
-            issues.push({ type: 'Entry Config', severity: 'error', entry: titleOnly, detail: `Duplicate title within vault — ${count} entries share this name` });
+            const [, run, titleOnly] = tk.split('\u0000');
+            issues.push({ type: 'Entry Config', severity: 'error', entry: titleOnly, detail: `Duplicate title within vault — ${count} entries share this name${run ? ` in run ${run.toUpperCase()}` : ''}` });
         }
     }
     // Cross-vault dupes are info-only in conflictResolution='all'; other modes

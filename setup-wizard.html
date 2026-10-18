@@ -34,7 +34,7 @@
         <div class="dle-wizard-step-line" aria-hidden="true"></div>
         <button type="button" id="dle-wizard-step-6" class="dle-wizard-step" data-step="6" role="tab" aria-selected="false" aria-controls="dle-wizard-page-6">
             <span class="dle-wizard-step-dot">6</span>
-            <span class="dle-wizard-step-label" data-i18n="dle_analytics_section_librarian">Librarian</span>
+            <span class="dle-wizard-step-label" data-i18n="dle_analytics_section_librarian">Mero ☆</span>
         </button>
         <div class="dle-wizard-step-line" aria-hidden="true"></div>
         <button type="button" id="dle-wizard-step-7" class="dle-wizard-step" data-step="7" role="tab" aria-selected="false" aria-controls="dle-wizard-page-7">
@@ -362,26 +362,26 @@
             <div id="dle-wiz-ai-result" class="dle-wizard-result-banner" style="display: none;"></div>
         </div>
 
-        <!-- ═══ Page 6: Librarian ═══ -->
+        <!-- ═══ Page 6: Mero's lore tools (search / flag during replies; settings keys still librarian*) ═══ -->
         <div id="dle-wizard-page-6" class="dle-wizard-page" data-wizard-page="6" role="tabpanel" aria-labelledby="dle-wizard-step-6" tabindex="-1">
-            <h2 data-i18n="dle_analytics_section_librarian">Librarian</h2>
-            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_librarian_subtitle">Let the AI search for and flag missing lore during generation.</p>
+            <h2 data-i18n="dle_analytics_section_librarian">Mero ☆</h2>
+            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_librarian_subtitle">While a reply is written, the AI can look up missing entries and flag gaps for Mero.</p>
 
             <div class="dle-wizard-card dle-wizard-card-info">
-                <h3><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_librarian_what_is_h3">What is the Librarian?</span></h3>
-                <p data-i18n-html="dle_setup_wizard_librarian_what_is_p">The Librarian gives your writing AI two optional tools during generation: <strong data-i18n="dle_lib_summary_searches">search</strong> (look up vault entries the pipeline missed) and <strong>flag</strong> (note a gap in your lore for later). Flagged gaps appear in the drawer's Librarian tab, where you can review them and use an AI-assisted editor to create new entries.</p>
+                <h3><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_librarian_what_is_h3">What does this do?</span></h3>
+                <p data-i18n-html="dle_setup_wizard_librarian_what_is_p">While a reply is written, the AI gets two optional tools: <strong>search</strong> (look up entries DeepLore missed) and <strong>flag</strong> (note a gap in your lore for later). Flagged gaps wait for you in the side panel's ⋯ → Lore gaps and drafts.</strong> (look up vault entries the pipeline missed) and <strong>flag</strong> (note a gap in your lore for later). Flagged gaps appear in the drawer's Librarian tab, where you can review them and use an AI-assisted editor to create new entries.</p>
                 <p data-i18n="dle_wizard_librarian_optional_note">This is completely optional and off by default. Most generations should have zero tool calls if your vault is well-maintained.</p>
             </div>
 
             <div class="dle-wizard-card dle-wizard-card-warning">
                 <h3><i class="fa-solid fa-coins" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_librarian_token_cost_h3">Token Cost</span></h3>
-                <p data-i18n="dle_wizard_librarian_cost_desc">Enabling the Librarian increases token usage. Tool definitions add ~300-500 tokens to every generation's system prompt. Each search call adds a round-trip to the generation (the model pauses, searches, then continues). Flag calls are cheaper (no round-trip results). Start with just the flag tool if you want to minimize cost and see what your AI reaches for before enabling search.</p>
+                <p data-i18n="dle_wizard_librarian_cost_desc">This uses more tokens: the tools add about 300–500 tokens to every reply, and each search makes the reply pause while it looks. Flagging is cheaper. Start with flagging only.</p>
             </div>
 
             <div class="dle-wizard-card">
                 <label class="checkbox_label dle-wizard-checkbox">
                     <input id="dle-wiz-librarian-enabled" type="checkbox" class="checkbox" />
-                    <span data-i18n="dle_librarian_enabled_label">Enable Librarian</span>
+                    <span data-i18n="dle_librarian_enabled_label">Let Mero look up lore during replies</span>
                 </label>
 
                 <div id="dle-wiz-librarian-sub" style="display: none; margin-top: var(--dle-space-2); padding-left: 20px;">
@@ -579,12 +579,12 @@
                 <button type="button" class="menu_button dle-wizard-done-btn" data-action="settings">
                     <i class="fa-solid fa-gear" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_done_settings_btn">Open Settings</span>
                 </button>
-                <button type="button" class="menu_button dle-wizard-done-btn" data-action="meet-emma" title="Open Emma the Librarian to write your first style/meta guide. Guides are read by Emma only — never by the writing AI." data-i18n="[title]dle_wizard_done_emma_tooltip">
-                    <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_done_meet_emma_btn">Meet Emma</span>
+                <button type="button" class="menu_button dle-wizard-done-btn" data-action="meet-emma" title="Open Mero ☆ in the side panel" data-i18n="[title]dle_wizard_done_emma_tooltip">
+                    <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_done_meet_emma_btn">Meet Mero</span>
                 </button>
             </div>
             <p class="dle-wizard-muted" style="text-align: center;" data-i18n-html="dle_setup_wizard_done_emma_recommended_p">
-                <strong data-i18n="dle_wizard_done_emma_button">Meet Emma</strong> is the recommended next step — she'll walk you through writing your first style guide.
+                <strong data-i18n="dle_wizard_done_emma_button">Meet Mero ☆</strong> , your co-writer, in the side panel.
             </p>
 
             <p class="dle-wizard-wiki-link">

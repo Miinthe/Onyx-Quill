@@ -1,0 +1,57 @@
+<!doctype html><meta charset="utf-8"><title>pitch harness</title>
+<!-- Test page only (test/browser/pitches.mjs): Mero's tab with a pretend host, so the 💡 drawer can be clicked
+     through without SillyTavern. Serve the repo root: python3 -m http.server 8765 -->
+<style>html,body{margin:0;height:100%}iframe{border:0;width:430px;height:100%}</style>
+<script type="module">
+import { asPitches, addBatch, dropPicking, bringBack, setPitch, removePitch, normMenu, tasteText, startPlan, lingerPatch, applyReview } from '../src/pitches-pure.js';
+import { asStore, normTalk, normNote } from '../src/mero-pure.js';
+let pit = asPitches(null), busy = null, talks = [], notes = [];
+const ideas = [['acts', 'turn', 'Kettle', 'cast', 'Kettle\'s plan: fix the toaster', 'Kettle takes the crumb tray apart and finds tape inside.'],
+  ['callback', 'nudge', null, 'loose', 'the cellar door, #12', 'A draft rattles the cupboard; the cellar door is unlocked.'],
+  ['ask', 'nudge', null, 'board', 'Relationship stuck for 22 messages', 'What would make the Toaster admit he likes Spoon?'],
+  ['twist', 'bomb', null, 'lore', 'lore: The Broken Fuse', 'The power cuts out mid-argument.']];
+let k = 0;
+const refresh = () => document.querySelector('iframe').contentWindow.__meroRefresh?.();
+const clone = o => JSON.parse(JSON.stringify(o));
+window.LOG = [];
+window.__dleMeroHost = {
+  dark: () => false,
+  load: () => clone({ profiles: [{ id: 'a', name: 'deepseek' }, { id: 'b', name: 'local model' }], profileId: window.PROF ?? '', where: { charKey: 'toaster.png', character: 'Toaster', run: 'A', board: 'Toaster' }, talks, notes, settings: asStore(null).settings, busy: false, connection: 'Mero', trackers: ['Relationship'], popped: false, lastIndex: 30,
+    requests: { waiting: [], answered: [] }, holding: false, looking: false, glow: { glows: false, moments: [] },
+    pitches: { ...pit, busy, canPitch: true, cast: [{ cast: 'c', person: 'kettle', name: 'Kettle', here: true }, { cast: 'c', person: 'spoon', name: 'Spoon', here: false }] } }),
+  pitch: async ({ like = [], comment = '', fromMsg = null } = {}) => {
+    window.LOG.push(['pitch', { like, comment, fromMsg, menu: pit.menu }]);
+    busy = like.length ? 'more' : pit.menu.vis === 'hide' ? 'hidden' : 'batch'; refresh();
+    await new Promise(r => setTimeout(r, 150));
+    if (pit.menu.shape === 'multi') pit = addBatch(pit, Array.from({ length: pit.menu.n }, (_, j) => ({ kind: 'acts', strength: 'turn', src: 'cast', from: 'Kettle', text: 'The party goes wrong ' + j, plan: { goal: 'The party goes wrong ' + j, beats: [{ text: 'Kettle notices' }, { text: 'Kettle doubts' }, { text: 'The lights go out' }] } })), { replace: true });
+    else if (pit.menu.vis === 'hide' && !like.length) pit = addBatch(pit, [{ kind: 'twist', text: 'Spoon buried the teaspoons.', from: 'Spoon', src: 'cast', st: 'hidden', moment: pit.menu.moment || 'when someone goes to the garden', mine: !!pit.menu.moment, fb: pit.menu.fbOn ? pit.menu.fb : 0, armed: 30 }], { replace: false });
+    else pit = addBatch(pit, Array.from({ length: like.length ? 3 : pit.menu.n }, () => { const [kind, strength, who, src, from, text] = ideas[k++ % ideas.length]; return { kind, strength, ...(who ? { who } : {}), src, from, text: text + ' ' + k }; }), { replace: !like.length, msg: fromMsg });
+    busy = null; refresh(); return { ok: true };
+  },
+  pitchMenu: p => { pit = { ...pit, menu: normMenu({ ...pit.menu, ...p }) }; refresh(); },
+  pitchBack: () => { pit = dropPicking(pit); refresh(); }, pitchBringBack: () => { pit = bringBack(pit); refresh(); },
+  pitchUse: id => { pit = setPitch(pit, id, { st: 'dir' }); notes.push(normNote({ text: tasteText(pit.list.find(p => p.id === id), true), taste: 'up', story: false })); refresh(); return { ok: true }; },
+  pitchDraft: async id => { pit = setPitch(pit, id, { st: 'draft' }); refresh(); return { ok: true }; },
+  pitchGive: (id, c, p) => { pit = setPitch(pit, id, { st: 'given', gaveTo: { cast: c, person: p, name: p === 'kettle' ? 'Kettle' : 'Spoon', planId: 'x' } }); refresh(); return { ok: true, name: 'Kettle', dropped: null }; },
+  pitchTakeBack: id => { pit = setPitch(pit, id, { st: 'kept', gaveTo: null }); refresh(); },
+  pitchKeep: ids => { for (const id of ids) pit = setPitch(pit, id, { st: 'kept' }); refresh(); },
+  pitchLetGo: id => { pit = removePitch(pit, id); refresh(); },
+  pitchNo: (ids, why) => { for (const id of ids) { notes.push(normNote({ text: tasteText(pit.list.find(p => p.id === id), false, why), taste: 'down', story: false })); pit = removePitch(pit, id); } refresh(); },
+  pitchPeek: (id, on) => { pit = setPitch(pit, id, { peek: on }); refresh(); },
+  pitchTalk: ids => `About these pitches:\n${pit.list.filter(p => ids.includes(p.id)).map(p => `#${p.no} ${p.text}`).join('\n')}\n\n`,
+  planStart: id => { const p = pit.list.find(x => x.id === id); pit = setPitch(pit, id, startPlan(p, { i: 30, sees: pit.menu.sees, timer: pit.menu.timer })); refresh(); return { ok: true }; },
+  planSet: (id, x) => { const p = pit.list.find(y => y.id === id); const pl = { ...p.plan, ...(x.sees ? { sees: x.sees } : {}), ...(x.timer != null ? { timer: x.timer } : {}) }; if (x.floor) pl.beats = pl.beats.map((b, k) => (k === x.floor.k ? { ...b, floor: x.floor.n } : b)); pit = setPitch(pit, id, { plan: pl }); refresh(); },
+  planAbandon: id => { pit = setPitch(pit, id, { st: 'abandoned' }); refresh(); },
+  planLinger: id => { pit = setPitch(pit, id, lingerPatch(pit.list.find(x => x.id === id), 34)); refresh(); },
+  planRewrite: async (id, mode) => { const p = pit.list.find(x => x.id === id); pit = setPitch(pit, id, { plan: { ...p.plan, review: { mode, goal: 'g', beats: ['new A', 'new B'] } } }); refresh(); return { ok: true }; },
+  planUseReview: id => { pit = setPitch(pit, id, applyReview(pit.list.find(x => x.id === id), 34)); refresh(); },
+  planDropReview: id => { const p = pit.list.find(x => x.id === id); pit = setPitch(pit, id, { plan: { ...p.plan, review: undefined } }); refresh(); },
+  tasteEdit: (id, text) => { notes = text == null ? notes.filter(n => n.id !== id) : notes.map(n => (n.id === id ? { ...n, text } : n)); refresh(); },
+  setConnection: id => { window.PROF = id; refresh(); },
+  newTalk: tag => { const t = normTalk({ tag }); talks.unshift(t); return clone(t); },
+  updateTalk: (id, patch) => { talks = talks.map(t => (t.id === id ? { ...t, ...patch } : t)); refresh(); },
+  settings: () => asStore(null).settings, seeGlow() {}, momentsAside() {}, told: () => null,
+};
+window.PIT = () => pit;
+const f = document.createElement('iframe'); f.src = 'mero.html'; document.body.appendChild(f);
+</script>

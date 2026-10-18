@@ -1,0 +1,887 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mero</title>
+<!-- LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆, the co-writer tab. Everything real comes from window.parent.__dleMeroHost
+     (src/mero-window.js). Overhaul (2026-10-15): restyled to the side panel + bar mock-up v13 — her talk on the left,
+     a rail of line icons on the outer edge (left when the side panel is on the left), drawers open from the rail.
+     Colors are SillyTavern's live theme through the shared bridge (src/kit/theme.js → --dk-*); no colors of its own. -->
+<style>
+/* Layout: Mero's tab fills the iframe — the talk (head, messages, composer) and the rail; drawers slide over the talk (beside it when popped out). */
+* { box-sizing: border-box; }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--dk-muted) 45%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--dk-muted) 40%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+html, body { height: 100%; }
+body { margin: 0; padding: 0; overflow: hidden; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs)/1.45 var(--dk-f-body); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--dk-accent-ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.dk-i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mini { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+
+/* ── the tab ── */
+.panel { height: 100%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.mero { flex: 1; min-height: 0; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 44px; position: relative; }
+.mero > .talk { grid-column: 1; grid-row: 1; }
+.mero > .rail { grid-column: 2; grid-row: 1; }
+.talk { min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+
+/* her talk: title, kind of talk, ⓘ, ⋯; one line under it */
+.thead { padding: 8px 10px; border-bottom: 1px solid var(--dk-line); display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; }
+.thead .t1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.thead h2 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thead .t2 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kindsel { flex: none; max-width: 104px; height: 20px; padding: 0 6px; border: 0; border-radius: 999px; font: 700 calc(11px * var(--fontScale, 1))/1 var(--dk-f-body); background: var(--dk-accent-soft); color: var(--dk-accent-ink); cursor: pointer; }
+.kindsel.yap { background: var(--dk-mero-soft); color: var(--dk-mero); }
+.kindsel.plan { background: var(--dk-good-soft); color: var(--dk-good); }
+.kindsel.fb { background: var(--dk-bad-soft); color: var(--dk-bad); }
+.kindsel option { background: var(--dk-page); color: var(--dk-ink); }
+.ib { width: 28px; height: 28px; flex: none; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dk-muted); }
+.ib:hover, .ib[aria-expanded="true"] { color: var(--dk-ink); background: var(--dk-menu); border-color: var(--dk-line); }
+.ttl { cursor: text; border-radius: 6px; padding: 0 3px; }
+.ttl:hover { background: var(--dk-menu); }
+.ttl input { font: inherit; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 0 4px; width: 100%; background: var(--dk-page); }
+.smart { font-size: var(--dk-fs-s); color: var(--dk-mero); font-weight: 700; }
+
+/* messages */
+.msgs { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.msgs > *, .db > *, .stack > * { flex-shrink: 0; }
+.m { max-width: 92%; padding: 7px 10px; border-radius: 10px; font-size: var(--dk-fs); overflow-wrap: anywhere; }
+.m.miinthe { align-self: flex-end; background: var(--dk-accent-soft); }
+.m.mer { align-self: flex-start; background: var(--dk-menu); border: 1px solid var(--dk-line); }
+.m.mer::before { content: "Mero ☆"; display: block; font: 700 calc(11px * var(--fontScale, 1))/1.3 var(--dk-f-display); color: var(--dk-mero); }
+.m.sys { align-self: center; padding: 0; background: none; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.m .pnos { display: block; margin-top: 4px; font-size: var(--dk-fs-s); font-weight: 700; color: var(--dk-mero); }
+.m .pnos button { border: 0; background: none; color: inherit; text-decoration: underline dotted; padding: 0; font: inherit; }
+.tlink { border: 0; background: none; padding: 0; color: var(--dk-accent-ink); text-decoration: underline dotted; font: inherit; }
+
+/* cards (a note to keep, a request, a moment): a colored top edge */
+.card { display: flex; flex-direction: column; gap: 6px; padding: 9px 11px 10px; border: 1px solid var(--dk-line); border-top: 3px solid var(--kc, var(--dk-line)); border-radius: 10px; background: var(--dk-page); font-size: var(--dk-fs); }
+.card .ch { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font: 700 var(--dk-fs)/1.3 var(--dk-f-body); }
+.card .ch small { font-weight: 400; color: var(--dk-muted); }
+.card .row, .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.card select, .note select { height: 24px; border: 1px solid var(--dk-line); background: var(--dk-page); border-radius: 999px; padding: 0 6px; font-size: var(--dk-fs-s); max-width: 100%; }
+.card.helper { background: color-mix(in oklab, var(--dk-accent-soft) 60%, var(--dk-page)); }
+.card.done { opacity: .8; }
+.cardstate { font-size: var(--dk-fs-s); font-weight: 700; color: var(--dk-good); }
+.cardstate.no { color: var(--dk-muted); }
+.q { font-style: italic; color: var(--dk-muted); font-size: var(--dk-fs-s); border-left: 2px solid var(--dk-line); padding-left: 8px; }
+
+/* buttons: line icon + word (v13) */
+.btn { height: 26px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); white-space: nowrap; }
+.btn:hover { background: var(--dk-menu); }
+.btn .dk-i { width: 14px; height: 14px; }
+.btn.p { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
+.btn.m2 { background: var(--dk-mero); border-color: var(--dk-mero); color: var(--dk-on-mero); font-weight: 700; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--dk-ink); }
+.btn.ghost:hover { background: var(--dk-menu); }
+.btn:disabled { opacity: .4; cursor: default; }
+
+/* composer */
+.busy { font-size: var(--dk-fs-s); color: var(--dk-mero); padding: 0 12px 6px; }
+.err { font-size: var(--dk-fs-s); color: var(--dk-bad); padding: 4px 12px; }
+.comp { border-top: 1px solid var(--dk-line); padding: 8px; display: grid; gap: 6px; }
+.grow { width: 100%; resize: none; overflow: hidden; min-height: 32px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 5px 8px; background: var(--dk-page); color: var(--dk-ink); font: inherit; }
+.comp textarea { min-height: 38px; border-radius: 10px; padding: 8px 10px; }
+.grow:focus, .field:focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
+.grow::placeholder, .field::placeholder { color: var(--dk-muted); }
+.comp .row .sp { flex: 1; }
+.notesline { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+
+/* the rail: Talks, Requests, Notes, Pitches … pop-out, her settings */
+.rail { border-left: 1px solid var(--dk-line); background: var(--dk-menu); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 0; }
+.rail .sp { flex: 1; }
+.ri { position: relative; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dk-muted); }
+.ri .dk-i { width: 18px; height: 18px; }
+.ri:hover { color: var(--dk-ink); background: var(--dk-page); }
+.ri[aria-pressed="true"] { color: var(--dk-mero); background: var(--dk-mero-soft); }
+.ri .rdot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--dk-mero); box-shadow: 0 0 0 2px var(--dk-menu); }
+.ri.hold .rdot { background: var(--dk-wait); }
+.ri.glow { box-shadow: 0 0 0 2px var(--dk-mero), 0 0 12px color-mix(in oklab, var(--dk-mero) 60%, transparent); color: var(--dk-mero); }
+@media (prefers-reduced-motion: no-preference) {
+  .ri.hold { animation: wiggle 4s ease-in-out infinite; }
+  @keyframes wiggle { 0%, 88%, 100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
+}
+
+/* drawers slide over the talk, from the rail's side */
+.drawer { position: absolute; inset: 0 44px 0 0; z-index: 3; display: flex; flex-direction: column; min-height: 0; background: var(--dk-page); border-right: 1px solid var(--dk-line); box-shadow: 0 0 24px rgba(0, 0, 0, .35); }
+.dh { display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px; border-bottom: 1px solid var(--dk-line); min-width: 0; }
+.dh h3 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.db h4 { margin: 4px 0 0; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+@media (prefers-reduced-motion: no-preference) { .drawer { animation: slide .16s ease-out; } @keyframes slide { from { transform: translateX(14px); opacity: .6; } } }
+
+/* the side panel on the left: the rail on the outer (left) edge, drawers open from there (v13) */
+body.pleft .mero { grid-template-columns: 44px minmax(0, 1fr); }
+body.pleft .mero > .talk { grid-column: 2; }
+body.pleft .mero > .rail { grid-column: 1; border-left: 0; border-right: 1px solid var(--dk-line); }
+body.pleft .drawer { inset: 0 0 0 44px; border-right: 0; border-left: 1px solid var(--dk-line); }
+@media (prefers-reduced-motion: no-preference) { body.pleft .drawer { animation-name: slideL; } @keyframes slideL { from { transform: translateX(-14px); opacity: .6; } } }
+
+/* popped out into her own window: the drawer sits beside the talk */
+body.wide .mero { grid-template-columns: 330px minmax(0, 1fr) 44px; }
+body.wide .mero > .talk { grid-column: 2; }
+body.wide .mero > .rail { grid-column: 3; }
+body.wide .drawer { position: static; grid-column: 1; grid-row: 1; box-shadow: none; }
+/* no drawer open: no empty column beside the talk (Miinthe 2026-10-18: "the left half of the window is empty") */
+body.wide .mero:not(:has(> .drawer:not([hidden]))) { grid-template-columns: minmax(0, 1fr) 44px; }
+body.wide .mero:not(:has(> .drawer:not([hidden]))) > .talk { grid-column: 1; }
+body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
+@media (max-width: 700px) {
+  body.wide .mero { grid-template-columns: minmax(0, 1fr) 44px; }
+  body.wide .mero > .talk { grid-column: 1; }
+  body.wide .mero > .rail { grid-column: 2; }
+  body.wide .drawer { position: absolute; }
+}
+
+/* folds inside the drawers */
+.foldh { width: 100%; min-height: 32px; display: flex; gap: 8px; align-items: center; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 10px; background: transparent; text-align: left; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.foldh:hover { background: var(--dk-menu); }
+.foldh .cnt { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: 0; }
+.more { align-self: flex-start; font-size: var(--dk-fs-s); }
+
+/* talks drawer: a search, the kinds, rows */
+.srch { width: 100%; height: 30px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 0 10px; background: var(--dk-menu); color: var(--dk-ink); font-size: var(--dk-fs); }
+.seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); flex-wrap: wrap; }
+.seg button { flex: 1; height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
+.seg button:hover { color: var(--dk-ink); }
+.seg button[aria-pressed="true"] { background: var(--dk-page); color: var(--dk-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+.seg button:disabled { opacity: .45; }
+.seg.jobs { display: grid; grid-template-columns: 1fr 1fr; }
+/* the talk-kind filter stays one row (Miinthe, 2026-10-16: Feedback wrapped onto its own line): words only, buttons shrink */
+#sess-f { flex-wrap: nowrap; }
+#sess-f button { min-width: 0; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; }
+.sess { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-ink); text-align: left; }
+.sess:hover { background: var(--dk-accent-soft); }
+.sess.on { background: var(--dk-selected); }
+.sess .lead { width: 22px; flex: none; display: grid; place-items: center; font-size: calc(15px * var(--fontScale, 1)); }
+.sess .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sess .t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sess .s { font-size: var(--dk-fs-s); color: var(--dk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* notes drawer */
+.nbooks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); }
+.nbooks .mini { flex: 1 0 100%; }
+.note { border: 1px solid var(--dk-line); border-left: 3px solid var(--kc); border-radius: 8px; padding: 6px 8px; display: grid; gap: 4px; font-size: var(--dk-fs); }
+.note.off { opacity: .55; }
+.note .n1 { display: flex; gap: 6px; align-items: flex-start; }
+.note .n1 > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.note .n2 { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.note .n2 .btn { height: 22px; padding: 0 6px; font-size: var(--dk-fs-s); }
+.ntext { cursor: text; }
+.ntext textarea { width: 100%; font: inherit; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 2px 4px; background: var(--dk-page); }
+.blur { filter: blur(5px); user-select: none; }
+.sw { display: inline-flex; gap: 6px; align-items: center; font-size: var(--dk-fs-s); }
+.sw input { accent-color: var(--dk-mero); margin: 0; }
+
+/* requests drawer */
+.rg { display: flex; gap: 6px; align-items: center; }
+.rg-board { color: var(--dk-accent-ink) !important; } .rg-mero { color: var(--dk-mero) !important; } .rg-plan { color: var(--dk-good) !important; }
+.pill { height: 18px; padding: 0 6px; display: inline-flex; align-items: center; border-radius: 999px; font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); border: 1px solid var(--dk-line); color: var(--dk-good); background: var(--dk-good-soft); white-space: nowrap; }
+.pill.now { background: var(--dk-wait-soft); color: var(--dk-wait); border-color: transparent; }
+.ba { border: 1px solid var(--dk-line); border-radius: 7px; padding: 6px 8px; font: var(--dk-fs-s)/1.45 var(--dk-f-mono); background: var(--dk-menu); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ba .ctx { color: var(--dk-muted); }
+.ba del { background: var(--dk-bad-soft); color: var(--dk-bad); text-decoration: line-through; }
+.ba ins { background: var(--dk-good-soft); color: var(--dk-good); text-decoration: none; font-weight: 600; }
+.ba textarea { width: 100%; font: inherit; border: 1px solid var(--dk-good); border-radius: 6px; padding: 4px 6px; background: var(--dk-page); color: inherit; }
+
+/* settings drawer: label on the left, the control on the right (v13) */
+.pr { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; align-items: center; font-size: var(--dk-fs); }
+.pr > span:first-child { color: var(--dk-muted); }
+.pr .mini { grid-column: 2; margin-top: -4px; }
+.field { width: 100%; min-height: 30px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 5px 9px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); }
+textarea.field { resize: none; }
+.vtools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.vtools .sp { flex: 1; }
+.swline { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.pmore { display: grid; gap: 8px; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 8px; }
+input[type=range] { accent-color: var(--dk-mero); width: 100%; }
+
+/* pitches: the menu folded into one line; one batch to pick from, one menu at the bottom (v13) */
+.pview { display: flex; flex-direction: column; gap: 8px; }
+.pview > * { flex-shrink: 0; }
+.pmenu { display: grid; gap: 8px; padding: 8px; border: 1px solid var(--dk-line); border-radius: 12px; background: var(--dk-menu); }
+.psum { width: 100%; display: flex; align-items: center; gap: 8px; padding: 2px 4px; border: 0; background: transparent; color: var(--dk-ink); text-align: left; font-size: var(--dk-fs); }
+.psum span:first-child { flex: 1; min-width: 0; }
+.pmenu .pmore { border: 0; padding: 4px 4px 2px; border-top: 1px solid var(--dk-line); border-radius: 0; }
+.pmenu .pr { grid-template-columns: 70px minmax(0, 1fr); }
+.pmenu select, .pmenu input[type=text] { width: 100%; height: 28px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 0 8px; background: var(--dk-page); color: var(--dk-ink); }
+.pmenu .go { display: flex; gap: 8px; align-items: center; }
+.pmenu .go .mini { flex: 1; }
+.inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: var(--dk-fs); }
+.inline input[type=number] { width: 54px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 2px 6px; background: var(--dk-page); }
+.fromchip { display: inline-flex; gap: 6px; align-items: center; font-size: var(--dk-fs-s); font-weight: 700; background: var(--dk-mero-soft); color: var(--dk-mero); border-radius: 999px; padding: 1px 4px 1px 10px; }
+.fromchip button { border: 0; background: none; color: inherit; }
+.pline { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; gap: 8px; align-items: center; border: 1px dashed var(--dk-line); border-radius: 8px; padding: 4px 8px; }
+.pline span { flex: 1; }
+.pline select { min-width: 0; border: 1px solid var(--dk-line); border-radius: 6px; background: var(--dk-page); }
+.pline.waiting { border-style: solid; border-color: var(--dk-mero); color: var(--dk-mero); }
+.pc { display: flex; flex-direction: column; gap: 6px; padding: 9px 11px 10px; border: 1px solid var(--dk-line); border-top: 3px solid var(--dk-mero); border-radius: 10px; background: var(--dk-page); font-size: var(--dk-fs); }
+.pc .ch { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: var(--dk-fs-s); }
+.pc .ch .sp { flex: 1; }
+.pc.pick { cursor: pointer; }
+.pc.pick:hover { border-color: color-mix(in oklab, var(--dk-mero) 50%, var(--dk-line)); }
+.pc.sel { background: color-mix(in oklab, var(--dk-mero) 14%, var(--dk-page)); border-color: var(--dk-mero); }
+.pc .tick { width: 16px; height: 16px; flex: none; border: 1.5px solid var(--dk-line); border-radius: 4px; display: grid; place-items: center; font-size: 11px; color: var(--dk-page); }
+.pc.sel .tick { background: var(--dk-mero); border-color: var(--dk-mero); color: var(--dk-on-mero); }
+.pc .no, .pc .pk { font: var(--dk-fs-s) var(--dk-f-mono); color: var(--dk-muted); }
+.pc .str { height: 18px; padding: 0 6px; display: inline-flex; align-items: center; border: 1px solid var(--dk-line); border-radius: 4px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); color: var(--dk-muted); white-space: nowrap; }
+.pc .from { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.pc.hid { border-style: dashed; border-color: var(--dk-mero); }
+.pc.peek .blur { filter: none; user-select: auto; }
+.pstate { font-size: var(--dk-fs-s); border-radius: 7px; padding: 5px 8px; }
+.pstate.wait { background: var(--dk-wait-soft); color: var(--dk-wait); } .pstate.good { background: var(--dk-good-soft); color: var(--dk-good); } .pstate.bad { background: var(--dk-bad-soft); color: var(--dk-bad); } .pstate.cast { background: var(--dk-mero-soft); color: var(--dk-mero); }
+.pstate .q { border: 0; padding: 0; color: inherit; }
+.pc ol.beats { margin: 0; padding-left: 20px; display: grid; gap: 3px; font-size: var(--dk-fs); }
+.pc ol.beats li.done { color: var(--dk-muted); }
+.pc ol.beats li.now { font-weight: 700; }
+.pc ol.beats .bq { display: block; font-size: var(--dk-fs-s); font-style: italic; color: var(--dk-good); font-weight: 400; }
+.pc .prog { height: 5px; border-radius: 3px; background: var(--dk-line); overflow: hidden; }
+.pc .prog i { display: block; height: 100%; background: var(--dk-good); }
+.pc .psets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.pc .psets select, .pc .psets input { border: 1px solid var(--dk-line); border-radius: 6px; background: var(--dk-page); font-size: var(--dk-fs-s); padding: 1px 4px; }
+.pc .psets input { width: 46px; }
+.pc .review { border: 1px dashed var(--dk-mero); border-radius: 8px; padding: 6px 8px; display: grid; gap: 4px; font-size: var(--dk-fs-s); }
+.pc details summary { cursor: pointer; }
+.pbusy { font-size: var(--dk-fs); color: var(--dk-mero); border: 1px dashed var(--dk-mero); border-radius: 10px; padding: 10px; }
+.tn { display: flex; gap: 8px; align-items: center; min-height: 32px; font-size: var(--dk-fs); padding: 2px 8px; border-radius: 6px; }
+.tn:hover { background: var(--dk-menu); }
+.tn span:nth-child(2) { flex: 1; min-width: 0; cursor: text; }
+.tn button { border: 0; background: none; color: var(--dk-muted); }
+.tn input { flex: 1; min-width: 0; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 0 4px; background: var(--dk-page); }
+.pickhead { display: flex; align-items: center; gap: 6px; }
+.pickhead h3 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); }
+/* the one menu for the picked pitches, at the bottom */
+.actbar { position: sticky; bottom: -10px; margin: 0 -10px -10px; padding: 8px 10px 10px; display: grid; gap: 6px; background: var(--dk-page); border-top: 1px solid var(--dk-line); box-shadow: 0 -8px 18px rgba(0, 0, 0, .25); z-index: 4; }
+.actbar .ah { display: flex; gap: 8px; align-items: center; font: 700 var(--dk-fs)/1.2 var(--dk-f-body); }
+.actbar .ah span { flex: 1; }
+.why { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: var(--dk-fs-s); }
+.why button { border: 1px solid var(--dk-line); background: var(--dk-page); border-radius: 999px; font-size: var(--dk-fs-s); padding: 0 8px; height: 22px; }
+.give { position: relative; display: inline-flex; }
+.givemenu { position: absolute; bottom: calc(100% + 4px); left: 0; z-index: 6; background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 9px; box-shadow: var(--dk-shadow); padding: 4px; display: grid; min-width: 170px; max-height: 220px; overflow-y: auto; }
+.givemenu button { border: 0; background: none; text-align: left; padding: 4px 8px; border-radius: 6px; font-size: var(--dk-fs); color: var(--dk-ink); }
+.givemenu button:hover { background: var(--dk-mero-soft); }
+
+/* "What Mero was told" */
+.told { position: absolute; right: 12px; top: 12px; width: min(440px, calc(100% - 24px)); max-height: calc(100% - 24px); background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 12px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; z-index: 30; overflow: hidden; resize: both; }
+.mwh { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 12px; background: var(--dk-menu); border-bottom: 1px solid var(--dk-line); }
+.mwh b { font: 700 var(--dk-fs)/1.2 var(--dk-f-display); flex: 1; }
+.told-b { overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.told-b details { border: 1px solid var(--dk-line); border-radius: 8px; padding: 6px 10px; }
+.told-b summary { cursor: pointer; display: flex; gap: 8px; font-size: var(--dk-fs); font-weight: 700; }
+.told-b summary span:first-child { flex: 1; }
+.told-b pre { white-space: pre-wrap; font: var(--dk-fs-s)/1.45 var(--dk-f-mono); margin: 6px 0 0; color: var(--dk-muted); }
+</style>
+<body class="dk">
+<aside class="panel" aria-label="Mero">
+  <div class="mero" id="mero">
+    <div class="talk">
+      <div class="thead">
+        <div class="t1"><h2 id="s-title"></h2><select class="kindsel" id="s-tag" aria-label="Kind of talk" title="Kind of talk"><option value="yap">💭 Yapping</option><option value="plan">🗺 Planning</option><option value="fb">✋ Feedback</option></select><button class="ib" id="s-told" title="What Mero was told for her last answer" aria-label="What Mero was told"></button><button class="ib" id="s-more" aria-haspopup="menu" aria-expanded="false" title="Check the lore, wrap up, resolve, archive, delete" aria-label="More for this talk"></button></div>
+        <div class="t2 mini" id="s-line"></div>
+      </div>
+      <div class="msgs" id="msgs" aria-live="polite"></div>
+      <div class="busy" id="busy" hidden>☆ Mero is writing…</div>
+      <div class="err" id="err" hidden></div>
+      <div class="comp">
+        <textarea id="c-in" class="grow" rows="2" placeholder="Talk to Mero…" aria-label="Message to Mero"></textarea>
+        <div class="row">
+          <button class="btn" id="c-pitch" title="Pitches"></button>
+          <button class="btn" id="c-where" title="A recap of where the story stands">Where are we?</button>
+          <span class="sp"></span>
+          <button class="btn m2" id="c-send">Send</button>
+        </div>
+        <div class="notesline" id="notesline"></div>
+      </div>
+    </div>
+
+    <section class="drawer" id="d-sess" hidden aria-label="Talks">
+      <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="db">
+        <input class="srch" id="sess-q" type="search" placeholder="Search talks" aria-label="Search talks">
+        <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="💭 Yapping">Yapping</button><button data-v="plan" aria-pressed="false" title="🗺 Planning">Planning</button><button data-v="fb" aria-pressed="false" title="✋ Feedback">Feedback</button></div>
+        <div id="sess-moments" class="stack"></div>
+        <div id="sess-list" class="stack"></div>
+      </div>
+    </section>
+    <section class="drawer" id="d-req" hidden aria-label="Requests">
+      <div class="dh"><h3>Requests</h3><button class="btn ghost" id="look-lore" title="Mero reads the latest replies next to the entries sent with them, and says what an entry is missing"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="db" id="req-list"></div>
+    </section>
+    <section class="drawer" id="d-notes" hidden aria-label="Notes">
+      <div class="dh"><h3>Notes</h3><button class="btn" id="new-note"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="db">
+        <div class="nbooks" role="group" aria-label="Your notebooks"><span class="mini" title="Your own notebooks for this chat">Your notebooks</span><button class="btn" data-tool="notebook" title="Author’s notebook: your notes for this chat, sent to the writer"></button><button class="btn" data-tool="ai-notebook" title="AI notepad: notes the AI kept from its replies"></button><button class="btn" data-tool="scribe-history" title="Scribe history: the session notes, newest first"></button></div>
+        <div id="notes-list" class="stack"></div>
+      </div>
+    </section>
+    <section class="drawer" id="d-pitch" hidden aria-label="Pitches">
+      <div class="dh" id="pitch-dh"><h3>Pitches</h3><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="db" id="pitch-db">
+        <div class="pview" id="pv-home">
+          <div class="pmenu" role="group" aria-label="Ask for pitches">
+            <div class="pr" id="pr-from" hidden><span>From</span><span><span class="fromchip" id="fromchip"></span></span></div>
+            <button class="psum" id="psum" aria-expanded="false" aria-controls="p-more"><span id="psum-t"></span><span class="mini" id="psum-x">change ▾</span></button>
+            <div class="pmore" id="p-more" hidden>
+              <div class="pr"><span>Shape</span><div class="seg" data-pk="shape"><button data-v="one" aria-pressed="true">⚡ one-shot</button><button data-v="multi" aria-pressed="false">🪜 multistep</button></div></div>
+              <div class="pr"><span>Visible</span><div class="seg" data-pk="vis"><button data-v="show">👁 visible</button><button data-v="hide">🙈 hidden</button></div></div>
+              <div class="pr" id="pr-n"><span>How many</span><div class="seg" data-pk="n"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+              <div class="pr"><span>Strength</span><div class="seg" data-pk="str"><button data-v="nudge" title="nudge">🌱</button><button data-v="turn" title="turn">🔀</button><button data-v="bomb" title="bombshell">💥</button></div></div>
+              <div class="pr"><span>Tone</span><div class="seg" data-pk="tone"><button data-v="sfw">SFW</button><button data-v="nsfw">NSFW</button></div></div>
+              <div class="pr"><span>Focus</span><div class="seg" id="p-focus" role="group" aria-label="Focus (pick one or more)"></div></div>
+              <div class="pr" id="pr-sees" hidden><span>Writer sees</span><select id="p-sees" aria-label="What the writer sees of a plan"><option value="beat">the current beat only</option><option value="summary">summary + current beat</option><option value="all">the whole plan</option></select></div>
+              <div class="pr" id="pr-timer" hidden><span>Check in</span><select id="p-timer" aria-label="Ask me when a beat stalls"><option value="10">after 10 replies without a beat</option><option value="15">after 15 replies without a beat</option><option value="25">after 25 replies without a beat</option><option value="0">never</option></select></div>
+              <div class="pr" id="pr-wait" hidden><span>Waits for</span>
+                <div style="display:grid;gap:6px">
+                  <select id="p-moment" aria-label="Waits for"><option value="mero">the right moment, Mero picks (hidden from you too)</option><option value="mine">a moment I name…</option></select>
+                  <input type="text" id="p-moment-t" placeholder="when someone goes to the garden" aria-label="The moment" hidden>
+                  <label class="inline"><input type="checkbox" id="p-fb"> use it anyway after <input type="number" id="p-fbn" min="2" max="60" aria-label="Messages"> messages</label>
+                </div></div>
+            </div>
+            <textarea id="p-com" rows="1" class="grow" placeholder="Anything in mind?" aria-label="Your wish for the pitches"></textarea>
+            <div class="go"><span class="mini" id="p-hint"></span><button class="btn m2" id="p-go">Pitch</button></div>
+          </div>
+          <label class="pline waiting" id="p-conn" hidden><span>Mero needs an AI to pitch with:</span><select id="p-conn-sel" aria-label="Mero's connection profile"></select></label>
+          <div class="pline waiting" id="p-waiting" hidden></div>
+          <div class="pline" id="p-dropped" hidden></div>
+          <div id="p-out" class="stack"></div>
+          <div id="p-kept" class="stack"></div>
+          <div id="p-taste"></div>
+        </div>
+        <div class="pview" id="pv-pick" hidden>
+          <div class="pickhead"><button class="btn ghost" id="pick-back">← Back</button><h3 id="pick-title">Pitches</h3></div>
+          <p class="mini" id="pick-sub" style="margin:0"></p>
+          <div class="stack" id="p-fresh"></div>
+          <div class="vtools"><button class="btn ghost" id="pick-again" title="Throw these away and pitch again with the same settings"></button><span class="sp"></span><button class="btn ghost" id="pick-aside" title="Set the ones you didn't use or keep aside. They don't count as 👎, and ↩ Bring back returns them once.">Set them all aside</button></div>
+        </div>
+        <div class="actbar" id="actbar" hidden role="toolbar" aria-label="What to do with the picked pitches">
+          <div class="ah"><span id="act-n"></span><button class="ib" data-b="clear" title="Unpick" aria-label="Unpick"></button></div>
+          <div class="row" id="act-main">
+            <button class="btn m2" data-b="dir" title="Goes to the writer with your next reply, hidden from the chat"></button>
+            <button class="btn" data-b="draft" title="Mero drafts your next line from it, in your message box"></button>
+            <span class="give"><button class="btn" data-b="givemenu" title="Make it one of their plans"></button><span class="givemenu" id="givemenu" hidden></span></span>
+            <button class="btn" data-b="keep"></button>
+          </div>
+          <div class="row" id="act-more"><button class="btn" data-b="more" id="b-more"></button><button class="btn" data-b="talk" id="b-talk"></button><span class="sp" style="flex:1"></span><button class="btn ghost" data-b="no" title="Not my thing. Mero remembers" aria-label="Not my thing"></button></div>
+          <div class="why" id="act-why" hidden><span>👎 Why? (optional)</span><button data-why="too much">too much</button><button data-why="not like them">not like them</button><button data-why="not now">not now</button><button data-why="wrong tone">wrong tone</button><button data-why="">skip</button></div>
+          <span class="mini" id="act-hint"></span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="rail" aria-label="Mero's drawers">
+      <button class="ri" data-d="d-sess" aria-pressed="false" title="Talks" data-ic="talks"></button>
+      <button class="ri" data-d="d-req" aria-pressed="false" title="Requests" data-ic="mail"><span class="rdot" id="req-badge" hidden></span></button>
+      <button class="ri" data-d="d-notes" aria-pressed="false" title="Notes" data-ic="notes"></button>
+      <button class="ri" data-d="d-pitch" aria-pressed="false" title="Pitches and plans" data-ic="pitch"><span class="rdot" id="pitch-badge" hidden></span></button>
+      <span class="sp"></span>
+      <button class="ri popbtn" id="pop-out" title="Pop Mero out into her own window" aria-label="Pop out"></button>
+      <button class="ri" id="ri-set" title="Mero's settings — open in Settings › Mero" data-ic="mero"></button>
+    </nav>
+    <div class="told" id="told" hidden role="dialog" aria-label="What Mero was told"><div class="mwh" id="told-h"><b>What Mero was told</b><span class="mini">for her last answer</span><button class="ib" id="told-x" title="Close" aria-label="Close"></button></div><div class="told-b" id="told-b"></div></div>
+  </div>
+</aside>
+<script type="module">
+import { followTheme } from '../src/kit/theme.js';
+import { icon as I } from '../src/kit/icons.js';
+import { openMenu, notify, ask } from '../src/kit/kit.js';
+import { talkLine, talkMenu, pitchLine } from '../src/panel/mero-view-pure.js';
+followTheme(document);   // SillyTavern's live theme → the --dk-* colors (overhaul, 2026-10-15)
+(() => {
+  const HOST = window.parent?.__dleMeroHost;
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const toast = t => notify({ text: t, tone: 'mero', doc: document });
+  const lbl = (el, ic, text) => { if (el) el.innerHTML = I(ic) + (text ? `<span>${esc(text)}</span>` : ''); };
+  if (!HOST) { document.body.innerHTML = '<p style="padding:16px">Open this from DeepLore\'s side panel.</p>'; return; }
+  // line icons (v13): words stay, emoji only for story things
+  $$('.ri[data-ic]').forEach(b => b.insertAdjacentHTML('afterbegin', I(b.dataset.ic)));
+  $$('[data-close], #told-x').forEach(b => { b.innerHTML = I('close'); });
+  $('#s-told').innerHTML = I('info'); $('#s-more').innerHTML = I('more');
+  lbl($('#c-pitch'), 'pitch', 'Pitch'); lbl($('#new-sess'), 'plus', 'New'); lbl($('#new-note'), 'plus', 'Note');
+  lbl($('[data-tool="notebook"]'), 'book', 'Notebook'); lbl($('[data-tool="ai-notebook"]'), 'notes', 'AI notepad'); lbl($('[data-tool="scribe-history"]'), 'scribe', 'Scribe');
+  lbl($('#pick-again'), 'refresh', 'New batch'); $('[data-b="clear"]').innerHTML = I('close'); $('[data-b="no"]').innerHTML = I('thumb');
+  lbl($('[data-b="draft"]'), 'line', 'My line'); lbl($('[data-b="givemenu"]'), 'give', 'Give to…'); lbl($('[data-b="keep"]'), 'keep', 'Keep');
+
+  const TAG = { yap: ['💭 Yapping', 'yap'], plan: ['🗺 Planning', 'plan'], fb: ['✋ Feedback', 'fb'] };
+  const KIND = { dont: ['🚫', 'Don\'t', 'var(--dk-bad)'], steer: ['🧭', 'Steer', 'var(--dk-l5)'], idea: ['💡', 'Idea', 'var(--dk-l1)'], fact: ['📄', 'Fact', 'var(--dk-good)'] };
+  const LAST = { flash: '⚡ the next reply', sticky: '📌 for a few replies', pinned: '📍 until removed' };
+  const SCOPE = { chat: 'this chat', run: 'this run', char: 'the character — every chat', board: 'the board' };
+  let D = HOST.load(), cur = null, sessFilter = 'all', sessQ = '';
+  const OPEN = { 'sess-archived': false, 'notes-ended': false, 'req-done': false }, MORE = {};
+
+  const fold = (key, title, items, { limit = 5, empty = '' } = {}) => {
+    if (!items.length) return empty ? `<h4>${title}</h4><p class="mini">${empty}</p>` : '';
+    const open = OPEN[key] !== false, all = MORE[key], shown = all ? items : items.slice(0, limit), rest = items.length - shown.length;
+    return `<button class="foldh" data-fold="${key}" aria-expanded="${open}"><span>${open ? '▾' : '▸'}</span> ${title} <span class="cnt">${items.length}</span></button>`
+      + (open ? shown.join('') + (rest > 0 ? `<button class="btn ghost more" data-more="${key}">Show ${rest} more</button>` : all && items.length > limit ? `<button class="btn ghost more" data-more="${key}">Show fewer</button>` : '') : '');
+  };
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-fold]'), m = e.target.closest('[data-more]');
+    if (f) OPEN[f.dataset.fold] = OPEN[f.dataset.fold] === false; else if (m) MORE[m.dataset.more] = !MORE[m.dataset.more]; else return;
+    drawSessions(); drawNotes(); drawReqs(); drawPitches();
+  });
+  const linkTrackers = h => (D.trackers || []).reduce((t, n) => (n && t.includes(esc(n)) ? t.split(esc(n)).join(`<button class="tlink" data-story="${esc(n)}" title="Open the Story tab at ${esc(n)}">${esc(n)}</button>`) : t), h);
+  const nl2br = h => h.replace(/\n/g, '<br>');
+
+  function pickTalk() {
+    const talks = D.talks || [];
+    cur = talks.find(t => t.id === cur?.id) || talks.find(t => t.state === 'open') || talks[0] || null;
+  }
+  function drawHead() {
+    $('#s-line').textContent = talkLine({ character: D.where.character, connection: D.connection, state: cur?.state });
+    if (!cur) { $('#s-title').textContent = D.where.charKey ? 'No talk yet' : 'Open a character chat'; $('#s-tag').hidden = true; $('#s-told').hidden = true; return; }
+    $('#s-tag').hidden = false; $('#s-told').hidden = false;
+    $('#s-title').innerHTML = `<span class="ttl" id="s-ttl" title="Click to rename">${esc(cur.title)}</span>${cur.mine ? '' : ' <span class="smart" title="Mero named it — rename it to make it yours">✨</span>'}`;
+    $('#s-ttl').onclick = renameTalk;
+    $('#s-tag').value = cur.tag; $('#s-tag').className = 'kindsel ' + cur.tag;
+  }
+  const cardHtml = (c, k, j) => `<div class="card" style="--kc:${KIND[c.kind][2]}"><div class="ch">📝 ${c.state === 'kept' ? 'Kept' : c.state === 'no' ? 'Not kept' : 'Keep this note?'} <small>from this talk</small>${c.state ? `<span class="cardstate${c.state === 'no' ? ' no' : ''}">${c.state === 'kept' ? '✓ in 📝 Notes' : ''}</span>` : ''}</div>
+      <div>${KIND[c.kind][0]} <b>${esc(c.text)}</b></div>
+      ${c.state ? '' : `<div class="row"><select aria-label="Kind" data-ck="${k}:${j}">${Object.entries(KIND).map(([v, x]) => `<option value="${v}"${v === c.kind ? ' selected' : ''}>${x[0]} ${x[1]}</option>`).join('')}</select>
+        <select aria-label="How long" data-cl="${k}:${j}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === c.last ? ' selected' : ''}>${x}</option>`).join('')}</select>
+        <select aria-label="Where it applies" data-cs="${k}:${j}">${Object.entries(SCOPE).filter(([v]) => v !== 'run' || D.where.run).filter(([v]) => v !== 'board' || D.where.board).map(([v, x]) => `<option value="${v}"${v === c.scope ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div class="row"><button class="btn p" data-keep="${k}:${j}">${I('keep')}Keep</button><button class="btn ghost" data-no="${k}:${j}">No</button>${cur.tag === 'fb' && (c.kind === 'dont' || c.kind === 'steer') ? `<button class="btn m2" data-redo="${k}:${j}" title="Keep it and swipe the last reply with it in force. The board's rolls and moves stay">${I('refresh')}Redo the last reply with this note</button>` : ''}</div>`}</div>`;
+  function drawTalk() {
+    pickTalk(); drawHead();
+    if (!cur) { $('#msgs').innerHTML = `<div class="m sys">${D.where.charKey ? 'Write below to start a talk.' : 'Open a character chat to talk with Mero.'}</div>`; drawNotesline(); return; }
+    $('#msgs').innerHTML = (cur.msgs.length ? '' : `<div class="card" style="--kc:var(--dk-mero)"><div class="ch">What kind of talk? <small>you can change it any time from the tag above</small></div><div class="row"><button class="btn" data-tagpick="yap">💭 Yapping</button><button class="btn" data-tagpick="plan">🗺 Planning</button><button class="btn" data-tagpick="fb">✋ Feedback</button></div></div>`)
+      + cur.msgs.map((m, k) => `<div class="m ${m.who === 'mero' ? 'mer' : 'miinthe'}">${m.who === 'mero' ? linkTrackers(nl2br(esc(m.t))) : nl2br(esc(m.t))}${(m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>` : ''}</div>` + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('')).join('');
+    $('#msgs').scrollTop = 1e6; wireTalk(); drawNotesline();
+  }
+  const cardFields = key => ({ kind: $(`[data-ck="${key}"]`)?.value, last: $(`[data-cl="${key}"]`)?.value, scope: $(`[data-cs="${key}"]`)?.value });
+  function wireTalk() {
+    $$('[data-keep]').forEach(b => b.onclick = () => { const [k, j] = b.dataset.keep.split(':').map(Number); HOST.keepCard(cur.id, k, j, cardFields(b.dataset.keep)); toast('Kept — in force from the next reply.'); });
+    $$('[data-no]').forEach(b => b.onclick = () => { const [k, j] = b.dataset.no.split(':').map(Number); HOST.dropCard(cur.id, k, j); });
+    $$('[data-redo]').forEach(b => b.onclick = async () => { const [k, j] = b.dataset.redo.split(':').map(Number); b.disabled = true; const r = await HOST.redo(cur.id, k, j, cardFields(b.dataset.redo)); if (!r.ok) toast(r.error); else toast('↻ Swiping the last reply with the note in force.'); });
+    $$('[data-tagpick]').forEach(b => b.onclick = () => HOST.updateTalk(cur.id, { tag: b.dataset.tagpick }));
+    $$('[data-topitch]').forEach(b => b.onclick = () => { pView = 'pick'; openD('d-pitch', true); });
+  }
+  function renameTalk() {
+    const h = $('#s-title'); h.innerHTML = `<span class="ttl"><input id="s-ttl-in" value="${esc(cur.title)}" aria-label="Talk title"></span>`;
+    const inp = $('#s-ttl-in'); inp.focus(); inp.select(); let fin = false;
+    const done = ok => { if (fin) return; fin = true; if (ok && inp.value.trim() && inp.value.trim() !== cur.title) { HOST.updateTalk(cur.id, { title: inp.value.trim() }); toast('Renamed — Mero won\'t change it.'); } else drawHead(); };
+    inp.onkeydown = e => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); };
+    inp.onblur = () => done(true);
+  }
+  function drawNotesline() {
+    const n = D.notes || [], act = n.filter(x => x.inForce).length;
+    $('#notesline').textContent = `📝 ${act} for the story · ${n.filter(x => !x.story && x.on && !x.ended).length} only for our talks`;
+  }
+
+  // ✨ the glow (how chatty — mock-up v13): big moments on the board, at Very chatty also threads gone quiet
+  function drawMoments() {
+    const G = D.glow || { glows: false, moments: [] };
+    $('.ri[data-d="d-sess"]').classList.toggle('glow', !!G.glows);
+    $('.ri[data-d="d-sess"]').title = G.glows ? 'Big moment — want to talk about it?' : 'Talks';
+    $('#sess-moments').innerHTML = G.moments.map(m => `<div class="card" style="--kc:var(--dk-mero)" data-mom="${esc(m.key)}"><div class="ch">${m.quiet ? '🌙 Gone quiet' : '✨ Big moment'} <small>${m.i ? `#${m.i}` : ''}</small></div>
+      <div>${esc(m.icon || '')} <b>${linkTrackers(esc(m.text))}</b></div>${m.quote ? `<div class="q">“${esc(m.quote)}”</div>` : ''}
+      <div class="row"><button class="btn m2" data-mtalk>${I('talks')}Talk about it</button><button class="btn ghost" data-mno>Not now</button></div></div>`).join('')
+      + (G.moments.length > 1 ? '<button class="btn ghost more" id="mom-all">Set them all aside</button>' : '');
+    const all = $('#mom-all'); if (all) all.onclick = () => HOST.momentsAside(G.moments.map(m => m.key));
+    $$('#sess-moments [data-mom]').forEach(c => {
+      const key = c.dataset.mom;
+      c.querySelector('[data-mno]').onclick = () => HOST.momentsAside([key]);
+      c.querySelector('[data-mtalk]').onclick = async () => {
+        c.querySelectorAll('button').forEach(b => { b.disabled = true; });
+        const before = (D.talks || [])[0]?.id;
+        const r = HOST.talkMoments([key]);
+        setTimeout(() => { const t = (HOST.load().talks || [])[0]; if (t && t.id !== before) { cur = t; refresh(); closeDrawers(); } }, 50);
+        const res = await r; if (!res?.ok) { toast(res?.error || 'Mero could not answer.'); refresh(); }
+      };
+    });
+  }
+
+  // talks drawer
+  function drawSessions() {
+    $('#sess-h').textContent = D.where.character ? `Talks about ${D.where.character}` : 'Talks';
+    const q = sessQ.toLowerCase();
+    const list = (D.talks || []).filter(s => (sessFilter === 'all' || s.tag === sessFilter) && (!q || (s.title + ' ' + s.summary).toLowerCase().includes(q)));
+    const when = s => new Date(s.updated).toLocaleDateString([], { day: 'numeric', month: 'short' });
+    const item = s => `<button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button>`;
+    const group = (st, label) => fold('sess-' + st, label, list.filter(s => s.state === st).map(item));
+    $('#sess-list').innerHTML = (group('open', 'Open') + group('resolved', 'Resolved — reopen any time') + group('archived', 'Archived')) || '<p class="mini">No talk yet.</p>';
+    drawMoments();
+    $$('[data-s]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.s); drawTalk(); drawSessions(); if (!document.body.classList.contains('wide')) closeDrawers(); });
+  }
+  $('#sess-q').oninput = e => { sessQ = e.target.value; drawSessions(); };
+  $$('#sess-f button').forEach(b => b.onclick = () => { sessFilter = b.dataset.v; $$('#sess-f button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawSessions(); });
+  $('#new-sess').onclick = () => { const t = HOST.newTalk('yap'); if (!t) { toast('Open a character chat first.'); return; } cur = t; refresh(); closeDrawers(); $('#c-in').focus(); };
+
+  // notes drawer
+  function drawNotes() {
+    const notes = D.notes || [];
+    const row = n => `<div class="note${n.on ? '' : ' off'}" style="--kc:${KIND[n.kind][2]}"><div class="n1"><span>${KIND[n.kind][0]} <span class="ntext${n.hidden ? ' blur' : ''}" data-ned="${n.id}" title="Click to edit">${esc(n.text)}</span></span><label class="sw"><input type="checkbox" data-on="${n.id}"${n.on ? ' checked' : ''}> on</label></div>
+      <div class="n2"><select aria-label="How long" data-nl="${n.id}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === n.last ? ' selected' : ''}>${x}</option>`).join('')}</select><select aria-label="Where it applies" title="Where it applies. All that apply are in force together." data-sc="${n.id}">${Object.entries(SCOPE).filter(([v]) => v === n.scope || ((v !== 'run' || D.where.run) && (v !== 'board' || D.where.board))).map(([v, x]) => `<option value="${v}"${v === n.scope ? ' selected' : ''}>${x}</option>`).join('')}</select>${n.inForce ? '<span>● in force</span>' : n.runOut ? '<span>time is up</span>' : ''}${n.from ? `<button class="btn ghost" data-from="${n.from}">from: ${esc((D.talks || []).find(t => t.id === n.from)?.title || 'a talk')}</button>` : ''}<button class="btn ghost" data-nrm="${n.id}" title="Remove" aria-label="Remove">${I('trash')}</button></div></div>`;
+    const live = notes.filter(n => !n.ended && !n.runOut), done = notes.filter(n => n.ended || n.runOut);
+    $('#notes-list').innerHTML = fold('notes-story', 'For the story', live.filter(n => n.story).map(row), { empty: 'None yet.' })
+      + fold('notes-talks', 'Only for our talks', live.filter(n => !n.story).map(row))
+      + fold('notes-ended', 'Ended', done.map(row), { empty: 'None.' });
+    $$('[data-on]').forEach(c => c.onchange = () => HOST.updateNote(c.dataset.on, { on: c.checked }));
+    $$('[data-nl]').forEach(s => s.onchange = () => HOST.updateNote(s.dataset.nl, { last: s.value, made: { i: D.lastIndex, at: new Date().toISOString() } }));
+    $$('[data-sc]').forEach(s => s.onchange = () => { HOST.updateNote(s.dataset.sc, { scope: s.value }); toast(`Now applies to ${SCOPE[s.value]}.`); });
+    $$('[data-nrm]').forEach(b => b.onclick = () => HOST.removeNote(b.dataset.nrm));
+    $$('[data-from]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.from) || cur; drawTalk(); drawSessions(); openD('d-sess'); });
+    $$('[data-ned]').forEach(el => el.onclick = () => { if (el.classList.contains('blur')) return; const n = notes.find(x => x.id === el.dataset.ned); el.innerHTML = `<textarea rows="2" aria-label="Note text">${esc(n.text)}</textarea>`; const ta = el.querySelector('textarea'); ta.focus(); let fin = false; const done2 = ok => { if (fin) return; fin = true; if (ok && ta.value.trim() && ta.value.trim() !== n.text) HOST.updateNote(n.id, { text: ta.value.trim() }); else drawNotes(); }; ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done2(true); } if (e.key === 'Escape') done2(false); }; ta.onblur = () => done2(true); el.onclick = null; });
+    drawNotesline();
+  }
+  $('#new-note').onclick = () => { const n = HOST.addNote({ kind: 'steer', text: 'A new note — click to edit', last: 'pinned', scope: 'chat', on: false }); if (n) { toast('A new note, switched off — write it, then switch it on.'); } };
+
+  // Mero's settings have one home: Settings › Mero (Miinthe, 2026-10-17 — "the mero setting button should open the general settings just on the mero tap").
+  // Her own drawer copy is gone; the ☆ in the rail opens Settings there. Left here: the AI pick inside Pitches, for a first pitch with no AI set.
+  function drawSettings() {
+    for (const id of ['#p-conn-sel']) { const sel = $(id); const k = (D.profiles || []).map(p => p.id).join('|') + '#' + D.profileId; if (sel.dataset.k !== k) { sel.innerHTML = `<option value="">— pick a profile —</option>` + (D.profiles || []).map(p => `<option value="${esc(p.id)}"${p.id === D.profileId ? ' selected' : ''}>${esc(p.name)}</option>`).join(''); sel.dataset.k = k; } }
+    $('#p-conn').hidden = !!D.profileId;
+  }
+  $('#ri-set').onclick = () => HOST.openSettings?.('mero');
+  for (const id of ['#p-conn-sel']) $(id).onchange = e => { HOST.setConnection(e.target.value); toast(e.target.value ? 'Mero is connected.' : 'Mero has no connection now.'); };
+
+  // composer
+  const autogrow = el => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 220) + 'px'; el.style.overflowY = el.scrollHeight > 220 ? 'auto' : 'hidden'; };
+  $$('.grow').forEach(el => el.addEventListener('input', () => autogrow(el)));
+  const showErr = e => { $('#err').textContent = e ? `Mero couldn't answer: ${e}` : ''; $('#err').hidden = !e; };
+  async function send(text) {
+    showErr('');
+    if (!cur) { cur = HOST.newTalk('yap'); if (!cur) { toast('Open a character chat first.'); return; } }
+    const r = await HOST.send(cur.id, text);
+    if (!r.ok) showErr(r.error);
+  }
+  $('#c-send').onclick = () => { const t = $('#c-in').value.trim(); if (!t || D.busy) return; $('#c-in').value = ''; autogrow($('#c-in')); send(t); };
+  $('#c-in').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#c-send').click(); } });
+  $('#c-where').onclick = async () => { showErr(''); const r = await HOST.where(cur?.id || null); if (r?.talk) cur = r.talk; if (!r.ok) showErr(r.error); };
+  const wrapUp = () => { if (cur && !D.busy) send('Wrap up: is there anything we agreed in this talk that isn\'t a note yet? Offer it as a note card.'); };
+  $('#c-pitch').onclick = () => openD('d-pitch', true);
+
+  // header menu
+  $('#s-tag').onchange = e => HOST.updateTalk(cur.id, { tag: e.target.value });
+  // ⋯ (v13): Check the lore, Wrap up, then resolve / archive / delete
+  $('#s-more').onclick = e => {
+    e.stopPropagation();
+    const b = $('#s-more');
+    if (b.getAttribute('aria-expanded') === 'true') { b._close?.(); return; }
+    const DO = {
+      look: () => lookLore(),
+      wrap: wrapUp,
+      resolve: () => HOST.updateTalk(cur.id, { state: cur.state === 'open' ? 'resolved' : 'open' }),
+      archive: () => HOST.updateTalk(cur.id, { state: cur.state === 'archived' ? 'resolved' : 'archived' }),
+      delete: () => deleteTalk(),
+    };
+    const items = talkMenu({ state: cur?.state, job: D.settings.job, looking: !!D.looking, busy: !!D.busy, hasTalk: !!cur })
+      .map(it => (it === 'sep' ? 'sep' : { ...it, onClick: DO[it.id] }));
+    b._close = openMenu(b, items, { onClose: () => b.setAttribute('aria-expanded', 'false') });
+    b.setAttribute('aria-expanded', 'true');
+  };
+  function deleteTalk() {
+    if (!cur) return;
+    const n = (D.notes || []).filter(x => x.from === cur.id).length;
+    const card = document.createElement('div'); card.className = 'card'; card.style.setProperty('--kc', 'var(--dk-bad)');
+    card.innerHTML = `<div class="ch">Delete “${esc(cur.title)}”?</div><div class="mini">${n ? `It made ${n} note${n > 1 ? 's' : ''}. What should happen to ${n > 1 ? 'them' : 'it'}?` : 'It made no notes.'}</div><div class="row">${n ? '<button class="btn" data-dn="keep">Keep the notes</button><button class="btn" data-dn="archive">Archive them</button><button class="btn" data-dn="delete">Delete them too</button>' : '<button class="btn" data-dn="keep">Delete</button>'}<button class="btn ghost" data-dn="">Cancel</button></div>`;
+    $('#msgs').appendChild(card); $('#msgs').scrollTop = 1e6;
+    card.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { if (b.dataset.dn) { HOST.deleteTalk(cur.id, b.dataset.dn); cur = null; toast('Talk deleted.'); } else card.remove(); });
+  }
+  // ⓘ what Mero was told
+  $('#s-told').onclick = () => {
+    const t = cur && HOST.told(cur.id);
+    $('#told-b').innerHTML = !t ? '<p class="mini" title="Mero hasn\'t answered in this talk since SillyTavern was opened">Nothing yet.</p>'
+      : `<div class="mini">Sent to <b>${esc(D.connection || '?')}</b> · nothing of this reaches the story</div>` + t.sections.map(([h, x]) => `<details><summary><span>${esc(h)}</span><span class="mini">~${Math.ceil(String(x || '').length / 4)}</span></summary><pre>${esc(x || '—')}</pre></details>`).join('');
+    $('#told').hidden = false;
+  };
+  $('#told-x').onclick = () => { $('#told').hidden = true; };
+
+  // drawers, story links, pop-out
+  const closeDrawers = () => { $$('.drawer').forEach(d => { d.hidden = true; }); $$('.ri').forEach(r => r.setAttribute('aria-pressed', 'false')); };
+  // ── 📬 Requests (step 3, 2026-10-05 — mock-ups v3–v13): grouped by who asks; answered ones stay, folded ──────
+  const RQ_GROUP = [['board', '🤖 From the board\'s helper', 'Not Mero — the helper AI that moves trackers, items and dates. It asks when it isn\'t sure.'], ['plan', '🪜 From your plans', ''], ['mero', '☆ From Mero', 'Her own ideas about your lore']];
+  const RQ_SRC = { board: '🤖 the helper asks', plan: '🪜 a plan', mero: '☆ Mero' };
+  // ☆ Mero's entry change: the passage with a little around it, what goes (struck) and what comes (green)
+  const baBox = (r, edit = false) => { const b = r.ba || {}; return `<div class="ba"><span class="ctx">${esc(b.pre || '')}</span>${b.before ? `<del>${esc(b.before)}</del>` : (b.pre ? '\n\n' : '')}${edit ? `<textarea class="grow" data-redit rows="2" aria-label="The new text">${esc(b.after || '')}</textarea>` : `<ins>${esc(b.after || '')}</ins>`}<span class="ctx">${esc(b.post || '')}</span></div>`; };
+  const entryWhere = r => `<div class="mini">📄 ${esc(r.entry?.filename || '')}</div>`;
+  function drawReqs() {
+    const R = D.requests || { waiting: [], answered: [] };
+    $('#look-lore').disabled = !!D.looking || D.settings.job === 'off';
+    lbl($('#look-lore'), 'search', D.looking ? 'Mero is looking…' : 'Check the lore');
+    $('#look-lore').title = D.settings.job === 'off' ? 'Mero is off duty (☆ settings → Mero\'s job)' : 'Mero reads the latest replies next to the entries sent with them, and says what an entry is missing';
+    const one = r => r.done ? `<div class="card done"${r.kind === 'entry' ? ` data-rdone="${esc(r.id)}"` : ''}><div class="ch">${esc(r.title)} <span class="pill">${esc(r.done)}</span></div><div class="mini">${RQ_SRC[r.from] || ''}</div>${r.kind === 'entry' && r.applied ? `${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${baBox(r)}${entryWhere(r)}${r.undone ? '' : `<div class="row"><button class="btn" data-rundo>${I('undo')}Undo</button></div>`}` : ''}</div>`
+      : `<div class="card${r.from === 'board' ? ' helper' : ''}" data-req="${esc(r.id)}" style="--kc:${r.from === 'mero' ? 'var(--dk-mero)' : r.from === 'plan' ? 'var(--dk-good)' : 'var(--dk-accent)'}"><div class="ch">${esc(r.title)}${r.now ? ' <span class="pill now">⏸ the reply waits for this</span>' : ''}</div><div class="mini">${RQ_SRC[r.from] || ''}${r.conf ? ` · ${esc(r.conf)} confidence` : ''}</div>
+        ${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${r.why ? `<div class="mini">${esc(r.why)}</div>` : ''}${r.kind === 'entry' ? baBox(r) + entryWhere(r) : ''}
+        <div class="row">${r.kind === 'move' ? `<button class="btn p" data-ra="accept">Accept</button><button class="btn" data-ra="deny">Deny</button><label class="mini"${r.recheckWhy ? ` title="The helper: ${esc(r.recheckWhy)}"` : ''}>Re-check in <select data-rn aria-label="Re-check after how many messages">${[1, 3, 5, 10].map(n => `<option${n === (r.recheck || 3) ? ' selected' : ''}>${n}</option>`).join('')}</select></label><button class="btn" data-ra="wait">Wait</button>`
+          : r.kind === 'find' ? `<button class="btn p" data-ra="keep">Keep it</button><button class="btn" data-ra="refuse">Not worth keeping</button>`
+          : r.kind === 'date' ? `<button class="btn p" data-ra="add">Add it</button><button class="btn" data-ra="skip">Leave it</button>`
+          : r.kind === 'plan' ? `<button class="btn" data-ra="more" title="The timer starts again">⏳ More time</button><button class="btn" data-ra="redirect" title="Mero rewrites the rest to lead back from where the story is now — you review it">↩️ Redirect</button><button class="btn" data-ra="evolve" title="Mero rewrites the plan to follow where the story went — you review it">🌱 Evolve</button><button class="btn ghost" data-ra="abandon">🗑 Abandon</button>`
+          : r.kind === 'entry' ? `<button class="btn m2" data-ra="apply">${r.change?.find ? 'Change the entry' : 'Add to the entry'}</button><button class="btn" data-redit-btn>Edit first</button><button class="btn" data-ra="notcanon" title="A one-off — Mero won't ask about this line again">Not canon</button>` : ''}<button class="btn ghost" data-rask>${I('talks')}Ask</button></div>
+        ${r.recheckWhy ? `<div class="mini">The helper suggests re-checking in ${r.recheck}: ${esc(r.recheckWhy)}</div>` : ''}</div>`;
+    const groups = RQ_GROUP.map(([k, h, sub]) => { const l = R.waiting.filter(r => r.from === k); return l.length ? `<h4 class="rg rg-${k}"${sub ? ` title="${esc(sub)}"` : ''}>${h}</h4>` + l.map(one).join('') : ''; }).join('');
+    // overhaul 2026-10-17: lore gaps (flagged while replies were written) — the old helper's list, at home here now
+    const G = D.gaps || { open: [], done: [] };
+    const gapCard = g => `<div class="card" data-gap="${esc(g.id)}" style="--kc:var(--dk-mero)"><div class="ch">${esc(g.title)}</div>${g.meta ? `<div class="mini">${esc(g.meta)}</div>` : ''}${g.why ? `<div class="mini">${esc(g.why)}</div>` : ''}
+      <div class="row">${g.update ? `<button class="btn m2" data-ga="open" title="Open “${esc(g.entry)}” in Obsidian">Open it</button>` : `<button class="btn m2" data-ga="write" title="Opens Write a new entry with this filled in. Mero can draft it there.">Write it</button>`}<button class="btn" data-ga="done" title="Mark it as taken care of">Done</button><button class="btn" data-ga="hide" title="Hidden until it is flagged again">Hide</button><button class="btn ghost" data-ga="no" title="Gone for good, even if it is flagged again">No</button></div></div>`;
+    const gapDone = g => `<div class="card done"><div class="ch">${esc(g.title)} <span class="pill">✓ taken care of</span></div><div class="mini">📚 a lore gap</div></div>`;
+    const gaps = G.open.length ? `<h4 class="rg rg-mero" title="Found while replies were written: something the story needed that no entry had, or an entry that needs an update">📚 Lore gaps</h4>` + G.open.map(gapCard).join('') : '';
+    $('#req-list').innerHTML = ((groups + gaps) || '<p class="mini">Nothing open.</p>') + fold('req-done', 'Answered', [...R.answered.map(one), ...G.done.map(gapDone)]);
+    $$('#req-list [data-gap]').forEach(card => card.querySelectorAll('[data-ga]').forEach(b => b.onclick = () => {
+      const what = b.dataset.ga, r = HOST.gap(card.dataset.gap, what);
+      if (r && r.ok === false) toast(r.msg || 'Not done.');
+      else if (what === 'hide') toast('Hidden. It comes back if it is flagged again.');
+      else if (what === 'no') toast('Gone for good.');
+    }));
+    $$('#req-list [data-req]').forEach(card => {
+      const r = R.waiting.find(x => x.id === card.dataset.req);
+      card.querySelectorAll('[data-ra]').forEach(b => b.onclick = async () => {
+        card.querySelectorAll('button').forEach(x => { x.disabled = true; });
+        const ed = card.querySelector('[data-redit]');
+        const ok = await HOST.answer(r.id, b.dataset.ra, Number(card.querySelector('[data-rn]')?.value) || null, ed ? { text: ed.value } : null);
+        if (ok && ok.ok === false) { toast(ok.msg || 'Not done.'); refresh(); }
+        else if (!ok) { toast('That question is no longer open.'); refresh(); }
+        else if (r.kind === 'entry') toast(b.dataset.ra === 'apply' ? `Written into ${r.entry.title} — Undo is in Answered.` : 'Not canon — Mero won\'t ask about that line again.');
+        else if (r.now && !(HOST.load().requests?.waiting || []).some(x => x.now)) toast('The reply goes on — with your answer already in place.');
+      });
+      const eb = card.querySelector('[data-redit-btn]');
+      if (eb) eb.onclick = () => {
+        const box = card.querySelector('.ba'); box.outerHTML = baBox(r, true);
+        const ta = card.querySelector('[data-redit]'); ta.addEventListener('input', () => autogrow(ta)); autogrow(ta); ta.focus();
+        eb.remove(); card.querySelector('[data-ra="apply"]').textContent = 'Save to the entry';
+      };
+      const ask = card.querySelector('[data-rask]');
+      if (ask) ask.onclick = () => {
+        const t = HOST.newTalk('plan'); if (!t) { toast('Open a character chat first.'); return; }
+        HOST.updateTalk(t.id, { title: r.title, mine: true }); cur = { ...t, title: r.title };
+        $('#c-in').value = r.from === 'board' ? `About the helper's question — ${r.title}${r.q ? ` (from “${r.q}”)` : ''}: what do you make of it?` : `About this: ${r.title}`;
+        refresh(); closeDrawers(); $('#c-in').focus();
+      };
+    });
+    $$('#req-list [data-rdone]').forEach(card => {
+      const u = card.querySelector('[data-rundo]');
+      if (u) u.onclick = async () => { u.disabled = true; const res = await HOST.undoEntry(card.dataset.rdone); toast(res.ok ? 'Undone — the entry reads as before.' : res.msg); refresh(); };
+    });
+    const n = R.waiting.length, hold = !!D.holding;
+    $('#req-badge').hidden = !n && !hold;
+    const ri = $('.ri[data-d="d-req"]'); ri.classList.toggle('hold', hold); ri.title = hold ? 'Requests: the reply waits for your answer' : n ? `Requests (${n} open)` : 'Requests';
+  }
+
+  const openD = (id, stay = false) => { if (id === 'd-sess' && D.glow?.glows) HOST.seeGlow(); $$('.drawer').forEach(d => { d.hidden = d.id !== id || (!stay && !d.hidden); }); $$('.ri').forEach(r => r.setAttribute('aria-pressed', String(r.dataset.d === id && !$('#' + id).hidden))); };
+  $$('.ri[data-d]').forEach(r => r.onclick = () => openD(r.dataset.d));
+  $$('[data-close]').forEach(b => b.onclick = () => closeDrawers());
+  document.addEventListener('click', e => { const l = e.target.closest('[data-story]'); if (l) HOST.openStory(l.dataset.story); });
+  $('#pop-out').onclick = () => HOST.popToggle();
+  async function lookLore() { const r = await HOST.lookLore(); toast(!r.ok ? r.error : r.noEntries ? 'No entries were sent with the latest replies — nothing to check.' : r.found ? `Mero found ${r.found} thing${r.found > 1 ? 's' : ''} for your entries.` : 'Mero looked. Your entries have everything the latest replies show.'); refresh(); }
+  $('#look-lore').onclick = () => lookLore();
+  // your notebooks (v13: in her Notes): the same tools as the side panel's ⋯ → Notebooks
+  $$('[data-tool]').forEach(b => b.onclick = () => { if (!HOST.tool?.(b.dataset.tool)) toast('That notebook isn’t available right now.'); });
+
+  // ── 💡 Pitches (step 4, 2026-10-14 — pitches mock-up v4): home view (menu, out in the story, kept, taste) and the pick
+  // view (one batch); tap cards to pick them, one menu does the rest (Miinthe: "one menu for every thing instead of every
+  // pitch repeating the options"); ← Back drops what wasn't used or kept ("↩ Bring back" once)
+  const PK = { twist: '🌀 twist', acts: '🎭 a character acts', callback: '🔁 callback', ask: '❓ a question to you' };
+  const PS = { nudge: '🌱 nudge', turn: '🔀 turn', bomb: '💥 bombshell' };
+  const PSRC = { cast: '🎭', board: '🗺', lore: '📚', loose: '🔁', talk: '💬' };
+  const PICKABLE = ['fresh', 'kept', 'skipped'];
+  let pView = 'home', fromMsg = null, pickSel = new Set(), askWhy = false, tasteOpen = false;
+  const PV = () => D.pitches || { list: [], menu: {}, dropped: [], cast: [] };
+  const pById = id => PV().list.find(p => p.id === id);
+  const SEES = { beat: 'the current beat only', summary: 'summary + current beat', all: 'the whole plan' };
+  function planBody(p) {
+    const pl = p.plan, run = p.st === 'running', all = pl.beats.length;
+    const beats = `<ol class="beats">${pl.beats.map((b, k) => `<li class="${b.done ? 'done' : run && k === pl.at ? 'now' : ''}">${b.done ? '✓ ' : run && k === pl.at ? '→ ' : ''}${esc(b.text)}${b.done?.quote ? `<span class="bq">#${b.done.i} “${esc(b.done.quote)}”</span>` : ''}</li>`).join('')}</ol>`;
+    if (!run && p.st !== 'done' && p.st !== 'abandoned') return beats;
+    const head = `<div class="prog"><i style="width:${Math.round(100 * pl.beats.filter(b => b.done).length / all)}%"></i></div>`;
+    if (p.st !== 'running') return head + `<div class="pstate ${p.st === 'done' ? 'good' : 'bad'}">${p.st === 'done' ? '✓ Done — every beat happened.' : '🗑 Abandoned.'}</div>` + `<details><summary class="mini">the beats</summary>${beats}</details>`;
+    const cur = pl.beats[pl.at];
+    const sets = `<div class="psets">Beat ${pl.at + 1} of ${all} · not before <input type="number" min="0" max="40" value="${cur.floor}" data-pfloor="${pl.at}" aria-label="Not before this many replies"> replies · writer sees <select data-psees aria-label="What the writer sees">${Object.entries(SEES).map(([v, x]) => `<option value="${v}"${v === pl.sees ? ' selected' : ''}>${x}</option>`).join('')}</select> · check in <select data-ptimer aria-label="Check in">${[10, 15, 25, 0].map(n => `<option value="${n}"${n === pl.timer ? ' selected' : ''}>${n ? `after ${n}` : 'never'}</option>`).join('')}</select></div>`;
+    const review = pl.review ? `<div class="review"><b>${{ redirect: '↩️ Redirect', evolve: '🌱 Evolve', extend: '➕ Extend' }[pl.review.mode]} — Mero suggests:</b>${pl.review.goal && pl.review.mode !== 'redirect' ? `<div>Goal: ${esc(pl.review.goal)}</div>` : ''}<ol class="beats">${pl.review.beats.map(b => `<li>${esc(b)}</li>`).join('')}</ol><div class="row"><button class="btn m2" data-pa="ruse">✓ Use it</button><button class="btn ghost" data-pa="rdrop">✕ Keep the old</button></div></div>` : '';
+    return head + `<div class="${p.hide && !p.peek ? 'blur' : ''}">${beats}</div>` + sets + review
+      + `<div class="row"><button class="btn ghost" data-pa="linger" title="Stay on this beat longer — its floor goes up">⏳ Linger</button><button class="btn ghost" data-pa="extend" title="Mero writes new beats from here; you review them">➕ Extend</button><button class="btn ghost" data-pa="redirect" title="Mero rewrites the rest to lead back from where the story is now">↩️ Redirect</button><span class="sp"></span><button class="btn ghost" data-pa="abandon">🗑 Abandon</button></div>`;
+  }
+  function pCard(p) {
+    const pick = PICKABLE.includes(p.st), on = pickSel.has(p.id);
+    if (p.plan) {
+      const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Plan #${p.no}` : '';
+      return `<div class="pc${p.hide ? ' hid' : ''}${p.peek ? ' peek' : ''}${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>🪜 ${p.hide ? 'a hidden plan' : 'plan'} · ${p.plan.beats.length} beats</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.hide ? `<button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button>` : ''}</div>
+        <div class="${p.hide && !p.peek ? 'blur' : ''}"><div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div><div><b>${esc(p.plan.goal || p.text)}</b></div></div>${planBody(p)}</div>`;
+    }
+    const from = `<div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div>`;
+    if (p.st === 'hidden' || p.st === 'fired') {
+      const fired = p.st === 'fired';
+      return `<div class="pc hid${p.peek ? ' peek' : ''}" data-pid="${p.id}"><div class="ch"><span>🙈 A hidden pitch</span><span class="no">#${p.no}</span><span class="sp"></span><button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button></div>
+        <div class="blur">${from}<div>${esc(p.text)}</div></div>
+        <div class="pstate ${fired ? 'good' : 'wait'}">${fired ? `✓ Used at #${p.firedAt} — <span class="q">“${esc(p.firedQ || '')}”</span>`
+          : `⏳ Waits for: ${p.mine ? `<b>${esc(p.moment)}</b>` : `<span class="blur">${esc(p.moment || '')}</span> (Mero picked it)`}${p.fb ? ` · or after ${p.fb} messages anyway` : ''}`}</div>
+        ${fired ? '' : '<div class="row"><button class="btn ghost" data-pa="letgo">🗑 Let it go</button></div>'}</div>`;
+    }
+    const st = {
+      fresh: p.kind === 'ask' ? '<span class="mini">A question — answer it in a talk.</span>' : '',
+      dir: '<div class="pstate wait">✍️ Goes to the writer with your next reply — hidden from the chat.</div><div class="row"><button class="btn ghost" data-pa="takeback">Take it back</button></div>',
+      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>`,
+      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at} — pick it to try again, keep it or let it go.</div>`,
+      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div>',
+      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>`,
+      given: `<div class="pstate cast">🎭 ${esc(p.gaveTo?.name || '')}'s plan now — they work toward it in their own turns.</div><div class="row"><button class="btn ghost" data-pa="takeback">Take it back</button></div>`,
+      kept: '',
+    }[p.st] || '';
+    const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Pitch #${p.no}` : '';
+    return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${PK[p.kind] || ''}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${st}</div>`;
+  }
+  const pSec = (key, title, items) => (items.length ? fold(key, title, items.map(pCard)) : '');
+  function drawPitches() {
+    const V = PV(), m = V.menu || {}, list = V.list || [];
+    for (const id of [...pickSel]) { const p = pById(id); if (!p || !PICKABLE.includes(p.st) || (pView === 'pick' ? p.st !== 'fresh' : p.st === 'fresh')) pickSel.delete(id); }
+    const fresh = list.filter(p => p.st === 'fresh');
+    if (pView === 'pick' && !fresh.length && !V.busy) pView = 'home';
+    $('#pv-home').hidden = pView !== 'home'; $('#pv-pick').hidden = pView !== 'pick';
+    // the menu, folded into one line (remembered)
+    const hid = m.vis === 'hide';
+    $$('.pmenu [data-pk]').forEach(g => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(m[g.dataset.pk] ?? (g.dataset.pk === 'shape' ? 'one' : '')) === b.dataset.v))));
+    const multi = m.shape === 'multi';
+    $('#pr-n').hidden = hid; $('#pr-wait').hidden = !hid || multi; $('#pr-sees').hidden = !multi; $('#pr-timer').hidden = !multi;
+    $('#p-sees').value = m.sees || 'beat'; $('#p-timer').value = String(m.timer ?? 15);
+    // Focus: one or more of the main character, Miinthe, the Cast and the trackers (Miinthe 2026-10-18: "Toast or me aren't an
+    // option … neither can I pick multiple"); kept as "Kettle, Toaster"
+    const foc = $('#p-focus'), P2 = D.people || {};
+    const picks = String(m.focus || '').split(',').map(x => x.trim()).filter(Boolean);
+    const opts = [...new Set([P2.main, P2.user, ...(V.cast || []).map(c => c.name), ...(D.trackers || []), ...picks].filter(Boolean))];   // an older pick stays visible, so it can be taken off
+    foc.innerHTML = `<button data-f="" aria-pressed="${!picks.length}">surprise me</button>` + opts.map(o => `<button data-f="${esc(o)}" aria-pressed="${picks.includes(o)}">${esc(o)}${o === P2.user ? ' (you)' : ''}</button>`).join('');
+    foc.querySelectorAll('button').forEach(b => b.onclick = () => {
+      const f = b.dataset.f;
+      const next = !f ? [] : picks.includes(f) ? picks.filter(x => x !== f) : [...picks, f];
+      HOST.pitchMenu({ focus: next.join(', ') });
+    });
+    if (document.activeElement !== $('#p-moment-t')) { $('#p-moment').value = m.moment ? 'mine' : ($('#p-moment').value === 'mine' && !m.moment ? 'mine' : 'mero'); $('#p-moment-t').value = m.moment || ''; }
+    $('#p-moment-t').hidden = $('#p-moment').value !== 'mine';
+    $('#p-fb').checked = m.fbOn !== false; $('#p-fbn').value = m.fb || 10;
+    $('#psum-t').textContent = pitchLine(m);
+    $('#pr-from').hidden = fromMsg == null;
+    if (fromMsg != null) $('#fromchip').innerHTML = `💡 from message #${fromMsg} <button id="from-x" aria-label="Pitch from the whole story again">✕</button>`;
+    const fx = $('#from-x'); if (fx) fx.onclick = () => { fromMsg = null; drawPitches(); };
+    const busyText = { batch: '☆ Mero is pitching…', more: '☆ Mero is pitching more…', hidden: '☆ Mero is rolling a hidden one…', draft: '☆ Mero is drafting your line…', rewrite: '☆ Mero is rewriting the plan…' }[V.busy] || '';
+    if (V.busy === 'batch' || V.busy === 'hidden') $('#p-go').textContent = '…'; else lbl($('#p-go'), 'pitch', hid ? 'Roll' : 'Pitch');
+    $('#p-go').disabled = !!V.busy;
+    $('#p-hint').textContent = !V.canPitch ? 'Pick Mero\'s AI above first.' : busyText || (hid ? (multi ? 'Hidden plan — starts at once, a surprise for you too.' : 'Hidden — a surprise for you too.') : '');
+    // home: what's waiting, what's out, what's kept, taste
+    $('#p-waiting').hidden = !fresh.length || pView !== 'home';
+    $('#p-waiting').innerHTML = fresh.length ? `<span>💡 ${fresh.length} pitch${fresh.length > 1 ? 'es' : ''} waiting for your pick</span><button class="btn" id="p-open">Open</button>` : '';
+    const po = $('#p-open'); if (po) po.onclick = () => { pView = 'pick'; pickSel.clear(); drawPitches(); };
+    const dropped = V.dropped || [];
+    $('#p-dropped').hidden = !dropped.length;
+    $('#p-dropped').innerHTML = dropped.length ? `<span>${dropped.length} pitch${dropped.length > 1 ? 'es' : ''} dropped.</span><button class="btn ghost" id="p-bring">↩ Bring back</button>` : '';
+    const pb = $('#p-bring'); if (pb) pb.onclick = () => { pView = 'pick'; pickSel.clear(); HOST.pitchBringBack(); drawPitches(); };
+    $('#p-out').innerHTML = pSec('p-out', 'Out in the story', list.filter(p => ['running', 'dir', 'skipped', 'draft', 'given', 'hidden', 'landed', 'played', 'fired', 'done', 'abandoned'].includes(p.st)));
+    $('#p-kept').innerHTML = pSec('p-kept', '📌 Kept as ideas', list.filter(p => p.st === 'kept'));
+    const taste = (D.notes || []).filter(n => n.taste);
+    $('#p-taste').innerHTML = taste.length ? `<button class="foldh" id="taste-h" aria-expanded="${tasteOpen}" title="Mero adds a line when you use a pitch or 👎 one. Pitches never go against a 🚫 Don't note."><span>${tasteOpen ? '▾' : '▸'}</span> Your taste <span class="cnt">${taste.length}</span></button>`
+      + (tasteOpen ? `<div class="stack" style="gap:4px;margin-top:6px">${taste.map(n => `<div class="tn"><span>${n.taste === 'up' ? '👍' : '👎'}</span><span data-ted="${n.id}" title="Click to change">${esc(n.text)}</span><button data-trm="${n.id}" aria-label="Forget">✕</button></div>`).join('')}</div>` : '') : '';
+    const th = $('#taste-h'); if (th) th.onclick = () => { tasteOpen = !tasteOpen; drawPitches(); };
+    $$('[data-trm]').forEach(b => b.onclick = () => HOST.tasteEdit(b.dataset.trm, null));
+    $$('[data-ted]').forEach(el => el.onclick = () => { const n = taste.find(x => x.id === el.dataset.ted); el.outerHTML = `<input id="te-in" value="${esc(n.text)}" aria-label="Taste note">`; const inp = $('#te-in'); inp.focus(); let fin = false; const done = ok => { if (fin) return; fin = true; if (ok && inp.value.trim() && inp.value.trim() !== n.text) HOST.tasteEdit(n.id, inp.value.trim()); else drawPitches(); }; inp.onkeydown = e => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); }; inp.onblur = () => done(true); });
+    // the pick view
+    $('#pick-title').textContent = fresh.length ? `${fresh.length} ${fresh.length === 1 ? 'pitch' : 'pitches'} to pick from` : 'Pitches';
+    $('#pick-sub').textContent = `${fromMsg != null ? `From message #${fromMsg}` : 'From the whole story'} · ${PS[m.str] || ''} · ${String(m.tone || 'sfw').toUpperCase()}`;
+    $('#pick-again').disabled = !!V.busy; $('#pick-aside').disabled = !!V.busy || !fresh.length;
+    $('#p-fresh').innerHTML = (V.busy === 'batch' ? `<div class="pbusy">${busyText}</div>` : '') + fresh.map(pCard).join('') + (V.busy === 'more' ? `<div class="pbusy">${busyText}</div>` : '');
+    // cards
+    $$('#pitch-db .pc.pick').forEach(c => {
+      const flip = () => { const id = c.dataset.pid; pickSel.has(id) ? pickSel.delete(id) : pickSel.add(id); askWhy = false; drawPitches(); };
+      c.onclick = e => { if (!e.target.closest('button')) flip(); };
+      c.onkeydown = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); } };
+    });
+    $$('#pitch-db [data-pa]').forEach(b => b.onclick = () => {
+      const id = b.closest('[data-pid]').dataset.pid, a = b.dataset.pa;
+      if (a === 'peek') HOST.pitchPeek(id, !pById(id)?.peek);
+      else if (a === 'letgo') HOST.pitchLetGo(id);
+      else if (a === 'takeback') { HOST.pitchTakeBack(id); toast('Taken back — it\'s with the kept ideas.'); }
+      else if (a === 'abandon') { HOST.planAbandon(id); toast('🗑 Plan abandoned.'); }
+      else if (a === 'linger') { HOST.planLinger(id); toast('⏳ Lingering — this beat takes a few more replies.'); }
+      else if (a === 'ruse') { HOST.planUseReview(id); toast('🪜 The plan goes on with the new beats.'); }
+      else if (a === 'rdrop') HOST.planDropReview(id);
+      else if (a === 'extend' || a === 'redirect') { b.disabled = true; HOST.planRewrite(id, a).then(r => { if (!r.ok) toast(r.error); else toast('Mero suggests new beats — review them on the plan.'); }); }
+    });
+    $$('#pitch-db [data-pfloor]').forEach(i => i.onchange = () => HOST.planSet(i.closest('[data-pid]').dataset.pid, { floor: { k: +i.dataset.pfloor, n: +i.value } }));
+    $$('#pitch-db [data-psees]').forEach(x => x.onchange = () => HOST.planSet(x.closest('[data-pid]').dataset.pid, { sees: x.value }));
+    $$('#pitch-db [data-ptimer]').forEach(x => x.onchange = () => HOST.planSet(x.closest('[data-pid]').dataset.pid, { timer: +x.value }));
+    drawActbar();
+    const nb = fresh.length; $('#pitch-badge').hidden = !nb; $('.ri[data-d="d-pitch"]').title = nb ? `Pitches and plans (${nb} to pick from)` : 'Pitches and plans';
+  }
+  function drawActbar() {
+    const picked = PV().list.filter(p => pickSel.has(p.id)), n = picked.length, one = n === 1 ? picked[0] : null;
+    $('#actbar').hidden = !n;
+    if (!n) return;
+    $('#act-n').textContent = n === 1 ? `#${one.no} picked` : `${picked.map(p => '#' + p.no).join(' + ')} picked`;
+    const single = n === 1 && one.kind !== 'ask', busy = !!PV().busy, plan = single && !!one.plan;
+    for (const k of ['dir', 'draft', 'givemenu']) { const b = $(`#actbar [data-b="${k}"]`); b.disabled = !single || busy || (plan && k !== 'dir') || (k === 'givemenu' && !(PV().cast || []).length); b.title = !single ? (n > 1 ? 'Pick one — or 💬 talk about combining them' : 'A question — answer it in a talk') : plan && k !== 'dir' ? 'Not for a plan' : k === 'givemenu' && !(PV().cast || []).length ? 'No Cast on this board' : ''; }
+    lbl($('#actbar [data-b="dir"]'), 'send', plan ? 'Start the plan' : 'Next reply');
+    lbl($('#b-talk'), 'talks', n > 1 ? 'Talk about these' : one.kind === 'ask' ? 'Answer in a talk' : 'Talk about it');
+    lbl($('#b-more'), 'refresh', n > 1 ? 'More like these' : 'More like it'); $('#b-more').disabled = busy;
+    $('#act-hint').textContent = n > 1 ? 'Say in the talk how to combine them.' : '';
+    $('#act-main').hidden = askWhy; $('#act-more').hidden = askWhy; $('#act-why').hidden = !askWhy;
+    $('#givemenu').innerHTML = single ? (PV().cast || []).map(c => `<button data-give="${esc(c.cast)}|${esc(c.person)}">🎭 ${esc(c.name)}${c.name === one.who ? ' (fits best)' : ''}${c.here ? '' : ' <span class="mini">(away)</span>'}</button>`).join('') : '';
+    $$('#givemenu [data-give]').forEach(b => b.onclick = () => {
+      const [c, p] = b.dataset.give.split('|'); const r = HOST.pitchGive(one.id, c, p);
+      pickSel.clear(); $('#givemenu').hidden = true;
+      toast(r.ok ? `🎭 ${r.name} has a new plan.${r.dropped ? ` (Dropped their oldest: “${r.dropped}”.)` : ''}` : r.error);
+    });
+  }
+  $$('#actbar [data-b]').forEach(b => b.onclick = async () => {
+    const picked = PV().list.filter(p => pickSel.has(p.id)), ids = picked.map(p => p.id), p = picked[0], k = b.dataset.b;
+    if (!p) return;
+    if (k === 'givemenu') { $('#givemenu').hidden = !$('#givemenu').hidden; return; }
+    if (k === 'clear') { pickSel.clear(); askWhy = false; drawPitches(); return; }
+    if (k === 'no') { askWhy = true; drawActbar(); return; }
+    if (k === 'dir' && p.plan) { const r = HOST.planStart(p.id); toast(r.ok ? `🪜 #${p.no} starts — the writer works toward beat 1.` : r.error); }
+    else if (k === 'dir') { const r = HOST.pitchUse(p.id); toast(r.ok ? `✍️ #${p.no} goes with your next reply.` : r.error); }
+    else if (k === 'keep') { HOST.pitchKeep(ids); toast(`📌 Kept: ${picked.map(x => '#' + x.no).join(' + ')}.`); }
+    else if (k === 'draft') { pickSel.clear(); drawPitches(); const r = await HOST.pitchDraft(p.id); toast(r.ok ? '📝 Your line is in the message box — change it, then send.' : r.error); return; }
+    else if (k === 'more') { pickSel.clear(); const r = await HOST.pitch({ like: ids, fromMsg }); if (!r.ok) toast(r.error); return; }
+    else if (k === 'talk') {
+      const opener = HOST.pitchTalk(ids);
+      const t = HOST.newTalk('plan'); if (!t) { toast('Open a character chat first.'); return; }
+      HOST.updateTalk(t.id, { title: picked.length > 1 ? `Pitches ${picked.map(x => '#' + x.no).join(' + ')}` : `Pitch #${p.no}` });
+      cur = { ...t }; pickSel.clear(); refresh(); closeDrawers();
+      $('#c-in').value = opener; autogrow($('#c-in')); $('#c-in').focus();
+      return;
+    }
+    pickSel.clear(); drawPitches();
+  });
+  $$('#act-why [data-why]').forEach(b => b.onclick = () => { const ids = [...pickSel]; HOST.pitchNo(ids, b.dataset.why); pickSel.clear(); askWhy = false; toast('👎 Noted — pitches learn your taste.'); });
+  $$('.pmenu [data-pk]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; HOST.pitchMenu({ [g.dataset.pk]: g.dataset.pk === 'n' ? +b.dataset.v : b.dataset.v }); }));
+  $('#psum').onclick = () => { const mm = $('#p-more'); mm.hidden = !mm.hidden; $('#psum').setAttribute('aria-expanded', String(!mm.hidden)); $('#psum-x').textContent = mm.hidden ? 'change ▾' : 'done ▴'; };
+  $('#p-sees').onchange = e => HOST.pitchMenu({ sees: e.target.value });
+  $('#p-timer').onchange = e => HOST.pitchMenu({ timer: +e.target.value });
+  $('#p-moment').onchange = e => { if (e.target.value === 'mero') HOST.pitchMenu({ moment: '' }); else { $('#p-moment-t').hidden = false; $('#p-moment-t').focus(); } };
+  $('#p-moment-t').onchange = e => HOST.pitchMenu({ moment: e.target.value.trim() });
+  $('#p-fb').onchange = e => HOST.pitchMenu({ fbOn: e.target.checked });
+  $('#p-fbn').onchange = e => HOST.pitchMenu({ fb: +e.target.value });
+  async function goPitch() {
+    const hid = PV().menu?.vis === 'hide';
+    if (!hid) { pView = 'pick'; pickSel.clear(); }
+    const comment = $('#p-com').value.trim();
+    const r = await HOST.pitch({ comment, fromMsg });
+    if (!r.ok) { toast(r.error); if (!hid) pView = 'home'; refresh(); return; }
+    $('#p-com').value = ''; autogrow($('#p-com'));
+    if (hid) toast(PV().menu?.shape === 'multi' ? '🎲 A hidden plan has started — the writer is led through it.' : '🎲 One hidden pitch is waiting for its moment.');
+  }
+  $('#p-go').onclick = goPitch;
+  $('#pick-again').onclick = goPitch;
+  $('#pick-back').onclick = () => { HOST.pitchBack(); pickSel.clear(); pView = 'home'; drawPitches(); };
+  $('#pick-aside').onclick = () => { HOST.pitchBack(); pickSel.clear(); pView = 'home'; drawPitches(); toast('Set aside. ↩ Bring back returns them once.'); };
+
+  function refresh() {
+    D = HOST.load();
+    const popNow = !!D.popped && !document.body.classList.contains('wide');
+    document.body.classList.toggle('wide', !!D.popped);
+    document.body.classList.toggle('pleft', !D.popped && D.side === 'left');   // the rail follows the panel's side (v13)
+    $('#pop-out').title = D.popped ? 'Back into the side panel' : 'Pop Mero out into her own window';
+    $('#pop-out').innerHTML = I(D.popped ? (D.side === 'left' ? 'panelL' : 'panel') : 'popout');
+    $('#busy').hidden = !D.busy;
+    drawTalk(); drawSessions(); drawNotes(); drawSettings(); drawReqs(); drawPitches();
+    // just popped out: the talks list beside the talk, the way her own window is meant to look
+    if (popNow && $$('.drawer').every(d => d.hidden)) openD('d-sess', true);
+  }
+  window.__meroRefresh = refresh;
+  window.__meroOpenTalk = id => { D = HOST.load(); cur = (D.talks || []).find(t => t.id === id) || cur; refresh(); closeDrawers(); };   // 📚 a vault review
+  window.__meroOpenPitches = idx => { fromMsg = Number.isInteger(idx) ? idx : null; pView = 'home'; refresh(); openD('d-pitch', true); if (fromMsg != null) setTimeout(() => $('#p-com').focus(), 80); };
+  window.__meroOpenRequests = () => { refresh(); if ($('#d-req').hidden) openD('d-req'); setTimeout(() => document.querySelector('#req-list .pill.now')?.closest('.card')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80); };
+  refresh();
+})();
+</script>

@@ -19,6 +19,17 @@ function _currentVerdictForChat() {
 }
 import { diffVerdicts } from '../verdict/verdict-pure.js';
 import { DEFAULT_FIELD_DEFINITIONS } from '../fields.js';
+import { splitGatingFields } from './gating-visibility-pure.js';   // LOCAL PATCH (Miinthe): hide unused fields
+import { getTrackers } from '../trackers.js';
+import { pendingFork } from '../forks-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-05): forks
+import { live, boardOffHere } from '../board-live.js';   // LOCAL PATCH (Miinthe, 2026-10-05): collections; 2026-10-04: board off here
+import { collectionsOf } from '../collections-pure.js';
+import { placeTrackersOf, placeLabel } from '../places-pure.js';
+import { stateTrackersOf, nowLine, datesOf, dueText } from '../state-pure.js';
+import { itemState, itemAmount, purseValue, runOf, hereOf, stateNow } from '../board-model-pure.js';
+import { stateOf, conditionText, hasStarts } from '../conditions-pure.js';   // LOCAL PATCH (Miinthe): storyboard conditions   // LOCAL PATCH (Miinthe): story trackers
+import { autoTrackEnabled } from '../autotrack.js';
+import { renderCharacterCard } from '../characters.js';   // LOCAL PATCH (Miinthe, 2026-10-04): characters own their folders
 import { buildObsidianURI, categorizeRejections, resolveEntryVault, normalizePinBlock, comparePriority, parseMatchReason } from '../helpers.js';
 import {
     ds, BROWSE_ROW_HEIGHT, BROWSE_OVERSCAN,
@@ -332,7 +343,12 @@ export function renderInjectionTab() {
             for (const group of nonEmpty) {
                 const fixItLabel = _fixItPinLabel(group.stage);
                 whyNotHtml += `<div class="dle-why-not-group-header" role="heading" aria-level="4" aria-label="Filtered entries — ${escapeHtml(group.label)}">`;
-                whyNotHtml += `<span class="dle-why-not-group-icon">${group.icon}</span> `;
+                // LOCAL PATCH 2026-08-04: was `${group.icon}`, which printed the Font Awesome
+                // CLASS NAME as literal text — every group header read "fa-robot",
+                // "fa-lock", "fa-filter" and so on. categorizeRejections() returns class
+                // names, not glyphs; every other consumer (cartographer.js, the Browse
+                // why-not badge) already wraps them in an <i>. This one didn't.
+                whyNotHtml += `<span class="dle-why-not-group-icon"><i class="fa-solid ${escapeHtml(group.icon)}" aria-hidden="true"></i></span> `;
                 whyNotHtml += `<span class="dle-why-not-group-label">${escapeHtml(group.label)}</span>`;
                 whyNotHtml += `<span class="dle-why-not-group-count">${group.entries.length}</span>`;
                 whyNotHtml += `</div>`;
@@ -398,6 +414,35 @@ export function updateInjectionCountBadges() {
 // Browse Tab
 // ════════════════════════════════════════════════════════════════════════════
 
+// LOCAL PATCH 2026-08-02 (Miinthe): the virtual scroller hard-coded `.dle-drawer-inner` as its
+// scroll container, but that element only sets overflow-x — whether IT scrolls, or
+// `.dle-browse-list` (which does set overflow-y:auto), or an ST wrapper further up, depends
+// on runtime layout. When the guess is wrong the wheel scrolls an element nobody measures,
+// so rows never repaint and only dragging a scrollbar appears to work. Resolve it for real.
+export function resolveBrowseScroller($drawer) {
+    // `.dle-drawer-inner` is the drawer's real scroll viewport — confirmed from the live DOM
+    // 2026-08-02: overflowY auto, scrollHeight 875 > clientHeight 586, scrollTop tracking the
+    // wheel. Prefer it whenever it is actually scrollable.
+    //
+    // Do NOT cache the result, and do not simply take the first scrollable ancestor:
+    // `.dle-tab-panel` also carries overflow-y:auto and can transiently report
+    // scrollHeight > clientHeight mid-scroll. Latching onto it left the virtual scroller
+    // measuring an element that never moves again — scrolling died until the outer bar was
+    // dragged. The checks below are two getComputedStyle calls; re-running them per frame is
+    // far cheaper than being wrong.
+    const inner = $drawer.find('.dle-drawer-inner')[0];
+    if (inner && inner.scrollHeight > inner.clientHeight + 1) return inner;
+
+    const listEl = $drawer.find('.dle-browse-list')[0];
+    if (listEl) {
+        for (let el = listEl.parentElement; el && el !== document.body; el = el.parentElement) {
+            const oy = getComputedStyle(el).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return el;
+        }
+    }
+    return inner || null;
+}
+
 export function renderBrowseTab() {
     const $drawer = ds.$drawer;
     if (!$drawer) return;
@@ -422,6 +467,7 @@ export function renderBrowseTab() {
         ds.browseStatusFilter || 'all',
         ds.browseTagFilter || '',
         ds.browseFolderFilter || '',
+        JSON.stringify(chat_metadata?.deeplore_folder_filter || []),
         JSON.stringify(ds.browseCustomFieldFilters || {}),
         ds.browseQuickFilter ?? '',
         ds.browseSort || '',
@@ -496,7 +542,10 @@ export function renderBrowseTab() {
             $folderSelect.html(ds.cachedFolderOptions);
             if (ds.browseFolderFilter) $folderSelect.val(ds.browseFolderFilter);
         }
-        if (ds.browseFolderFilter && ds.cachedFolderSet && !ds.cachedFolderSet.has(ds.browseFolderFilter)) {
+        // LOCAL PATCH 2026-08-02 (Miinthe): '__chat__' is a sentinel, not a real folder path —
+        // exempt it from the "selected folder vanished from the vault" reset.
+        if (ds.browseFolderFilter && ds.browseFolderFilter !== '__chat__'
+            && ds.cachedFolderSet && !ds.cachedFolderSet.has(ds.browseFolderFilter)) {
             ds.browseFolderFilter = '';
         }
     }
@@ -510,6 +559,15 @@ export function renderBrowseTab() {
         $tagSelect.html('<option value="">' + escapeHtml(tr('dle_tags_all')) + '</option>' +
             [...ds.cachedTagSet].sort().map(t => `<option value="${escapeHtml(t)}"${ds.browseTagFilter === t ? ' selected' : ''}>${escapeHtml(t)} (${tagCounts.get(t) || 0})</option>`).join(''));
     }
+    // LOCAL PATCH 2026-08-02 (Miinthe): keep the sort dropdown honest. Its markup lists
+    // priority_asc first, so a <select> with no value set always *displays* "Default
+    // (Priority)" — even when ds.browseSort says otherwise. Nothing synced it before,
+    // which was harmless only while the default happened to match the markup.
+    const $sortSelect = $drawer.find('.dle-browse-sort-select');
+    if ($sortSelect.length && ds.browseSort && $sortSelect.val() !== ds.browseSort) {
+        $sortSelect.val(ds.browseSort);
+    }
+
     if ($folderSelect.length && ds.cachedFolderSet) {
         const folderCounts = new Map();
         for (const e of vaultIndex) {
@@ -521,8 +579,71 @@ export function renderBrowseTab() {
                 }
             }
         }
-        $folderSelect.html('<option value="">' + escapeHtml(tr('dle_browse_filter_folder_all')) + '</option>' +
+        // LOCAL PATCH 2026-08-02 (Miinthe): "This chat's folders" option. Browsing 1000+ entries
+        // while sitting in one chat is noise — this scopes the list to whatever the Filters
+        // tab has selected, without hiding anything permanently (pick "Folder (all)" to see
+        // the whole vault again). It is the default whenever the chat HAS a folder filter.
+        const chatFolders = chat_metadata?.deeplore_folder_filter || [];
+        let chatScopedCount = 0;
+        if (chatFolders.length) {
+            for (const e of vaultIndex) {
+                if (!e.folderPath || chatFolders.some(f => e.folderPath === f || e.folderPath.startsWith(f + '/'))) chatScopedCount++;
+            }
+            if (ds.browseFolderFilter === '' && !ds._browseScopeTouched) ds.browseFolderFilter = '__chat__';
+        } else if (ds.browseFolderFilter === '__chat__') {
+            ds.browseFolderFilter = '';
+        }
+        const chatOption = chatFolders.length
+            ? `<option value="__chat__"${ds.browseFolderFilter === '__chat__' ? ' selected' : ''}>This chat's folders (${chatScopedCount})</option>`
+            : '';
+        $folderSelect.html('<option value="">' + escapeHtml(tr('dle_browse_filter_folder_all')) + '</option>' + chatOption +
             [...ds.cachedFolderSet].sort().map(f => `<option value="${escapeHtml(f)}"${ds.browseFolderFilter === f ? ' selected' : ''}>${escapeHtml(f)} (${folderCounts.get(f) || 0})</option>`).join(''));
+    }
+
+    // LOCAL PATCH 2026-08-03 (Miinthe): the inbox jump button. The inbox is where entries are
+    // written and where they get moved OUT of, so it earns a one-tap shortcut next to the
+    // folder filter. Resolved from `librarianWriteFolder` (the folder DeepLore itself writes
+    // to) and only guessed by name as a fallback — so renaming "00 Inbox" doesn't break it,
+    // as long as the setting still points at the right place.
+    const $inboxBtn = $drawer.find('.dle-browse-inbox-btn');
+    if ($inboxBtn.length && ds.cachedFolderSet) {
+        // Follow the AI lorebook's own destination first (`autoSuggestFolder`) — that is the
+        // folder new suggestions land in and therefore the one that actually needs reviewing.
+        // `librarianWriteFolder` is a different setting and often a parent folder, which drags
+        // in siblings like Retired that are finished with. Falls through to the Librarian's
+        // folder, then a name guess, then hides — so a stale or blank setting degrades quietly
+        // instead of pointing the button at the wrong place.
+        const s = getSettings();
+        const candidates = [s.autoSuggestFolder, s.librarianWriteFolder]
+            .map(v => String(v || '').replace(/^\/+|\/+$/g, ''))
+            .filter(Boolean);
+        let inboxFolder = candidates.find(c => ds.cachedFolderSet.has(c)) || '';
+        if (!inboxFolder) {
+            inboxFolder = [...ds.cachedFolderSet]
+                .filter(f => /(^|\/)\s*(\d+\s+)?inbox$/i.test(f))
+                .sort()[0] || '';
+        }
+        if (inboxFolder) {
+            // Count the folder AND its subfolders — "00 Inbox/Retired" is still the inbox.
+            // Counted straight off vaultIndex on purpose: the `folderCounts` map above is
+            // const-scoped INSIDE the folder-select block, and reaching for it from out here
+            // threw a ReferenceError that aborted the whole Browse render (2026-08-03).
+            let inboxCount = 0;
+            for (const e of vaultIndex) {
+                const fp = e.folderPath || '';
+                if (fp === inboxFolder || fp.startsWith(inboxFolder + '/')) inboxCount++;
+            }
+            const active = ds.browseFolderFilter === inboxFolder;
+            $inboxBtn
+                .css('display', '')
+                .attr('data-inbox-folder', inboxFolder)
+                .attr('aria-pressed', active ? 'true' : 'false')
+                .toggleClass('dle-inbox-active', active)
+                .attr('title', active ? `Showing ${inboxFolder} — click to go back` : `Jump to ${inboxFolder} (${inboxCount})`);
+            $inboxBtn.find('.dle-inbox-count').text(inboxCount > 0 ? ` ${inboxCount}` : '');
+        } else {
+            $inboxBtn.css('display', 'none');
+        }
     }
 
     // Custom field filter dropdowns — values cached, recomputed when vault content changes.
@@ -656,7 +777,13 @@ export function renderBrowseTab() {
 
         if (tagFilter && (!e.tags || !e.tags.includes(tagFilter))) return false;
 
-        if (ds.browseFolderFilter) {
+        if (ds.browseFolderFilter === '__chat__') {
+            // LOCAL PATCH 2026-08-02 (Miinthe): mirror the pipeline's applyFolderFilter exactly —
+            // exact match or slash-bounded prefix, and root-level entries always pass.
+            const cf = chat_metadata?.deeplore_folder_filter || [];
+            if (cf.length && e.folderPath
+                && !cf.some(f => e.folderPath === f || e.folderPath.startsWith(f + '/'))) return false;
+        } else if (ds.browseFolderFilter) {
             if (!e.folderPath) return false;
             if (e.folderPath !== ds.browseFolderFilter && !e.folderPath.startsWith(ds.browseFolderFilter + '/')) return false;
         }
@@ -744,6 +871,8 @@ export function renderBrowseTab() {
     ds.browseLastRangeEnd = -1;
     // Carto/Why? navigation target survives one filter run for auto-expand; otherwise collapse.
     if (ds.browseNavigateTarget) {
+        // overhaul (2026-10-15): the Lore tab's All entries list selects the jumped-to entry from this note
+        ds.lastBrowseNav = { title: ds.browseNavigateTarget, vaultSource: ds.browseNavigateVault ?? null };
         ds.browseExpandedEntry = ds.browseNavigateTarget;
         ds.browseExpandedVault = ds.browseNavigateVault; // P3-9: carry vaultSource into re-expand resolution.
         ds.browseNavigateTarget = null;
@@ -812,16 +941,43 @@ export function renderBrowseTab() {
         cf: ds.browseCustomFieldFilters || {},
         qf: ds.browseQuickFilter ?? null,
         sort: sortKey || 'priority_asc',
-        // #13: grouping + collapsed-folder set change row-count, so they belong in the scroll-reset signature.
+        // #13: toggling grouping restructures the whole list, so it still resets scroll.
         grp: !!ds.browseFolderGrouping,
-        exp: ds.browseExpandedFolders instanceof Set ? [...ds.browseExpandedFolders].sort().join('|') : '',
+        // LOCAL PATCH 2026-08-02 (Miinthe): `exp` (the expanded-folder set) REMOVED from this
+        // signature. Expanding a folder is an in-place accordion, not a filter change —
+        // counting it here yanked the panel back to the top on every folder click.
     });
-    const scrollContainer = $drawer.find('.dle-drawer-inner')[0];
+    const scrollContainer = resolveBrowseScroller($drawer);
     if (scrollContainer && ds._browseLastFilterSig !== _filterSignature) {
-        scrollContainer.scrollTop = 0;
+        // LOCAL PATCH 2026-08-03 (Miinthe): was `scrollTop = 0`. That was harmless while the
+        // browse list scrolled itself, but Patch 12 made .dle-drawer-inner the drawer's one
+        // scroller — so zeroing it yanks the WHOLE panel to the top, status zone and filters
+        // included, every time a filter changes. Clicking the inbox button changes the folder
+        // filter, so it snapped the panel upwards on every press.
+        // Intent is "show me the start of the results", not "go to the top of everything":
+        // scroll back only as far as the list's own top, and only if we are past it. Sitting
+        // above the list (reading the header) is left alone.
+        const listEl = $drawer.find('.dle-browse-list')[0];
+        let listTop = 0;
+        if (listEl) {
+            const lr = listEl.getBoundingClientRect();
+            const sr = scrollContainer.getBoundingClientRect();
+            listTop = Math.max(0, scrollContainer.scrollTop + (lr.top - sr.top));
+        }
+        if (scrollContainer.scrollTop > listTop) scrollContainer.scrollTop = listTop;
         ds._browseLastScrollTop = undefined;
     }
     ds._browseLastFilterSig = _filterSignature;
+
+    // LOCAL PATCH 2026-08-02 (Miinthe): expanding/collapsing changes the row model but not the
+    // scroll position, and renderBrowseWindow() early-returns when scrollTop hasn't moved —
+    // so clear the last-scroll marker to force one repaint, WITHOUT resetting the scroll.
+    const _expSig = ds.browseExpandedFolders instanceof Set
+        ? [...ds.browseExpandedFolders].sort().join('|') : '';
+    if (ds._browseLastExpSig !== _expSig) {
+        ds._browseLastScrollTop = undefined;
+        ds._browseLastExpSig = _expSig;
+    }
 
     renderBrowseWindow();
 
@@ -880,15 +1036,11 @@ export function renderBrowseWindow() {
     const rowModel = ds.browseRowModel;
     if (!rowModel || !rowModel.length) { $list.empty(); return; }
 
-    // Scroll container is .dle-drawer-inner (scrollableInner), not the tab panel.
-    const scrollContainer = $drawer.find('.dle-drawer-inner')[0];
+    // Scroll container resolved at runtime (see resolveBrowseScroller).
+    const scrollContainer = resolveBrowseScroller($drawer);
     if (!scrollContainer) return;
     // Drawer hidden — getBoundingClientRect would return zeros; bail.
     if (!scrollContainer.offsetParent && !scrollContainer.offsetHeight) return;
-
-    const scrollTop = scrollContainer.scrollTop;
-    if (ds._browseLastScrollTop !== undefined && Math.abs(scrollTop - ds._browseLastScrollTop) < 1) return;
-    ds._browseLastScrollTop = scrollTop;
 
     const viewHeight = scrollContainer.clientHeight;
     // getBoundingClientRect tolerates intermediate positioned parents; relativeScroll is list-top
@@ -896,6 +1048,19 @@ export function renderBrowseWindow() {
     const containerRect = scrollContainer.getBoundingClientRect();
     const listRect = listEl.getBoundingClientRect();
     const relativeScroll = containerRect.top - listRect.top;
+
+    // LOCAL PATCH 2026-08-02 (Miinthe): guard on ACTUAL VISUAL MOVEMENT, not on one element's
+    // scrollTop. The old guard compared scrollContainer.scrollTop; if the resolved container
+    // stopped being the element that moves — which happens under fast scrolling, since row
+    // heights change mid-flight and scrollability shifts between ancestors — that value froze
+    // and every later frame early-returned. Symptom: scrolling works, then permanently stops,
+    // sooner the harder you scroll. relativeScroll comes from getBoundingClientRect, so it is
+    // correct no matter which ancestor is doing the scrolling.
+    // _browseLastScrollTop is still honoured as the existing "force one repaint" signal.
+    if (ds._browseLastScrollTop !== undefined && ds._browseLastRelScroll !== undefined
+        && Math.abs(relativeScroll - ds._browseLastRelScroll) < 1) return;
+    ds._browseLastRelScroll = relativeScroll;
+    ds._browseLastScrollTop = scrollContainer.scrollTop;
 
     // BUG-350: rows after the expanded entry are shifted down by browseExpandedExtraHeight.
     // Subtract that offset from pixel offsets past the expanded-entry boundary before dividing by row height.
@@ -982,9 +1147,15 @@ export function renderBrowseWindow() {
             const selectorHtml = selectMode
                 ? `<input type="checkbox" class="dle-browse-folder-select" data-folder="${escapeHtml(folder)}"${allSelected ? ' checked' : ''}${someSelected ? ' data-indeterminate="true"' : ''} aria-label="Select all entries in ${escapeHtml(folder)}" />`
                 : '';
-            html += `<div class="dle-browse-folder-header" data-folder="${escapeHtml(folder)}" data-expanded="${row.expanded ? 'true' : 'false'}" role="button" tabindex="0" aria-expanded="${row.expanded ? 'true' : 'false'}" aria-label="${escapeHtml(folder)} (${row.count} entries) — ${row.expanded ? 'expanded' : 'collapsed'}, click to toggle" style="position:absolute;top:${top}px;left:0;right:0;height:${BROWSE_ROW_HEIGHT}px;">`;
+            const bandClass = (row.groupIndex % 2) ? ' dle-band-b' : ' dle-band-a';
+            html += `<div class="dle-browse-folder-header${bandClass}" data-folder="${escapeHtml(folder)}" data-expanded="${row.expanded ? 'true' : 'false'}" role="button" tabindex="0" aria-expanded="${row.expanded ? 'true' : 'false'}" aria-label="${escapeHtml(folder)} (${row.count} entries) — ${row.expanded ? 'expanded' : 'collapsed'}, click to toggle" style="position:absolute;top:${top}px;left:0;right:0;height:${BROWSE_ROW_HEIGHT}px;">`;
             html += `${selectorHtml}<span class="dle-browse-folder-caret"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>`;
-            html += `<span class="dle-browse-folder-name">${escapeHtml(folder)}</span>`;
+            // LOCAL PATCH 2026-08-03 (Miinthe): show the folder's OWN name, with its parent path
+            // as dim context that gives way first. Grouping by full path (Patch 15q) meant
+            // headers like "05 Aldric; Between Duty and Envy/base/Rings & Sins" — and a
+            // plain ellipsis cuts the TAIL, which is the only part that differs. Six sibling
+            // folders all rendered as "05 Aldric; Between Duty and Env…". The leaf now
+            // has priority and the parent truncates instead.
             // f036: surface a unit-aware count (and the already-computed selection tally in
             // select mode) instead of a bare floating integer. Chip is tinted to echo the
             // checkbox tri-state when the folder is partly/fully selected.
@@ -996,7 +1167,24 @@ export function renderBrowseWindow() {
             } else {
                 countLabel = trPlural('dle_popup_entry_count', row.count);
             }
-            html += `<span class="dle-browse-folder-count${countClass}">${escapeHtml(countLabel)}</span>`;
+            {
+                const cut = folder.lastIndexOf('/');
+                const parentPath = cut > 0 ? folder.slice(0, cut) : '';
+                const leafName = cut > 0 ? folder.slice(cut + 1) : folder;
+                // Two stacked lines (Miinthe's layout, 2026-08-03): the parent path on top in the
+                // dim tone, the folder's own name below with the entry count beside it. Both
+                // lines live inside .dle-browse-folder-name so they share one flex column and
+                // the count stays on the name's line rather than floating centred against two.
+                // Row height is unchanged — BROWSE_ROW_HEIGHT is fixed at 38px for the virtual
+                // scroller, and entry rows already stack two lines in it.
+                html += `<span class="dle-browse-folder-name" title="${escapeHtml(folder)}">`
+                    + (parentPath ? `<span class="dle-browse-folder-parent">${escapeHtml(parentPath)}/</span>` : '')
+                    + '<span class="dle-browse-folder-leafrow">'
+                    +     `<span class="dle-browse-folder-leaf">${escapeHtml(leafName)}</span>`
+                    +     `<span class="dle-browse-folder-count${countClass}">${escapeHtml(countLabel)}</span>`
+                    + '</span>'
+                    + '</span>';
+            }
             html += `</div>`;
             continue;
         }
@@ -1012,7 +1200,10 @@ export function renderBrowseWindow() {
         const trk = trackerKey(e);
         const isSelected = selectedSet.has(trk);
 
-        const classes = ['dle-browse-entry'];
+        // LOCAL PATCH 2026-08-03 (Miinthe): band entries with their folder so the left edge reads
+        // as one block per folder and the boundary between folders is visible. Parity comes
+        // from the row model's groupIndex, never the render loop — the list is virtualised.
+        const classes = ['dle-browse-entry', (row.groupIndex % 2) ? 'dle-band-b' : 'dle-band-a'];
         if (isInjected) classes.push('dle-browse-injected');
         if (isSelected) classes.push('dle-browse-selected');
 
@@ -1046,7 +1237,23 @@ export function renderBrowseWindow() {
         const _hoverTitle = _hoverParts.length ? ` title="${_hoverParts.join('&#10;&#10;')}"` : '';
         html += `<div class="dle-browse-info" role="button" tabindex="0" aria-expanded="false" aria-label="Expand ${escapeHtml(e.title)} (Enter or click)" aria-describedby="${previewId}"${_hoverTitle}>`;
         html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="Writing guide — read by the Librarian (Emma) only, never sent to the writing AI. Add \'lorebook-guide\' tag to create one."><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Guide</span>' : ''}</span>`;
+        // LOCAL PATCH 2026-08-03: show the entry's origin on the COLLAPSED row.
+        // `character` (and `instance`) previously appeared only in the expanded preview, so
+        // triaging a folder of unsorted entries meant opening each one to find out where it
+        // belonged. Shown inline after the keys, dimmed, so it reads as provenance rather
+        // than content. Only rendered when the entry actually carries the field, so entries
+        // outside a character's plot look exactly as before.
+        const _origin = [e.customFields?.character, e.customFields?.instance]
+            .map(v => Array.isArray(v) ? v[0] : v)
+            .filter(v => v != null && v !== '')
+            .join(' · ');
+        // Keys and origin share ONE line: .dle-browse-info is a flex column, so two separate
+        // children would become a third line and overflow the fixed 38px row height that the
+        // virtual scroller positions against.
+        html += '<div class="dle-browse-subline">';
         html += `<span class="dle-browse-keys" aria-label="Keywords: ${escapeHtml(keysStr || 'none')}">${escapeHtml(keysStr)}</span>`;
+        if (_origin) html += `<span class="dle-browse-origin" title="Origin — where this entry came from">${escapeHtml(_origin)}</span>`;
+        html += '</div>';
         html += `</div>`;
         html += `<div class="dle-browse-controls">`;
         // Status indicators stay always-visible (they're readouts, not actions): why-not,
@@ -1069,6 +1276,17 @@ export function renderBrowseWindow() {
         html += `<button type="button" class="dle-browse-pin${isPinned ? ' dle-pin-active' : ''}" data-entry="${escapeHtml(e.title)}" data-vault="${escapeHtml(e.vaultSource || '')}" aria-label="${isPinned ? 'Unpin' : 'Pin'}" title="${isPinned ? 'Pinned — always inject' : 'Click to pin'}"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></button>`;
         html += `<button type="button" class="dle-browse-block${isBlocked ? ' dle-block-active' : ''}" data-entry="${escapeHtml(e.title)}" data-vault="${escapeHtml(e.vaultSource || '')}" aria-label="${isBlocked ? 'Unblock' : 'Block'}" title="${isBlocked ? 'Blocked — never inject' : 'Click to block'}"><i class="fa-solid fa-ban" aria-hidden="true"></i></button>`;
         html += `<button type="button" class="dle-browse-copy-title-btn" data-action="copy-title" data-title="${escapeHtml(e.title)}" aria-label="Copy title" title="Copy title"><i class="fa-solid fa-copy" aria-hidden="true"></i></button>`;
+        // LOCAL PATCH 2026-08-03 (Miinthe): move-to-folder. Filing an entry into an instance
+        // folder previously required Obsidian on the desktop; this makes it possible from
+        // the panel, and therefore from a phone. Handler lives in drawer-events.js.
+        // Icon: fa-file-export, not fa-folder-tree. The tree glyph has too much detail to read
+        // at the 28px cluster size — it rendered as a grey block. file-export ("a page leaving")
+        // is a single clear shape at small sizes and says move-this-file rather than browse.
+        // data-file carries the vault-relative path. The handler resolves the entry by THAT,
+        // not by title: duplicate titles inside one vault are legal (the health check calls
+        // them an error, but they exist), and a title lookup would return whichever came
+        // first — i.e. it could move a different file than the row you clicked.
+        html += `<button type="button" class="dle-browse-move-btn" data-entry="${escapeHtml(e.title)}" data-vault="${escapeHtml(e.vaultSource || '')}" data-file="${escapeHtml(e.filename || '')}" aria-label="Move to another folder" title="Move to another folder"><i class="fa-solid fa-file-export" aria-hidden="true"></i></button>`;
         html += `</div>`;
         html += `</div>`;
         html += `</div>`;
@@ -1155,12 +1373,15 @@ export function renderBrowseWindow() {
 // Gating Tab
 // ════════════════════════════════════════════════════════════════════════════
 
+const asList = v => (Array.isArray(v) ? v : v ? [String(v)] : []);
+
 export function renderGatingTab() {
     const $drawer = ds.$drawer;
     if (!$drawer) return;
     // Wave F: skip painting into a hidden drawer; replayed on open (drawer.js toggle handler).
     if (!isDrawerVisible()) return;
     const ctx = chat_metadata?.deeplore_context;
+    try { renderCharacterCard(); } catch (err) { console.warn('[DLE] character card failed:', err?.message || err); }
 
     // ── Folder filter section ──
     const activeFolders = chat_metadata?.deeplore_folder_filter || [];
@@ -1196,11 +1417,13 @@ export function renderGatingTab() {
 
     const $container = $drawer.find('.dle-gating-fields-container');
     const enabledDefs = fieldDefs.filter(fd => fd.gating?.enabled);
+    // LOCAL PATCH (Miinthe, 2026-10-03): fields no entry uses are tucked away unless asked for.
+    const { visible: shownDefs, hidden: hiddenDefs } = splitGatingFields(enabledDefs, vaultIndex, ctx, !!ds.gatingShowAll);
     if ($container.length) {
         $container.empty();
-        for (const fd of enabledDefs) {
+        for (const fd of shownDefs) {
             const hasValue = ctx && (fd.multi
-                ? (Array.isArray(ctx[fd.contextKey]) && ctx[fd.contextKey].length > 0)
+                ? asList(ctx[fd.contextKey]).length > 0
                 : !!ctx[fd.contextKey]);
             const dotClass = hasValue ? 'dle-gating-dot-active' : 'dle-gating-dot-empty';
             const setIcon = fd.multi ? 'fa-plus-circle' : 'fa-pen-to-square';
@@ -1219,9 +1442,14 @@ export function renderGatingTab() {
         const anySet = enabledDefs.some(fd => {
             if (!ctx) return false;
             return fd.multi
-                ? (Array.isArray(ctx[fd.contextKey]) && ctx[fd.contextKey].length > 0)
+                ? asList(ctx[fd.contextKey]).length > 0
                 : !!ctx[fd.contextKey];
         });
+        // LOCAL PATCH (Miinthe, 2026-10-03): toggle for the fields no entry uses.
+        if (hiddenDefs.length || ds.gatingShowAll) {
+            const label = ds.gatingShowAll ? 'Hide unused fields' : `Show ${hiddenDefs.length} unused field${hiddenDefs.length === 1 ? '' : 's'}`;
+            $container.append(`<button type="button" class="dle-gating-unused-toggle" title="Fields no entry in the vault uses">${label}</button>`);
+        }
         $container.find('.dle-gating-hint').remove();
         if (!anySet && enabledDefs.length > 0) {
             $container.append('<div class="dle-gating-hint">Set gating fields to filter which lore entries are included. Set via slash command (<code>/dle-set-field</code>) or click the field below.</div>');
@@ -1237,7 +1465,10 @@ export function renderGatingTab() {
     const activeFields = [];
     for (const fd of fieldDefs) {
         if (!fd.gating?.enabled) continue;
-        const value = ctx ? ctx[fd.contextKey] : null;
+        // a multi field can hold a single value (set before it became multi): read it as a list of one (Miinthe's
+        // test-user chat threw "value.map is not a function" here, 2026-10-18)
+        const raw = ctx ? ctx[fd.contextKey] : null;
+        const value = fd.multi ? asList(raw) : raw;
         if (fd.multi) {
             if (value && value.length > 0) {
                 activeFields.push({ name: fd.name, multi: true, activeSet: new Set(value.map(c => c.toLowerCase())) });
@@ -1276,7 +1507,7 @@ export function renderGatingTab() {
         if (!fd.gating?.enabled) continue;
         const $group = $drawer.find(`.dle-gating-group[data-field="${fd.name}"]`);
         const $value = $group.find('.dle-gating-value');
-        const value = ctx ? ctx[fd.contextKey] : null;
+        const value = ctx ? (fd.multi ? asList(ctx[fd.contextKey]) : ctx[fd.contextKey]) : null;
         const $setBtn = $value.find('.dle-gating-set');
 
         $value.find('.dle-chip, .dle-gating-empty, .dle-gating-count, .dle-gating-clear-btn').remove();
@@ -1351,3 +1582,146 @@ export function renderTimers() {
     $list.html(rows.join(''));
     $empty.toggleClass('dle-visible', rows.length === 0);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Story Tab — LOCAL PATCH (Miinthe, 2026-10-02): story trackers
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * One card per tracker: name, ◀ dots step (n/m) ▶, the step list (click to
+ * jump), and edit/remove. Trackers only tell — nothing here filters lore.
+ */
+export function renderStoryTab() {
+    const $drawer = ds.$drawer;
+    if (!$drawer) return;
+    if (!isDrawerVisible()) return;
+    const $list = $drawer.find('.dle-story-list');
+    if (!$list.length) return;
+    const auto = autoTrackEnabled();
+    $drawer.find('.dle-autotrack-toggle')
+        .toggleClass('dle-autotrack-on', auto)
+        .attr('aria-pressed', String(auto))
+        .html(`<i class="fa-solid ${auto ? 'fa-wand-magic-sparkles' : 'fa-hand'}" aria-hidden="true"></i> ${auto ? 'Follows the story' : 'By hand only'}`);
+    const list = getTrackers();
+    // LOCAL PATCH (Miinthe, 2026-10-04): the board switched off for this chat / character — say so, offer it back (WIP look)
+    const offFor = boardOffHere();
+    if (offFor) {
+        $list.html(`<div class="dle-tracker-aside-note dle-board-offbar"><b>The board is switched off for ${escapeHtml(offFor)}</b> — nothing of it runs here: no trackers watched or told, no helper calls. <button type="button" class="dle-board-on">Switch on</button></div>`);
+        return;
+    }
+    const colsHtml = collectionsHtml();
+    if (!list.length && !colsHtml) {
+        $list.html('<div class="dle-story-empty dle-muted">No trackers in this chat yet. Press + to make one — for example <b>Relationship</b> with its stages, one per line.</div>');
+        return;
+    }
+    $list.html(list.map(t => {
+        const n = escapeHtml(t.name);
+        const i = Math.min(Math.max(t.index, 0), t.steps.length - 1);
+        const dots = t.steps.map((_, k) => (k <= i ? '●' : '○')).join('');
+        // Storyboard conditions: a waiting or paused tracker is shown dimmed, with why.
+        const st = stateOf(t, list);
+        const quiet = st !== 'running';
+        // LOCAL PATCH (Miinthe, 2026-10-04): paused / abandoned by Miinthe in this chat — and lines waiting on an abandoned tracker
+        const abandonedSrc = (t.starts || []).map(c => list.find(x => x.id === c.tracker || x.name === c.tracker)).filter(x => x?.run === 'abandoned');
+        const runNote = t.run === 'paused' ? `<div class="dle-tracker-aside-note"><b>Paused</b> in this chat — keeps its step; not watched, not told, its lore hidden. <button type="button" class="dle-run" data-name="${escapeHtml(t.name)}" data-act="continue">Continue</button>${t.lastRun?.action === 'pause' ? ` <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button>` : ''}</div>`
+            : t.run === 'abandoned' ? `<div class="dle-tracker-aside-note"><b>Abandoned</b> in this chat — back at the start, switched off. <button type="button" class="dle-run" data-name="${escapeHtml(t.name)}" data-act="reactivate">Reactivate</button>${t.lastRun?.action === 'abandon' ? ` <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button>` : ''}</div>`
+                : t.lastRun && ['continue', 'reactivate'].includes(t.lastRun.action) ? `<div class="dle-tracker-aside-note">${t.lastRun.action === 'continue' ? 'Running again' : 'Reactivated'} <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button></div>` : '';
+        // engine on v2, step 7c: paused by a block or because another holds the floor — say which
+        const byLine = st === 'paused' && t.pausedWhy && t.pausedWhy !== 'its start no longer holds' ? t.pausedWhy : null;
+        const condNote = t.run ? runNote : byLine ? `<div class="dle-tracker-aside-note"><b>Paused</b> — ${escapeHtml(byLine)}. Not watched, not told to the AI, its lore hidden.</div>` : hasStarts(t) && quiet
+            ? `<div class="dle-tracker-aside-note"><b>${st === 'waiting' ? 'Waiting' : 'Paused'}</b> — starts when ${escapeHtml(t.starts.map(c => conditionText(c, list)).join(' and '))}${abandonedSrc.length ? ` (waits on abandoned ${escapeHtml(abandonedSrc.map(x => x.name).join(', '))})` : ''}. Not watched, not told to the AI, its lore hidden.</div>`
+            : runNote;
+        // Forks (forks-pure.js): waiting at one → its ways as buttons; decided ones as a quiet line.
+        const pend = pendingFork(t);
+        const took = t.took && typeof t.took === 'object' ? Object.entries(t.took) : [];
+        const forkNote = t.ended
+            ? `<div class="dle-tracker-aside-note"><b>Ended</b> — ${escapeHtml(t.ended.branch)} (after ${escapeHtml(t.ended.step)}). Not watched any more; its entries stay on the board but aren't sent.</div>`
+            : pend
+                ? `<div class="dle-tracker-aside-note dle-tracker-fork"><b>Waits at the fork</b> after ${escapeHtml(pend.step)}${pend.fork.by === 'roll' ? ' — decided by a roll' : ' — the story decides, or pick:'} ${pend.fork.branches.map(b => `<button type="button" class="dle-tracker-branch" data-name="${n}" data-branch="${escapeHtml(b.name)}" title="Take “${escapeHtml(b.name)}” by hand">${escapeHtml(b.name)}</button>`).join(' ')}</div>`
+                : took.length ? `<div class="dle-tracker-aside-note">${took.map(([s, b]) => `after ${escapeHtml(s)}: <b>${escapeHtml(b)}</b>`).join(' · ')}</div>` : '';
+        const steps = t.steps.map((s, k) => `<button type="button" class="dle-tracker-step${k === i ? ' dle-tracker-step--current' : ''}" data-name="${n}" data-index="${k}" title="Jump to ${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('<span class="dle-tracker-sep" aria-hidden="true">·</span>');
+        return `<div class="dle-tracker" data-name="${n}"${quiet ? ' style="opacity:.6"' : ''}>
+            <div class="dle-tracker-head">
+                <span class="dle-tracker-name">${n}</span>
+                <span class="dle-tracker-tools">
+                    <button type="button" class="dle-tracker-tool dle-tracker-direction" data-name="${n}" title="${t.direction === 'forward' ? 'Forward only: it never moves back by itself (you still can). Click for both directions.' : 'Both directions: it may also move back when the story plainly says so. Click for forward only.'}" aria-label="${n}: direction">${t.direction === 'forward' ? '→ forward' : '⇄ both'}</button>
+                    <button type="button" class="dle-tracker-tool dle-tracker-aside" data-name="${n}" title="Set or clear a detour beside the step (e.g. Nuisance)" aria-label="${n}: detour"><i class="fa-solid fa-code-branch" aria-hidden="true"></i></button>
+                    <button type="button" class="dle-tracker-tool dle-tracker-edit" data-name="${n}" title="Edit steps" aria-label="${n}: edit steps"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                    ${t.run === 'abandoned' ? '' : `<button type="button" class="dle-tracker-tool dle-run" data-name="${n}" data-act="${t.run === 'paused' ? 'continue' : 'pause'}" title="${t.run === 'paused' ? 'Continue (this chat)' : 'Pause in this chat: keeps its step; not watched, not told, its lore hidden'}" aria-label="${n}: ${t.run === 'paused' ? 'continue' : 'pause'}"><i class="fa-solid ${t.run === 'paused' ? 'fa-play' : 'fa-pause'}" aria-hidden="true"></i></button>`}
+                    <button type="button" class="dle-tracker-tool dle-run" data-name="${n}" data-act="${t.run === 'abandoned' ? 'reactivate' : 'abandon'}" title="${t.run === 'abandoned' ? 'Reactivate: on again from the start' : 'Abandon in this chat: back to the start, switched off (Undo works)'}" aria-label="${n}: ${t.run === 'abandoned' ? 'reactivate' : 'abandon'}"><i class="fa-solid ${t.run === 'abandoned' ? 'fa-rotate-left' : 'fa-ban'}" aria-hidden="true"></i></button>
+                    <button type="button" class="dle-tracker-tool dle-tracker-remove" data-name="${n}" title="Remove tracker" aria-label="${n}: remove"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                </span>
+            </div>
+            <div class="dle-tracker-main">
+                <button type="button" class="menu_button menu_button_icon dle-tracker-move" data-name="${n}" data-delta="-1" title="One step back" aria-label="${n}: one step back"${i === 0 ? ' disabled' : ''}><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                <span class="dle-tracker-dots" aria-hidden="true">${dots}</span>
+                <span class="dle-tracker-value">${escapeHtml(t.steps[i])}</span>
+                <span class="dle-tracker-pos">${i + 1}/${t.steps.length}</span>
+                <button type="button" class="menu_button menu_button_icon dle-tracker-move" data-name="${n}" data-delta="1" title="One step on" aria-label="${n}: one step on"${i === t.steps.length - 1 ? ' disabled' : ''}><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+            </div>
+            ${t.lastAuto ? `<div class="dle-tracker-auto-note" title="Moved by itself at message ${escapeHtml(String(t.lastAuto.message ?? ''))}"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> “${escapeHtml(t.lastAuto.quote || '')}”${t.lastAuto.reason ? ` <span style="opacity:.75">— ${escapeHtml(t.lastAuto.reason)}${t.lastAuto.confidence ? ` (${escapeHtml(t.lastAuto.confidence)})` : ''}</span>` : ''} <button type="button" class="dle-tracker-undo" data-name="${n}" title="Put it back where it was">Undo</button></div>` : ''}
+            ${t.aside ? `<div class="dle-tracker-aside-note">currently: <b>${escapeHtml(t.aside)}</b> <button type="button" class="dle-tracker-aside-clear" data-name="${n}" title="Clear the detour">clear</button></div>` : ''}
+            ${condNote}
+            ${forkNote}
+            <div class="dle-tracker-steps">${steps}</div>
+        </div>`;
+    }).join('') + colsHtml + (live() ? '<div class="dle-tracker-aside-note dle-board-offrow"><button type="button" class="dle-board-offbtn" title="Nothing of the board runs in this chat until you switch it on again (WIP — also in the board window: Switched off for)">Switch the board off for this chat</button></div>' : ''));
+}
+
+// LOCAL PATCH (Miinthe, 2026-10-05): the board's collections (items, money) — read-only here; change them on
+// the board. The last automatic change keeps its Undo, like a tracker's.
+function collectionsHtml() {
+    let L = null;
+    try { L = live(); } catch { return ''; }
+    if (!L) return '';
+    const cols = collectionsOf(L.board);
+    const lastOf = id => (L.state.log || []).filter(e => e.col === id && e.who === 'auto').at(-1);
+    // LOCAL PATCH (Miinthe, 2026-10-04): pause / continue / abandon / reactivate in this chat (WIP look)
+    const runCtl = t => {
+        const r = runOf(L.state, t), n = escapeHtml(t.name);
+        const b = (act, icon, title) => `<button type="button" class="dle-tracker-tool dle-run" data-name="${n}" data-act="${act}" title="${title}" aria-label="${n}: ${act}"><i class="fa-solid ${icon}" aria-hidden="true"></i></button>`;
+        return `${r ? `<span class="dle-muted dle-text-xs">${r === 'paused' ? 'paused' : 'abandoned'} — not watched, not told</span>` : ''}<span class="dle-tracker-tools">${r === 'abandoned' ? '' : r === 'paused' ? b('continue', 'fa-play', 'Continue (this chat)') : b('pause', 'fa-pause', 'Pause in this chat: not watched, not told')}${r === 'abandoned' ? b('reactivate', 'fa-rotate-left', 'Reactivate: on again from the start') : b('abandon', 'fa-ban', 'Abandon in this chat: back to the start, switched off (Undo works)')}${L.state.lastRun?.id === t.id ? `<button type="button" class="dle-run-undo" data-name="${n}">Undo</button>` : ''}</span>`;
+    };
+    const lastHtml = last => (last ? `<div class="dle-tracker-auto-note"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> “${escapeHtml(last.quote || '')}”${last.reason ? ` <span style="opacity:.75">— ${escapeHtml(last.reason)}${last.confidence ? ` (${escapeHtml(last.confidence)})` : ''}</span>` : ''} <button type="button" class="dle-col-undo" data-log="${escapeHtml(last.id)}" title="Put it back as it was">Undo</button></div>` : '');
+    // state: time, weather, the calendar (round 4)
+    const states = stateTrackersOf(L.board).map(t => {
+        const paused = runOf(L.state, t) != null, day = stateNow(L.state, t).day;
+        const up = datesOf(t, L.state).filter(d => d.due >= day);
+        return `<div class="dle-tracker dle-collection"${paused ? ' style="opacity:.6"' : ''}>
+            <div class="dle-tracker-head"><button type="button" class="dle-tracker-name dle-col-open" data-col="${escapeHtml(t.id)}" title="Change it on the board">${escapeHtml(t.icon || '🌦️')} ${escapeHtml(t.name)}</button>${runCtl(t)}</div>
+            <div class="dle-tracker-aside-note"><b>${escapeHtml(nowLine(t, L.state))}</b>${up.length ? `<br>coming up: ${up.map(d => `${d.by === 'ai' ? '✨' : '📅'} ${escapeHtml(d.name)} (${escapeHtml(dueText(d, day))})`).join(' · ')}` : ''}</div>
+            ${lastHtml(lastOf(t.id))}
+        </div>`;
+    }).join('');
+    // places: where the scene is (round 3)
+    const places = states + placeTrackersOf(L.board).map(t => {
+        const paused = runOf(L.state, t) != null;
+        return `<div class="dle-tracker dle-collection"${paused ? ' style="opacity:.6"' : ''}>
+            <div class="dle-tracker-head"><button type="button" class="dle-tracker-name dle-col-open" data-col="${escapeHtml(t.id)}" title="Change it on the board">${escapeHtml(t.icon || '📍')} ${escapeHtml(t.name)}</button>${runCtl(t)}</div>
+            <div class="dle-tracker-aside-note">the scene is at <b>${escapeHtml(placeLabel(t, hereOf(L.state, t)))}</b>${t.setsLocation !== false && !paused ? ' <span class="dle-muted">· sets the location filter</span>' : ''}</div>
+            ${lastHtml(lastOf(t.id))}
+        </div>`;
+    }).join('');
+    if (!cols.length) return places;
+    return places + cols.map(col => {
+        const paused = runOf(L.state, col) != null;
+        const groups = col.states.map((stt, k) => {
+            const its = col.items.filter(it => itemState(L.state, col, it.id) === stt.id);
+            if (!its.length) return '';
+            const names = its.map(it => `${escapeHtml(it.name)}${col.amounts && itemAmount(L.state, col, it.id) > 1 ? ` ×${itemAmount(L.state, col, it.id)}` : ''}`).join(', ');
+            return `<span${k === 0 ? ' class="dle-muted"' : ''}>${escapeHtml(stt.label)}: ${k === 0 ? names : `<b>${names}</b>`}</span>`;
+        }).filter(Boolean);
+        const money = (col.purse || []).map(p => { const v = purseValue(L.state, col, p.id); return `<b>${escapeHtml(p.before ? `${p.unit}${v}` : `${v} ${p.unit}`)}</b>`; });
+        const lastNote = lastHtml(lastOf(col.id));
+        // collections that grow: new things the story found, waiting for Miinthe's answer (board-grow.js)
+        const finds = (L.state.collections?.[col.id]?.pending || []).map(f => `<div class="dle-tracker-auto-note dle-find">❓ <b>${escapeHtml(f.name)}</b> — found in the story: “${escapeHtml(f.q || '')}”${f.about ? ` <span style="opacity:.75">— ${escapeHtml(f.about)}</span>` : ''}
+            <span class="dle-find-acts"><button type="button" class="dle-find-keep" data-col="${escapeHtml(col.id)}" data-pend="${escapeHtml(f.id)}" title="Add it to ${escapeHtml(col.name)}, with its entry">Keep it</button><button type="button" class="dle-find-drop" data-col="${escapeHtml(col.id)}" data-pend="${escapeHtml(f.id)}" title="Don't ask about it again in this chat">Not worth keeping</button></span></div>`).join('');
+        return `<div class="dle-tracker dle-collection"${paused ? ' style="opacity:.6"' : ''}>
+            <div class="dle-tracker-head"><button type="button" class="dle-tracker-name dle-col-open" data-col="${escapeHtml(col.id)}" title="Change it on the board">${escapeHtml(col.icon || '🗂️')} ${escapeHtml(col.name)}</button>${runCtl(col)}</div>
+            <div class="dle-tracker-aside-note">${[...groups, ...money].join(' · ') || '<span class="dle-muted">nothing yet</span>'}</div>
+            ${finds}${lastNote}
+        </div>`;
+    }).join('');
+}
+
+

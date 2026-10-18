@@ -1,6 +1,7 @@
 import { chat_metadata, getCurrentChatId } from '../../../../../../script.js';
 import { escapeHtml } from '../../../../../utils.js';
 import { getSettings } from '../../settings.js';
+import { budgetOverlay } from '../budget.js';
 import {
     vaultIndex,
     indexing, indexEverLoaded, computeOverallStatus,
@@ -34,7 +35,8 @@ let _lastSkipToolsState = null;
 export function renderStatusZone() {
     const $drawer = ds.$drawer;
     if (!$drawer) return;
-    const settings = getSettings();
+    // overhaul (2026-10-17): the bars count against this chat's budget (its own / its character's / Everywhere)
+    const settings = { ...getSettings(), ...budgetOverlay() };
 
     const status = computeOverallStatus(getCircuitState());
 

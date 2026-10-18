@@ -1,0 +1,40 @@
+/* Overhaul — the side panel's Filters tab (src/panel/filters-view.js). Mock-up: side panel + bar v13, viewFilters. */
+.dle-fv-today[hidden] { display: none !important; }
+.dle-fv { display: flex; flex-direction: column; gap: 8px; }
+.dle-fv-mini { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-fv p { margin: 6px 8px; }
+
+/* the card: what this chat is */
+.dle-fv-card { display: flex; flex-direction: column; gap: 6px; padding: 9px 11px 10px; border: 1px solid var(--dk-line); border-top: 3px solid var(--dk-l3); border-radius: 10px; background: var(--dk-page); min-width: 0; }
+.dle-fv-hd { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dle-fv-em { font-size: 15px; flex: none; }
+.dle-fv-nm { flex: 1; min-width: 0; font: 700 var(--dk-fs-l)/1.25 var(--dk-f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-fv-tag, .dle-fv-state { flex: none; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; border: 1px solid var(--dk-line); border-radius: 4px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dle-fv-state.on { color: var(--dk-good); border-color: var(--dk-good); background: var(--dk-good-soft); }
+.dle-fv-state.off { color: var(--dk-wait); border-color: var(--dk-wait); background: var(--dk-wait-soft); }
+.dle-fv-why { margin-top: -2px; }
+.dle-fv-card .dle-fv-kv { padding: 0; }
+.dle-fv-ft { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dle-fv-ft > .dle-fv-mini { flex: 1 0 100%; min-width: 0; }   /* the label on its own line, the three choices below at full width (bug hunt 2026-10-17: "like te…") */
+.dle-fv-seg { flex: 1 1 100%; max-width: 100%; display: flex; }
+.dle-fv-seg button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* label · value grid (folders, fields) */
+.dle-fv-kv { display: grid; grid-template-columns: fit-content(55%) minmax(0, 1fr);   /* labels as wide as they need, up to half (was 96px: "Character (sessi…") */ gap: 6px 10px; padding: 6px 8px; align-items: center; font-size: var(--dk-fs); }
+.dle-fv-kv > span:nth-child(odd) { color: var(--dk-muted); font-size: var(--dk-fs-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-fv-chips, .dle-fv-val { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
+.dle-fv .dk-chip { height: 22px; padding: 0 8px; cursor: default; max-width: 100%; }
+.dle-fv .dk-chip:hover { border-color: var(--dk-line); }
+.dle-fv .dk-chip .dk-x { cursor: pointer; }
+.dle-fv-set.dk-ib { width: 24px; height: 24px; }
+.dle-fv-out { white-space: nowrap; }
+.dle-fv-select { min-height: 26px; padding: 2px 6px; width: auto; max-width: 100%; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); }
+.dle-fv-link { border: 0; background: none; padding: 0; color: var(--dk-accent-ink); text-decoration: underline; font-size: var(--dk-fs-s); cursor: pointer; }
+
+.dle-fv-change { align-self: flex-start; max-width: 100%; }
+.dle-fv-change span { overflow: hidden; text-overflow: ellipsis; }
+
+@media (pointer: coarse) {
+    .dle-fv .dk-chip { height: 28px; }
+    .dle-fv-set.dk-ib { width: 32px; height: 32px; }
+}

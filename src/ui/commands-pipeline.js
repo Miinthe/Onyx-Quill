@@ -82,7 +82,8 @@ export function registerPipelineCommands() {
             const gatingContext = chat_metadata?.deeplore_context || {};
             const cmdPins = chat_metadata.deeplore_pins || [];
             const cmdBlocks = chat_metadata.deeplore_blocks || [];
-            const folderFilter = chat_metadata?.deeplore_folder_filter || null;
+            let folderFilter = chat_metadata?.deeplore_folder_filter || null;
+            try { folderFilter = (await import('../characters.js')).effectiveFolderFilter(); } catch { /* chat's own folders */ }   // LOCAL PATCH (Miinthe, 2026-10-04)
             let finalEntries, matchedKeys;
             try {
                 ({ finalEntries, matchedKeys } = await runPipeline(chat, getWriterVisibleEntries(), gatingContext, { pins: cmdPins, blocks: cmdBlocks, folderFilter }));

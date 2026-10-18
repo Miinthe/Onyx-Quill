@@ -1,0 +1,96 @@
+/* Overhaul — the side panel's Cast tab (src/panel/cast-view.js). Mock-up: side panel + bar v13 ("cast" styles). */
+.dle-cv { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 0; min-width: 0; }
+.dle-cv > * { flex-shrink: 0; }
+.dle-cv-empty { margin: 6px 4px; color: var(--dk-muted); }
+.dle-cv-none { margin: 2px 8px 4px; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-cv-mini { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-cv-grow { flex: 1; min-width: 0; }
+.dle-cv-sp { flex: 1; }
+.dle-cv-half { margin: 6px 8px 2px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+
+/* the round */
+.dle-cv-qlist { display: flex; flex-direction: column; }
+.dle-cv-qitem { position: relative; border-radius: 6px; }
+.dle-cv-qi { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 3px 4px 3px 2px; border-radius: 6px; }
+.dle-cv-qi:hover { background: var(--dk-accent-soft); }
+.dle-cv-qi.sel { background: var(--dk-accent-soft); }
+.dle-cv-open { cursor: pointer; border-radius: 4px; }
+.dle-cv-open:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 1px; }
+.dle-cv-grip { cursor: grab; touch-action: none; width: 24px; }
+.dle-cv-grip:active { cursor: grabbing; }
+.dle-cv-no { width: 16px; flex: none; text-align: center; font: var(--dk-fs-s) var(--dk-f-mono); color: var(--dk-muted); }
+.dle-cv-ic { flex: none; }
+.dle-cv-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dle-cv-t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-cv-s { font-size: var(--dk-fs-s); color: var(--dk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-cv-qitem.dle-cv-dragging { z-index: 2; background: var(--dk-page); box-shadow: var(--dk-shadow); opacity: .95; }
+.dle-cv-qitem.dle-cv-drop-before { box-shadow: inset 0 2px 0 var(--dk-accent); }
+.dle-cv-qitem.dle-cv-drop-after { box-shadow: inset 0 -2px 0 var(--dk-accent); }
+.dle-cv-writebox { display: grid; gap: 6px; padding: 0 8px 8px 50px; }
+.dle-cv-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dle-cv-sugg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 4px 0; padding: 6px 8px; border: 1px dashed color-mix(in oklab, var(--dk-mero) 50%, var(--dk-line)); border-radius: 8px; }
+.dle-cv-sugg > span { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.dle-cv-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 4px 2px; }
+
+/* a person, opened */
+.dle-cv-person { display: grid; gap: 8px; padding: 6px 8px 10px 39px; }
+.dle-cv-person h5 { margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 0 6px; font: 700 var(--dk-fs-xs)/1.3 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.dle-cv-person h5 em { text-transform: none; letter-spacing: 0; font-weight: 400; font-style: normal; }
+.dle-cv-sec { display: grid; gap: 4px; min-width: 0; }
+.dle-cv-sec > .dk-btn { justify-self: start; }
+.dle-cv-mode { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-cv-mode span { opacity: .8; }
+.dle-cv-erow { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.dle-cv-erow input.dk-field { flex: 1; min-width: 0; min-height: 28px; height: 28px; padding: 0 8px; }
+.dle-cv-erow select.dk-field { width: auto; flex: none; max-width: 112px; min-height: 28px; height: 28px; padding: 0 4px; }
+.dle-cv-erow .dk-ib { width: 24px; height: 24px; }
+.dle-cv-person textarea.dk-field { resize: vertical; }
+.dle-cv-thought { margin: 0; padding-left: 8px; border-left: 2px solid var(--dk-line); font-style: italic; color: var(--dk-muted); }
+.dle-cv-off { font-size: var(--dk-fs); overflow-wrap: anywhere; }
+.dle-cv-veil { padding: 6px 8px; border-radius: 6px; background: repeating-linear-gradient(135deg, var(--dk-menu) 0 6px, var(--dk-page) 6px 12px); color: var(--dk-muted); font-size: var(--dk-fs-s); font-style: italic; }
+
+/* the bar for the person opened: stays in view at the bottom */
+.dle-cv-selbar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 -2px; padding: 8px 8px 10px; background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 10px 10px 0 0; box-shadow: 0 -8px 18px color-mix(in oklab, var(--dk-desk) 40%, transparent); }
+.dle-cv-what { flex: 1 0 100%; display: flex; align-items: center; font: 700 var(--dk-fs)/1.2 var(--dk-f-body); }
+.dle-cv-what > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* a phone: second lines wrap, rows top-align */
+@media (max-width: 600px) {
+    .dle-cv-s, .dle-cv .dk-row .dk-s { white-space: normal; }
+    .dle-cv-qi { align-items: flex-start; padding-block: 6px; }
+    .dle-cv-person { padding-left: 12px; }
+    .dle-cv-writebox { padding-left: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .dle-cv-qitem { transition: none; } }
+
+/* People: a grid of who is not in this round (Miinthe 2026-10-18) — picture, name, here / away, + */
+.dle-cv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 2px 0 4px; }
+.dle-cv-tile { position: relative; justify-content: space-between; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px 4px; border-radius: 8px; border: 1px solid var(--dk-line); }
+.dle-cv-tile.sel { background: var(--dk-accent-soft); border-color: var(--dk-accent); }
+.dle-cv-tile.away .dle-cv-pic { opacity: .5; filter: grayscale(.6); }
+.dle-cv-face { all: unset; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; min-width: 0; cursor: default; border-radius: 6px; }
+button.dle-cv-face { cursor: pointer; }
+button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 2px; }
+.dle-cv-pic { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--dk-accent-soft); color: var(--dk-accent); font: 700 18px/1 var(--dk-f-body); }
+.dle-cv-pic img { width: 100%; height: 100%; object-fit: cover; }
+.dle-cv-tn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--dk-fs-s); }
+.dle-cv-ts { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.dle-cv-tfoot { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.dle-cv-tfoot .dk-ib { flex: none; width: 28px; height: 28px; }
+@media (pointer: coarse) { .dle-cv-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .dle-cv-tfoot .dk-ib { width: 30px; height: 30px; } }
+/* the person opened: the whole width, picture beside name and here / away, + at the end; the grid moves down below */
+.dle-cv-opened { display: grid; gap: 4px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--dk-line); }
+.dle-cv-tile.wide { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 6px 8px; }
+.dle-cv-tile.wide .dle-cv-face { flex-direction: row; flex: 1; gap: 10px; justify-content: flex-start; }
+.dle-cv-tile.wide .dle-cv-tn { font-size: var(--dk-fs); }
+.dle-cv-opened .dle-cv-person { padding-left: 8px; }
+.dle-cv-tile.wide .dle-cv-tfoot { gap: 6px; }
+.dle-cv-tile.muted .dle-cv-pic { opacity: .45; }
+/* ★ favorite: top-right corner of a tile; faint until hover on a PC, always faint on touch */
+.dle-cv-fav { all: unset; box-sizing: border-box; position: absolute; top: 2px; right: 3px; width: 28px; height: 28px; display: grid; place-items: center; cursor: pointer; border-radius: 6px; font-size: 21px; line-height: 1; color: var(--dk-muted); opacity: 0; transition: opacity .15s; }
+.dle-cv-tile:hover .dle-cv-fav, .dle-cv-fav:focus-visible { opacity: .8; }
+.dle-cv-fav:focus-visible { outline: 2px solid var(--dk-accent); }
+.dle-cv-fav.on { opacity: 1; color: var(--dk-accent-ink); }
+@media (hover: none) { .dle-cv-fav { opacity: .55; } .dle-cv-fav.on { opacity: 1; } }
+.dle-cv-tile.wide .dle-cv-fav { position: static; order: 9; }
+.dle-cv-tile > .dle-cv-fav { font-size: 21px; }   /* beats the kit's button font size */

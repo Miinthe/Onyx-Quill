@@ -13,7 +13,7 @@ import { saveSettingsDebounced } from '../../../../../../script.js';
  */
 export function initPhysics(gs) {
 
-    const MAX_SIMULATION_MS = 90_000; // hard clamp: force-settle after 90s no matter what.
+    const MAX_SIMULATION_MS = 20_000; // hard clamp: force-settle after 20s no matter what (was 90s — Miinthe waited 80s, 2026-10-17).
 
     // Spatial grid → O(n) repulsion + collision instead of O(n²).
     let _gridCells = null;
@@ -108,8 +108,9 @@ export function initPhysics(gs) {
 
         if (gs.alpha < 0.001 && !frozenNode && !gs.hasSpringEnergy && gs.maxDelta < 0.01) return;
         gs.simFrame++;
-        // G7: two-phase decay — plateau while hot (~20s above α=0.3), then fast cooldown (~6s).
-        if (!frozenNode) gs.alpha *= (gs.alpha > 0.3) ? 0.999 : 0.985;
+        // G7: two-phase decay — plateau while hot, then fast cooldown. Counted in frames, so a slow screen stretches it:
+        // was ~20s + ~6s at 60 fps (45s seen on devbox, 80s on Miinthe's screen); now ~5s + ~1.5s (2026-10-17).
+        if (!frozenNode) gs.alpha *= (gs.alpha > 0.3) ? 0.996 : 0.97;
 
         // Force parameters read from settings each frame so live sliders take effect immediately.
         const repulsion = gs.settings.graphRepulsion ?? 0.5;
@@ -390,7 +391,7 @@ export function initPhysics(gs) {
             gs.layoutSaved = true;
             const positions = {};
             for (const n of nodes) {
-                if (!n.orphan) positions[n.title] = { x: n.x, y: n.y };
+                positions[n.title] = { x: n.x, y: n.y };   // unlinked entries too: a vault of only those saved an empty layout and re-laid out on every opening (bug hunt 2026-10-17)
             }
             gs.settings.graphSavedLayout = { positions, timestamp: Date.now() };
             invalidateSettingsCache();
@@ -420,7 +421,7 @@ export function initPhysics(gs) {
             gs.layoutSaved = true;
             const positions = {};
             for (const n of gs.nodes) {
-                if (!n.orphan) positions[n.title] = { x: n.x, y: n.y };
+                positions[n.title] = { x: n.x, y: n.y };   // unlinked entries too: a vault of only those saved an empty layout and re-laid out on every opening (bug hunt 2026-10-17)
             }
             gs.settings.graphSavedLayout = { positions, timestamp: Date.now() };
             invalidateSettingsCache();

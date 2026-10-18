@@ -12,9 +12,70 @@ import {
 import { getContext, saveMetadataDebounced } from '../../../../../extensions.js';
 import { getSettings, resolveConnectionConfig, resolveWriteVault } from '../../settings.js';
 import { writeNote } from '../vault/obsidian-api.js';
+import { folderList } from '../state.js';   // LOCAL PATCH (Miinthe): session folder resolution
+import { resolveSessionFolder } from './session-folder-pure.js';
 import { buildIndex } from '../vault/vault.js';
 import { buildAiChatContext } from '../../core/utils.js';
 import { callAI, isExcludedFromBreaker } from './ai.js';
+
+// LOCAL PATCH (Miinthe, 2026-07-28): stamp the chat's declared gating context onto entries
+// born from play, so play-born lore is world-walled and run-scoped without hand-tagging.
+// DeepLore itself writes no context fields. Re-apply after a DeepLore update.
+// LOCAL PATCH 2026-08-02 (Miinthe): Session Scribe used to write no `keys:` and no `summary:`,
+// so a session note could not be keyword-matched at all and the AI judge fell back to
+// reading truncated body text. These three helpers add both at creation time, and file the
+// note into the right instance subfolder.
+
+/** Instruction appended to whatever SCRIBE_PROMPT resolves to. Miinthe's stored prompt is never
+ *  modified — this is concatenated at call time, and everything degrades to the old
+ *  behaviour if the model ignores it. */
+const DLE_META_INSTRUCTION = `
+---
+After the session note, output exactly one metadata block in this format and nothing after it:
+
+<<<DLE-META
+KEYS: four to six short, discriminating search terms, comma separated. Use concrete nouns, names and events from THIS session. Never use the character's own name or the world's name — they appear in every scene and would make the entry fire constantly.
+SUMMARY: one sentence, under 40 words, saying WHEN this session should be recalled. Write it for a retrieval model, not for a reader. Do not reveal plot twists.
+DLE-META>>>`;
+
+/** Pull the metadata block out of the model's reply. Returns { body, keys, summary }; on
+ *  anything unexpected, keys/summary come back empty and the note is written as before. */
+function dleExtractMeta(raw) {
+    const out = { body: raw, keys: [], summary: '' };
+    const m = raw.match(/<<<DLE-META([\s\S]*?)DLE-META>>>/);
+    if (!m) return out;
+    out.body = raw.slice(0, m.index).trim();
+    // LOCAL PATCH 2026-08-04 (Miinthe): a small model can emit the metadata block FIRST and the
+    // note after it, which left body empty. Only when nothing precedes the block do we fall
+    // back to what follows it — the normal "note then block" shape is unaffected.
+    if (!out.body) out.body = raw.slice(m.index + m[0].length).trim();
+    const block = m[1];
+    const km = block.match(/KEYS:\s*(.+)/i);
+    if (km) {
+        out.keys = km[1].split(',').map(k => k.trim().replace(/^["'\[]+|["'\]]+$/g, ''))
+            .filter(k => k && k.length <= 60).slice(0, 8);
+    }
+    const sm = block.match(/SUMMARY:\s*([\s\S]+?)(?:\n[A-Z]+:|$)/i);
+    if (sm) out.summary = sm[1].trim().replace(/\s+/g, ' ').slice(0, 400);
+    return out;
+}
+
+// LOCAL PATCH 2026-08-09 (Miinthe): session-folder routing moved to session-folder-pure.js so
+// it can be unit-tested. It also stopped falling back to "the only folder with this letter",
+// which filed a second character's session into the first character's run — see that file.
+
+function dleContextYaml(keys) {
+    const ctx = (typeof chat_metadata !== 'undefined' && chat_metadata?.deeplore_context) || {};
+    let out = '';
+    for (const k of keys) {
+        const raw = ctx[k];
+        const vals = (Array.isArray(raw) ? raw : (raw ? [raw] : [])).filter(v => v !== '' && v != null);
+        if (vals.length === 1) out += `${k}: ${vals[0]}\n`;
+        else if (vals.length > 1) out += `${k}:\n` + vals.map(v => `  - ${v}`).join('\n') + '\n';
+    }
+    return out;
+}
+
 import { stripObsidianSyntax } from '../helpers.js';
 import {
     scribeInProgress, lastScribeSummary, chatEpoch,
@@ -148,15 +209,32 @@ export async function runScribe(customPrompt) {
         }
         const userMessage = parts.join('\n\n');
 
-        const summary = await callScribe(systemPrompt, userMessage, settings);
+        const summary = await callScribe(systemPrompt + DLE_META_INSTRUCTION, userMessage, settings);
 
         if (!summary || !summary.trim()) {
             dedupWarning('Session Scribe couldn\'t finish — your chat is unchanged.', 'scribe_empty_summary', { hint: 'Scribe returned empty summary.' });
             return;
         }
 
+        // LOCAL PATCH 2026-08-02 (Miinthe): split the metadata block off before sanitising, so
+        // KEYS/SUMMARY never leak into the note body.
+        const _meta = dleExtractMeta(summary);
         // Strip Obsidian syntax + neutralize bare YAML delimiters in AI output.
-        const sanitizedSummary = stripObsidianSyntax(summary).replace(/^---$/gm, '- - -');
+        const sanitizedSummary = stripObsidianSyntax(_meta.body).replace(/^---$/gm, '- - -');
+
+        // LOCAL PATCH 2026-08-04 (Miinthe): the empty-reply guard above tests the RAW reply, which
+        // still contains the DLE-META block — so a reply that is metadata and nothing else
+        // passes it, and the note was then written with a complete frontmatter and an empty
+        // body. Re-check AFTER the split and refuse to write. An empty note in the vault is
+        // worse than no note: it looks like a real entry and silently injects nothing.
+        if (!sanitizedSummary.trim()) {
+            dedupWarning(
+                'Session Scribe returned metadata but no session text — nothing was written.',
+                'scribe_empty_body',
+                { hint: 'Model emitted only the DLE-META block. Raise the scribe token budget, or turn thinking off for its connection profile.' },
+            );
+            return;
+        }
 
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10);
@@ -169,9 +247,40 @@ export async function runScribe(customPrompt) {
             charName = '_' + charName;
         }
         if (!charName) charName = 'Unknown';
-        const filename = `${settings.scribeFolder}/${charName} - ${dateStr} ${timeStr}.md`;
+        // LOCAL PATCH 2026-08-02 (Miinthe): `character:` is sourced from the chat's gating context
+        // when set, falling back to the SillyTavern card name. Gating compares against the
+        // context value, so stamping the card name could silently gate a session out of its
+        // own character's chats if the two ever diverge.
+        const _dleCtx = (typeof chat_metadata !== 'undefined' && chat_metadata?.deeplore_context) || {};
+        const _ctxChar = Array.isArray(_dleCtx.character) ? _dleCtx.character[0] : _dleCtx.character;
+        const _charField = (_ctxChar && String(_ctxChar).trim()) || charName;
+        const _instance = _dleCtx.instance;
 
-        const noteContent = `---\ntags:\n  - lorebook-session\ndate: ${now.toISOString()}\ncharacter: "${charName.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"\n---\n# Session: ${charName} - ${dateStr} ${timeStr}\n\n${sanitizedSummary.trim()}\n`;
+        // LOCAL PATCH 2026-08-09 (Miinthe): route on the SAME character value that gets stamped
+        // into `character:` below, with the card name only as a secondary candidate. Routing
+        // on the card name while stamping the context name let the two halves disagree —
+        // the card is "Wren" while the context and the folder both say "Wren; Gallery Light".
+        const _targetFolder = resolveSessionFolder(
+            settings.scribeFolder, [_charField, charName], _instance, folderList,
+        );
+        const filename = `${_targetFolder}/${charName} - ${dateStr} ${timeStr}.md`;
+
+        const _yamlStr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+        const _keysYaml = _meta.keys.length
+            ? `keys:\n${_meta.keys.map(k => `  - ${_yamlStr(k)}`).join('\n')}\n` : '';
+        const _summaryYaml = _meta.summary ? `summary: ${_yamlStr(_meta.summary)}\n` : '';
+
+        // LOCAL PATCH 2026-08-04 (Miinthe): DeepLore tagged session notes `lorebook-session` ONLY.
+        // parseVaultFile (core/pipeline.js) admits an entry only when its tags contain the
+        // CONFIGURED lorebook tag by exact match, so every session note was skipped as
+        // SKIP_NO_LOREBOOK_TAG and had to be hand-tagged before DeepLore could see it.
+        // `lorebook-session` is written here and read nowhere in the codebase. Emit the
+        // configured tag alongside it so play-born notes are indexable at birth.
+        const _tagList = [settings.lorebookTag || 'lorebook', 'lorebook-session']
+            .filter((t, i, a) => t && a.indexOf(t) === i);
+        const _tagsYaml = _tagList.map(t => `  - ${t}`).join('\n');
+
+        const noteContent = `---\ntags:\n${_tagsYaml}\ndate: ${now.toISOString()}\ncharacter: ${_yamlStr(_charField)}\n${_keysYaml}${_summaryYaml}${dleContextYaml(['instance'])}---\n# Session: ${charName} - ${dateStr} ${timeStr}\n\n${sanitizedSummary.trim()}\n`;
 
         if (epoch !== chatEpoch) {
             if (getSettings().debugMode) console.log('[DLE] Scribe: chat changed during generation, discarding result');

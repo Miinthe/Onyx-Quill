@@ -1,3 +1,5 @@
+import { initPanelFrame } from './drawer-frame.js';
+import { initPanelViews } from '../panel/index.js';
 import { doNavbarIconClick, saveSettingsDebounced, getCurrentChatId } from '../../../../../../script.js';
 import { renderExtensionTemplateAsync } from '../../../../../extensions.js';
 import { accountStorage } from '../../../../../util/AccountStorage.js';
@@ -31,7 +33,9 @@ import {
 import {
     renderStatusZone, renderInjectionTab, updateInjectionCountBadges,
     renderBrowseTab, renderBrowseWindow, renderGatingTab, renderTimers, renderFooter,
+    renderStoryTab,
 } from './drawer-render.js';
+import { onTrackersChanged } from '../trackers.js';   // LOCAL PATCH (Miinthe): story trackers
 import { renderLibrarianTab } from './drawer-render-librarian.js';
 import {
     switchTab,
@@ -115,6 +119,7 @@ function flushDrawerRenders() {
     renderInjectionTab();
     renderBrowseTab();
     renderGatingTab();
+    renderStoryTab();
     renderLibrarianTab();
     renderTimers();
     renderFooter();
@@ -236,6 +241,11 @@ export async function createDrawerPanel() {
     // ST's initial pass binds .drawer-toggle at page load — dynamically-added drawers
     // need explicit re-binding to doNavbarIconClick. BUG-152: single click handler.
     $drawer.find('.drawer-toggle').on('click', function (e) {
+        // A locked panel ignores SillyTavern's Escape (Miinthe, 2026-10-16). ST closes the visible drawer on Escape by a
+        // jQuery .trigger('click') on its icon (RossAscends-mods.js), which has no originalEvent; every real click and
+        // every click from DeepLore's own code (element.click()) has one. So: synthetic click + locked + open → ignore.
+        const $p = $drawer.find('#deeplore-panel');
+        if (!e.originalEvent && $p.hasClass('pinnedOpen') && $p.hasClass('openDrawer')) return;
         doNavbarIconClick.call(this, e);
         // Update aria-expanded + overlay mode AFTER ST processes the toggle.
         requestAnimationFrame(() => {
@@ -251,7 +261,7 @@ export async function createDrawerPanel() {
     $drawer.find('#deeploreDrawerIcon').on('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            $drawer.find('.drawer-toggle').trigger('click');
+            $drawer.find('.drawer-toggle')[0]?.click();   // a real click event (a locked panel only ignores ST's Escape)
         }
     });
 
@@ -272,12 +282,34 @@ export async function createDrawerPanel() {
     function updateOverlayMode() {
         const chatWidth = power_user?.chat_width || 50;
         const viewportNarrow = (typeof window !== 'undefined' ? window.innerWidth : Infinity) <= OVERLAY_VIEWPORT_WIDTH_PX;
-        if (viewportNarrow || chatWidth >= OVERLAY_CHAT_WIDTH_THRESHOLD) {
+        // a locked panel makes room for itself instead (makeRoom below) — over the chat it would hide the messages' buttons
+        const locked = $panel.hasClass('pinnedOpen');
+        if (viewportNarrow || (!locked && chatWidth >= OVERLAY_CHAT_WIDTH_THRESHOLD)) {
             $panel.addClass('dle-overlay-mode');
         } else {
             $panel.removeClass('dle-overlay-mode');
         }
+        makeRoom();
     }
+
+    // A locked panel keeps at least PANEL_MIN px: when the theme's chat width leaves less beside the chat, the chat is
+    // narrowed for as long as the panel stays locked open (Miinthe 2026-10-18: Celestial Macaron's 64% chat squeezed it to
+    // 270px). Done on <body>, so SillyTavern's own --sheldWidth on <html> is never touched.
+    const PANEL_MIN = 340;
+    function makeRoom() {
+        const el = $panel[0];
+        const on = el && el.classList.contains('pinnedOpen') && el.classList.contains('openDrawer') && !el.classList.contains('dle-overlay-mode');
+        document.body.style.removeProperty('--sheldWidth');
+        if (!on) return;
+        const sheld = document.getElementById('sheld');
+        const w = sheld?.getBoundingClientRect().width || 0;
+        if (w && (innerWidth - w) / 2 < PANEL_MIN) document.body.style.setProperty('--sheldWidth', Math.max(320, innerWidth - 2 * PANEL_MIN) + 'px');
+    }
+    // the theme / chat width (SillyTavern's inline --sheldWidth) and the panel's lock / open state
+    try {
+        new MutationObserver(() => updateOverlayMode()).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+        if ($panel[0]) new MutationObserver(() => updateOverlayMode()).observe($panel[0], { attributes: true, attributeFilter: ['class'] });
+    } catch { /* noop */ }
 
     // BUG-065: re-check on window resize too — dragging across the breakpoint or rotating a tablet
     // must toggle overlay mode without requiring a manual drawer interaction. rAF-debounced.
@@ -303,6 +335,17 @@ export async function createDrawerPanel() {
     if (isMobile && isMobile()) {
         $drawer.find('.dle-drawer-pin').hide();
     }
+
+    // LOCAL PATCH 2026-08-03 (Miinthe): mark the panel as a real mobile device, so CSS can make
+    // layout decisions that media queries genuinely cannot answer:
+    //   - a container query measures the PANEL, which is ~380px on desktop and ~400px on a
+    //     phone — it cannot tell them apart, and using it stripped the tab labels on desktop
+    //   - `(pointer: coarse)` describes the INPUT, so a touchscreen laptop matches it
+    //   - `max-width` describes the WINDOW, so a narrow desktop window matches it
+    // isMobile() reads the parsed User-Agent platform type ('mobile' / 'tablet'), which is
+    // the question actually being asked. Touch-TARGET sizing stays on `(pointer: coarse)`
+    // elsewhere in style.css — that one really is about the input device, not the machine.
+    $drawer.find('#deeplore-panel').toggleClass('dle-mobile', !!(isMobile && isMobile()));
 
     const drawerSettings = getSettings();
     if (drawerSettings.drawerPinned && !(isMobile && isMobile())) {
@@ -415,6 +458,8 @@ export async function createDrawerPanel() {
     wireLibrarianTab($drawer);
     wireHealthIcons($drawer);
     wireGlobalShortcuts($drawer);
+    initPanelFrame($drawer);   // overhaul 2a (2026-10-15): header, Ready, ⋯, lock, left / right
+    initPanelViews($drawer);   // overhaul: the tabs redrawn to the mock-up (src/panel/)
 
     // Browse navigation buttons (Why? tab → Browse tab) — delegated here to avoid the drawer-events.js → drawer.js circular import.
     $drawer.on('click', '.dle-browse-nav-btn', function (e) {
@@ -507,13 +552,17 @@ export async function createDrawerPanel() {
 
     // E10/Q18: switchTab writes 'dle-last-drawer-tab' on every change; restore it here on open.
     // First-time users fall back to 'injection'.
-    const VALID_TABS = new Set(['injection', 'browse', 'gating', 'librarian', 'tools']);
-    let initialTab = 'injection';
+    const VALID_TABS = new Set(['injection', 'browse', 'gating', 'librarian']);
+    // overhaul 2b (2026-10-15): the newer tabs are remembered too; they set themselves up on a click, so they get one
+    // (they used to fall back to Injection, which also overwrote the remembered tab)
+    const CLICK_TABS = new Set(['story', 'mero', 'changes', 'cast']);
+    let initialTab = 'injection', savedTab = null;
     try {
-        const savedTab = accountStorage.getItem('dle-last-drawer-tab');
+        savedTab = accountStorage.getItem('dle-last-drawer-tab');
         if (savedTab && VALID_TABS.has(savedTab)) initialTab = savedTab;
     } catch { /* noop */ }
-    try { switchTab($drawer, initialTab); } catch { /* noop */ }
+    if (savedTab && CLICK_TABS.has(savedTab)) setTimeout(() => { try { $drawer.find(`#dle-tab-${savedTab}`)[0]?.click(); } catch { /* noop */ } }, 0);
+    else try { switchTab($drawer, initialTab); } catch { /* noop */ }
 
     // Restore persistent UI prefs from accountStorage.
     try {
@@ -537,6 +586,7 @@ export async function createDrawerPanel() {
     renderInjectionTab();
     renderBrowseTab();
     renderGatingTab();
+    renderStoryTab();
     renderLibrarianTab();
     renderTimers();
     renderFooter();
@@ -672,6 +722,12 @@ export async function createDrawerPanel() {
     drawerListeners.stateObservers.push(onVerdictChanged(() => {
         if (drawerDestroyed) return;
         scheduleRender(renderBrowseTab);
+    }));
+
+    // LOCAL PATCH (Miinthe, 2026-10-02): redraw the Story tab when a tracker moves.
+    drawerListeners.stateObservers.push(onTrackersChanged(() => {
+        if (drawerDestroyed) return;
+        scheduleRender(renderStoryTab);
     }));
 
     drawerListeners.stateObservers.push(onFieldDefinitionsUpdated(() => {

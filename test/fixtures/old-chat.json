@@ -1,0 +1,745 @@
+{
+ "note": "An old chat, played on the old engine (2026-10-05, before step 7b removed it): the stored list with its history, no step log. expected[k] = what the old roll back gave when deleting back to message k.",
+ "chat": [
+  {
+   "name": "test bot 1",
+   "is_user": false,
+   "is_system": false,
+   "mes": "Hello, neighbour.",
+   "send_date": "0",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "I am the new neighbour and I play drums at midnight.",
+   "send_date": "1",
+   "extra": {}
+  },
+  {
+   "name": "test bot 1",
+   "is_user": false,
+   "is_system": false,
+   "mes": "ok",
+   "send_date": "2",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "Okay, we are friends now.",
+   "send_date": "3",
+   "extra": {}
+  },
+  {
+   "name": "test bot 1",
+   "is_user": false,
+   "is_system": false,
+   "mes": "ok",
+   "send_date": "4",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "I like you so much, a lot.",
+   "send_date": "5",
+   "extra": {}
+  },
+  {
+   "name": "test bot 1",
+   "is_user": false,
+   "is_system": false,
+   "mes": "ok",
+   "send_date": "6",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "The fuse sparks.",
+   "send_date": "7",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "Wait, let me think.",
+   "send_date": "8",
+   "extra": {}
+  },
+  {
+   "name": "Miinthe",
+   "is_user": true,
+   "is_system": false,
+   "mes": "We fix the fuse together.",
+   "send_date": "9",
+   "extra": {}
+  },
+  {
+   "name": "test bot 1",
+   "is_user": false,
+   "is_system": false,
+   "mes": "ok",
+   "send_date": "10",
+   "extra": {}
+  }
+ ],
+ "chat_metadata": {
+  "deeplore_board": "Engine test",
+  "deeplore_board_state": {
+   "v": 2,
+   "trackers": {
+    "rel": {
+     "at": "s2",
+     "forks": {},
+     "memo": {
+      "lastAuto": {
+       "name": "Relationship",
+       "fromIndex": 2,
+       "toIndex": 2,
+       "fromAside": null,
+       "toAside": null,
+       "branch": "Confesses",
+       "step": "Friends",
+       "quote": "I like you so much",
+       "reason": "test",
+       "confidence": "high",
+       "fromTook": {},
+       "fromEnded": null,
+       "fromLog": 0,
+       "startedOther": null,
+       "at": "2026-10-05T04:35:19.004Z",
+       "message": 5
+      },
+      "lastRun": {
+       "action": "continue",
+       "from": {
+        "index": 1,
+        "aside": null,
+        "took": {},
+        "ended": null,
+        "run": "paused",
+        "started": false,
+        "startedAt": null
+       },
+       "i": 8
+      },
+      "lastTrigger": {
+       "logId": "gmuurast9qske",
+       "fromIndex": 3,
+       "fromAside": null,
+       "message": 7
+      }
+     },
+     "branchLog": [
+      {
+       "at": "s3",
+       "branch": "conf",
+       "i": 5
+      }
+     ]
+    },
+    "fuse": {
+     "at": "c3",
+     "forks": {
+      "c3": "fail"
+     },
+     "started": true,
+     "startedAt": {
+      "i": 3,
+      "at": "2026-10-05T04:35:19.002Z",
+      "why": "Relationship reaches Friends"
+     },
+     "ended": {
+      "step": "Repair",
+      "branch": "Fail",
+      "i": 9
+     },
+     "branchLog": [
+      {
+       "at": "c3",
+       "branch": "fail",
+       "i": 9
+      }
+     ],
+     "memo": {
+      "lastAuto": {
+       "name": "The Broken Fuse",
+       "fromIndex": 1,
+       "toIndex": 2,
+       "fromAside": null,
+       "toAside": null,
+       "quote": "We fix the fuse together",
+       "reason": "test",
+       "confidence": "high",
+       "at": "2026-10-05T04:35:19.007Z",
+       "message": 9
+      }
+     }
+    },
+    "secret": {
+     "at": null,
+     "forks": {}
+    }
+   },
+   "collections": {
+    "stash": {
+     "items": {},
+     "purse": {},
+     "pending": []
+    }
+   },
+   "counters": {},
+   "places": {
+    "where": "kitchen"
+   },
+   "states": {},
+   "log": [
+    {
+     "id": "rmuurast8weee",
+     "i": 5,
+     "key": "roll:start|secret|{\"step\":\"s4\",\"tracker\":\"rel\"}",
+     "kind": "roll",
+     "col": "secret",
+     "line": "start|secret|{\"step\":\"s4\",\"tracker\":\"rel\"}",
+     "from": null,
+     "to": {
+      "ok": false,
+      "face": 2,
+      "odds": 2,
+      "i": 5
+     },
+     "who": "roll",
+     "at": "2026-10-05T04:35:19.004Z"
+    },
+    {
+     "id": "gmuurast9qske",
+     "i": 7,
+     "key": "trigger:trigger|rel|{\"step\":\"c2\",\"to\":\"s2\",\"tracker\":\"fuse\"}",
+     "kind": "trigger",
+     "col": "rel",
+     "line": "trigger|rel|{\"step\":\"c2\",\"to\":\"s2\",\"tracker\":\"fuse\"}",
+     "from": "s4",
+     "to": "s2",
+     "moved": true,
+     "why": "The Broken Fuse reaches Sparks",
+     "who": "trigger",
+     "at": "2026-10-05T04:35:19.005Z"
+    }
+   ],
+   "rolls": {
+    "start|secret|{\"step\":\"s4\",\"tracker\":\"rel\"}": {
+     "ok": false,
+     "face": 2,
+     "odds": 2,
+     "i": 5
+    }
+   },
+   "fired": {
+    "trigger|rel|{\"step\":\"c2\",\"to\":\"s2\",\"tracker\":\"fuse\"}": {
+     "i": 7,
+     "from": "s4",
+     "to": "s2"
+    }
+   }
+  },
+  "deeplore_trackers": [
+   {
+    "id": "rel",
+    "name": "Relationship",
+    "steps": [
+     "Strangers",
+     "Neighbours",
+     "Friends",
+     "Sweethearts",
+     "Married"
+    ],
+    "direction": "both",
+    "skip": false,
+    "index": 1,
+    "aside": null,
+    "needs": [
+     {
+      "step": "Married",
+      "tracker": "fuse",
+      "reach": "Repair"
+     }
+    ],
+    "forks": {
+     "Friends": {
+      "by": "story",
+      "branches": [
+       {
+        "name": "Confesses",
+        "entries": [
+         "Rel · Confession"
+        ]
+       },
+       {
+        "name": "Chickens out"
+       }
+      ]
+     }
+    },
+    "took": {},
+    "journal": [
+     {
+      "i": 0,
+      "index": 0,
+      "aside": null
+     },
+     {
+      "i": 1,
+      "index": 1,
+      "aside": "Nuisance",
+      "who": "auto",
+      "at": "2026-10-05T04:35:19.001Z",
+      "quote": "I am the new neighbour",
+      "reason": "test",
+      "confidence": "high"
+     },
+     {
+      "i": 3,
+      "index": 2,
+      "aside": null,
+      "who": "auto",
+      "at": "2026-10-05T04:35:19.002Z",
+      "quote": "we are friends now",
+      "reason": "test",
+      "confidence": "high"
+     },
+     {
+      "i": 5,
+      "index": 3,
+      "aside": null,
+      "who": "auto",
+      "at": "2026-10-05T04:35:19.004Z",
+      "quote": "I like you so much",
+      "reason": "test",
+      "confidence": "high",
+      "took": {
+       "Friends": "Confesses"
+      }
+     },
+     {
+      "i": 7,
+      "index": 1,
+      "aside": null,
+      "who": "trigger",
+      "at": "2026-10-05T04:35:19.005Z",
+      "reason": "because The Broken Fuse reaches Sparks",
+      "took": {
+       "Friends": "Confesses"
+      }
+     },
+     {
+      "i": 8,
+      "index": 1,
+      "aside": null,
+      "who": "hand",
+      "at": "2026-10-05T04:35:19.006Z",
+      "why": "continue"
+     }
+    ],
+    "lastAuto": {
+     "name": "Relationship",
+     "fromIndex": 2,
+     "toIndex": 2,
+     "fromAside": null,
+     "toAside": null,
+     "branch": "Confesses",
+     "step": "Friends",
+     "quote": "I like you so much",
+     "reason": "test",
+     "confidence": "high",
+     "fromTook": {},
+     "fromEnded": null,
+     "fromLog": 0,
+     "startedOther": null,
+     "at": "2026-10-05T04:35:19.004Z",
+     "message": 5
+    },
+    "branchLog": [
+     {
+      "step": "Friends",
+      "branch": "Confesses",
+      "i": 5
+     }
+    ],
+    "lastTrigger": {
+     "logId": "gmuurast9qske",
+     "fromIndex": 3,
+     "fromAside": null,
+     "message": 7
+    },
+    "lastRun": {
+     "action": "continue",
+     "from": {
+      "index": 1,
+      "aside": null,
+      "took": {},
+      "ended": null,
+      "run": "paused",
+      "started": false,
+      "startedAt": null
+     },
+     "i": 8
+    }
+   },
+   {
+    "id": "fuse",
+    "name": "The Broken Fuse",
+    "steps": [
+     "Calm",
+     "Sparks",
+     "Repair"
+    ],
+    "direction": "forward",
+    "skip": false,
+    "index": 2,
+    "aside": null,
+    "starts": [
+     {
+      "tracker": "rel",
+      "step": "Friends"
+     }
+    ],
+    "forks": {
+     "Repair": {
+      "by": "roll",
+      "branches": [
+       {
+        "name": "Success"
+       },
+       {
+        "name": "Fail"
+       }
+      ]
+     }
+    },
+    "took": {
+     "Repair": "Fail"
+    },
+    "started": true,
+    "journal": [
+     {
+      "i": 0,
+      "index": 0,
+      "aside": null
+     },
+     {
+      "i": 7,
+      "index": 1,
+      "aside": null,
+      "who": "hand",
+      "at": "2026-10-05T04:35:19.005Z"
+     },
+     {
+      "i": 9,
+      "index": 2,
+      "aside": null,
+      "who": "roll",
+      "at": "2026-10-05T04:35:19.007Z",
+      "took": {
+       "Repair": "Fail"
+      },
+      "ended": {
+       "step": "Repair",
+       "branch": "Fail",
+       "i": 9
+      }
+     }
+    ],
+    "startedAt": {
+     "i": 3,
+     "at": "2026-10-05T04:35:19.002Z",
+     "why": "Relationship reaches Friends"
+    },
+    "lastAuto": {
+     "name": "The Broken Fuse",
+     "fromIndex": 1,
+     "toIndex": 2,
+     "fromAside": null,
+     "toAside": null,
+     "quote": "We fix the fuse together",
+     "reason": "test",
+     "confidence": "high",
+     "at": "2026-10-05T04:35:19.007Z",
+     "message": 9
+    },
+    "branchLog": [
+     {
+      "step": "Repair",
+      "branch": "Fail",
+      "i": 9
+     }
+    ],
+    "ended": {
+     "step": "Repair",
+     "branch": "Fail",
+     "i": 9
+    }
+   },
+   {
+    "id": "secret",
+    "name": "Kettle's Secret",
+    "steps": [
+     "Hidden",
+     "Revealed"
+    ],
+    "direction": "forward",
+    "skip": false,
+    "index": 0,
+    "aside": null,
+    "starts": [
+     {
+      "ext": {
+       "tracker": "rel",
+       "step": "s4",
+       "odds": 2,
+       "line": "start|secret|{\"step\":\"s4\",\"tracker\":\"rel\"}"
+      }
+     }
+    ],
+    "started": false,
+    "journal": [
+     {
+      "i": 0,
+      "index": 0,
+      "aside": null
+     }
+    ]
+   }
+  ]
+ },
+ "board": {
+  "v": 2,
+  "name": "Engine test",
+  "folders": [],
+  "trackers": [
+   {
+    "id": "rel",
+    "name": "Relationship",
+    "direction": "both",
+    "steps": [
+     {
+      "id": "s1",
+      "name": "Strangers"
+     },
+     {
+      "id": "s2",
+      "name": "Neighbours",
+      "detours": [
+       {
+        "id": "nui",
+        "name": "Nuisance"
+       }
+      ]
+     },
+     {
+      "id": "s3",
+      "name": "Friends",
+      "fork": {
+       "by": "story",
+       "branches": [
+        {
+         "id": "conf",
+         "name": "Confesses",
+         "entries": [
+          "Rel · Confession"
+         ]
+        },
+        {
+         "id": "chick",
+         "name": "Chickens out"
+        }
+       ]
+      }
+     },
+     {
+      "id": "s4",
+      "name": "Sweethearts"
+     },
+     {
+      "id": "s5",
+      "name": "Married",
+      "needs": [
+       {
+        "tracker": "fuse",
+        "step": "c3"
+       }
+      ]
+     }
+    ],
+    "triggers": [
+     {
+      "tracker": "fuse",
+      "step": "c2",
+      "to": "s2"
+     }
+    ]
+   },
+   {
+    "id": "fuse",
+    "name": "The Broken Fuse",
+    "direction": "forward",
+    "starts": [
+     {
+      "tracker": "rel",
+      "step": "s3"
+     }
+    ],
+    "steps": [
+     {
+      "id": "c1",
+      "name": "Calm"
+     },
+     {
+      "id": "c2",
+      "name": "Sparks"
+     },
+     {
+      "id": "c3",
+      "name": "Repair",
+      "fork": {
+       "by": "roll",
+       "branches": [
+        {
+         "id": "ok",
+         "name": "Success",
+         "weight": 1
+        },
+        {
+         "id": "fail",
+         "name": "Fail",
+         "weight": 1
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "secret",
+    "name": "Kettle's Secret",
+    "direction": "forward",
+    "starts": [
+     {
+      "tracker": "rel",
+      "step": "s4",
+      "odds": 2
+     }
+    ],
+    "steps": [
+     {
+      "id": "h1",
+      "name": "Hidden"
+     },
+     {
+      "id": "h2",
+      "name": "Revealed"
+     }
+    ]
+   },
+   {
+    "id": "stash",
+    "kind": "collection",
+    "name": "Kitchen stash",
+    "amounts": true,
+    "states": [
+     {
+      "id": "no",
+      "label": "not yet"
+     },
+     {
+      "id": "have",
+      "label": "have"
+     },
+     {
+      "id": "used",
+      "label": "used up"
+     }
+    ],
+    "items": [
+     {
+      "id": "tape",
+      "name": "Tape"
+     }
+    ]
+   },
+   {
+    "id": "where",
+    "kind": "place",
+    "name": "Where",
+    "places": [
+     {
+      "id": "kitchen",
+      "name": "Kitchen"
+     },
+     {
+      "id": "pantry",
+      "name": "Pantry"
+     }
+    ]
+   }
+  ]
+ },
+ "expected": {
+  "0": [
+   "Relationship: Strangers",
+   "The Broken Fuse: Calm [waiting]",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "1": [
+   "Relationship: Neighbours (Nuisance)",
+   "The Broken Fuse: Calm [waiting]",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "2": [
+   "Relationship: Neighbours (Nuisance)",
+   "The Broken Fuse: Calm [waiting]",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "3": [
+   "Relationship: Friends",
+   "The Broken Fuse: Calm",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "4": [
+   "Relationship: Friends",
+   "The Broken Fuse: Calm",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "5": [
+   "Relationship: Sweethearts {Friends→Confesses}",
+   "The Broken Fuse: Calm",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "6": [
+   "Relationship: Sweethearts {Friends→Confesses}",
+   "The Broken Fuse: Calm",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "7": [
+   "Relationship: Neighbours",
+   "The Broken Fuse: Sparks",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "8": [
+   "Relationship: Neighbours",
+   "The Broken Fuse: Sparks",
+   "Kettle's Secret: Hidden [waiting]"
+  ],
+  "9": [
+   "Relationship: Neighbours",
+   "The Broken Fuse: Repair [ended] {Repair→Fail}",
+   "Kettle's Secret: Hidden [waiting]"
+  ]
+ }
+}

@@ -20,6 +20,10 @@
 export function shouldBailDrawerDismiss(target, panel, doc = (typeof document !== 'undefined' ? document : null)) {
     if (!target) return true;                           // defensive: no target → don't dismiss
     if (!target.closest) return true;                   // not a real element (text node, etc.)
+    // Bug hunt 2026-10-16: a button that redraws its own part of the panel on click (the phone's Filters fold, a Lore row,
+    // a chip) is already out of the page when the click reaches the document — it was inside the panel a moment ago, so
+    // it must not count as "outside" (on a phone every such tap closed the side panel).
+    if (target.isConnected === false) return true;
     if (panel && panel.contains && panel.contains(target)) return true;    // inside the panel itself
     // Drawer toggle / icon — those have their own handlers; outside-click must not interfere.
     if (target.closest('.drawer-toggle, #deeploreDrawerIcon')) return true;
@@ -35,6 +39,9 @@ export function shouldBailDrawerDismiss(target, panel, doc = (typeof document !=
     //   - `.ui-dialog` is the legacy jQuery-UI dialog class still used by a few
     //     ST surfaces (kept for forward-compat; cheap to include).
     if (target.closest('dialog.popup, .popup, .toast, .toast-container, dialog[open], .ui-dialog')) return true;
+    // Overhaul 2a (2026-10-15): DeepLore's own bar, menus, windows, pickers and notices belong to the panel too —
+    // a tap on the bar's side-panel button must not open and then close the panel in the same tap (phone).
+    if (target.closest('#dle-bar, .dk-menu, .dk-scrim, .dk-epick, .dk-swpick, .dk-notices')) return true;
     // Defense in depth: if any dialog is open anywhere on the page and contains
     // the click target, bail. Catches cases where a popup root lacks .popup
     // (custom dialogs from third-party extensions, polyfilled <dialog>).

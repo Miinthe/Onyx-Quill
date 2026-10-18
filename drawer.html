@@ -81,6 +81,15 @@
             <i class="fa-solid fa-shuffle" aria-hidden="true"></i>
             <span class="dle-action-label" data-i18n="dle_reroll_button">Reroll Lore</span>
         </button>
+        <!-- LOCAL PATCH 2026-08-03: start a new run (instance) in one action. Opens a fresh
+             SillyTavern chat and carries this chat's DeepLore setup into it — character,
+             folder filter — with the instance letter bumped. A new ST chat otherwise starts
+             with no context and no folder filter at all, so the whole setup was re-entered
+             by hand every restart. Always confirms before acting. -->
+        <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="new-run" title="Start a new run — new chat, next instance letter, same folders" aria-label="Start a new run">
+            <i class="fa-solid fa-forward-step" aria-hidden="true"></i>
+            <span class="dle-action-label">New Run</span>
+        </button>
         <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="skip-tools" title="Skip Librarian tools for next generation" aria-label="Skip Librarian tools for next generation" data-i18n="[title]dle_skip_librarian_tooltip;[aria-label]dle_skip_librarian_tooltip">
             <i class="fa-solid fa-ban" aria-hidden="true"></i>
             <span class="dle-action-label" data-i18n="dle_skip_librarian_button">Skip Librarian</span>
@@ -117,6 +126,30 @@
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
             <span class="dle-tab-text" data-i18n="dle_gating_tab_label">Filters</span>
             <span class="dle-tab-badge" data-badge="gating" aria-hidden="true"></span>
+        </button>
+        <!-- LOCAL PATCH (Miinthe, 2026-10-02): Story tab — story trackers. Not a filter. -->
+        <button type="button" class="dle-tab" id="dle-tab-story" data-tab="story" role="tab"
+                aria-selected="false" aria-controls="dle-panel-story" aria-label="Story — where the story stands" tabindex="-1">
+            <i class="fa-solid fa-stairs" aria-hidden="true"></i>
+            <span class="dle-tab-text">Story</span>
+        </button>
+        <!-- LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆, the co-writer (mero/mero.html, mounted by src/mero-window.js) -->
+        <button type="button" class="dle-tab" id="dle-tab-mero" data-tab="mero" role="tab"
+                aria-selected="false" aria-controls="dle-panel-mero" aria-label="Mero — your co-writer" tabindex="-1">
+            <i class="fa-solid fa-star" aria-hidden="true"></i>
+            <span class="dle-tab-text">Mero</span>
+        </button>
+        <!-- LOCAL PATCH (Miinthe, 2026-10-13): What changed — every change, newest first (src/changes-tab.js) -->
+        <button type="button" class="dle-tab" id="dle-tab-changes" data-tab="changes" role="tab"
+                aria-selected="false" aria-controls="dle-panel-changes" aria-label="What changed — every change the board and the Cast made, with Undo" tabindex="-1">
+            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+            <span class="dle-tab-text">Changes</span>
+        </button>
+        <!-- LOCAL PATCH (Miinthe, 2026-10-13): the Cast — NPCs, the speaking queue (src/cast-tab.js) -->
+        <button type="button" class="dle-tab" id="dle-tab-cast" data-tab="cast" role="tab"
+                aria-selected="false" aria-controls="dle-panel-cast" aria-label="Cast — the people in the story and who speaks next" tabindex="-1">
+            <i class="fa-solid fa-masks-theater" aria-hidden="true"></i>
+            <span class="dle-tab-text">Cast</span>
         </button>
         <button type="button" class="dle-tab" id="dle-tab-librarian" data-tab="librarian" role="tab"
                 aria-selected="false" aria-controls="dle-panel-librarian" aria-label="Librarian — lore gap inbox and draft review" tabindex="-1">
@@ -219,7 +252,18 @@
                 <div data-i18n="dle_search_syntax_combine">Combine prefixes with spaces. Plain words match title/keys/content.</div>
             </div>
         </details>
-        <div class="dle-browse-filters">
+        <!-- LOCAL PATCH 2026-08-03 (Miinthe): collapsible filter block. On a phone the filter row
+             cost most of a screen before any entry was visible. Shown only on mobile (CSS
+             hides it otherwise); the count keeps active filters visible while collapsed, so
+             nothing can filter the list silently — the failure mode that made three chats
+             inject nothing for weeks. -->
+        <button type="button" class="dle-filters-toggle" aria-expanded="false" aria-controls="dle-browse-filters" aria-label="Show or hide filters">
+            <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+            <span class="dle-filters-toggle-label">Filters</span>
+            <span class="dle-filters-count" aria-hidden="true"></span>
+            <i class="fa-solid fa-chevron-down dle-filters-caret" aria-hidden="true"></i>
+        </button>
+        <div class="dle-browse-filters" id="dle-browse-filters">
             <select class="text_pole dle-browse-filter-select" data-filter="status" aria-label="Filter by status" data-i18n="[aria-label]dle_status_filter_aria">
                 <option value="all" data-i18n="dle_status_all">Status (all)</option>
                 <option value="injected" data-i18n="dle_analytics_col_injected">Injected</option>
@@ -236,6 +280,13 @@
             <select class="text_pole dle-browse-filter-select" data-filter="folder" aria-label="Filter by folder" data-i18n="[aria-label]dle_browse_filter_folder_aria">
                 <option value="" data-i18n="dle_browse_filter_folder_all">Folder (all)</option>
             </select>
+            <!-- LOCAL PATCH 2026-08-03 (Miinthe): jump straight to the inbox. It is the folder
+                 entries are almost always moved OUT of, so it is the source side of the same
+                 workflow as the per-row move button. Toggles — press again to return to the
+                 previous scope. Hidden entirely when the vault has no inbox folder. -->
+            <button type="button" class="dle-browse-inbox-btn menu_button" aria-label="Show inbox entries" aria-pressed="false" title="Jump to the inbox" style="display:none">
+                <i class="fa-solid fa-inbox" aria-hidden="true"></i><span class="dle-inbox-count"></span>
+            </button>
             <span class="dle-browse-custom-filters"></span>
             <select class="text_pole dle-browse-sort-select" data-sort aria-label="Sort entries by priority, name, or token count" data-i18n="[aria-label]dle_sort_aria">
                 <option value="priority_asc" data-i18n="dle_sort_priority">Default (Priority)</option>
@@ -323,6 +374,8 @@
                 Full View <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
             </button>
         </div>
+        <!-- LOCAL PATCH (Miinthe, 2026-10-04): this character's folders and switches (WIP until the Filters hub) -->
+        <div class="dle-char-card" aria-label="This character"></div>
         <div class="dle-gating-folder-section" aria-label="Folder filter" data-i18n="[aria-label]dle_folder_filter_aria">
             <div class="dle-gating-folder-header">
                 <span class="dle-gating-dot dle-gating-dot-empty dle-folder-dot" aria-hidden="true"></span>
@@ -338,6 +391,40 @@
             <!-- Dynamically populated by renderGatingTab() based on fieldDefinitions -->
         </div>
 
+    </div>
+
+    <!-- ─── Tab: Story (LOCAL PATCH, Miinthe 2026-10-02) — story trackers ─── -->
+    <!-- LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆ — the page lives in an iframe; popped out, a note stays here -->
+    <div class="dle-tab-panel" id="dle-panel-mero" data-tab="mero" role="tabpanel" aria-labelledby="dle-tab-mero">
+        <div class="dle-mero-mount"></div>
+        <div class="dle-mero-away" hidden>
+            <p><b>☆ Mero is in her own window.</b> Move it anywhere; the corner resizes it.</p>
+            <p><button type="button" class="menu_button dle-mero-back">⇲ Back into the side panel</button></p>
+        </div>
+    </div>
+    <div class="dle-tab-panel" id="dle-panel-changes" data-tab="changes" role="tabpanel" aria-labelledby="dle-tab-changes">
+        <div class="dle-changes-mount"></div>
+    </div>
+    <div class="dle-tab-panel" id="dle-panel-cast" data-tab="cast" role="tabpanel" aria-labelledby="dle-tab-cast">
+        <div class="dle-cast-mount"></div>
+    </div>
+    <div class="dle-tab-panel" id="dle-panel-story" data-tab="story"
+         role="tabpanel" aria-labelledby="dle-tab-story">
+        <div class="dle-panel-toolbar">
+            <span class="dle-text-sm">Story</span>
+            <button type="button" class="menu_button dle-autotrack-toggle" title="When on, trackers move by themselves when the story plainly says so — with the quote and an Undo" aria-label="Trackers follow the story"></button>
+            <button type="button" class="menu_button menu_button_icon dle-reevaluate" title="Re-evaluate and swipe (WIP — its real home is the DeepLore bar): undo what the newest turn changed on the board, ask the helper and the judge again, write a new swipe" aria-label="Re-evaluate and swipe">
+                <i class="fa-solid fa-rotate-right" aria-hidden="true"></i><span class="dle-wip">WIP</span>
+            </button>
+            <button type="button" class="menu_button menu_button_icon dle-board-open" title="Open the storyboard" aria-label="Open the storyboard">
+                <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="menu_button menu_button_icon dle-tracker-add" title="New tracker" aria-label="New story tracker">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="dle-story-list" aria-label="Story trackers"></div>
+        <div class="dle-story-hint dle-text-xs dle-muted">Trackers follow where the story stands — a relationship, a plot. They move by themselves when the story plainly says so (with the line that did it, and Undo), or by hand with ◀ ▶. The current step is told to the writer and to the lore judge. They never hide or filter anything.</div>
     </div>
 
     <!-- ─── Tab: Librarian (lore gap inbox) ─── -->
@@ -367,7 +454,7 @@
             </label>
             <span class="dle-librarian-select-count dle-text-xs dle-muted" aria-live="polite"></span>
             <div class="dle-librarian-bulk-actions" role="group" aria-label="Selection actions" data-i18n="[aria-label]dle_librarian_bulk_actions_aria">
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-action" data-librarian-action="open" title="Open the selected gap in the Librarian editor" aria-label="Open selected gap" disabled data-i18n="[title]dle_librarian_open_tooltip;[aria-label]dle_librarian_open_label">
+                <button type="button" class="dle-librarian-bulk-btn dle-librarian-action" data-librarian-action="open" title="Open the selected gap in the editor" aria-label="Open selected gap" disabled data-i18n="[title]dle_librarian_open_tooltip;[aria-label]dle_librarian_open_label">
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> <span data-i18n="dle_librarian_open_label">Open</span>
                 </button>
                 <button type="button" class="dle-librarian-bulk-btn dle-librarian-action" data-librarian-action="done" title="Mark selected as written" aria-label="Mark selected as written" disabled data-i18n="[title]dle_librarian_done_tooltip;[aria-label]dle_librarian_mark_done_label">

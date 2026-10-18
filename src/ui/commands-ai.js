@@ -1,7 +1,5 @@
 /** DeepLore — Slash Commands: AI Features */
 import {
-    sendMessageAsUser,
-    Generate,
     chat,
     eventSource,
     event_types,
@@ -14,8 +12,8 @@ import { SlashCommandArgument, ARGUMENT_TYPE } from '../../../../../slash-comman
 import { SlashCommandEnumValue } from '../../../../../slash-commands/SlashCommandEnumValue.js';
 import { classifyError, NO_ENTRIES_MSG, yamlEscape } from '../../core/utils.js';
 import { getSettings, getPrimaryVault, resolveConnectionConfig } from '../../settings.js';
-import { vaultIndex, scribeInProgress, setIndexTimestamp, setSkipNextPipeline, loreGaps, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
-import { buildIndex, ensureIndexFresh, getMaxResponseTokens } from '../vault/vault.js';
+import { vaultIndex, scribeInProgress, setIndexTimestamp, loreGaps, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
+import { buildIndex, ensureIndexFresh } from '../vault/vault.js';
 import { runScribe } from '../ai/scribe.js';
 import { runAutoSuggest, showSuggestionPopup } from '../ai/auto-suggest.js';
 import { optimizeEntryKeys, showOptimizePopup } from './popups.js';
@@ -138,43 +136,24 @@ export function registerAiCommands() {
                 return '';
             }
 
-            const settings = getSettings();
             const totalTokens = reviewEntries.reduce((sum, e) => sum + e.tokenEstimate, 0);
 
+            // Miinthe 2026-10-18: the review used to go into the story chat as her message and stay there (sent with every
+            // later reply). It is a talk with Mero now — the story chat stays as it was.
             const confirmed = await callGenericPopup(
-                `<p>This will send <b>${reviewEntries.length}</b> entries (~${totalTokens} tokens) as a visible user message and generate an AI response.</p>
-                <p class="dle-text-xs dle-muted">Warning: The review message will remain in chat history and may influence subsequent AI responses. Consider starting a new chat or deleting the messages afterward if you don't want this.</p>
-                <p>This may be expensive. Continue?</p>`,
+                `<p>Mero reads all <b>${reviewEntries.length}</b> entries (~${totalTokens} tokens) in a new talk, on her own connection. Your story chat stays as it is.</p>
+                <p class="dle-text-xs dle-muted">The whole vault goes along with every answer in that talk, so each one may take a while.</p>
+                <p>Start the review?</p>`,
                 POPUP_TYPE.CONFIRM, '', {},
             );
             if (!confirmed) return '';
 
-            const loreDump = reviewEntries.map(entry => {
-                return `## ${entry.title}\n${entry.content}`;
-            }).join('\n\n---\n\n');
-
-            const responseTokens = settings.reviewResponseTokens > 0
-                ? settings.reviewResponseTokens
-                : getMaxResponseTokens();
-            const budgetHint = `\n\nKeep your response under ${responseTokens} tokens.`;
-            const defaultQuestion = 'Review this lorebook/world-building vault. Comment on consistency, gaps, interesting connections between entries, and any suggestions for improvement.';
-            const question = (userPrompt && userPrompt.trim()) ? userPrompt.trim() : defaultQuestion;
-
-            const message = `[DeepLore Review — ${reviewEntries.length} entries, ~${totalTokens} tokens]\n\n${loreDump}\n\n---\n\n${question}${budgetHint}`;
-            if (settings.debugMode) {
-                console.log('[DLE] Lore review prompt:', message);
-            }
-
-            toastr.info(`Sending ${reviewEntries.length} entries (~${totalTokens} tokens)...`, 'DeepLore', { timeOut: 5000 });
-
-            // Bypass DLE pipeline for this generation — review prompt is the entire vault.
-            setSkipNextPipeline(true);
-            try {
-                await sendMessageAsUser(message, '');
-                await Generate('normal');
-            } finally {
-                setSkipNextPipeline(false);
-            }
+            const { startVaultReview } = await import('../mero.js');
+            const { openMeroTalk } = await import('../mero-window.js');
+            const r = startVaultReview(userPrompt);
+            if (r.error) { toastr.warning(r.error, 'DeepLore'); return ''; }
+            openMeroTalk(r.talk.id);
+            r.done.then(res => { if (!res?.ok) toastr.warning(`Mero could not answer: ${res?.error || 'no answer'}`, 'DeepLore'); });
 
             return '';
             } catch (err) {
@@ -188,7 +167,7 @@ export function registerAiCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: false,
         })],
-        helpString: 'Send the entire vault to the AI for review and feedback. Usage: /dle-review <question>. Example: /dle-review What inconsistencies do you see?',
+        helpString: 'Have Mero review your entire vault in a new talk (nothing goes into the story chat). Usage: /dle-review <question>. Example: /dle-review What inconsistencies do you see?',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
@@ -387,7 +366,13 @@ export async function summarizeEntries(entries) {
         toastr.info(`Generating summary ${i + 1}/${entries.length}: "${entry.title}"...`, 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
 
         try {
-            const systemPrompt = 'You are a lore librarian. Write a concise AI search summary (max 600 chars) for the following lorebook entry. The summary should answer: What is this? When should it be selected? Key relationships? Do NOT include physical descriptions or atmospheric prose. Write for an AI that needs to decide whether to inject this entry.';
+            // LOCAL PATCH 2026-08-03 (Miinthe): rewritten. The old prompt said "max 600 chars"
+            // (read as a target — real summaries came out at a median of 562) and asked it to
+            // answer "What is this?" first, which is exactly what produced the useless
+            // preamble every summary opened with: "This is a session summary documenting…".
+            // It also never forbade spoilers, so retrieval lines were giving away the twists
+            // the entries exist to guard — against the vault's own rule 13.
+            const systemPrompt = 'You are a retrieval librarian. Write ONE sentence, under 40 words, telling an AI WHEN to select this lorebook entry.\n\nRules:\n- Start with the trigger, not with what the entry is. Never begin with "This entry", "This is", "A session log", "This details" or anything similar.\n- Name concrete things that would actually appear in a scene: people, places, objects, events, topics of conversation.\n- Do NOT reveal twists, secrets, or outcomes the entry exists to guard. Name the subject, never the answer.\n- No physical description, no atmosphere, no plot recap.\n\nOutput the sentence only.';
             const userMsg = `Entry: ${entry.title}\n\nContent:\n${entry.content.substring(0, 3000)}`;
 
             // Breaker probe per call. If open (or probe taken), skip this entry but keep
@@ -414,7 +399,9 @@ export async function summarizeEntries(entries) {
             // an unexpected shape. Bare .trim() would throw and crash the per-entry loop.
             const responseText = (result && typeof result.text === 'string') ? result.text : '';
 
-            const summary = responseText.trim().substring(0, 600);
+            // LOCAL PATCH 2026-08-03 (Miinthe): 600 -> 400. A safety net, not a target; the
+            // prompt above asks for well under this.
+            const summary = responseText.trim().substring(0, 400);
             if (!summary) {
                 failed++;
                 continue;
@@ -482,7 +469,20 @@ export async function summarizeEntries(entries) {
                 if (endIdx > 0) {
                     const fmSection = fileContent.substring(0, endIdx);
                     const rest = fileContent.substring(endIdx);
-                    const cleaned = fmSection.replace(/^summary:.*$/m, '').replace(/\n{3,}/g, '\n\n');
+                    // LOCAL PATCH 2026-08-02 (Miinthe): `/^summary:.*$/m` removed only the FIRST
+                    // LINE of the old summary. When that summary was a multi-line YAML block
+                    // (`summary: |` followed by indented prose) the header vanished and the
+                    // indented text stayed behind, orphaned inside the frontmatter with no key
+                    // holding it. A new `summary:` was then appended after the wreckage.
+                    // Result: junk absorbed into whatever key preceded it — one session note
+                    // silently gained five sentence-long "keys" — and the file stopped parsing
+                    // under strict YAML. It happened three times to the same entry (2026-07-27
+                    // twice, found again 2026-08-02). This consumes the whole block: the
+                    // `summary:` line plus every following indented or blank line, stopping at
+                    // the next real key at column 0.
+                    const cleaned = fmSection
+                        .replace(/^summary:.*(?:\n(?:[ \t]+.*|[ \t]*))*$/m, '')
+                        .replace(/\n{3,}/g, '\n\n');
                     fileContent = cleaned + `summary: ${yamlEscape(finalSummary)}\n` + rest;
                 }
             }

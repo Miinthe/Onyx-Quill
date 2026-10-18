@@ -162,6 +162,17 @@ export async function listPromptsFolder(host, port, apiKey, prefix, useHttps = f
     try {
         const folderForUrl = sanitized.replace(/\/$/, '');
         const normalizedFolder = validateVaultPath(folderForUrl);
+        // Look down from the vault root first: asking for a folder that isn't there answers 404, which the browser
+        // prints as a red error on every page load (bug hunt 2026-10-17). Each parent listing is small and always exists.
+        const parts = normalizedFolder.split('/').filter(Boolean);
+        for (let i = 0; i < parts.length; i++) {
+            const parent = parts.slice(0, i).join('/');
+            const up = await obsidianFetch({ host, port, apiKey, https: useHttps, path: parent ? `/vault/${encodeVaultPath(parent)}/` : '/vault/', method: 'GET' });
+            if (up.status !== 200) break;   // can't tell: ask for the folder itself, as before
+            let names = [];
+            try { names = JSON.parse(up.data)?.files || []; } catch { break; }
+            if (!names.includes(`${parts[i]}/`)) return { ok: true, files: [] };   // folder absent → no overrides
+        }
         const result = await obsidianFetch({
             host,
             port,

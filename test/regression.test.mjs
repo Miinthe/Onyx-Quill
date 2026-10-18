@@ -3960,9 +3960,10 @@ test('H-3-5: runPipeline threads bootstrapActive into buildExemptionPolicy call 
     const externalStart = src.indexOf('export async function matchTextForExternal');
     const runBody = src.slice(runStart, externalStart);
 
-    // Match: buildExemptionPolicy(vaultSnapshot, pins, blocks, bootstrapActive)
-    const callSiteOk = /buildExemptionPolicy\(\s*vaultSnapshot\s*,\s*pins\s*,\s*blocks\s*,\s*bootstrapActive\s*\)/.test(runBody);
-    assert(callSiteOk, 'H-3-5: runPipeline must call buildExemptionPolicy(vaultSnapshot, pins, blocks, bootstrapActive)');
+    // Match: buildExemptionPolicy(fullSnapshot, pins, blocks, bootstrapActive) — LOCAL PATCH 2026-10-05: the
+    // policy is built from the whole (unfiltered) snapshot, because the folder filter now runs first and needs it
+    const callSiteOk = /buildExemptionPolicy\(\s*fullSnapshot\s*,\s*pins\s*,\s*blocks\s*,\s*bootstrapActive\s*\)/.test(runBody);
+    assert(callSiteOk, 'H-3-5: runPipeline must call buildExemptionPolicy(fullSnapshot, pins, blocks, bootstrapActive)');
 });
 
 test('H-3-6: post-pipeline policy in index.js threads bootstrapActive from trace (static guard)', async () => {
@@ -4030,8 +4031,12 @@ test('PERF-P2-4: runPipeline source contains exactly one in-function buildExempt
     assertEqual(matches.length, 1, 'PERF-P2-4: runPipeline must call buildExemptionPolicy exactly once (cached policy)');
 
     // Sanity check: the single call uses vaultSnapshot, not a narrower candidate set.
-    const callSiteOk = /buildExemptionPolicy\(\s*vaultSnapshot\s*,/.test(runBody);
-    assert(callSiteOk, 'PERF-P2-4: the single call must pass vaultSnapshot (not aiOnlyCandidates/twoStageCandidates/finalEntries)');
+    const callSiteOk = /buildExemptionPolicy\(\s*fullSnapshot\s*,/.test(runBody);   // LOCAL PATCH 2026-10-05: the whole snapshot (folder filter runs first)
+    assert(callSiteOk, 'PERF-P2-4: the single call must pass fullSnapshot (not aiOnlyCandidates/twoStageCandidates/finalEntries)');
+    // LOCAL PATCH 2026-10-05: the folder filter runs on the whole snapshot before any stage looks at it
+    assert(/const vaultSnapshot = folderFilter && folderFilter\.length > 0\s*\?\s*applyFolderFilter\(fullSnapshot, folderFilter, exemptionPolicy/.test(runBody), 'folder filter first: vaultSnapshot is the folder-filtered fullSnapshot');
+    assert(runBody.indexOf('const vaultSnapshot = folderFilter') < runBody.indexOf('hierarchicalPreFilter('), 'folder filter first: before the AI category pre-filter');
+    assert(runBody.indexOf('const vaultSnapshot = folderFilter') < runBody.indexOf('matchEntries(chat'), 'folder filter first: before keyword matching');
 
     // And matchTextForExternal still has its own call — it's a separate API, not affected by the optimization.
     const externalBody = src.slice(externalStart);
@@ -4711,6 +4716,32 @@ test('DRAWER-DISMISS-6: null/missing target is treated as bail (defensive — ne
     const doc = _makeFakeDoc([panel]);
     assertEqual(shouldBailDrawerDismiss(null, panel, doc), true, 'null target → bail');
     assertEqual(shouldBailDrawerDismiss({ /* no .closest */ }, panel, doc), true, 'non-element target → bail');
+});
+
+test('DRAWER-DISMISS-8 (overhaul 2a): DeepLore\'s own bar, menus and windows → BAIL (no open-and-close in one tap)', () => {
+    const panel = _makeEl({ id: 'deeplore-panel' });
+    const btn = _makeEl({ tag: 'button', classes: ['dle-db'] });
+    const bar = _makeEl({ id: 'dle-bar', children: [btn] });
+    const item = _makeEl({ tag: 'button', classes: ['dk-mi'] });
+    const menu = _makeEl({ classes: ['dk-menu'], children: [item] });
+    const win = _makeEl({ classes: ['dk-scrim'] });
+    const chatMsg = _makeEl({ classes: ['mes'] });
+    const doc = _makeFakeDoc([panel, bar, menu, win, chatMsg]);
+    assertEqual(shouldBailDrawerDismiss(btn, panel, doc), true, 'the bar');
+    assertEqual(shouldBailDrawerDismiss(item, panel, doc), true, 'a ⋯ menu item');
+    assertEqual(shouldBailDrawerDismiss(win, panel, doc), true, 'a DeepLore window');
+    assertEqual(shouldBailDrawerDismiss(chatMsg, panel, doc), false, 'the chat itself still closes the panel');
+});
+
+test('DRAWER-DISMISS-9 (bug hunt 2026-10-16): a target its own click took out of the page → BAIL (phone: a redrawn button)', () => {
+    const panel = _makeEl({ id: 'deeplore-panel' });
+    const gone = _makeEl({ tag: 'button', classes: ['dle-lv-ftoggle'] });
+    gone.isConnected = false;
+    const chatMsg = _makeEl({ classes: ['mes'] });
+    chatMsg.isConnected = true;
+    const doc = _makeFakeDoc([panel, chatMsg]);
+    assertEqual(shouldBailDrawerDismiss(gone, panel, doc), true, 'a detached button (redrawn by its own click) keeps the panel open');
+    assertEqual(shouldBailDrawerDismiss(chatMsg, panel, doc), false, 'a connected element outside still closes the panel');
 });
 
 test('DRAWER-DISMISS-7: click inside #deeplore-panel itself → BAIL (legit panel interaction)', () => {

@@ -2,7 +2,7 @@ import { amount_gen, getCurrentChatId } from '../../../../../../script.js';
 import { getSettings } from '../../settings.js';
 import {
     vaultIndex, librarianLastUsage,
-    aiSearchStats, isAiCircuitOpen, aiCircuitOpenedAt, resetAiCircuitBreaker,
+    aiSearchStats, isAiCircuitOpen, aiCircuitOpenedAt,
     indexEverLoaded, indexTimestamp, lastHealthResult,
 } from '../state.js';
 import { getCurrentForChat as getCurrentVerdictForChat } from '../verdict/verdict-store.js';
@@ -16,7 +16,6 @@ function _currentVerdictForChat() {
 }
 import { getCircuitState } from '../vault/obsidian-api.js';
 import { ds, formatTokensCompact, activityLog, announceToScreenReader, isDrawerVisible } from './drawer-state.js';
-import { callGenericPopup, POPUP_TYPE } from '../../../../../popup.js';
 import { tr } from '../i18n/i18n.js';
 
 const AI_CIRCUIT_COOLDOWN_MS = 30_000; // mirror state.js — drawer doesn't import the constant directly
@@ -43,17 +42,9 @@ let _lastActivityFeedRoot = null;
  */
 async function handleResetClick(e) {
     e?.preventDefault?.();
-    const confirmed = await callGenericPopup(
-        'Reset AI breaker?<br><br><span class="dle-text-xs dle-muted">Pending cooldown will be discarded. Next AI call attempts immediately.</span>',
-        POPUP_TYPE.CONFIRM, '', {},
-    );
-    if (!confirmed) return;
-    const result = resetAiCircuitBreaker();
-    if (result.wasOpen) {
-        toastr.success(result.hadPendingCooldown ? tr('dle_toast_breaker_reset_with_cooldown') : tr('dle_toast_breaker_reset_normal'), 'DeepLore');
-    } else {
-        toastr.info(tr('dle_toast_breaker_already_closed'), 'DeepLore');
-    }
+    // overhaul bug hunt 2026-10-16: one plain-words flow for the side panel and settings (settings-ui.js)
+    const { resetAiBreakerFlow } = await import('../ui/settings-ui.js');
+    await resetAiBreakerFlow();
     // Re-render so the conditional button hides without waiting for the next event.
     try { renderFooter(); } catch { /* drawer may be teardown-mid */ }
 }

@@ -48,7 +48,7 @@ function yamlSerializeValue(val) {
  */
 export function buildCopyButton(plainText) {
     const encoded = btoa(unescape(encodeURIComponent(plainText)));
-    return `<button type="button" class="menu_button dle-copy-btn dle-text-sm" data-copy="${encoded}">Copy to Clipboard</button>`;
+    return `<button type="button" class="menu_button dle-copy-btn dle-text-sm" data-copy="${encoded}" title="Copy all of this as text"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copy</button>`;
 }
 
 /** Idempotent — class-guarded to avoid duplicate listeners. */
@@ -62,7 +62,7 @@ export function attachCopyHandler(container) {
             const encoded = btn.dataset.copy;
             const text = decodeURIComponent(escape(atob(encoded)));
             await navigator.clipboard.writeText(text);
-            const original = btn.textContent;
+            const original = btn.innerHTML;
             btn.textContent = 'Copied!';
             btn.disabled = true;
             // Track timer on element + isConnected check: if popup closes before
@@ -71,7 +71,7 @@ export function attachCopyHandler(container) {
             btn._dleCopyResetTimer = setTimeout(() => {
                 btn._dleCopyResetTimer = null;
                 if (!btn.isConnected) return;
-                btn.textContent = original;
+                btn.innerHTML = original;
                 btn.disabled = false;
             }, 1500);
         } catch (err) {
@@ -81,7 +81,7 @@ export function attachCopyHandler(container) {
             btn._dleCopyResetTimer = setTimeout(() => {
                 btn._dleCopyResetTimer = null;
                 if (!btn.isConnected) return;
-                btn.textContent = 'Copy to Clipboard';
+                btn.innerHTML = '<i class="fa-solid fa-copy" aria-hidden="true"></i> Copy';
             }, 2000);
         }
     });

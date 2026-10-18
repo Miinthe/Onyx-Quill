@@ -174,7 +174,7 @@ export const AGENTIC_IMPORTANT_FINAL = [
 // AI search — two-stage selection prompt
 // ══════════════════════════════════════════════════════════════════════════
 
-export const AI_SEARCH_SYSTEM_PROMPT = `You are a lore librarian for a roleplay session. Given recent chat messages and a manifest of lore entries, select which entries are most relevant to inject into the current conversation context.
+export const AI_SEARCH_SYSTEM_PROMPT = `You are a lore curator for a roleplay session. Given recent chat messages and a manifest of lore entries, select which entries are most relevant to inject into the current conversation context.
 
 You may select up to {{maxEntries}} entries. Select fewer if not all are relevant.
 

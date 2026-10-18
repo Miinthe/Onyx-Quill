@@ -174,11 +174,11 @@ export async function bulkDeletePromptsThroughCage(connection, keys, onStatus) {
  * through to the status-only badge default below.
  */
 const PROMPT_ROW_RULES = {
-    'compiled-in:current_default':     { badge: { label: 'Default', tone: 'info' },                   actions: ['export-one'] },
-    'vault:current_default':           { badge: { label: 'Default', tone: 'info' },                   actions: ['revert-one'] },
-    'vault:stale_default':             { badge: { label: 'Stale Default', tone: 'warn' },             actions: ['update-one', 'revert-one'] },
-    'vault:customized':                { badge: { label: 'Customized', tone: 'ok' },                  actions: ['revert-one'] },
-    'vault:customized_stale_baseline': { badge: { label: 'Customized (stale baseline)', tone: 'warn' }, actions: ['revert-one'] },
+    'compiled-in:current_default':     { badge: { label: 'As it ships', tone: 'info' },                    actions: ['export-one'] },
+    'vault:current_default':           { badge: { label: 'As it ships', tone: 'info' },                    actions: ['revert-one'] },
+    'vault:stale_default':             { badge: { label: 'An older version', tone: 'warn' },               actions: ['update-one', 'revert-one'] },
+    'vault:customized':                { badge: { label: 'Changed by you', tone: 'ok' },                   actions: ['revert-one'] },
+    'vault:customized_stale_baseline': { badge: { label: 'Changed by you (from an older version)', tone: 'warn' }, actions: ['revert-one'] },
 };
 
 /**
@@ -187,30 +187,36 @@ const PROMPT_ROW_RULES = {
  * forgot to enumerate.
  */
 const PROMPT_STATUS_BADGE_FALLBACK = {
-    current_default: { label: 'Default', tone: 'info' },
-    stale_default: { label: 'Stale Default', tone: 'warn' },
-    customized: { label: 'Customized', tone: 'ok' },
-    customized_stale_baseline: { label: 'Customized (stale baseline)', tone: 'warn' },
+    current_default: { label: 'As it ships', tone: 'info' },
+    stale_default: { label: 'An older version', tone: 'warn' },
+    customized: { label: 'Changed by you', tone: 'ok' },
+    customized_stale_baseline: { label: 'Changed by you (from an older version)', tone: 'warn' },
 };
 
 /** Button factory entries. `data-prompt-action` is the key. */
 const PROMPT_ROW_ACTION_BUTTONS = {
-    'export-one': { icon: 'fa-file-export',           label: 'Export', title: 'Write this prompt to your vault for editing.' },
-    'revert-one': { icon: 'fa-rotate-left',           label: 'Revert', title: 'Delete this prompt file from your vault. The built-in default will be used.' },
-    'update-one': { icon: 'fa-arrow-up-from-bracket', label: 'Update', title: 'Replace the file with the current upstream default for this locale.' },
+    'export-one': { icon: 'fa-file-export',           label: 'Edit in vault', title: 'Write this prompt into your vault, where you can change it.' },
+    'revert-one': { icon: 'fa-rotate-left',           label: 'Back to default', title: 'Delete this prompt file from your vault. The one DeepLore ships is used again.' },
+    'update-one': { icon: 'fa-arrow-up-from-bracket', label: 'Update', title: 'Replace the file with the newest version DeepLore ships.' },
 };
 
 /**
- * Substantive prompts are multi-line, user-tunable prose. Fragments are short
- * agentic-loop structural strings (fence headers, tool descriptions). Both
- * are editable, but the UI groups fragments under a collapsible section so
- * the default tab view isn't a wall of one-liners.
+ * The old writer engine's prompts (greetings, its primer and Q&A script, the tool-loop pieces) belong to a feature that
+ * was retired — Mero doesn't use them. They stay loadable in code but are not listed (Miinthe, 2026-10-17: "remove any trace").
  */
-function classifyPromptKey(key) {
-    if (!key.startsWith('AGENTIC_')) return 'substantive';
-    if (key === 'AGENTIC_ROLE_SECTION') return 'substantive';
-    return 'fragment';
-}
+const RETIRED_PROMPT = /^(EMMA_|LIBRARIAN_|AGENTIC_)/;
+
+/** Plain names for the prompts that are listed. */
+const PROMPT_NAMES = {
+    AI_SEARCH_SYSTEM_PROMPT: 'The judge — picks the lore for each reply',
+    AI_NOTEPAD_PROMPT: 'AI notepad',
+    SCRIBE_PROMPT: 'Scribe — session notes',
+    AUTO_SUGGEST_PROMPT: 'New lore ideas',
+    OPTIMIZE_KEYS_PROMPT: 'Optimize keywords',
+    SUMMARIZE_PROMPT: 'Write missing summaries',
+};
+const promptName = key => PROMPT_NAMES[key] || key.toLowerCase().replace(/_prompt$/, '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+const SOURCE_WORDS = { 'compiled-in': 'built in', vault: 'your vault' };
 
 /**
  * Look up the badge + action set for a row. Falls through to the status-only
@@ -243,26 +249,14 @@ export function renderPromptsGrid($container) {
     const errors = getDlePromptErrors();
     const errorMap = new Map(errors.map(e => [e.key, e.reason]));
 
-    const substantive = [];
-    const fragments = [];
-    for (const row of rows) {
-        const enriched = { ...row, error: errorMap.get(row.key) || row.error || null };
-        if (classifyPromptKey(row.key) === 'substantive') substantive.push(enriched);
-        else fragments.push(enriched);
-    }
-    substantive.sort((a, b) => a.key.localeCompare(b.key));
-    fragments.sort((a, b) => a.key.localeCompare(b.key));
+    const listed = rows.filter(row => !RETIRED_PROMPT.test(row.key))
+        .map(row => ({ ...row, error: errorMap.get(row.key) || row.error || null }))
+        .sort((a, b) => promptName(a.key).localeCompare(promptName(b.key)));
 
     const html = [];
     html.push(`<div class="dle-prompts-grid-section">`);
-    html.push(`<h5 class="dle-settings-subsection-label">Substantive prompts (${substantive.length})</h5>`);
-    html.push(renderPromptRows(substantive));
+    html.push(renderPromptRows(listed));
     html.push(`</div>`);
-
-    html.push(`<details class="dle-prompts-grid-section">`);
-    html.push(`<summary class="dle-settings-subsection-label">Agentic-loop fragments (${fragments.length})</summary>`);
-    html.push(renderPromptRows(fragments));
-    html.push(`</details>`);
 
     $grid.html(html.join(''));
 }
@@ -278,7 +272,7 @@ function renderPromptRows(rows) {
     if (rows.length === 0) return '<p class="dle-section-desc"><em>None.</em></p>';
     const out = [];
     out.push('<table class="dle-prompts-grid-table">');
-    out.push('<thead><tr><th>Key</th><th>Source</th><th>Status</th><th class="dle-col-actions">Actions</th></tr></thead>');
+    out.push('<thead><tr><th>Prompt</th><th>Where it is</th><th>Version</th><th class="dle-col-actions"></th></tr></thead>');
     out.push('<tbody>');
     for (const row of rows) {
         const { badge, actions } = ruleFor(row);
@@ -287,8 +281,8 @@ function renderPromptRows(rows) {
             : '';
         const actionsHtml = actions.map(a => renderActionButton(a, row.key)).join(' ');
         out.push(`<tr>
-            <td><code>${escapeHtml(row.key)}</code>${errorIcon}</td>
-            <td>${escapeHtml(row.source)}</td>
+            <td title="File: ${escapeHtml(row.key)}.md">${escapeHtml(promptName(row.key))}${errorIcon}</td>
+            <td>${escapeHtml(SOURCE_WORDS[row.source] || row.source)}</td>
             <td><span class="dle-status" data-tone="${badge.tone}">${escapeHtml(badge.label)}</span></td>
             <td class="dle-col-actions">${actionsHtml}</td>
         </tr>`);

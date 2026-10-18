@@ -5,7 +5,7 @@
  * can import without standing up the harness.
  *
  * Row-model contract:
- *   [{ type: 'header', folder, count, expanded }, { type: 'entry', entry, folder }, ...]
+ *   [{ type: 'header', folder, count, expanded, groupIndex }, { type: 'entry', entry, folder, groupIndex }, ...]
  *
  * Headers are virtual-scrollable rows just like entries — they occupy a row
  * slot. When grouping is OFF, the row model is just flat entry rows (no headers).
@@ -15,17 +15,25 @@
 const ROOT_LABEL = '(root)';
 
 /**
- * Top-level folder bucket for an entry. Multi-segment paths bucket on the first
- * segment so 'Locations/Cities/Vire' groups under 'Locations'. Entries without
- * a folderPath bucket under '(root)'.
+ * Folder bucket for an entry — the entry's OWN folder, full path.
+ *
+ * LOCAL PATCH 2026-08-03 (Miinthe): this used to bucket on the first path segment only, so
+ * 'Locations/Cities/Vire' grouped under 'Locations'. Where the subfolder IS the distinction
+ * that matters, that erases exactly what you are looking for: all 68 entries under
+ * `02 Regency` landed beneath a single header with base / modern / historical / dark
+ * indistinguishable — and which flavour an entry belongs to is the entire point of that
+ * scheme. Bucketing on the full path gives one header per real folder.
+ *
+ * The function name is kept so the four call sites (row model, collapse state, "select all
+ * in folder", nav-target resolution) stay consistent — they all ask "which bucket is this
+ * entry in", and they must all agree on the answer.
  *
  * @param {{folderPath?: string}} entry
  * @returns {string}
  */
 export function topFolderOf(entry) {
     if (!entry || !entry.folderPath) return ROOT_LABEL;
-    const seg = String(entry.folderPath).split('/')[0];
-    return seg || ROOT_LABEL;
+    return String(entry.folderPath) || ROOT_LABEL;
 }
 
 /**
@@ -60,17 +68,23 @@ export function buildBrowseRowModel(entries, opts = {}) {
     }
 
     const rows = [];
+    // LOCAL PATCH 2026-08-03 (Miinthe): stamp each group with its ordinal so the renderer can
+    // alternate the left accent bar between consecutive folders. It must come from the MODEL,
+    // not from render order — the list is virtualised, so the renderer only ever sees a
+    // window of rows and its own loop index would flip the colours as you scroll.
+    let groupIndex = 0;
     for (const folder of bucketOrder) {
         const group = buckets.get(folder);
         // Default expanded = true (no Set means everything open); explicit Set means
         // only listed folders are expanded.
         const expanded = expandedFolders ? expandedFolders.has(folder) : true;
-        rows.push({ type: 'header', folder, count: group.length, expanded });
+        rows.push({ type: 'header', folder, count: group.length, expanded, groupIndex });
         if (expanded) {
             for (const e of group) {
-                rows.push({ type: 'entry', entry: e, folder });
+                rows.push({ type: 'entry', entry: e, folder, groupIndex });
             }
         }
+        groupIndex++;
     }
     return rows;
 }

@@ -380,6 +380,17 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
 
     const customFields = extractCustomFields(frontmatter, fieldDefinitions || []);
 
+    // LOCAL PATCH (Miinthe, 2026-10-03): an entry linked to a story-tracker step
+    // (`tracker: Relationship` + `step: Friends`, or a list of steps) is only
+    // available while that tracker stands at one of those steps — see
+    // trackers-pure.js storyStepAllows.
+    let storyStep = null;
+    if (typeof frontmatter.tracker === 'string' && frontmatter.tracker.trim() && frontmatter.step != null) {
+        const steps = (Array.isArray(frontmatter.step) ? frontmatter.step : [frontmatter.step])
+            .map(s => String(s ?? '').trim()).filter(Boolean);
+        if (steps.length) storyStep = { tracker: frontmatter.tracker.trim(), steps };
+    }
+
     // Audit fix-up: if the user registered any of these snake_case names as
     // their own custom field via `field-definitions.yaml`, suppress the
     // WI-parity flag — their custom field is the source of truth, not the WI
@@ -465,6 +476,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
         folderPath,
         vaultSource: '',
         customFields,
+        storyStep,
         graph: frontmatter.graph !== false,
         selectiveLogic,
         _parserWarnings: warnings.length > 0 ? warnings : undefined,
