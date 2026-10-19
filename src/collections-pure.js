@@ -298,14 +298,15 @@ export function undoCollectionChange(board, st, logId) {
 }
 
 /** After a delete back to `messageIndex`: every change from a later message is rolled back. */
-export function rewindCollections(board, st, messageIndex) {
-    const later = arr(st?.log).filter(e => e.i > messageIndex);
+export function rewindCollections(board, st, messageIndex, keep = null) {
+    // keep (regen-pure.js): a regenerate's delete keeps changes made by hand or by the world (Miinthe, 2026-10-19)
+    const later = arr(st?.log).filter(e => e.i > messageIndex && !(keep && keep(e)));
     // a new thing still waiting for Miinthe's answer, found in a message that is gone, goes too
     const gone = Object.values(st?.collections || {}).some(c => arr(c?.pending).some(p => Number(p.m) > messageIndex));
     if (!later.length && !gone) return { state: st, undone: [] };
     const next = clone(st);
     for (const e of later.slice().reverse()) revert(board, next, e);
-    next.log = arr(next.log).filter(e => e.i <= messageIndex);
+    next.log = arr(next.log).filter(e => e.i <= messageIndex || (keep && keep(e)));
     for (const c of Object.values(next.collections || {})) if (c && Array.isArray(c.pending)) c.pending = c.pending.filter(p => !(Number(p.m) > messageIndex));
     return { state: next, undone: later };
 }

@@ -51,6 +51,9 @@ Show vault cache status: cached entry count, cache age, browser storage usage (I
 
 ---
 
+### `/dle-clear`
+Clear the vault cache AND the live index without re-fetching (wipe and stop). Run `/dle-refresh` to index again from Obsidian.
+
 ### `/dle-status`
 Show connection info, entry counts, AI search stats, and cache status in a popup.
 
@@ -373,6 +376,72 @@ Clear the folder filter, allowing entries from every folder again.
 
 ---
 
+## Storyboards and trackers
+
+See [[Storyboards]] for what these are.
+
+### `/dle-board [board name]`
+Open the storyboard window, or apply a board to this chat: `/dle-board Toaster & Kettle`.
+
+### `/dle-board-saveas`
+Save this chat's trackers as a new storyboard and use it here. The old one stays as it was.
+
+### `/dle-board-character [board name | off]`
+Default storyboard for new chats with this character: `/dle-board-character Toaster & Kettle` (`off` clears it).
+
+### `/dle-board-detach`
+Stop using the storyboard in this chat (it keeps its own copy of the trackers).
+
+### `/dle-board-off [chat | character | on]`
+Switch this chat's board off for this chat (default) or for its character. Nothing of the board runs there. `on` switches it back on.
+
+### `/dle-tracker [name = steps]`
+Make or edit a story tracker: `/dle-tracker Relationship = Strangers, Neighbours, Friends`. With no argument, it lists this chat's trackers.
+
+### `/dle-tracker-next [tracker]` and `/dle-tracker-back [tracker]`
+Move a story tracker one step on, or one step back. The name is optional when there is only one tracker.
+
+### `/dle-tracker-go <tracker = step>`
+Jump a story tracker to a step: `/dle-tracker-go Relationship = Friends`.
+
+### `/dle-tracker-aside <tracker = detour>`
+Set a detour beside a tracker's step, e.g. `/dle-tracker-aside Relationship = Nuisance`. Nothing after the `=` clears it.
+
+### `/dle-tracker-branch <tracker = branch>`
+Take a fork's branch by hand, e.g. `/dle-tracker-branch Relationship = Confesses`. The tracker must be waiting at that fork.
+
+### `/dle-tracker-run <tracker> <pause | continue | abandon | reactivate | undo>`
+In this chat only. **pause** keeps its step (not watched, not told, its lore hidden) · **continue** · **abandon** (back to the start, switched off) · **reactivate** (on again from the start) · **undo**.
+
+### `/dle-tracker-remove <tracker>`
+Remove a story tracker from this chat.
+
+### `/dle-tracker-rewind [message number]`
+Put every story tracker back to where it was at a message (default: the end of the chat).
+
+### `/dle-reevaluate`
+Re-evaluate and swipe: undo what the newest turn changed on the board, ask the helper and the judge again, then write a new swipe. The same as **Re-evaluate and swipe** on the [[DeepLore Bar]].
+
+### `/dle-engine-check`
+A developer check: compares the step trackers in the engine's list with the board's chat state. They should always agree.
+
+## Characters, chats and runs
+
+### `/dle-char-folders [run]`
+Pick the folders this chat's character reads (base). With `run`: the folders this run adds.
+
+### `/dle-char <on | off>`
+DeepLore for this chat's character: off, or on (follows its folders; no folders means off).
+
+### `/dle-chat <on | off | follow>`
+DeepLore for this chat only: on, off, or follow (like its character).
+
+### `/dle-char-status`
+What this chat reads and whether DeepLore is on.
+
+### `/dle-branch-run`
+Start this chat as the next run, copying the run's session notes and lore up to this point. (Each reply's 📖 → **Branch here as a new run** does this from a message.)
+
 ## Setup
 
 ### `/dle-setup`
@@ -427,3 +496,23 @@ Run the guided setup wizard: connect the Obsidian vault, configure the lorebook 
 | `/dle-set-folder [path...]` (`/dle-folder`) | Filter by Obsidian folder |
 | `/dle-clear-folder` | Clear folder filter |
 | `/dle-setup` | Run setup wizard |
+| `/dle-clear` | Wipe the cache and index without re-fetching |
+| `/dle-board [name]` | Open the board, or apply one to this chat |
+| `/dle-board-saveas` | Save this chat's trackers as a new board |
+| `/dle-board-character [name\|off]` | Default board for this character |
+| `/dle-board-detach` | Stop using the board in this chat |
+| `/dle-board-off [chat\|character\|on]` | Switch the board off or on |
+| `/dle-tracker [name = steps]` | Make, edit or list trackers |
+| `/dle-tracker-next` / `/dle-tracker-back` | Move a tracker a step |
+| `/dle-tracker-go <tracker = step>` | Jump a tracker to a step |
+| `/dle-tracker-aside <tracker = detour>` | Set or clear a detour |
+| `/dle-tracker-branch <tracker = branch>` | Take a fork's branch |
+| `/dle-tracker-run <tracker> <action>` | Pause, continue, abandon, reactivate, undo |
+| `/dle-tracker-remove <tracker>` | Remove a tracker from this chat |
+| `/dle-tracker-rewind [message]` | Put trackers back to a message |
+| `/dle-reevaluate` | Re-evaluate and swipe |
+| `/dle-char-folders [run]` | Pick the character's (or run's) folders |
+| `/dle-char <on\|off>` | DeepLore for this character |
+| `/dle-chat <on\|off\|follow>` | DeepLore for this chat |
+| `/dle-char-status` | What this chat reads |
+| `/dle-branch-run` | Start this chat as the next run |

@@ -252,17 +252,17 @@ export function rewindTurn(keep, start) {
  * otherwise null, and the journal does it as before. The list's own memory (journal, refusals, branch log) is pruned
  * as before. Returns { state, list, undone } without storing anything.
  */
-function v2Rewind(idx) {
+function v2Rewind(idx, keep = null) {
     const name = chat_metadata?.[BOARD_KEY];
     const rec = name ? boardStore()?.boards?.[name] : null;
     const raw = chat_metadata?.[STATE_KEY];
     if (!rec?.board || !raw?.v2steps || !Number.isFinite(raw.v2since) || idx < raw.v2since || idx < (Number.isFinite(raw.logDropped) ? raw.logDropped : -1)) return null;
     const board = normalizeBoardV2(rec.board, name);
-    const r = rewindCollectionsV2(board, normalizeStateV2(raw, board), idx);
+    const r = rewindCollectionsV2(board, normalizeStateV2(raw, board), idx, keep);
     const list = getTrackers();
     // ended / started-at come from the rolled-back v2 state alone (the list's own copy may be from after idx)
     const own = t => { const p = r.state.trackers?.[t.id] || {}; return { ended: p.ended ? { ...p.ended } : undefined, startedAt: p.startedAt ?? undefined }; };
-    const view = toEngineListV2(board, r.state, list).map(t => unbranchAfter({ ...t, ...own(t), journal: pruneAfter(t.journal, idx), refused: (t.refused || []).filter(x => x.i <= idx) }, idx));
+    const view = toEngineListV2(board, r.state, list).map(t => unbranchAfter({ ...t, ...own(t), journal: pruneAfter(t.journal, idx, keep), refused: (t.refused || []).filter(x => x.i <= idx) }, idx));
     return { state: r.state, list: [...view, ...list.filter(t => !view.some(v => v.id === t.id))], undone: r.undone };
 }
 const placeKey = t => JSON.stringify([describe(t), t.took && Object.keys(t.took).length ? t.took : {}, t.ended || null, t.run || null, !!t.started]);
@@ -583,19 +583,22 @@ export function setTracker(name, steps, { direction = null, rename = null, skip 
     save(list);
 }
 
-export function moveTracker(name, { delta = null, toIndex = null } = {}) {
+export function moveTracker(name, { delta = null, toIndex = null, who = 'hand' } = {}) {
     const list = getTrackers();
     const i = findIndex(list, name);
     if (i === -1) return { error: `No tracker called "${name}" in this chat.` };
     const target = toIndex !== null ? toIndex : list[i].index + (delta || 0);
     const to = Math.min(Math.max(Math.floor(target), 0), list[i].steps.length - 1);
     const unmet = unmetNeeds(list[i], to, list);
-    if (unmet.length) {
+    // news and rumors never push past what the board allows (bug hunt 2026-10-19); only a hand move may
+    if (unmet.length && who === 'world') return { error: `${list[i].steps[to]} isn't possible yet.` };
+    if (unmet.length && who === 'hand') {
         // By hand the author decides — allowed, but said out loud (a need not met, or a block locking the step).
         try { toastr.warning(`${escapeHtml(list[i].steps[to])} is normally only possible ${escapeHtml(unmet.map(n => n.text ? n.text : `once ${conditionText({ tracker: n.tracker, step: n.reach }, list)}`).join(' and '))}. Moved anyway, by hand.`, 'Storyboard', { escapeHtml: false }); } catch { /* noop */ }
     }
     // engine on v2, step 3b part 2: the move is made on the v2 state where it can be
-    const v2 = moveOnV2(list, i, (b, s, t) => moveStepV2(b, s, t, target), { who: 'hand', at: new Date().toISOString() });
+    // `who: 'world'`: a rumor or news moved it (world layer stage 5, only where the tracker's switch is on) — logged as the world's
+    const v2 = moveOnV2(list, i, (b, s, t) => moveStepV2(b, s, t, target), { who, at: new Date().toISOString() });
     if (!v2) return NO_BOARD;
     const n = getTrackers().find(x => x.id === v2.t.id) || v2.t;
     return { name: n.name, value: currentStep(n), index: n.index, count: n.steps.length };
@@ -718,15 +721,16 @@ let confirmOpen = false;
  * applies at once; on opening a chat it asks first, because a branch arrives
  * carrying its parent's newest state.
  */
-export async function reconcileTrackers({ prune = false, confirm = false } = {}) {
+export async function reconcileTrackers({ prune = false, confirm = false, keep = null } = {}) {
     // engine on v2, step 3 (2026-10-05): where the v2 log holds every move, the roll back comes from it alone
-    const v2 = v2Rewind(lastMessageIndex());
+    // keep: a regenerate's delete keeps hand and world changes (regen-pure.js, 2026-10-19)
+    const v2 = v2Rewind(lastMessageIndex(), keep);
     if (v2) return reconcileFromV2(v2, lastMessageIndex(), { prune, confirm });
     // the log doesn't reach back that far (over its cap) or there is no board: the board's own changes from later
     // messages go back; the trackers stay where they are
     if (prune) {
         try {
-            const undone = rewindLiveTo(lastMessageIndex());
+            const undone = rewindLiveTo(lastMessageIndex(), keep);
             if (undone.length) echo(() => toastr.info(`${undone.length} change${undone.length > 1 ? 's' : ''} on the board rolled back with the deleted messages.`, 'Storyboard'));
         } catch (err) { console.warn('[DLE] board rewind skipped:', err?.message || err); }
     }
@@ -936,7 +940,7 @@ export function registerTrackerCommands() {
             return m;
         },
         unnamedArgumentList: arg('storyboard name (empty: open the board window)'),
-        helpString: 'Open the storyboard window, or apply a board to this chat: /dle-board Toaster & Kettle',
+        helpString: 'Open the storyboard window, or apply a board to this chat: /dle-board My Story',
     });
     add({
         name: 'dle-board-saveas',
@@ -959,7 +963,7 @@ export function registerTrackerCommands() {
             toast(m, 'success'); return m;
         },
         unnamedArgumentList: arg('storyboard name, or off'),
-        helpString: 'Default storyboard for new chats with this character: /dle-board-character Toaster & Kettle (off clears it).',
+        helpString: 'Default storyboard for new chats with this character: /dle-board-character My Story (off clears it).',
     });
     add({
         name: 'dle-board-detach',

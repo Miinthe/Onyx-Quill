@@ -1,5 +1,7 @@
 # Librarian Subsystem Internals
 
+> **This fork (dev/board-model):** the Librarian code below still runs behind the scenes (gated by `librarianEnabled`, default `false`; the `search_lore` / `flag_lore` tools; `/dle-librarian`; `src/librarian/`). What the user sees has moved: the drawer's Librarian tab is hidden by `src/drawer/drawer-frame.js` (its renderer still runs in the hidden DOM), and lore gaps are shown as cards in Mero ☆ › Requests (`src/mero-window.js` reads `loreGaps` and uses `hideGap` / `dismissGap` / `persistGaps` from `librarian-tools.js`). The new settings window (`src/settings/`) has no Librarian switch; only the old settings popup and the setup wizard still set `librarianEnabled`. In the UI the co-writer is Mero ☆ (`mero/`, `src/mero*.js`), never "the Librarian".
+
 Code-level reference for the Librarian tool-calling subsystem. Intended for Claude Code
 to avoid regressions when modifying Librarian-related code.
 
@@ -142,7 +144,7 @@ Queries are trimmed, filtered, capped to 4 (in `searchLoreAction()` input normal
 2. Increment `loreGapSearchCount` IMMEDIATELY (in `searchLoreAction()`, right after the max-searches guard) -- before any await -- to prevent race when AI sends multiple concurrent search_lore calls.
 3. Await `buildPromise` if vault index still loading.
 4. BM25 search via `queryBM25(fuzzySearchIndex, query, librarianMaxResults, fuzzySearchMinScore)`.
-5. Filter out already-injected titles (from `getCurrentVerdict()?.injectedSources` — verdict store) and `guide` entries (in `searchLoreAction()` per-query BM25 hit filter).
+5. Filter out already-injected titles (from `_currentVerdictForChat()?.injectedSources` — a local helper in `librarian-tools.js` around the verdict store's `getCurrentForChat`) and `guide` entries (in `searchLoreAction()` per-query BM25 hit filter).
 6. Select single best hit (highest BM25 score across all queries), return full content.
 7. Resolve up to 3 linked entries from best hit's `resolvedLinks` -- manifest/summary format only.
 8. Report other match counts across remaining queries.
@@ -381,6 +383,8 @@ After migration, if `librarianEnabled && librarianShowToolCalls`, iterates all m
 ---
 
 ## 8. Drawer Librarian-tab UI (Flags list, v2.6)
+
+> **This fork:** this tab is hidden in the new side panel (`drawer-frame.js` hides `#dle-tab-librarian`); the gaps it lists are shown in Mero › Requests instead. The code below still renders into the hidden DOM.
 
 **File:** `src/drawer/drawer-render-librarian.js`, `src/drawer/drawer-events.js`, `drawer.html`.
 

@@ -14,7 +14,9 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--dk-muted) 40%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 html, body { height: 100%; }
-body { margin: 0; padding: 0; overflow: hidden; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs)/1.45 var(--dk-f-body); }
+/* see-through like the other tabs, so the SillyTavern theme shows (Miinthe 2026-10-18, Azure + Moonlit Echoes: Mero was a solid dark box);
+   cards, the input, the pull-out drawers keep their own surfaces; popped out, the window behind her has one */
+body { margin: 0; padding: 0; overflow: hidden; background: transparent; color: var(--dk-ink); font: var(--dk-fs)/1.45 var(--dk-f-body); }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--dk-accent-ink); outline-offset: 2px; }
@@ -89,16 +91,23 @@ button { cursor: pointer; }
 .grow:focus, .field:focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
 .grow::placeholder, .field::placeholder { color: var(--dk-muted); }
 .comp .row .sp { flex: 1; }
+/* one row, whatever the panel's width (Miinthe, 2026-10-19: with 📎 "this menu now takes awkwardly two rows"): narrow, Pitch keeps its icon only */
+.comp { container-type: inline-size; }
+.comp .row { flex-wrap: nowrap; gap: 4px; min-width: 0; }
+.comp .row .btn { flex: none; white-space: nowrap; }
+#c-ctx { padding-inline: 7px; }
+@container (max-width: 330px) { #c-pitch span { display: none; } #c-pitch { padding-inline: 7px; } }
+@container (max-width: 250px) { #c-where { font-size: var(--dk-fs-s); padding-inline: 6px; } }
 .notesline { font-size: var(--dk-fs-s); color: var(--dk-muted); }
 
 /* the rail: Talks, Requests, Notes, Pitches … pop-out, her settings */
-.rail { border-left: 1px solid var(--dk-line); background: var(--dk-menu); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 0; }
+.rail { border-left: 1px solid var(--dk-line); background: transparent; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 0; }
 .rail .sp { flex: 1; }
 .ri { position: relative; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dk-muted); }
 .ri .dk-i { width: 18px; height: 18px; }
 .ri:hover { color: var(--dk-ink); background: var(--dk-page); }
 .ri[aria-pressed="true"] { color: var(--dk-mero); background: var(--dk-mero-soft); }
-.ri .rdot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--dk-mero); box-shadow: 0 0 0 2px var(--dk-menu); }
+.ri .rdot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--dk-mero); }
 .ri.hold .rdot { background: var(--dk-wait); }
 .ri.glow { box-shadow: 0 0 0 2px var(--dk-mero), 0 0 12px color-mix(in oklab, var(--dk-mero) 60%, transparent); color: var(--dk-mero); }
 @media (prefers-reduced-motion: no-preference) {
@@ -106,6 +115,29 @@ button { cursor: pointer; }
   @keyframes wiggle { 0%, 88%, 100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
 }
 
+.sessrow { display: flex; align-items: stretch; gap: 2px; } .sessrow > .sess { flex: 1; min-width: 0; } .sessrow .sessdel { flex: none; align-self: center; opacity: .5; } .sessrow:hover .sessdel, .sessrow .sessdel:focus-visible { opacity: 1; }
+.sessask { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--dk-bad); border-radius: 8px; width: 100%; } .sessask .row { display: flex; flex-wrap: wrap; gap: 6px; }
+#p-focus { flex-wrap: wrap; } #p-focus .fadd { border-style: dashed; color: var(--dk-muted); }
+#p-focus .fpick { flex: 1 1 100%; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); }
+#p-focus .fpick input { height: 28px; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 6px; background: var(--dk-panel, transparent); color: var(--dk-ink); font: inherit; }
+#p-focus .flist { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+#p-focus .flist button { all: unset; box-sizing: border-box; padding: 5px 8px; border-radius: 6px; color: var(--dk-ink); cursor: pointer; } #p-focus .flist button:hover, #p-focus .flist button:focus-visible { background: var(--dk-accent-soft); }
+#p-focus .fgh { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--dk-muted); padding: 4px 8px 0; }
+/* 📎 add context: the picker above the box, the picked ones as chips, and on Miinthe's message */
+.comp { min-width: 0; position: relative; }
+/* @ mentions: a short list above the box — plain divs with their own colors (the old 📎 list showed "lines and dots" in a narrow panel) */
+.atmenu { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: 20; max-height: 240px; overflow-y: auto; padding: 4px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu, var(--dk-page)); box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
+.atmenu .atg { padding: 6px 8px 2px; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--dk-muted); }
+.atmenu .ati { display: flex; flex-direction: column; gap: 1px; width: 100%; box-sizing: border-box; padding: 5px 8px; border-radius: 6px; color: var(--dk-ink); cursor: pointer; overflow-wrap: anywhere; }
+.atmenu .ati b { font-weight: 600; font-size: 12.5px; color: var(--dk-mero); }
+.atmenu .ati span { font-size: 12px; color: var(--dk-muted); }
+.atmenu .ati.on, .atmenu .ati:hover { background: var(--dk-accent-soft); }
+.atmenu .atnone { padding: 8px; font-size: 12px; color: var(--dk-muted); }
+.ctxchips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; min-width: 0; max-width: 100%; }
+.ctxchip .cl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctxchip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; box-sizing: border-box; padding: 2px 4px 2px 8px; border-radius: 999px; background: var(--dk-accent-soft); color: var(--dk-ink); font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ctxchip button { border: 0; background: transparent; color: var(--dk-muted); cursor: pointer; padding: 0 3px; }
+.m .ctxs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; } .m .ctxs span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; opacity: .8; padding: 1px 6px; border-radius: 999px; background: color-mix(in oklab, var(--dk-ink) 10%, transparent); }
 /* drawers slide over the talk, from the rail's side */
 .drawer { position: absolute; inset: 0 44px 0 0; z-index: 3; display: flex; flex-direction: column; min-height: 0; background: var(--dk-page); border-right: 1px solid var(--dk-line); box-shadow: 0 0 24px rgba(0, 0, 0, .35); }
 .dh { display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px; border-bottom: 1px solid var(--dk-line); min-width: 0; }
@@ -147,9 +179,10 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 /* talks drawer: a search, the kinds, rows */
 .srch { width: 100%; height: 30px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 0 10px; background: var(--dk-menu); color: var(--dk-ink); font-size: var(--dk-fs); }
 .seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); flex-wrap: wrap; }
-.seg button { flex: 1; height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
+.seg button { flex: 1; height: 26px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
 .seg button:hover { color: var(--dk-ink); }
-.seg button[aria-pressed="true"] { background: var(--dk-page); color: var(--dk-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+/* the picked one stands out (Miinthe, 2026-10-19: "contrast of what is selected is still barely visible") — Mero's pink, like the board's strong picks */
+.seg button[aria-pressed="true"] { background: var(--dk-mero-soft); border-color: var(--dk-mero); color: var(--dk-ink); font-weight: 700; box-shadow: none; }
 .seg button:disabled { opacity: .45; }
 .seg.jobs { display: grid; grid-template-columns: 1fr 1fr; }
 /* the talk-kind filter stays one row (Miinthe, 2026-10-16: Feedback wrapped onto its own line): words only, buttons shrink */
@@ -288,8 +321,11 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
       <div class="busy" id="busy" hidden>☆ Mero is writing…</div>
       <div class="err" id="err" hidden></div>
       <div class="comp">
-        <textarea id="c-in" class="grow" rows="2" placeholder="Talk to Mero…" aria-label="Message to Mero"></textarea>
+        <div class="ctxchips" id="ctxchips" hidden></div>
+        <div class="atmenu" id="atmenu" role="listbox" aria-label="Mention" hidden></div>
+        <textarea id="c-in" class="grow" rows="2" placeholder="Talk to Mero… (@ to mention a tracker, someone, a reply, a post)" aria-label="Message to Mero"></textarea>
         <div class="row">
+          <button class="btn" id="c-ctx" title="Add context: click 📎, then click a message in the chat, a post or conversation in the world panel, or a lore entry — Mero gets it with your message" aria-label="Add context" aria-pressed="false">📎</button>
           <button class="btn" id="c-pitch" title="Pitches"></button>
           <button class="btn" id="c-where" title="A recap of where the story stands">Where are we?</button>
           <span class="sp"></span>
@@ -450,7 +486,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     pickTalk(); drawHead();
     if (!cur) { $('#msgs').innerHTML = `<div class="m sys">${D.where.charKey ? 'Write below to start a talk.' : 'Open a character chat to talk with Mero.'}</div>`; drawNotesline(); return; }
     $('#msgs').innerHTML = (cur.msgs.length ? '' : `<div class="card" style="--kc:var(--dk-mero)"><div class="ch">What kind of talk? <small>you can change it any time from the tag above</small></div><div class="row"><button class="btn" data-tagpick="yap">💭 Yapping</button><button class="btn" data-tagpick="plan">🗺 Planning</button><button class="btn" data-tagpick="fb">✋ Feedback</button></div></div>`)
-      + cur.msgs.map((m, k) => `<div class="m ${m.who === 'mero' ? 'mer' : 'miinthe'}">${m.who === 'mero' ? linkTrackers(nl2br(esc(m.t))) : nl2br(esc(m.t))}${(m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>` : ''}</div>` + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('')).join('');
+      + cur.msgs.map((m, k) => `<div class="m ${m.who === 'mero' ? 'mer' : 'miinthe'}">${m.who === 'mero' ? linkTrackers(nl2br(esc(m.t))) : nl2br(esc(m.t))}${(m.ctx || []).length ? `<span class="ctxs">${m.ctx.map(c => `<span title="${esc(String(c.text || '').slice(0, 300))}">📎 ${esc(c.label)}</span>`).join('')}</span>` : ''}${(m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>` : ''}</div>` + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('')).join('');
     $('#msgs').scrollTop = 1e6; wireTalk(); drawNotesline();
   }
   const cardFields = key => ({ kind: $(`[data-ck="${key}"]`)?.value, last: $(`[data-cl="${key}"]`)?.value, scope: $(`[data-cs="${key}"]`)?.value });
@@ -502,11 +538,13 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const q = sessQ.toLowerCase();
     const list = (D.talks || []).filter(s => (sessFilter === 'all' || s.tag === sessFilter) && (!q || (s.title + ' ' + s.summary).toLowerCase().includes(q)));
     const when = s => new Date(s.updated).toLocaleDateString([], { day: 'numeric', month: 'short' });
-    const item = s => `<button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button>`;
+    // each talk can be deleted from the list (Miinthe, 2026-10-19: "deleting a conversation is only possible within the conversation")
+    const item = s => `<div class="sessrow"><button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button><button class="ib sessdel" data-sdel="${s.id}" title="Delete this talk" aria-label="Delete this talk">${I('trash')}</button></div>`;
     const group = (st, label) => fold('sess-' + st, label, list.filter(s => s.state === st).map(item));
     $('#sess-list').innerHTML = (group('open', 'Open') + group('resolved', 'Resolved — reopen any time') + group('archived', 'Archived')) || '<p class="mini">No talk yet.</p>';
     drawMoments();
     $$('[data-s]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.s); drawTalk(); drawSessions(); if (!document.body.classList.contains('wide')) closeDrawers(); });
+    $$('[data-sdel]').forEach(b => b.onclick = e => { e.stopPropagation(); askDelete((D.talks || []).find(t => t.id === b.dataset.sdel), b.closest('.sessrow')); });
   }
   $('#sess-q').oninput = e => { sessQ = e.target.value; drawSessions(); };
   $$('#sess-f button').forEach(b => b.onclick = () => { sessFilter = b.dataset.v; $$('#sess-f button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawSessions(); });
@@ -547,9 +585,78 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   async function send(text) {
     showErr('');
     if (!cur) { cur = HOST.newTalk('yap'); if (!cur) { toast('Open a character chat first.'); return; } }
-    const r = await HOST.send(cur.id, text);
+    // @-mentions (@cast-kettle, @tracker-relationship, @reply-#12, @messages-kettle-toaster, @rumor-3, @lore-…) go with it
+    const tags = [...text.matchAll(/(?:^|\s)@([\w#-]+)/g)].map(m => m[1]);
+    const said = tags.length && HOST.mentionResolve ? HOST.mentionResolve(tags) : [];
+    const ctx = [...ctxPicked, ...said.filter(c => !ctxPicked.some(p => p.label === c.label))]; ctxPicked = []; drawCtx();
+    const r = await HOST.send(cur.id, text, ctx);
     if (!r.ok) showErr(r.error);
   }
+  // 📎 Add context (Miinthe, 2026-10-19: "a function in general to add to mero in the chat itself. Like add context and then
+  // select the thing you want to add as context"): pick posts, rumors, conversations, lore entries; they go with the message
+  let ctxPicked = [];
+  function drawCtx() {
+    $('#ctxchips').hidden = !ctxPicked.length;
+    $('#ctxchips').innerHTML = ctxPicked.map((c, k) => `<span class="ctxchip" title="${esc(c.text.slice(0, 300))}"><span class="cl">📎 ${esc(c.label)}</span><button data-ctxx="${k}" aria-label="Take off">✕</button></span>`).join('');
+    $$('[data-ctxx]').forEach(b => b.onclick = () => { ctxPicked.splice(+b.dataset.ctxx, 1); drawCtx(); });
+  }
+  // "Ask Mero about this" from a thing's own menu: it arrives here attached
+  window.__meroAddContext = c => { if (c?.label && !ctxPicked.some(p => p.label === c.label)) ctxPicked.push(c); closeDrawers(); drawCtx(); $('#c-in').focus(); };
+  // @ in the box (Miinthe, 2026-10-19: "Like @ tracker-relationship. or @ cast-kettle or @ worldmessage kettle-toaster or @ reply-#"):
+  // a short menu of what fits what's typed; ↑↓ Enter/Tab picks, Esc closes
+  let atList = null, atSel = 0, atHits = [];
+  const atQuery = () => { const ta = $('#c-in'), pre = ta.value.slice(0, ta.selectionStart ?? ta.value.length), m = /(?:^|\s)@([\w#-]*)$/.exec(pre); return m ? m[1].toLowerCase() : null; };
+  function closeAt() { $('#atmenu').hidden = true; atHits = []; }
+  function drawAt() {
+    const q = atQuery();
+    if (q == null) { closeAt(); return; }
+    if (!atList) atList = HOST.mentionList ? HOST.mentionList() : [];
+    // just "@": what each kind does (Miinthe, 2026-10-19: "a list of which @ does that. as it is right now its a guessing game")
+    if (q === '') {
+      const kinds = AT_KINDS.filter(k => atList.some(m => m.tag.startsWith(k[0])));
+      atHits = kinds.map(([pre, what, ex]) => ({ tag: pre, label: `${what} — e.g. @${ex}`, group: 'What you can mention', kind: true }));
+      if (!atHits.length) { closeAt(); return; }
+    } else {
+    const words = q.split(/[-\s]+/).filter(Boolean);
+    const rank = m => (m.tag === q ? 0 : m.tag.startsWith(q) ? 1 : 2);   // the exact one first (@reply-#1 before #14)
+    atHits = atList.filter(m => { const hay = (m.tag + ' ' + m.label).toLowerCase(); return words.every(w => hay.includes(w)); }).map((m, k) => ({ m, k })).sort((a, b) => rank(a.m) - rank(b.m) || a.k - b.k).map(x => x.m).slice(0, 40);
+    if (!atHits.length) { $('#atmenu').innerHTML = `<div class="atnone">Nothing called “@${esc(q)}” — try @cast-, @tracker-, @reply-#, @messages-, @rumor-, @post-, @news-, @lore-</div>`; $('#atmenu').hidden = false; return; }
+    }
+    atSel = Math.min(atSel, atHits.length - 1);
+    let g = '';
+    $('#atmenu').innerHTML = atHits.map((m, k) => (m.group !== g ? `<div class="atg">${esc(g = m.group)}</div>` : '') + `<div class="ati${k === atSel ? ' on' : ''}" role="option" aria-selected="${k === atSel}" data-at="${k}"><b>@${esc(m.tag)}${m.kind ? '…' : ''}</b><span>${esc(m.label)}</span></div>`).join('');
+    $('#atmenu').hidden = false;
+    $('#atmenu').querySelectorAll('[data-at]').forEach(d => d.onmousedown = e => { e.preventDefault(); pickAt(+d.dataset.at); });
+    $('#atmenu .ati.on')?.scrollIntoView({ block: 'nearest' });
+  }
+  function pickAt(k) {
+    const m = atHits[k]; if (!m) return;
+    const ta = $('#c-in'), at = ta.selectionStart ?? ta.value.length, pre = ta.value.slice(0, at).replace(/@([\w#-]*)$/, '@' + m.tag + (m.kind ? '' : ' '));
+    ta.value = pre + ta.value.slice(at); ta.setSelectionRange(pre.length, pre.length); autogrow(ta); ta.focus();
+    if (m.kind) { atSel = 0; drawAt(); } else closeAt();   // a kind picked: the list goes on with what's in it
+  }
+  const AT_KINDS = [['cast-', 'someone from the Cast: where they are, what they want, plan and know', 'cast-anna'], ['tracker-', 'a tracker and where it stands', 'tracker-relationship'],
+    ['reply-#', 'a message from the chat (the last 40)', 'reply-#12'], ['messages-', 'a conversation in the world', 'messages-anna-ben'], ['rumor-', 'a rumor (its number in Chatter)', 'rumor-3'],
+    ['post-', 'a post in Chatter', 'post-5'], ['news-', 'a news item', 'news-2'], ['lore-', 'a lore entry', 'lore-the-old-mill']];
+  $('#c-in').addEventListener('input', () => { atSel = 0; drawAt(); });
+  $('#c-in').addEventListener('focus', () => { atList = null; });   // fresh each time (new replies, posts)
+  $('#c-in').addEventListener('blur', () => setTimeout(closeAt, 150));
+  $('#c-in').addEventListener('keydown', e => {
+    if ($('#atmenu').hidden || !atHits.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopImmediatePropagation(); atSel = (atSel + (e.key === 'ArrowDown' ? 1 : -1) + atHits.length) % atHits.length; drawAt(); }
+    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); e.stopImmediatePropagation(); pickAt(atSel); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeAt(); }
+  }, true);
+  // 📎: then she clicks the thing itself — a chat message, a post or conversation in the world panel, a lore entry
+  // (Miinthe, 2026-10-19: "I wouldn't do it with a list but rather, click add context and then click the actual thing")
+  $('#c-ctx').onclick = async () => {
+    if (!HOST.pickContext) return;
+    $('#c-ctx').setAttribute('aria-pressed', 'true');
+    const c = await HOST.pickContext();
+    $('#c-ctx').setAttribute('aria-pressed', 'false');
+    if (c && !ctxPicked.some(p => p.label === c.label)) { ctxPicked.push(c); drawCtx(); }
+    $('#c-in').focus();
+  };
   $('#c-send').onclick = () => { const t = $('#c-in').value.trim(); if (!t || D.busy) return; $('#c-in').value = ''; autogrow($('#c-in')); send(t); };
   $('#c-in').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#c-send').click(); } });
   $('#c-where').onclick = async () => { showErr(''); const r = await HOST.where(cur?.id || null); if (r?.talk) cur = r.talk; if (!r.ok) showErr(r.error); };
@@ -575,13 +682,29 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     b._close = openMenu(b, items, { onClose: () => b.setAttribute('aria-expanded', 'false') });
     b.setAttribute('aria-expanded', 'true');
   };
+  /** Delete a talk from the list: asked right in its row, what to do with the notes it made. */
+  // the delete question, one wording for both places (Miinthe, 2026-10-19: the wording was "a little weird")
+  const delAsk = (t, n) => ({
+    q: `Delete the talk “${esc(t.title)}”?`,
+    sub: n ? `You made ${n} note${n > 1 ? 's' : ''} from this talk (in Notes). What should happen to ${n > 1 ? 'them' : 'it'}?` : 'The talk is gone for good.',
+    btns: (n ? `<button class="btn" data-dn="keep">Delete the talk, keep the note${n > 1 ? 's' : ''}</button><button class="btn" data-dn="archive">Delete the talk, archive the note${n > 1 ? 's' : ''}</button><button class="btn" data-dn="delete">Delete both</button>` : '<button class="btn" data-dn="keep">Delete the talk</button>') + '<button class="btn ghost" data-dn="">Cancel</button>',
+  });
+  function askDelete(t, row) {
+    if (!t || !row) return;
+    const n = (D.notes || []).filter(x => x.from === t.id).length;
+    const A = delAsk(t, n);
+    row.innerHTML = `<div class="sessask"><b>${A.q}</b><span class="mini">${A.sub}</span><span class="row">${A.btns}</span></div>`;
+    row.querySelectorAll('[data-dn]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.dataset.dn) { HOST.deleteTalk(t.id, b.dataset.dn); if (cur?.id === t.id) cur = null; toast('Talk deleted.'); } else drawSessions(); });
+  }
   function deleteTalk() {
     if (!cur) return;
     const n = (D.notes || []).filter(x => x.from === cur.id).length;
     const card = document.createElement('div'); card.className = 'card'; card.style.setProperty('--kc', 'var(--dk-bad)');
-    card.innerHTML = `<div class="ch">Delete “${esc(cur.title)}”?</div><div class="mini">${n ? `It made ${n} note${n > 1 ? 's' : ''}. What should happen to ${n > 1 ? 'them' : 'it'}?` : 'It made no notes.'}</div><div class="row">${n ? '<button class="btn" data-dn="keep">Keep the notes</button><button class="btn" data-dn="archive">Archive them</button><button class="btn" data-dn="delete">Delete them too</button>' : '<button class="btn" data-dn="keep">Delete</button>'}<button class="btn ghost" data-dn="">Cancel</button></div>`;
+    const A = delAsk(cur, n);
+    card.innerHTML = `<div class="ch">${A.q}</div><div class="mini">${A.sub}</div><div class="row">${A.btns}</div>`;
     $('#msgs').appendChild(card); $('#msgs').scrollTop = 1e6;
-    card.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { if (b.dataset.dn) { HOST.deleteTalk(cur.id, b.dataset.dn); cur = null; toast('Talk deleted.'); } else card.remove(); });
+    // after a delete: back to the list of talks, not into another talk (Miinthe, 2026-10-19)
+    card.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { if (b.dataset.dn) { HOST.deleteTalk(cur.id, b.dataset.dn); cur = null; toast('Talk deleted.'); setTimeout(() => openD('d-sess', true), 0); } else card.remove(); });
   }
   // ⓘ what Mero was told
   $('#s-told').onclick = () => {
@@ -662,9 +785,18 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const ri = $('.ri[data-d="d-req"]'); ri.classList.toggle('hold', hold); ri.title = hold ? 'Requests: the reply waits for your answer' : n ? `Requests (${n} open)` : 'Requests';
   }
 
-  const openD = (id, stay = false) => { if (id === 'd-sess' && D.glow?.glows) HOST.seeGlow(); $$('.drawer').forEach(d => { d.hidden = d.id !== id || (!stay && !d.hidden); }); $$('.ri').forEach(r => r.setAttribute('aria-pressed', String(r.dataset.d === id && !$('#' + id).hidden))); };
+  // the talks list is Mero's home (Miinthe, 2026-10-19: "the overview should be like the main menu instead of throwing me right
+  // into a new and empty chat"): closing any other section goes back to it; closing the list shows the open talk, if any
+  const goHome = () => openD('d-sess', true);
+  const openD = (id, stay = false) => {
+    if (id === 'd-sess' && D.glow?.glows) HOST.seeGlow();
+    const wasOpen = !$('#' + id).hidden;
+    $$('.drawer').forEach(d => { d.hidden = d.id !== id || (!stay && !d.hidden); });
+    $$('.ri').forEach(r => r.setAttribute('aria-pressed', String(r.dataset.d === id && !$('#' + id).hidden)));
+    if (wasOpen && $('#' + id).hidden && (id !== 'd-sess' || !cur)) goHome();
+  };
   $$('.ri[data-d]').forEach(r => r.onclick = () => openD(r.dataset.d));
-  $$('[data-close]').forEach(b => b.onclick = () => closeDrawers());
+  $$('[data-close]').forEach(b => b.onclick = () => { closeDrawers(); goHome(); });
   document.addEventListener('click', e => { const l = e.target.closest('[data-story]'); if (l) HOST.openStory(l.dataset.story); });
   $('#pop-out').onclick = () => HOST.popToggle();
   async function lookLore() { const r = await HOST.lookLore(); toast(!r.ok ? r.error : r.noEntries ? 'No entries were sent with the latest replies — nothing to check.' : r.found ? `Mero found ${r.found} thing${r.found > 1 ? 's' : ''} for your entries.` : 'Mero looked. Your entries have everything the latest replies show.'); refresh(); }
@@ -725,6 +857,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${PK[p.kind] || ''}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${st}</div>`;
   }
   const pSec = (key, title, items) => (items.length ? fold(key, title, items.map(pCard)) : '');
+  let focusOpen = false;   // the Focus row's add list (drawPitches)
   function drawPitches() {
     const V = PV(), m = V.menu || {}, list = V.list || [];
     for (const id of [...pickSel]) { const p = pById(id); if (!p || !PICKABLE.includes(p.st) || (pView === 'pick' ? p.st !== 'fresh' : p.st === 'fresh')) pickSel.delete(id); }
@@ -741,13 +874,28 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     // option … neither can I pick multiple"); kept as "Kettle, Toaster"
     const foc = $('#p-focus'), P2 = D.people || {};
     const picks = String(m.focus || '').split(',').map(x => x.trim()).filter(Boolean);
-    const opts = [...new Set([P2.main, P2.user, ...(V.cast || []).map(c => c.name), ...(D.trackers || []), ...picks].filter(Boolean))];   // an older pick stays visible, so it can be taken off
-    foc.innerHTML = `<button data-f="" aria-pressed="${!picks.length}">surprise me</button>` + opts.map(o => `<button data-f="${esc(o)}" aria-pressed="${picks.includes(o)}">${esc(o)}${o === P2.user ? ' (you)' : ''}</button>`).join('');
-    foc.querySelectorAll('button').forEach(b => b.onclick = () => {
-      const f = b.dataset.f;
-      const next = !f ? [] : picks.includes(f) ? picks.filter(x => x !== f) : [...picks, f];
-      HOST.pitchMenu({ focus: next.join(', ') });
-    });
+    // compact (Miinthe, 2026-10-19: "the focus tab in pitches can become insane when the board is big"): what's picked as chips
+    // with ✕, everything else in one grouped list — one line, whatever the size of the board
+    const people = [...new Set([P2.main, P2.user, ...(V.cast || []).map(c => c.name)].filter(Boolean))], tracks = [...new Set((D.trackers || []).filter(t => !people.includes(t)))];
+    const free = list => list.filter(o => !picks.includes(o));
+    const you = () => '';   // the persona shows by name only (Miinthe, 2026-10-19: no "you")
+    // the add list is the page's own (Miinthe: the browser's list came up white and ran long on a big board): a search and a
+    // short scrolling list, people first, then trackers
+    const grp = (h, list) => (list.length ? `<div class="fgh">${h}</div>` + list.map(o => `<button type="button" data-fa="${esc(o)}">${esc(o)}${you(o)}</button>`).join('') : '');
+    const more = free(people).length + free(tracks).length;
+    foc.innerHTML = `<button data-f="" aria-pressed="${!picks.length}">surprise me</button>` + picks.map(o => `<button data-fx="${esc(o)}" aria-pressed="true" title="Take off">${esc(o)}${you(o)} ✕</button>`).join('')
+      + (more ? `<button type="button" class="fadd" data-fopen aria-expanded="${focusOpen}">+ Add a focus…</button>` : '')
+      + (more && focusOpen ? `<div class="fpick">${more > 8 ? '<input type="search" data-fq placeholder="Search…" aria-label="Search people and trackers">' : ''}<div class="flist">${grp('People', free(people))}${grp('Trackers', free(tracks))}<p class="mini fnone" hidden>Nothing matches.</p></div></div>` : '');
+    foc.querySelector('[data-f=""]').onclick = () => { focusOpen = false; HOST.pitchMenu({ focus: '' }); };
+    foc.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => HOST.pitchMenu({ focus: picks.filter(x => x !== b.dataset.fx).join(', ') }));
+    const fo = foc.querySelector('[data-fopen]'); if (fo) fo.onclick = () => { focusOpen = !focusOpen; drawPitches(); };
+    foc.querySelectorAll('[data-fa]').forEach(b => b.onclick = () => { focusOpen = false; HOST.pitchMenu({ focus: [...picks, b.dataset.fa].join(', ') }); });
+    const fq = foc.querySelector('[data-fq]');
+    if (fq) {
+      fq.oninput = () => { const q = fq.value.trim().toLowerCase(); let any = false; foc.querySelectorAll('[data-fa]').forEach(b => { const on = !q || b.dataset.fa.toLowerCase().includes(q); b.hidden = !on; any ||= on; }); foc.querySelectorAll('.fgh').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && n.matches('[data-fa]')) { vis ||= !n.hidden; n = n.nextElementSibling; } h.hidden = !vis; }); foc.querySelector('.fnone').hidden = any; };
+      fq.onkeydown = e => { if (e.key === 'Escape') { focusOpen = false; drawPitches(); } };
+      fq.focus();
+    }
     if (document.activeElement !== $('#p-moment-t')) { $('#p-moment').value = m.moment ? 'mine' : ($('#p-moment').value === 'mine' && !m.moment ? 'mine' : 'mero'); $('#p-moment-t').value = m.moment || ''; }
     $('#p-moment-t').hidden = $('#p-moment').value !== 'mine';
     $('#p-fb').checked = m.fbOn !== false; $('#p-fbn').value = m.fb || 10;
@@ -877,9 +1025,11 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     drawTalk(); drawSessions(); drawNotes(); drawSettings(); drawReqs(); drawPitches();
     // just popped out: the talks list beside the talk, the way her own window is meant to look
     if (popNow && $$('.drawer').every(d => d.hidden)) openD('d-sess', true);
+    if (!cur && $$('.drawer').every(d => d.hidden)) goHome();   // no talk open: the list, never an empty talk
   }
   window.__meroRefresh = refresh;
   window.__meroOpenTalk = id => { D = HOST.load(); cur = (D.talks || []).find(t => t.id === id) || cur; refresh(); closeDrawers(); };   // 📚 a vault review
+  window.__meroOpenTalks = () => { refresh(); openD('d-sess', true); };   // opening the talks marks the glow seen (openD)
   window.__meroOpenPitches = idx => { fromMsg = Number.isInteger(idx) ? idx : null; pView = 'home'; refresh(); openD('d-pitch', true); if (fromMsg != null) setTimeout(() => $('#p-com').focus(), 80); };
   window.__meroOpenRequests = () => { refresh(); if ($('#d-req').hidden) openD('d-req'); setTimeout(() => document.querySelector('#req-list .pill.now')?.closest('.card')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80); };
   refresh();

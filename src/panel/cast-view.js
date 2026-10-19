@@ -12,17 +12,18 @@
  * Today's tab (src/cast-tab.js) keeps its events and draws through this view (useCastView); if this fails, today's
  * comes back. All the round and people logic stays where it was (cast-queue.js, cast-voice.js, cast.js, cast-pure.js).
  */
-import { chat_metadata } from '../../../../../../script.js';
+import { chat_metadata, getThumbnailUrl } from '../../../../../../script.js';
+import { user_avatar } from '../../../../../personas.js';
 import { getContext } from '../../../../../extensions.js';
 import * as K from '../kit/kit.js';
-import { live, saveLiveState, notifyLive } from '../board-live.js';
+import { live, saveLiveState, notifyLive, sceneAway, setSceneAway } from '../board-live.js';
 import { boardStore, putBoard } from '../board-store.js';
 import { BOARD_KEY } from '../storyboard-pure.js';
 import { runningCasts, personNow, handChange, HOW_WORDS, MAX_PLANS, appearsOf, oddsOf } from '../cast-pure.js';
 import { SPEAKS_WORDS, speaksOf, moveItem, addItem, setText, isMine } from '../cast-voice-pure.js';
 import { speakAs, cannotSpeak, npcSpeaking } from '../cast-voice.js';
 import { askOffscreen } from '../cast.js';
-import { getQueue, setQueue, runQueue, stopQueue, queueRunning, queueStopping, getSuggestions, setSuggestions, resetRound, addStaying, removeFromRound } from '../cast-queue.js';
+import { getQueue, setQueue, runQueue, stopQueue, queueRunning, queueStopping, getSuggestions, setSuggestions, resetRound, addStaying, removeFromRound, inRound, ownHere, writingAs, setWritingAs } from '../cast-queue.js';
 import { turnIndex } from '../turn-index.js';
 import { useCastView } from '../cast-tab.js';
 import { halvesOf, moveWithin, dropIndex, roundSummary, queueSub, suggestionText, personSub, fixKnown } from './cast-view-pure.js';
@@ -69,13 +70,16 @@ function draw() {
     const people = casts.flatMap(c => c.people.map(p => ({ c, p, k: `${c.id}:${p.id}`, n: personNow(L.state, c, p) })));
     if (sel && !people.some(x => x.k === sel)) sel = null;
     const q = getQueue();
-    const nameOf = x => (x.kind === 'you' ? 'You' : x.kind === 'main' ? mainName() : people.find(y => y.c.id === x.cast && y.p.id === x.person)?.p.name ?? '?');
+    const nameOf = x => (x.kind === 'you' ? userName() : x.kind === 'main' ? mainName() : people.find(y => y.c.id === x.cast && y.p.id === x.person)?.p.name ?? '?');
     // Miinthe 2026-10-18: nobody twice — who is in the round carries their line there, People lists only the others
     const inRound = x => q.some(y => y.kind === 'npc' && y.cast === x.c.id && y.person === x.p.id);
     const rest = people.filter(x => !inRound(x));
     root.append(roundFold(L, q, people, nameOf), peopleFold(L, rest, q, people.filter(x => x.n.here).length));
     if (scrollToSel) { scrollToSel = false; root.querySelector('.dle-cv-tile.sel, .dle-cv-qi.sel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
+
+// the player by their persona's name and picture, never "You" (Miinthe, 2026-10-19: "'you' should be just {{user}}")
+const userName = () => getContext()?.name1 || '{{user}}';
 
 // ── This round ──────────────────────────────────────────────────────────────
 
@@ -93,10 +97,26 @@ function roundFold(L, q, people, nameOf) {
         for (const x of items) box.append(queueItem(x, ++no, nameOf(x), { L, person: personOf(x), opened, speaking }));
         body.push(box);
     };
+    // you're out of the scene: Send writes as one of your own NPCs (Miinthe, 2026-10-19)
+    if (sceneAway().user) {
+        const own = ownHere(), as = writingAs();
+        const row = el('div', 'dle-cv-asrow');
+        if (!own.length) row.append(el('span', 'dle-cv-mini', `${esc(userName())} is out of the scene, and none of the people you write yourself is in it: Send has no one to write as.`));
+        else if (own.length === 1) row.append(el('span', 'dle-cv-mini', `${esc(userName())} is out of the scene: Send writes as <b>${esc(as.name)}</b>.`));
+        else {
+            row.append(el('span', 'dle-cv-mini', 'Send writes as'));
+            const sel2 = el('select', 'dk-field');
+            sel2.setAttribute('aria-label', 'Send writes as');
+            for (const o of own) { const op = el('option', ''); op.value = `${o.cast}:${o.person}`; op.textContent = o.name; op.selected = as && o.cast === as.cast && o.person === as.person; sel2.append(op); }
+            sel2.addEventListener('change', () => { const [c2, p2] = sel2.value.split(':'); setWritingAs(c2, p2); });
+            row.append(sel2);
+        }
+        body.push(row);
+    }
     list('mine', mine, 'Nothing of yours this round.');
     list('ai', ai, 'No AI replies this round.');
     // "X wants to join / leave" (the director's suggestions)
-    const sugg = getSuggestions().filter(w => people.some(({ c, p }) => c.id === w.cast && p.id === w.person) && !q.some(x => x.kind === 'npc' && x.cast === w.cast && x.person === w.person));
+    const sugg = getSuggestions().filter(w => people.some(({ c, p }) => c.id === w.cast && p.id === w.person) && (w.leave ? !q.some(x => x.kind === 'npc' && x.cast === w.cast && x.person === w.person) : !inRound(w)));
     for (const w of sugg) {
         const name = nameOf({ kind: 'npc', ...w });
         const s = el('div', 'dle-cv-sugg');
@@ -227,7 +247,7 @@ function startDrag(e, wrap, id) {
 function peopleFold(L, people, q, present) {
     const speaking = npcSpeaking();
     const grid = el('div', 'dle-cv-grid');
-    const tile = ({ pic, letter, name, state, dim, selected, open, add, addTitle, speak = null, speakTitle = '', mute = null, fav = null }) => {
+    const tile = ({ pic, letter, name, state, dim, selected, open, add, addTitle, speak = null, speakTitle = '', mute = null, fav = null, leave = null }) => {
         const t = el('div', 'dle-cv-tile' + (dim ? ' away' : '') + (selected ? ' sel' : ''));
         const face = el(open ? 'button' : 'div', 'dle-cv-face');
         if (open) { face.type = 'button'; face.title = `Open ${name}: wants, plans, what they know`; face.setAttribute('aria-expanded', String(!!selected)); face.addEventListener('click', open); }
@@ -235,10 +255,11 @@ function peopleFold(L, people, q, present) {
         if (pic) { const img = el('img', ''); img.src = pic; img.alt = ''; img.loading = 'lazy'; img.onerror = () => { img.remove(); ph.textContent = letter; }; ph.append(img); } else ph.textContent = letter;
         const nm = el('span', 'dle-cv-tn'); nm.textContent = name; nm.title = name;
         face.append(ph, nm, el('span', 'dle-cv-ts', esc(state)));
-        const plus = K.iconButton({ icon: 'plus', title: addTitle, onClick: add });
-        plus.classList.add('dle-cv-tadd');
         // + and Speak now on their own row (Miinthe 2026-10-18: instead of the bar at the bottom)
-        const foot = el('div', 'dle-cv-tfoot'); foot.append(plus);
+        const foot = el('div', 'dle-cv-tfoot');
+        if (add) { const plus = K.iconButton({ icon: 'plus', title: addTitle, onClick: add }); plus.classList.add('dle-cv-tadd'); foot.append(plus); }
+        // you and the main character: out of the scene / back (Miinthe, 2026-10-19)
+        if (leave) { const b = K.iconButton({ icon: leave.away ? 'back' : 'skip', on: leave.away, title: leave.away ? `${name} comes back into the scene` : `${name} leaves the scene: not in the rounds, and nobody talks to them`, onClick: leave.toggle }); b.classList.add('dle-cv-tleave'); b.setAttribute('aria-pressed', String(leave.away)); foot.append(b); }
         if (speak) { const sp = K.iconButton({ icon: 'castround', title: speakTitle, onClick: speak }); sp.disabled = queueRunning(); sp.classList.add('dle-cv-tspeak'); foot.append(sp); }
         if (mute) { const m = K.iconButton({ icon: mute.on ? 'mute' : 'sound', on: mute.on, title: mute.on ? `Unmute ${name}: they may step in, offer to join and turn up again` : `Mute ${name} in this chat: they stay quiet until you add them or press Speak now`, onClick: mute.toggle }); m.classList.add('dle-cv-tmute'); m.setAttribute('aria-pressed', String(mute.on)); foot.append(m); }
         if (mute?.on) t.classList.add('muted');
@@ -255,9 +276,13 @@ function peopleFold(L, people, q, present) {
     const first = n => String(n || '?').trim().charAt(0).toUpperCase() || '?';
     const ctx = getContext();
     const ours = [];   // You and the main character: after the favorites, before everyone else
-    if (!q.some(x => x.kind === 'you')) ours.push(tile({ letter: '🙂', name: 'You', state: 'message', add: () => setQueue(addItem(getQueue(), { kind: 'you' })), addTitle: 'Your message from the chat box, in this round' }));
+    // You and the main character: always a tile — here (in this round or not) or away, with Leave / Back (Miinthe, 2026-10-19)
+    const away = sceneAway();
+    const seat = (kind, who) => (away[who] ? 'away' : q.some(x => x.kind === kind) ? 'here · in this round' : 'here');
+    const leaveOf = who => ({ away: away[who], toggle: () => { const was = away[who]; setSceneAway(who, !was); K.notify({ title: 'Cast', text: `${who === 'user' ? userName() : mainName()} ${was ? 'is back in the scene' : 'left the scene'}.`, undo: () => setSceneAway(who, was) }); } });
+    ours.push(tile({ pic: user_avatar ? getThumbnailUrl('persona', user_avatar) : '', letter: '🙂', name: userName(), state: seat('you', 'user'), dim: away.user, add: away.user || q.some(x => x.kind === 'you') ? null : () => setQueue(addItem(getQueue(), { kind: 'you' })), addTitle: 'Your message from the chat box, in this round', leave: leaveOf('user') }));
     const mainCard = ctx?.groupId ? null : ctx?.characters?.[ctx?.characterId];
-    if (!q.some(x => x.kind === 'main')) ours.push(tile({ pic: mainCard?.avatar ? `/thumbnail?type=avatar&file=${encodeURIComponent(mainCard.avatar)}` : '', letter: first(mainName()), name: mainName(), state: 'main', add: () => setQueue(addItem(getQueue(), { kind: 'main' })), addTitle: `${mainName()} replies in this round` }));
+    if (mainCard) ours.push(tile({ pic: mainCard?.avatar ? `/thumbnail?type=avatar&file=${encodeURIComponent(mainCard.avatar)}` : '', letter: first(mainName()), name: mainName(), state: seat('main', 'main'), dim: away.main, add: away.main || q.some(x => x.kind === 'main') ? null : () => setQueue(addItem(getQueue(), { kind: 'main' })), addTitle: `${mainName()} replies in this round`, leave: leaveOf('main') }));
     // ★ favorites first (here, then away), then the rest (here, then away)
     const order = [true, false].flatMap(f => [...people.filter(x => !!x.p.fav === f && x.n.here), ...people.filter(x => !!x.p.fav === f && !x.n.here)]);
     // the person opened gets the whole width at the top, their details under them, and the grid moves down below

@@ -16,13 +16,14 @@
 
 /**
  * What the side-panel button shows and does.
- * { open, locked, phone, waiting (count), hold (the reply waits), onRequests (the panel shows her requests) }
- * → { icon: 'panel'|'panelL'|'mail', dot: ''|'mero'|'hold', pressed, title, action: 'open'|'close'|'requests'|'back' }
+ * { open, locked, phone, waiting (count), hold (the reply waits), glow (Mero wants to talk), onRequests (the panel shows her requests) }
+ * → { icon: 'panel'|'panelL'|'mail', dot: ''|'req'|'hold'|'mero', pressed, title, action: 'open'|'close'|'requests'|'back' }
+ * Requests are orange, Mero wanting to talk is her pink (Miinthe, 2026-10-19: "request is an orange dot, lets make the mero dot her pink").
  */
-export function panelButton({ open = false, locked = false, phone = false, waiting = 0, hold = false, onRequests = false, left = false } = {}) {
+export function panelButton({ open = false, locked = false, phone = false, waiting = 0, hold = false, glow = false, onRequests = false, left = false } = {}) {
     const lockedHere = locked && !phone;   // no lock on a phone (the panel slides over the chat there)
     const has = waiting > 0 || hold;
-    const dot = hold ? 'hold' : has ? 'mero' : '';
+    const dot = hold ? 'hold' : has ? 'req' : glow ? 'mero' : '';
     const mailTitle = hold ? 'The reply waits for your answer: open Mero’s requests'
         : `Mero has ${waiting} ${waiting === 1 ? 'thing' : 'things'} for you: open her requests`;
     if (lockedHere && open) {
@@ -32,7 +33,7 @@ export function panelButton({ open = false, locked = false, phone = false, waiti
     const icon = left ? 'panelL' : 'panel';
     if (open) return { icon, dot, pressed: true, title: 'Close the side panel', action: 'close' };
     if (has) return { icon, dot, pressed: false, title: mailTitle, action: 'requests' };
-    return { icon, dot, pressed: false, title: 'Open the side panel', action: 'open' };
+    return { icon, dot, pressed: false, title: glow ? 'Open the side panel: Mero wants to talk' : 'Open the side panel', action: 'open' };
 }
 
 // ── starred Quick Replies ───────────────────────────────────────────────────
@@ -53,6 +54,13 @@ export const isHot = (list, q) => normalHot(list).some(x => key(x) === key(q));
 export function toggleHot(list, q) {
     const l = normalHot(list);
     return isHot(l, q) ? l.filter(x => key(x) !== key(q)) : [...l, { set: q.set, label: q.label }];
+}
+/** Move one star a step earlier (by -1) or later (by 1) on the bar (Miinthe, 2026-10-19: "rearrange the order"). */
+export function moveHot(list, q, by) {
+    const l = normalHot(list), i = l.findIndex(x => key(x) === key(q)), j = i + by;
+    if (i < 0 || j < 0 || j >= l.length) return l;
+    [l[i], l[j]] = [l[j], l[i]];
+    return l;
 }
 /**
  * The starred ones that still exist, in her order, with what the bar needs to draw them.

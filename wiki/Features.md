@@ -6,21 +6,48 @@ For the core matching pipeline, see [[Pipeline]]. For AI search specifics, see [
 
 ---
 
-## Live drawer panel
+## The side panel
 
-DLE's persistent side panel shows real-time pipeline feedback. See [[Drawer]] for full details.
+DeepLore's side panel shows what DeepLore is doing, live. See [[Drawer|Side Panel]] for full details.
 
-![DLE drawer panel showing the Browse tab with entries, priority badges, token counts, and injection frequency heatmap](images/dle-drawer.png)
-
-| Feature | What it does |
+| Part | What it does |
 |---------|-------------|
-| **Injection tab** | Shows which entries were injected and why, with generation-to-generation diff |
-| **Browse tab** | Searchable, filterable entry list with temperature heatmap, pin/block controls, and virtual scroll |
-| **Filters tab** | View and edit contextual gating filters (built-in and custom fields) with live impact counts and folder filter |
-| **Librarian tab** | Lore gap inbox, flagged entries, draft activity, and bulk actions |
-| **Tools tab** | Quick-access buttons for slash commands, grouped by purpose |
-| **Status zone** | Connection status, token/entry budget bars, active gating filters, quick action buttons |
-| **Footer** | Context window bar, recent activity feed, health icons, AI session statistics |
+| **Ready** (header) | The status button: what DeepLore is doing now and how many entries your vault has. Click it for this reply's numbers (Lore budget, Entries, Context) and health checks |
+| **Header buttons** | Refresh, Scribe, New lore ideas, New run, and the lock that keeps the panel open (PC only) |
+| **Lore tab** | Sent · Left out · All entries: what went in with the last reply, what was left out and why, and your whole vault with search, filters, pin, block and Move to folder… |
+| **Filters tab** | What this chat is (character, run, its folders), DeepLore on or off in this chat, and field values for this chat |
+| **Story tab** | Your trackers with their steps, the board's other trackers, and "What changed" with Undo |
+| **Cast tab** | This round's speaking order and the people of your Cast. See [[Cast]] |
+| **Mero tab** | Your co-writer. See [[Mero]] |
+| **⋯ menu** | Graph, Open the board, Pins and blocks, Try matching, Reroll lore, Review the vault with Mero, Write missing summaries, Optimize keywords, Import World Info, the notebooks, Setup wizard, Diagnostics, move the panel left or right, Settings |
+
+---
+
+## The DeepLore bar
+
+A row of buttons above the message box: the 📖 DeepLore menu, the side-panel button, your starred Quick Replies, and Re-evaluate and swipe, Simple send and Keep as a draft. See [[DeepLore Bar]].
+
+---
+
+## My Notes
+
+Your own notes, never sent to the AI, from a button on the bar. Each shows in this chat, this story (the storyboard), this character, or everywhere (your library of OOC prompts). See [[My Notes]].
+
+## Storyboards
+
+A board window where you lay out the shape of a story: step trackers (a relationship, a plot), collections (clues, suspects, inventory, flags), counters and meters, places, state and dates, and a Cast. A helper AI follows the story and moves them, and the writer is told where things stand. See [[Storyboards]].
+
+---
+
+## The Cast
+
+NPCs set up on the board, each with their own character card. They come and go, have wants and plans, and can speak in their own messages. See [[Cast]].
+
+---
+
+## Mero ☆
+
+Your co-writer, in the side panel's Mero tab. Talk with her about the story, ask for pitches and plans, and answer her requests (including lore gaps found while replies were written). See [[Mero]].
 
 ---
 
@@ -34,12 +61,12 @@ Tools for understanding what DLE is doing and why. See [[Inspection and Diagnost
 
 | Feature | What it does |
 |---------|-------------|
-| **Context Cartographer** | Book icon on each AI message showing which entries were injected and why |
+| **Context Cartographer** | Each message's DeepLore ⋯ button → **Why these entries** shows which entries were sent and why |
 | **Pipeline Inspector** | Detailed trace of the last generation (`/dle-inspect`) |
 | **Entry Browser** | Searchable popup of all indexed entries (`/dle-browse`) |
 | **Relationship graph** | Interactive force-directed graph of entry connections (`/dle-graph`) |
 | **Activation Simulation** | Replay chat history showing entry activation timeline (`/dle-simulate`) |
-| **"Why Not?" diagnostics** | Click any unmatched entry to see exactly why it was not injected |
+| **"Why Not?" diagnostics** | In the Lore tab's **Left out** list, tap an entry to see why it was not sent |
 | **Entry analytics** | Track match and injection counts per entry (`/dle-analytics`) |
 | **Health check** | 30+ automated checks for common entry issues (`/dle-health`) |
 | **Diagnostics export** | Pseudonymized bundle for bug reports (`/dle-diagnostics`); IPs, hostnames, API keys, profile names, vault names, and character names masked |
@@ -62,24 +89,23 @@ Features that use AI to help you build and maintain your vault. See [[AI-Powered
 
 ---
 
-## Librarian
+## Lore tools during replies (search and flag)
 
-Two linked things: writing-AI tools (`search` and `flag`) that run during generation, and Emma, the chat agent for authoring entries from flagged gaps. The Librarian has its own drawer tab, settings subtab, and connection channel. Tool-calling provider required (Claude, Gemini, OpenAI-compatible, Cohere).
+While a reply is written, the writing AI can get two optional tools: `search` (look up entries DeepLore missed) and `flag` (note a gap in your lore). They are off by default; the Setup wizard's **Mero ☆** page has the switch **Let Mero look up lore during replies**. Flagged gaps land in [[Mero]]'s **Requests**, under **📚 Lore gaps**. Tool-calling provider required (Claude, Gemini, OpenAI-compatible, Cohere).
 
 | Feature | What it does |
 |---------|-------------|
 | **Generation tools** | Writing AI calls `search` and `flag` mid-generation to look up vault entries and flag gaps |
 | **Emma's toolset** | `search_vault`, `get_entry`, `get_full_content`, `find_similar`, `list_flags`, `get_links`, `get_backlinks`, `list_entries`, `get_recent_chat`, `flag_entry_update`, `compare_entry_to_chat`, and `get_writing_guide` |
 | **Session continuity** | Emma's session (messages, draft state, work queue) persists in `chat_metadata` across reloads and chat switches |
-| **Lore gap detection** | Writing AI flags missing or stale lore mid-generation; gaps land in the Librarian inbox; Emma helps you draft the entry |
-| **Two-tier dismissal** | Hide a gap to suppress it; dismiss again to bury it. Re-flagging a hidden gap resurfaces it |
+| **Lore gap detection** | Writing AI flags missing or stale lore mid-generation; gaps land in Mero › Requests › 📚 Lore gaps. **Write it** opens Write a new entry… with the gap filled in (Mero can draft it there); **Open it** opens an entry that needs an update in Obsidian |
+| **Done, Hide, No** | **Done** marks a gap as taken care of. **Hide** hides it until it is flagged again. **No** removes it for good, even if it is flagged again |
 | **Vault audits** | `/dle-librarian audit` walks the entire vault and flags gaps, inconsistencies, and entries that need updates |
 | **Writing guides** | Tag a vault entry with `lorebook-guide` to make it a Librarian-only style reference. Emma fetches these via `get_writing_guide`. They never reach the writing AI through any path |
-| **Drawer tab** | Gap list, flagged entries, session stats, and quick-dismiss controls |
 | **Customizable persona** | Tweak Emma's personality and focus through an editable prompt |
 
 > [!IMPORTANT]
-> Turning on the Librarian auto-enables function calling on the active connection profile. If you disable function calling elsewhere, tool invocations break.
+> Turning on these lore tools auto-enables function calling on the active connection profile. If you disable function calling elsewhere, tool invocations break.
 
 ---
 
@@ -158,5 +184,5 @@ Getting started and migrating from other lorebook systems. See [[Setup and Impor
 | Feature | What it does |
 |---------|-------------|
 | **Setup wizard** | Guided first-time setup (`/dle-setup`) |
-| **Quick actions bar** | One-click toolbar in the drawer |
+| **Header and ⋯ menu** | One-click actions in the side panel's header and its ⋯ menu |
 | **ST lorebook import** | Convert SillyTavern World Info JSON into Obsidian vault notes (`/dle-import`); offers AI summary generation for imported entries |

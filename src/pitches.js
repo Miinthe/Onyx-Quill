@@ -82,7 +82,7 @@ function pitchContext(fromMsg) {
         taste: notes.filter(n => n.taste && n.on && !n.ended).map(n => n.text),
         donts: notes.filter(n => n.inForce && n.kind === 'dont' && !n.hidden).map(n => n.text),
         notes: notes.filter(n => n.inForce && n.kind !== 'dont' && !n.hidden).map(n => n.text),
-        board: pkg.board, quiet, cast, lore,
+        board: pkg.board, quiet, cast, lore, world: pkg.world,
         cards: [pkg.cards, pkg.persona].filter(Boolean).join('\n\n'),
         replies: pkg.replies, fromMsg,
         already: s.list.filter(p => p.st !== 'hidden' && p.st !== 'fired').slice(0, 12).map(p => p.text),

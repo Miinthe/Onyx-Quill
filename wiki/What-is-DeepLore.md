@@ -44,7 +44,7 @@ DeepLore (DLE) is an alternative lorebook system that stores entries in an **Obs
 
 In v2, DLE adds **the Librarian**: writing-AI tools (`search` and `flag`) plus Emma, a chat agent for authoring entries.
 
-As you roleplay, the writing AI calls `search` to look up vault entries it needs, and calls `flag` when it reaches for a detail your vault doesn't cover. Each `flag` becomes a record in the Librarian inbox. You open a flag and chat with Emma. She fetches existing entries via tool calls, compares against `lorebook-guide` style references, and helps you author the new entry. Write-to-vault saves the draft as an Obsidian file.
+As you roleplay, the writing AI calls `search` to look up vault entries it needs, and calls `flag` when it reaches for a detail your vault doesn't cover. Each `flag` becomes a lore gap. In this fork, lore gaps show up as cards in [[Mero]] › Requests under **📚 Lore gaps**, where **Write it** opens Write a new entry… with the gap filled in.
 
 `lorebook-guide` entries are Librarian-only. They never reach the writing AI through any path.
 

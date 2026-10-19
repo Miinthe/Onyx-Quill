@@ -84,6 +84,36 @@ export function setBoardOff(off, { forCharacter = false } = {}) {
 }
 
 /**
+ * You (the persona) and the main character can leave the scene too (Miinthe, 2026-10-19: "I do have NPC I fully write on my
+ * own, and sometimes I do have a scene with only that NPC and the main character or that NPC with another NPC"). Kept
+ * per chat. Away: the round goes without them, and everyone writing is told they aren't there.
+ */
+export const AWAY_KEY = 'deeplore_scene_away';
+export function sceneAway() { const a = chat_metadata?.[AWAY_KEY]; return { user: a?.user === true, main: a?.main === true }; }
+export function setSceneAway(who, away) {
+    if (!chat_metadata || !['user', 'main'].includes(who)) return;
+    const a = { ...sceneAway(), [who]: !!away };
+    if (a.user || a.main) chat_metadata[AWAY_KEY] = a; else delete chat_metadata[AWAY_KEY];
+    saveMetadataDebounced();
+    notifyLive();
+}
+function awayLines() {
+    const a = sceneAway(), c = getContext();
+    return [a.user ? `NOT IN THIS SCENE: ${c?.name1 || 'the player'} (the player's own character) — they aren't here. Nobody talks to them, looks at them or answers them; write the scene without them.` : '',
+        a.main && c?.name2 ? `NOT IN THIS SCENE: ${c.name2} — they aren't here. Nobody talks to them or answers them.` : ''].filter(Boolean);
+}
+
+/** Pause the world layer (or wake it) for this chat's board — the World panel's rail shortcut (Miinthe, 2026-10-19). */
+export function setWorldPaused(paused) {
+    const name = chat_metadata?.[BOARD_KEY];
+    const rec = name ? boardStore()?.boards?.[name] : null;
+    if (!rec?.board) return false;
+    rec.board = { ...rec.board, world: { ...(rec.board.world || {}), paused: !!paused } };   // replaced, never edited in place
+    saveSettingsDebounced();
+    return true;
+}
+
+/**
  * Engine on v2, step 1 (2026-10-05, `13 engine on v2 plan.md`): every save of the engine's list also writes the step
  * trackers' places into the v2 chat state and logs each move there (kind 'step', with who / quote from the journal).
  * Nothing reads them yet — the engine still runs on its list. The first time in a chat (no `v2steps` yet) the places are
@@ -189,7 +219,7 @@ export function liveBoardPins() {
  */
 export function liveWriterLines() {
     const L = live();
-    return L ? [...stateLines(L.board, L.state), ...placeLines(L.board, L.state), ...castLines(L.board, L.state), ...arrivalLines(L.board, L.state, lastIndex()), ...offscreenLines(L.board, L.state, lastIndex()), ...meterLines(L.board, L.state, lastIndex()), ...collectionLines(L.board, L.state), ...toFindLines(L.board, L.state), ...justHappenedLines(L.board, L.state, lastIndex()), ...guidanceLines(L.board, L.state, entryText)] : [];
+    return L ? [...stateLines(L.board, L.state), ...placeLines(L.board, L.state), ...castLines(L.board, L.state), ...awayLines(), ...arrivalLines(L.board, L.state, lastIndex()), ...offscreenLines(L.board, L.state, lastIndex()), ...meterLines(L.board, L.state, lastIndex()), ...collectionLines(L.board, L.state), ...toFindLines(L.board, L.state), ...justHappenedLines(L.board, L.state, lastIndex()), ...guidanceLines(L.board, L.state, entryText)] : [];
 }
 /** The last AI reply before the one being written (a final AI message is the one a swipe redoes). */
 const lastIndex = () => {
@@ -211,10 +241,10 @@ export function filterLiveEntries(entries, isPinned) {
     return L ? filterByBoardLinks(filterByPlace(filterByItems(entries, L.board, L.state, isPinned), L.board, L.state, isPinned), L.board, L.state, isPinned) : entries;
 }
 /** After a delete / a branch: changes from later messages are rolled back. Returns what was undone. */
-export function rewindLiveTo(messageIndex) {
+export function rewindLiveTo(messageIndex, keep = null) {
     const L = live();
     if (!L) return [];
-    const r = rewindCollections(L.board, L.state, messageIndex);   // items, money and places (one log)
+    const r = rewindCollections(L.board, L.state, messageIndex, keep);   // items, money and places (one log)
     if (r.undone.length) saveLiveState(r.state);
     return r.undone;
 }

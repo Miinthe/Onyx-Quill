@@ -213,7 +213,7 @@ export const NOTE_FORMAT = 'To offer a note, add on its own line at the end: [[N
 /** A vault review talk: the whole vault is in front of her (what /dle-review used to post into the story chat). */
 const VAULT_REVIEW = 'Miinthe asked you to review her lore vault (all of it is below). Be concrete and name the entries: contradictions between entries, gaps, connections she may not have made, entries that say too little to be useful. Never rewrite her entries — say what you would change and why, and let her decide.';
 
-export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], vault = null, firstAnswer = false } = {}) {
+export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, firstAnswer = false } = {}) {
     const st = { persona: DEFAULT_PERSONA, talk: 'some', bringUp: false, ...settings };
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
     const system = [
@@ -234,13 +234,17 @@ export function buildMeroPrompt({ settings = {}, talk, character = '', persona =
         sec('Notes the writer follows right now', storyNotes.map(n => `- ${KINDS[n.kind]} ${n.text}`).join('\n')),
         sec('Where the story stands (the board — you may know more than the writer; never spoil it unasked)', board.join('\n')),
         sec(st.bringUp ? 'Big moments lately (bring them up yourself if Miinthe hasn\'t yet)' : 'Big moments lately', moments.map(m => `- ${m}`).join('\n')),
+        // world layer stage 5 (Miinthe, 2026-10-19: Mero gets "a short summary of the world", can talk about it and pitch from it)
+        sec('The world around the story (chatter, rumors, messages — people in the story know only what they heard)', world),
         vault ? VAULT_REVIEW : '',
         vault ? sec(`Miinthe's whole lore vault (${vault.length} entries)`, vault.map(e => `### ${e.title}\n${String(e.content || '').trim()}`).join('\n\n')) : '',
         vault ? '' : sec('Lore the writer was given for the last reply', entries.map(e => `### ${e.title}\n${String(e.content || '').slice(0, 1200)}`).join('\n\n')),
         sec('Character and persona', [cards, persona].filter(Boolean).join('\n\n')),
         sec('The latest replies of the roleplay', replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')),
     ].filter(Boolean).join('\n');
-    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'miinthe' ? 'user' : 'assistant', content: m.t }));
+    // context Miinthe added to a message (the 📎 picker: a post, a rumor, a conversation, a lore entry) goes with it
+    const withCtx = m => (arr(m.ctx).length ? `${m.t}\n\n[Context Miinthe added]\n${m.ctx.map(c => `### ${c.label}\n${String(c.text || '').slice(0, 2000)}`).join('\n\n')}` : m.t);
+    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'miinthe' ? 'user' : 'assistant', content: m.who === 'miinthe' ? withCtx(m) : m.t }));
     return { system, messages };
 }
 

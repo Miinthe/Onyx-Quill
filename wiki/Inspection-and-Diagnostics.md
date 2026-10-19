@@ -1,6 +1,6 @@
 # Inspection and Diagnostics
 
-Tools for understanding what DeepLore is doing, why entries did or did not inject, and how the vault is configured. Most of the surfaces here are also wired into the [[Drawer]] for inline use while chatting.
+Tools for understanding what DeepLore is doing, why entries did or did not inject, and how the vault is configured. Many of them are also reachable from the [[Drawer|side panel]] (its **Ready** button and its ⋯ menu) and from each reply's 📖 button (**Why these entries**).
 
 > [!NOTE]
 > When something is misbehaving, the fastest path is usually `/dle-health` for config sanity, then `/dle-inspect` for the last generation, then `/dle-diagnostics` for a shareable export.
@@ -9,7 +9,7 @@ Tools for understanding what DeepLore is doing, why entries did or did not injec
 
 ## Context Cartographer
 
-Adds a book icon button to each AI message's action bar. Click it to see which vault entries were injected for that message, why they matched, and how much context they used.
+Each message has a DeepLore button (📖) next to SillyTavern's own message buttons. Press it and choose **Why these entries** to see which vault entries were injected for that message, why they matched, and how much context they used.
 
 **The popup shows:**
 - Entry name (clickable link to Obsidian when vault connection names match Obsidian vault names)
@@ -23,12 +23,12 @@ Adds a book icon button to each AI message's action bar. Click it to see which v
 - Entry metadata: keys, requires, era, location, wikilinks
 
 **Setup:**
-1. Enable "Show Lore Sources Button" in [[Settings Reference|Context Cartographer settings]].
+1. Nothing to switch on: the 📖 button is on every message.
 2. Set vault connection names to match your Obsidian vault names exactly to enable deep links.
 
 **Notes:**
 - Source data is saved per-message in `message.extra.deeplore_sources`, so it persists across sessions.
-- The book icon only appears on messages that have lore source data.
+- On a message without lore source data, **Why these entries** is grayed out ("no lore used").
 
 ---
 
@@ -119,7 +119,7 @@ The interceptors are wrapped in try/catch so a bug in the diagnostic layer canno
 
 ## Entry Browser
 
-Browse all indexed entries via the **Browse tab** in the [[Drawer]], the `/dle-browse` popup, or the "Browse" button in the Quick Actions bar.
+Browse all indexed entries via **Lore › All entries** in the [[Drawer|side panel]], or the `/dle-browse` popup. The list below describes the `/dle-browse` popup; the side panel's list has its own search, filter chips and Select (see [[Drawer|Side Panel]]).
 
 **Features:**
 - Search by title or keyword (300ms debounce)
@@ -133,7 +133,7 @@ Browse all indexed entries via the **Browse tab** in the [[Drawer]], the `/dle-b
 - Virtual scrolling for large vaults (100+ entries)
 - "Why not injected?" diagnostics on unmatched entries (see below)
 
-**When to use:** quick review of the vault without switching to Obsidian. Good for keywords, priorities, token sizes, and injection patterns at a glance. The Drawer Browse tab provides the same functionality inline while chatting.
+**When to use:** quick review of the vault without switching to Obsidian. Good for keywords, priorities, token sizes, and injection patterns at a glance. The side panel's **Lore › All entries** gives you the same inline while chatting.
 
 ---
 

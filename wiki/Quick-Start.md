@@ -16,8 +16,8 @@ Get DeepLore injecting lore in five minutes. This page covers the shortest path:
 
 To configure manually instead:
 
-1. Open SillyTavern → Extensions → DeepLore
-2. Under **Vault Connections**, your default vault is preconfigured
+1. Open SillyTavern → Extensions → DeepLore → **Open DeepLore Settings** (or the bar's 📖 menu → **Setup and settings**)
+2. Go to **Vault** → **Vaults**. Your default vault is preconfigured
 3. Enter the **Port** (default `27123` for HTTP) and **API Key** from the Local REST API plugin settings
 4. Click **Test All**. You should see a green checkmark
 
@@ -53,8 +53,8 @@ The load-bearing pieces:
 
 ## Step 3: enable and index
 
-1. Check **Enable DeepLore** in settings
-2. Click **Refresh Index** (or run `/dle-refresh`)
+1. Check **Enable DeepLore** (SillyTavern → Extensions → DeepLore)
+2. In settings, **Vault** → **Reading** → **Re-read now** (or run `/dle-refresh`)
 3. The header badge should show "1 entries"
 
 ## Step 4: verify it works
@@ -62,7 +62,7 @@ The load-bearing pieces:
 1. Start or continue a chat
 2. Send a message mentioning "magic" or "spellcasting"
 3. Run `/dle-inspect`. Your entry should appear in the pipeline trace
-4. Click the **book icon** on the AI message to open the Context Cartographer and see which entries were injected
+4. Press the **📖 button** on the AI message, then **Why these entries**, to open the Context Cartographer and see which entries were injected
 
 ![DLE status output showing vault connection details, 234 indexed entries with tag breakdown, unlimited budget, AI Search enabled, and session statistics](images/dle-status.png)
 

@@ -117,8 +117,8 @@ export function entryAt(journal, messageIndex) {
     return found;
 }
 
-export function pruneAfter(journal, messageIndex) {
-    return (Array.isArray(journal) ? journal : []).filter(e => e && Number.isFinite(e.i) && e.i <= messageIndex);
+export function pruneAfter(journal, messageIndex, keep = null) {
+    return (Array.isArray(journal) ? journal : []).filter(e => e && Number.isFinite(e.i) && (e.i <= messageIndex || (keep && keep(e))));
 }
 
 // LOCAL PATCH (Miinthe, 2026-10-05): forks (forks-pure.js) — every journal entry carries the

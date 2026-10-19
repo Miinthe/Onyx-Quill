@@ -26,6 +26,8 @@ import {
 } from './autotrack-pure.js';
 // LOCAL PATCH (Miinthe, 2026-10-05): collections and the purse (storyboard stage 3, round 2)
 import { live, saveLiveState, entryText, liveStepJudgeSection } from './board-live.js';
+import { worldOf } from './world/world-pure.js';                 // the world layer (2026-10-19): the helper also reads the moment
+import { parseMoment } from './world/alive-pure.js';
 import { placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange } from './places-pure.js';   // round 3: places
 import { stateHelperSection, validateStateChanges, applyStateChanges, describeStateChange } from './state-pure.js';   // round 4: state + dates
 import { metersHelperSection, validateMeterChanges, applyMeterChanges, describeMeterChange, driftChanges, crossesBand } from './meters-pure.js';   // meters (2026-10-12)
@@ -76,7 +78,8 @@ export async function runAutoTrack(chatMessages, type, signal) {
     const castSection = L0 ? castHelperSection(L0.board, L0.state, { judgeText: entryText, placeName: h => placeOf(trackerOf(L0.board, h.place), h.at)?.name ?? null }) : '';
     const stepRules = L0 && trackers.length ? liveStepJudgeSection() : '';   // ⚖ judge entries on steps (2026-10-04)
     if (!trackers.length && !colSection && !placeSection && !stateSection && !meterSection && !castSection) return [];
-    const want = { collections: !!colSection, places: !!placeSection, state: !!stateSection, meters: !!meterSection, cast: !!castSection };
+    const wl = L0 ? worldOf(L0.board) : null;   // world layer on, with big or quiet moments in its mix → one more field
+    const want = { collections: !!colSection, places: !!placeSection, state: !!stateSection, meters: !!meterSection, cast: !!castSection, world: !!(wl && !wl.paused && (wl.alive.big || wl.alive.quiet)) };
 
     const conn = resolveConnectionConfig('storyTracker');
     if (conn.mode !== 'profile' || !conn.profileId) {
@@ -117,6 +120,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
             disableThinkingOnClaude: true, noReasoning: true, temperature: 0, signal,
         });
         ({ changes, items, money, places, state, dates, meters, people, cast, learns } = parseHelperAnswerAll(result?.text ?? ''));
+        if (want.world) { const moment = parseMoment(result?.text); if (moment) window.dispatchEvent(new CustomEvent('dle-world-moment', { detail: { moment, i: nowI0 } })); }
         ({ presence: cast, learns } = splitPeopleEvents(people, cast, learns));   // the Cast: one "people" list of events
     } catch (err) {
         if (err?.name !== 'AbortError') console.warn('[DLE] story tracker check failed:', err?.message || err);

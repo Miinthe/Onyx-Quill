@@ -87,7 +87,7 @@ Format: `#N — title`. Listed under the subsystem you'd most likely be editing 
 - #19 — `pseudonymizeTrace()` must scrub `matchedBy`/`reason`/`vaultSource`
 - #20 — Scrubber pattern callback argument counts
 
-**Drawer, settings & i18n UI** (`src/drawer/`, `src/ui/`, `locales/`)
+**Drawer, settings & i18n UI** (`src/drawer/`, `src/ui/`, `locales/`; in this fork also the new UI in `src/drawer/drawer-frame.js`, `src/panel/`, `src/bar/`, `src/settings/`, `src/kit/`, which sits on top of the old drawer DOM, kept in the page and hidden)
 - #47 — i18n hooks ST's built-in system — don't roll your own
 - #53 — PM-mode registration requires `promptManager.activeCharacter`
 - #56 — Drawer dismiss handler must exempt clicks inside ST popups

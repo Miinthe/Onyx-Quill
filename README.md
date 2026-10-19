@@ -7,6 +7,9 @@
 
 <h1 align="center">DeepLore</h1>
 
+> [!NOTE]
+> **This fork** (branch `dev/board-model`) is a private, heavily changed DeepLore based on upstream 2.6.2. It adds [Storyboards](wiki/Storyboards.md) (a board window with trackers: steps, collections, places, state and dates, meters and flags), a [Cast](wiki/Cast.md) of NPCs who speak in their own messages, [Mero ☆](wiki/Mero.md), a co-writer in the side panel, the [DeepLore bar](wiki/DeepLore-Bar.md) above the message box, a new [side panel](wiki/Drawer.md) (Lore · Filters · Story · Cast · Mero), a new settings window, and a 📖 menu on each message with "Why these entries". The rest of this README describes upstream DeepLore. Where it mentions the drawer's tabs or Emma, the [wiki](wiki/Home.md) pages describe how this fork shows them today.
+
 **World Info keyword matching breaks at scale. DeepLore reads your Obsidian vault instead: keywords plus AI retrieval, so the right lore fires even when the word wasn't typed.**
 
 ![Version](https://img.shields.io/badge/version-2.6.2-blue)

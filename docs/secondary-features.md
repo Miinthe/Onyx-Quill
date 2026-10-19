@@ -214,6 +214,8 @@ Custom Canvas-based force-directed graph visualization (no external library).
 
 ## 6b. Drawer Browse actions & footer diagnostics dock (v2.6, affordance-only)
 
+> **This fork:** the Browse tab is hidden; the side panel's Lore tab (`src/panel/lore-view.js`, All entries) draws the entry list from the same `renderBrowseTab()` row model. The footer, with its health icons, is moved into the header's Ready pop-up (`drawer-frame.js`) and redrawn there by `src/panel/ready-view.js`, which clicks the same icons.
+
 **Browse entry actions kebab:** the per-row pin/block/copy actions in the Browse tab are now a hover-reveal cluster behind a `⋮` kebab (`.dle-browse-kebab` inside `.dle-browse-actions`, built in `drawer-render-tabs.js`). Status readouts stay visible; the kebab folds away the action buttons so the row reads calm by default. Pin/block-active rows force the cluster open via `dle-actions-pinned-open` (computed at render). The kebab handler (`drawer-events.js`) toggles `dle-actions-open` on the LIVE DOM node only (and closes any other open cluster first) — it never mutates `ds.browseRowModel`, preserving gotcha #13 (the row model is render-derived, never mutated from event handlers).
 
 **Footer diagnostics dock:** the five footer health icons (vault / connection / pipeline / cache / ai) are now framed as a labeled "diagnostics dock" (`.dle-diag-dock` with a `.dle-diag-dock-label` in `drawer.html`). This is framing/affordance only — the click handlers were already wired in `wireHealthIcons` (`drawer-events.js`) and are unchanged.
@@ -318,7 +320,7 @@ Beyond the existing `init`, `obsidian_circuit`, `search_mode`, `cache_save`, `ca
 Read-only object created on `init()`. Three getters (no setters):
 
 - **`.state`** — snapshot of key state variables: `vaultIndex`, `generationCount`, `chatEpoch`, `generationLock`, `cooldownTracker`, etc.
-- **`.trace`** — returns `getCurrentVerdict()?.trace ?? null`
+- **`.trace`** — returns `getCurrentVerdictForRender()?.trace ?? null` (`index.js`)
 - **`.verdict`** — returns the current verdict record (genId, msgIdx, epoch, injectedSources, trace, perEntry)
 - **`.buffers`** — returns `.drain()` of all 7 ring buffers (`index.js:2783`): `console`, `network` (scrubbed via `scrubDeep` at this read surface — #12), `errors`, `aiCalls`, `aiPrompts` (PII-sensitive, only populated when debugMode=true), `events`, `generations`
 

@@ -21,6 +21,7 @@ import { STATE_HELPER_RULES, STATE_SCHEMA_PART } from './state-pure.js';   // LO
 import { METERS_HELPER_RULES, METERS_SCHEMA_PART } from './meters-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-12): meters
 import { CAST_HELPER_RULES, CAST_SCHEMA_PART } from './cast-pure.js';   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
 import { findQuoteMatch, normalizeForMatch } from './quote-match-pure.js';
+import { MOMENT_RULES, MOMENT_SCHEMA_PART } from './world/alive-pure.js';   // the world layer, stage 2 (2026-10-19): big / quiet moments
 
 export const DIRECTIONS = ['both', 'forward'];
 export const directionOf = t => (t?.direction === 'forward' ? 'forward' : 'both');
@@ -93,9 +94,9 @@ Answer with JSON only: {"changes": [{"tracker": "...", "step": "..." or null, "a
  */
 export function autoTrackSystemPrompt(opts) {
     const o = typeof opts === 'object' && opts ? opts : { collections: !!opts };
-    const rules = [o.collections ? COLLECTION_RULES : '', o.places ? PLACES_HELPER_RULES : '', o.state ? STATE_HELPER_RULES : '', o.meters ? METERS_HELPER_RULES : '', o.cast ? CAST_HELPER_RULES : ''].filter(Boolean);
+    const rules = [o.collections ? COLLECTION_RULES : '', o.places ? PLACES_HELPER_RULES : '', o.state ? STATE_HELPER_RULES : '', o.meters ? METERS_HELPER_RULES : '', o.cast ? CAST_HELPER_RULES : '', o.world ? MOMENT_RULES : ''].filter(Boolean);
     if (!rules.length) return AUTOTRACK_SYSTEM_PROMPT;
-    const parts = [o.collections ? '"items": [...], "money": [...]' : '', o.places ? '"places": [...]' : '', o.state ? '"state": [...], "dates": [...]' : '', o.meters ? '"meters": [...]' : '', o.cast ? '"people": [...]' : ''].filter(Boolean).join(', ');
+    const parts = [o.collections ? '"items": [...], "money": [...]' : '', o.places ? '"places": [...]' : '', o.state ? '"state": [...], "dates": [...]' : '', o.meters ? '"meters": [...]' : '', o.cast ? '"people": [...]' : '', o.world ? '"moment": "normal"' : ''].filter(Boolean).join(', ');
     return AUTOTRACK_SYSTEM_PROMPT
         .replace('\nAnswer with JSON only:', `\n${rules.join('\n')}\n\nAnswer with JSON only:`)
         .replace('"confidence": "high"}]}', `"confidence": "high"}], ${parts}}. Leave out a part (or give []) when nothing changed there`);
@@ -103,8 +104,8 @@ export function autoTrackSystemPrompt(opts) {
 /** The answer's JSON schema, with the parts for collections / places. */
 export function autoTrackSchema(opts) {
     const o = typeof opts === 'object' && opts ? opts : { collections: !!opts };
-    if (!o.collections && !o.places && !o.state && !o.meters && !o.cast) return AUTOTRACK_SCHEMA;
-    return { ...AUTOTRACK_SCHEMA, value: { ...AUTOTRACK_SCHEMA.value, properties: { ...AUTOTRACK_SCHEMA.value.properties, ...(o.collections ? COLLECTION_SCHEMA : {}), ...(o.places ? PLACES_SCHEMA_PART : {}), ...(o.state ? STATE_SCHEMA_PART : {}), ...(o.meters ? METERS_SCHEMA_PART : {}), ...(o.cast ? CAST_SCHEMA_PART : {}) } } };
+    if (!o.collections && !o.places && !o.state && !o.meters && !o.cast && !o.world) return AUTOTRACK_SCHEMA;
+    return { ...AUTOTRACK_SCHEMA, value: { ...AUTOTRACK_SCHEMA.value, properties: { ...AUTOTRACK_SCHEMA.value.properties, ...(o.collections ? COLLECTION_SCHEMA : {}), ...(o.places ? PLACES_SCHEMA_PART : {}), ...(o.state ? STATE_SCHEMA_PART : {}), ...(o.meters ? METERS_SCHEMA_PART : {}), ...(o.cast ? CAST_SCHEMA_PART : {}), ...(o.world ? MOMENT_SCHEMA_PART : {}) } } };
 }
 
 /** The user message: the trackers as they stand (plus the collections section), then the recent messages. */

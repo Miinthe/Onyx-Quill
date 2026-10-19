@@ -9,7 +9,7 @@ Common issues and how to fix them. Run `/dle-health` first; it catches most prob
 - **Check:** Is the Local REST API plugin enabled in Obsidian settings?
 - **Check:** Does the port in DeepLore settings match the REST API plugin port? Default: `27123` for HTTP, `27124` for HTTPS.
 - **Check:** Is another application using the same port?
-- **Try:** Restart Obsidian, then click **Test All** in DeepLore settings.
+- **Try:** Restart Obsidian, then click **Test all** in DeepLore settings (**Vault** → **Vaults**).
 
 ### "Authentication failed" (401/403)
 - **Check:** Your API key matches what is shown in Obsidian → Settings → Local REST API.
@@ -20,7 +20,7 @@ Common issues and how to fix them. Run `/dle-health` first; it catches most prob
 - **Check:** Obsidian is not frozen or unresponsive.
 - **Check:** No firewall is blocking localhost connections.
 - **Check:** The Local REST API plugin is enabled (not just installed).
-- **Try:** Increase the cache TTL in Index and Cache settings to reduce connection frequency.
+- **Try:** Increase **Keep the index for** (Settings → Vault → Reading, behind More) to reduce connection frequency.
 
 ### HTTPS certificate not trusted
 
@@ -43,10 +43,10 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 
 ### Keywords not triggering
 - **Run:** `/dle-inspect` after sending a message and check the keyword-matches section.
-- **Check:** Scan depth is not 0 (Settings → Matching).
+- **Check:** **Messages to read** is not 0 (Settings → Lore selection → Keywords).
 - **Check:** Keywords are in the entry's `keys:` frontmatter field, not just in the content body.
-- **Check:** "Match Whole Words" setting. With it on, "ai" will not match "artificial".
-- **Check:** "Case Sensitive" setting. With it on, "Eris" will not match "eris".
+- **Check:** "Whole words only" (Settings → Lore selection → Keywords, behind More). With it on, "ai" will not match "artificial".
+- **Check:** "Case sensitive" (same place). With it on, "Eris" will not match "eris".
 - **Check:** The entry has the configured lorebook tag (default: `lorebook`).
 - **Try:** `/dle-lint` to see if the entry was skipped during the last index build.
 
@@ -71,12 +71,12 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ### "AI search failed, using keyword fallback"
 - **Timed out:** increase the AI Search timeout (default: 20s).
 - **Auth error:** check that your connection profile's API key is valid.
-- **Profile not found:** select a profile in AI Search settings, or create one in Connection Manager.
+- **Profile not found:** select a profile in Settings → AI & connections, or create one in Connection Manager.
 - **Network error:** verify your connection profile works in SillyTavern's main API panel.
 - **Server error:** the API provider may be down. Try again later.
 
 > [!NOTE]
-> If you see **"Custom Proxy mode was removed in v2.5"**, a channel is still set to the removed proxy mode. Open **Settings → Connection → AI Connections** and pick a Connection Profile for it. (DeepLore migrates `proxy` settings to `profile` automatically on upgrade, but a manually-edited setting can still hit this.)
+> If you see **"Custom Proxy mode was removed in v2.5"**, a channel is still set to the removed proxy mode. Open **Settings → AI & connections** and pick a Connection Profile for it. (DeepLore migrates `proxy` settings to `profile` automatically on upgrade, but a manually-edited setting can still hit this.)
 
 ### AI search returning empty results
 - **Check:** Entries have a `summary:` field. AI search relies on summaries to decide relevance.
@@ -98,7 +98,7 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ### AI search timing out with local LLMs
 - Local models (e.g. Magistry 24B, Qwen, Mistral) are often much slower than cloud APIs and may need 60-120 seconds to respond, especially on longer chats.
 - The default AI search timeout is 20,000ms (20 seconds), tuned for fast cloud APIs.
-- **Fix:** Increase the timeout in Settings → AI Search → Show Advanced → Timeout. Values of 60000-120000ms (60-120 seconds) are common for local models. The cap is 999999ms (~16 minutes) for cases where a slow provider routinely runs longer. The same applies to Scribe and Auto-Suggest timeouts in their respective tabs.
+- **Fix:** Increase the **Time limit** for the **Judge** job (the AI that picks lore) in Settings → AI & connections, shown in seconds. 60-120 seconds is common for local models. Scribe and New lore (Auto Lorebook) have their own time limits there too.
 
 ### AI circuit breaker tripped
 - After 2 consecutive AI failures (timeouts, errors), the circuit breaker trips and AI search is disabled for 30 seconds.
@@ -125,7 +125,7 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 - **Connection failed:** the vault connection test should be green. Fix the connection first.
 
 ### Entries injecting in wrong position
-- **Check:** Injection settings (before/after prompt, or `in_chat` with depth).
+- **Check:** Settings → Where it goes (before/after the main prompt, or in the chat with a depth).
 - **Check:** Per-entry overrides. Entries can have their own `position`, `depth`, and `role` in frontmatter.
 - **Check:** In `prompt_list` mode, drag the DeepLore entries in Prompt Manager to your preferred position.
 
@@ -133,7 +133,7 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 
 ### Stale entries (edits in Obsidian not showing up)
 - **Quick fix:** run `/dle-refresh` to force a full rebuild.
-- **Check:** Cache TTL setting. With it set high (e.g. 300s), changes take up to 5 minutes to appear.
+- **Check:** **Keep the index for** (Settings → Vault → Reading). With it set high (e.g. 300s), changes take up to 5 minutes to appear.
 - **Check:** Sync polling interval. Controls how often DeepLore checks for changes in the background.
 - **Fix:** Lower cache TTL to 60-120s for faster updates during active editing.
 
@@ -177,7 +177,7 @@ The Librarian auto-enables function calling on the active connection when it is 
 3. Run `/dle-status` to see the full extension state.
 4. Run `/dle-diagnostics` to export an anonymized report.
 5. [Open an issue on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with:
-   - Your DeepLore version (see About tab)
+   - Your DeepLore version (Settings › Advanced › Reference › **About**)
    - The error message or unexpected behavior
    - Steps to reproduce
    - `/dle-status` output

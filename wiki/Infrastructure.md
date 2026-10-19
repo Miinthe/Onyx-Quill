@@ -4,9 +4,12 @@ The under-the-hood systems that make DeepLore fast, reliable, and provider-agnos
 
 ---
 
-## Connection channels (six independent)
+## Connection channels
 
-DeepLore has six independent AI connection channels. Each feature picks its own profile, model, and timeout. The channels are kept separate on purpose so you can route a tool-calling Claude or GPT-4o to Emma while AI search runs on a cheap model, or split Scribe to a long-context model and keep retrieval on Haiku.
+> [!NOTE]
+> **In this fork** the channels are set in **Settings › AI & connections**, one row per job: Judge (AI Search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad and Optimize keywords. Each row's **Fine print** fold holds the model, answer length, time limit and **Test**. The Librarian is not listed there; its `librarian*` settings still exist in the code.
+
+DeepLore has several independent AI connection channels. Each feature picks its own profile, model, and timeout. The channels are kept separate on purpose so you can route a tool-calling Claude or GPT-4o to Emma while AI search runs on a cheap model, or split Scribe to a long-context model and keep retrieval on Haiku.
 
 | Channel | Settings prefix | Default mode | What it does |
 |---|---|---|---|
@@ -16,6 +19,8 @@ DeepLore has six independent AI connection channels. Each feature picks its own 
 | **AI Notepad** | `aiNotepad*` | `inherit` | Extract-mode session notes (the post-generation extraction call). Tag mode uses no AI channel of its own. |
 | **Librarian** | `librarian*` | `inherit` (since v3) | Emma's chat sessions and the writing-AI tool calls (`search`, `flag`). Requires a tool-calling-capable connection; falls back to plain generation if unsupported. |
 | **Optimize Keys** | `optimizeKeys*` | `inherit` | The `/dle-optimize-keys` AI keyword refiner. |
+| **Story helper** | `storyTracker*` | `profile` | Moves the [[Storyboards|storyboard]] trackers; also the [[Cast]]'s director. |
+| **Mero ☆** | `mero*` | `profile` | [[Mero]]'s talks, pitches and entry ideas. |
 
 `inherit` mode reuses the AI Search connection's profile and model. The feature still keeps its own `maxTokens` and `timeout`. Set the channel to `profile` and pick its own profile to override.
 
@@ -38,7 +43,7 @@ Each channel runs in one of two modes:
 >
 > ```
 > Custom Proxy mode was removed in v2.5. Pick a Connection Profile in
-> DLE Settings → Connection → AI Connections.
+> DLE Settings → Setup → AI Connections.
 > ```
 >
 > The proxy code is retained behind the hidden UI for rollback only. Treat Connection Profile as the single supported path.
@@ -81,9 +86,9 @@ Connect multiple Obsidian vaults at once. Each vault has its own host, port, API
 
 **Setup:**
 
-1. In Settings → Connection → Obsidian, click **Add Vault** to add a new connection.
+1. In **Settings › Vault**, click **Add a vault** to add a new connection.
 2. Each vault has Name, Host, Port, HTTPS, API Key, and Enabled.
-3. Click **Test All** to verify all enabled connections.
+3. Click **Test all** to verify all enabled connections.
 4. Use **Scan Vaults** to sweep a port range looking for responding Local REST API instances.
 
 **Notes:**
@@ -134,9 +139,9 @@ When the index rebuilds, DLE compares the new index against the previous one and
 - Modified content
 - Changed keywords
 
-**Auto-sync polling:** set Auto-Sync Interval to re-check the vault every N seconds. When changes get detected, toast notifications summarize what changed (controlled by Show Sync Change Toasts).
+**Auto-sync polling:** set **Settings › Vault › Re-read the vault every** N seconds (0 = only by hand). When changes are found, a notice says what changed (controlled by **Tell me what changed**).
 
-**Manual refresh:** click **Refresh Index** in Settings → System, or run `/dle-refresh`.
+**Manual refresh:** click **Re-read** (Re-read now) in **Settings › Vault**, press **Refresh** in the side panel's header, or run `/dle-refresh`.
 
 ---
 

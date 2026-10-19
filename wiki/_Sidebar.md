@@ -10,7 +10,12 @@
 
 **Features**
 - [[Features]]
-  - [[Drawer]]
+  - [[Drawer|Side Panel]]
+  - [[DeepLore Bar]]
+  - [[My Notes]]
+  - [[Storyboards]]
+  - [[Cast]]
+  - [[Mero]]
   - [[Inspection and Diagnostics]]
   - [[AI-Powered Tools]]
   - [[Entry Matching and Behavior]]

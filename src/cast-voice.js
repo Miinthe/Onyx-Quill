@@ -158,6 +158,19 @@ export function cannotSpeak() {
 }
 
 /**
+ * SillyTavern's generate('normal') sends whatever is in the chat box as your message: what you are typing is taken out
+ * while the AI writes and given back after, with anything typed meanwhile kept behind it (Miinthe, 2026-10-19: "my reply
+ * gets sent early regularly" — half a sentence went out when the round moved on to Toaster).
+ */
+export function holdBox() {
+    const box = document.getElementById('send_textarea');
+    const kept = box?.value ?? '';
+    if (!box || !kept) return () => {};
+    box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true }));
+    return () => { box.value = kept + box.value; box.dispatchEvent(new Event('input', { bubbles: true })); };
+}
+
+/**
  * The NPC writes her own message now. Resolves when it is done (true) or couldn't start (false). `exit`: { why } — in
  * this message she walks out of the scene, saying so; right after it she is gone (logged, Undo).
  */
@@ -170,9 +183,7 @@ export async function speakAs(castId, personId, { exit = null } = {}) {
     if (why) { try { toastr.info(why, 'Cast'); } catch { /* noop */ } return false; }
     bringIn(w);
     const ctx = getContext();
-    const box = document.getElementById('send_textarea');
-    const kept = box?.value ?? '';
-    if (box && kept) { box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true })); }
+    const giveBack = holdBox();
     npcTurn = { cast: w.cast.id, person: w.p.id, name: w.p.name, avatar: w.p.card || null, swipe: false, ...(exit ? { exit } : {}) };
     const before = ctx.chat.length;
     const done = generationDone();
@@ -191,7 +202,7 @@ export async function speakAs(castId, personId, { exit = null } = {}) {
         // she may have walked out on her own: that counts now, not one message later
         await checkExit(w.cast.id, w.p.id, getContext().chat.at(-1).mes);
     }
-    if (box && kept && !box.value) { box.value = kept; box.dispatchEvent(new Event('input', { bubbles: true })); }
+    giveBack();
     // no new message from her: the generation failed (the model crashed, a stop) — the round must stop, not go on
     // firing request after request (live 2026-10-14: a round kept sending to a crashed model)
     const spoke = getContext().chat.length > before && npcOfMessage(getContext().chat.at(-1))?.person === w.p.id;

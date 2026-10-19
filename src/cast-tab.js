@@ -32,7 +32,9 @@ function change(castId, personId, field, to) {
     const L = live(); if (!L) return;
     saveLiveState(handChange(L.board, L.state, castId, personId, field, to, at()));
 }
-const nameOf = (L, x) => (x.kind === 'you' ? 'You' : L.board.trackers.find(t => t.id === x.cast)?.people?.find(p => p.id === x.person)?.name ?? '?');
+// the player by their persona's name, never "You" (Miinthe, 2026-10-19: "'you' should be just {{user}}")
+const userName = () => getContext()?.name1 || '{{user}}';
+const nameOf = (L, x) => (x.kind === 'you' ? userName() : L.board.trackers.find(t => t.id === x.cast)?.people?.find(p => p.id === x.person)?.name ?? '?');
 
 /**
  * Overhaul (2026-10-15): the new Cast view (src/panel/cast-view.js) draws the tab instead, on the same events; this
@@ -59,7 +61,7 @@ export function renderCastTab() {
     const mainName = getContext()?.name2 || 'Main character';
     const mine = q.filter(isMine), ai = q.filter(x => !isMine(x));
     const qRow = (x, k, half) => {
-        const name = x.kind === 'you' ? 'You' : x.kind === 'main' ? mainName : nameOf(L, x);
+        const name = x.kind === 'you' ? userName() : x.kind === 'main' ? mainName : nameOf(L, x);
         const icon = x.kind === 'you' ? '🙂' : x.kind === 'main' ? '💬' : isMine(x) ? '✍️' : '🤖';
         const sub = x.kind === 'you' ? 'your message from the chat box' : x.kind === 'main' ? 'the main character replies'
             : isMine(x) ? `you write: “${esc(x.text.slice(0, 60))}${x.text.length > 60 ? '…' : ''}”` : x.exit ? esc(`says goodbye and leaves${x.exit.why ? ` — ${x.exit.why}` : ''}`) : esc(x.why ? `the AI writes — ${x.why}` : 'the AI writes');
@@ -108,9 +110,9 @@ export function renderCastTab() {
             ${ai.length ? `<ol class="dle-cast-ql" start="${mine.length + 1}">${ai.map((x, k) => qRow(x, k, ai)).join('')}</ol>` : '<div class="dle-cast-dim dle-cast-none">No AI replies this round.</div>'}
             ${sugg.length ? `<div class="dle-cast-sugg">${sugg.map(w => `<button type="button" class="menu_button dle-cast-sug" data-sug="${esc(w.cast)}:${esc(w.person)}" title="${esc(w.why || '')}">✨ ${esc(nameOf(L, { kind: 'npc', ...w }))} ${w.leave ? 'wants to leave — let them go' : 'wants to say something — add'}</button>`).join('')}</div>` : ''}
             <div class="dle-cast-qa">
-                <select class="text_pole dle-cast-addsel"><option value="">+ add…</option>${q.some(x => x.kind === 'you') ? '' : '<option value="you">🙂 You</option>'}${people.map(({ c, p }) => `<option value="w:${esc(c.id)}:${esc(p.id)}">✍️ ${esc(p.name)} — you write</option><option value="a:${esc(c.id)}:${esc(p.id)}">🤖 ${esc(p.name)} — the AI writes</option>`).join('')}${q.some(x => x.kind === 'main') ? '' : `<option value="main">💬 ${esc(mainName)}</option>`}</select>
+                <select class="text_pole dle-cast-addsel"><option value="">+ add…</option>${q.some(x => x.kind === 'you') ? '' : `<option value="you">🙂 ${esc(userName())}</option>`}${people.map(({ c, p }) => `<option value="w:${esc(c.id)}:${esc(p.id)}">✍️ ${esc(p.name)} — you write</option><option value="a:${esc(c.id)}:${esc(p.id)}">🤖 ${esc(p.name)} — the AI writes</option>`).join('')}${q.some(x => x.kind === 'main') ? '' : `<option value="main">💬 ${esc(mainName)}</option>`}</select>
                 ${run ? '<button type="button" class="menu_button dle-cast-stop">■ Stop after this one</button>' : `<button type="button" class="menu_button dle-cast-go" ${q.length ? '' : 'disabled'}>▶ Go</button>`}
-                ${!run ? '<button type="button" class="menu_button dle-cast-clear" title="Back to: You, then the main character">Reset</button>' : ''}
+                ${!run ? '<button type="button" class="menu_button dle-cast-clear" title="Back to: your persona, then the main character">Reset</button>' : ''}
             </div>
             <div class="dle-cast-dim dle-text-sm">Send in the chat box works too: your message, the main character, then the AI's people above.</div>
         </div>

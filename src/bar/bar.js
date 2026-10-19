@@ -1,8 +1,8 @@
 /**
  * Overhaul round 2a (2026-10-15) — the DeepLore bar above the message box. Rules: bar-pure.js. Looks: frame.css.
  *
- * PC:    📖 · side panel (dot / envelope) · starred Quick Replies · all Quick Replies │ Re-evaluate · Simple send · Draft
- * Phone: 📖 · side panel · Quick Replies · ⋯ (the special buttons); the last two take over the row (‹ back), and a
+ * PC:    📖 · side panel (dot / envelope) · starred Quick Replies · all Quick Replies · My notes │ Re-evaluate · Simple send · Draft
+ * Phone: 📖 · side panel · Quick Replies · My notes · ⋯ (the special buttons); the last two take over the row (‹ back), and a
  *        handle on top pulls the row taller for more rows (Miinthe: "I hate being unnecessarily limited").
  * While DeepLore works on a reply its status line (index.js, the old toast) sits in the bar, with Cancel.
  * While the reply waits for Miinthe's answer a small bubble says so above the bar.
@@ -14,8 +14,11 @@ import { saveSettingsDebounced, eventSource, event_types } from '../../../../../
 import { getContext } from '../../../../../extensions.js';
 import { getSettings } from '../../settings.js';
 import { requestsHere, replyWaits, onRequestsChanged } from '../requests.js';
-import { panelButton, toggleHot, isHot, hotButtons, qrTitle, draftStep } from './bar-pure.js';
+import { meroGlow, onMeroChanged } from '../mero.js';
+import { panelButton, toggleHot, moveHot, isHot, hotButtons, qrTitle, draftStep } from './bar-pure.js';
 import * as K from '../kit/kit.js';
+import { toggleNotes, notesOpen, close as closeNotes } from '../notes.js';
+import { worldHere, worldOpen, toggleWorld, closeWorld, worldDots } from '../world/world.js';
 
 const I = K.icon;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -34,6 +37,7 @@ const toggleEl = () => document.querySelector('#deeploreDrawerIcon')?.closest('.
 const activeTab = () => panelEl()?.querySelector('.dle-tab.active')?.dataset.tab || null;
 function togglePanel() { toggleEl()?.click(); }
 function openPanel() { if (!panelOpen()) togglePanel(); }
+function pressLock() { panelEl()?.querySelector('.dle-lock')?.click(); }
 
 function pressPanel() {
     const s = panelButton(state());
@@ -50,9 +54,10 @@ function pressPanel() {
 }
 
 function state() {
-    let waiting = 0, hold = false;
+    let waiting = 0, hold = false, glow = false;
     try { waiting = requestsHere().waiting.length; hold = replyWaits(); } catch { /* requests not ready yet */ }
-    return { open: panelOpen(), locked: locked(), phone: phone(), waiting, hold, onRequests: onReq && activeTab() === 'mero', left: getSettings().drawerSide === 'left' };
+    try { glow = meroGlow().glows; } catch { /* no board here */ }
+    return { open: panelOpen(), locked: locked(), phone: phone(), waiting, hold, glow, onRequests: onReq && activeTab() === 'mero', left: getSettings().drawerSide === 'left' };
 }
 
 // ── SillyTavern's Quick Replies ─────────────────────────────────────────────
@@ -62,9 +67,11 @@ function qrApi() { return globalThis.quickReplyApi || null; }
 function qrSets() {
     const api = qrApi();
     if (!api) return [];
-    const pick = list => (list || []).map(x => x?.set).filter(Boolean);
-    let sets = [...pick(api.settings?.config?.setList), ...pick(api.settings?.chatConfig?.setList)];
-    if (!sets.length) { try { sets = api.listSets().map(n => api.getSetByName(n)).filter(Boolean); } catch { sets = []; } }
+    // only the sets SillyTavern shows here: global, this chat's and this character's, each one switched to visible —
+    // never every set there is (Miinthe 2026-10-18: the bar listed all of them; the character's were missing as well)
+    const pick = list => (list || []).filter(x => x?.set && x.isVisible !== false).map(x => x.set);
+    const cfg = api.settings || {};
+    const sets = [...pick(cfg.config?.setList), ...pick(cfg.chatConfig?.setList), ...pick(cfg.charConfig?.setList)];
     const seen = new Set();
     return sets.filter(s => !seen.has(s.name) && seen.add(s.name))
         .map(s => ({ name: s.name, qrs: (s.qrList || []).filter(q => !q.isHidden && q.label).map(q => ({ label: q.label, title: q.title, message: q.message })) }))
@@ -125,7 +132,7 @@ async function draft() {
     if (step.ask && !(await K.ask({ title: 'Swap them?', text: 'The draft goes into the message box, and what is there now is kept as the draft.', yes: 'Swap' }))) return;
     if (step.draft !== draftText && !(await writeDraft(step.draft))) { K.notify({ title: 'Draft', text: 'The draft could not be saved — nothing was changed.', tone: 'bad' }); return; }
     setBox(step.box);
-    K.notify({ title: 'Draft', text: step.say });
+    // no notice when it worked (Miinthe, 2026-10-19: "remove the popup message when saving or retrieve a draft"); a failure still says so
     draw();
 }
 const refreshDraft = async () => { const before = draftText; await readDraft(); if (draftText !== before) draw(); };
@@ -139,8 +146,11 @@ async function reevaluate() {
 function bookItems() {
     return [
         { heading: 'DeepLore' },
-        locked() ? { label: 'The side panel is locked open', icon: 'lock', sub: 'unlock it in its header', disabled: true }
-            : { label: panelOpen() ? 'Close the side panel' : 'Open the side panel', icon: getSettings().drawerSide === 'left' ? 'panelL' : 'panel', onClick: togglePanel },
+        ...(locked() ? [] : [{ label: panelOpen() ? 'Close the side panel' : 'Open the side panel', icon: getSettings().drawerSide === 'left' ? 'panelL' : 'panel', onClick: togglePanel }]),
+        // one two-way switch (Miinthe, 2026-10-19: "lock / unlock the side panel" from the bar's menu); the header's lock does
+        // the same, so this presses it and both stay in step. Not on a phone — the panel can't be locked there.
+        ...(phone() ? [] : [locked() ? { label: 'Unlock the side panel', icon: 'unlock', onClick: pressLock }
+            : { label: 'Lock the side panel open', icon: 'lock', onClick: () => { openPanel(); pressLock(); } }]),
         { label: 'Open the board', icon: 'board', onClick: async () => { const { openBoardWindow } = await import('../board-window.js'); openBoardWindow(); } },
         // overhaul (2026-10-17): the board's entries window, opened on its own (one copy of it — board/board.html EW)
         { label: 'Write a new entry…', icon: 'newentry', title: 'A new entry for your vault, filed where Settings › New entries says. Mero can draft it.', onClick: async () => { const { openBoardWindow } = await import('../board-window.js'); openBoardWindow({ entry: true }); } },
@@ -185,14 +195,36 @@ let queued = false;
 /** Redraw soon (many changes can arrive at once). */
 function soon() { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; draw(); }); }
 
+// A redraw while a button is held down swaps the button out, and the tap never becomes a click (Miinthe 2026-10-18: "sometimes
+// the icon doesn't react" — the tap itself closes the side panel or another panel, which redraws the bar). So while
+// a pointer is down on the bar, a redraw waits until it is let go (and the click has run).
+let pressing = false, pendingDraw = false, pressTimer = null;
+function pressStart() {
+    pressing = true;
+    clearTimeout(pressTimer); pressTimer = setTimeout(pressEnd, 3000);   // a lost pointerup never blocks the bar
+}
+function pressEnd() {
+    if (!pressing) return;
+    pressing = false; clearTimeout(pressTimer);
+    if (pendingDraw) setTimeout(() => { pendingDraw = false; draw(); }, 0);
+}
+
 function draw() {
     if (!bar) return;
+    if (pressing) { pendingDraw = true; return; }
     const st = state(), pb = panelButton(st), s = getSettings();
     const sets = qrSets(), hot = hotButtons(s.barHot, sets);
     document.body.classList.toggle('dle-bar-has-hot', hot.length > 0 && s.barHideStQr !== false);
-    const dot = pb.dot ? `<span class="dle-dot${pb.dot === 'hold' ? ' hold' : ''}"></span>` : '';
+    const dot = pb.dot ? `<span class="dle-dot${pb.dot === 'mero' ? '' : ' ' + pb.dot}"></span>` : '';
     const pCls = (pb.pressed ? ' on' : '') + (pb.icon === 'mail' ? ' env' + (pb.dot ? ' ' + pb.dot : '') : '') + (st.hold && !pb.pressed ? ' wiggle' : '');
     const book = db('book', 'book', 'DeepLore menu');
+    // Settings › Interface › The bar › My notes: off → no button (and an open window closes); the notes stay in their file
+    if (s.notesEnabled === false && notesOpen()) closeNotes();
+    const notesB = s.notesEnabled === false ? '' : db('notes', 'notebook', 'My notes (never sent to the AI)', '', notesOpen() ? ' on' : '');
+    // the world layer (2026-10-19): a globe only where this chat's board has it switched on
+    const wOn = !!worldHere();
+    if (!wOn && worldOpen()) closeWorld();
+    const worldB = wOn ? db('world', 'globe', 'World: chatter, news, messages, people', worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join(''), worldOpen() ? ' on' : '') : '';
     const panelB = db('panel', pb.icon, pb.title, dot, pCls);
     const draftDot = draftText ? '<span class="dle-dot draft"></span>' : '';
     const specials = db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') +
@@ -201,30 +233,49 @@ function draw() {
     const allQr = sets.map(x => x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
     let row;
     if (phone() && mode !== 'home') {
-        const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Make them in SillyTavern’s Quick Reply settings">No Quick Replies yet.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
+        const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
         row = `<div class="dle-grab" data-b="grab" title="Pull up for more room"></div>${db('back', 'back', 'Back')}<div class="dle-take${takeH > 46 ? ' wrapped' : ''}" style="height:${takeH}px">${inner}</div>`;
     } else if (phone()) {
-        row = book + panelB + db('qrs', 'qr', 'Quick replies') + db('sp', 'more', 'More: re-evaluate, simple send, draft', draftDot);
+        row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + db('sp', 'more', 'More: re-evaluate, simple send, draft', draftDot);
     } else {
-        row = book + panelB + `<div class="dle-hot">${hot.map(qrBtn).join('')}</div>` + db('qrs', 'qr', 'All quick replies', '', '') + '<span class="dle-vsep"></span>' + specials;
+        row = book + panelB + `<div class="dle-hot">${hot.map(qrBtn).join('')}</div>` + db('qrs', 'qr', 'All quick replies', '', '') + notesB + worldB + '<span class="dle-vsep"></span>' + specials;
     }
     const main = bar.querySelector('.dle-bar-main');
     if (main.innerHTML !== row) main.innerHTML = row;   // unchanged → keep focus and hover where they are
     bar.classList.toggle('phone', phone());
     const bub = bar.querySelector('.dle-bar-bubble');
     bub.hidden = !st.hold;
+    // Mero's own banner, like the requests' one (Miinthe, 2026-10-19: "give her a notification banner like request, but make
+    // the banner go away when clicked"): opening her talks marks the moment seen, and the glow — and this — go out
+    bar.querySelector('.dle-bar-bubble.mero').hidden = !st.glow || st.hold;
 }
 
 // ── the Quick Reply drawer (PC: a pop-up above the bar; phone: a window, for choosing the stars) ──
 
 let popClose = null;
 function closePop() { popClose?.(); popClose = null; }
+const set_ = q => `${q.set} › ${q.label}`;
 function qrDrawerBody() {
     const s = getSettings(), sets = qrSets();
     const body = document.createElement('div');
     body.className = 'dle-qrsets';
     if (!qrApi()) { body.innerHTML = '<p class="dk-hint">SillyTavern’s Quick Reply extension is not loaded.</p>'; return body; }
-    if (!sets.length) { body.innerHTML = '<p class="dk-hint" title="Make a set in SillyTavern’s Quick Reply settings; it shows up here">No Quick Replies yet.</p>'; return body; }
+    if (!sets.length) { body.innerHTML = '<p class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here — switch a set on for everywhere, this chat or this character in SillyTavern’s Quick Reply settings.</p>'; return body; }
+    // the bar's order, rearranged here (Miinthe, 2026-10-19: "rearrange the button sequence in the bar")
+    const hot = hotButtons(s.barHot, sets);
+    if (hot.length > 1) {
+        const h = document.createElement('h4'); h.className = 'dk-label'; h.textContent = 'On the bar, in this order';
+        const g = document.createElement('div'); g.className = 'dle-qrorder';
+        hot.forEach((q, n) => {
+            const d = document.createElement('div'); d.className = 'dle-dq';
+            d.innerHTML = `<button type="button" class="mv" aria-label="Earlier" title="Earlier"${n ? '' : ' disabled'}>‹</button><span class="run" title="${esc(set_(q))}">${esc(q.label)}</span><button type="button" class="mv" aria-label="Later" title="Later"${n < hot.length - 1 ? '' : ' disabled'}>›</button>`;
+            const [up, down] = d.querySelectorAll('.mv');
+            const move = by => { s.barHot = moveHot(s.barHot, q, by); saveSettingsDebounced(); draw(); const nb = qrDrawerBody(); body.replaceWith(nb); };
+            up.onclick = () => move(-1); down.onclick = () => move(1);
+            g.append(d);
+        });
+        body.append(h, g);
+    }
     for (const set of sets) {
         const h = document.createElement('h4'); h.className = 'dk-label'; h.textContent = set.name;
         const g = document.createElement('div'); g.className = 'dle-qrgrid';
@@ -275,6 +326,8 @@ function onClick(e) {
         case 'reev': reevaluate(); break;
         case 'ssend': simpleSend(); break;
         case 'draft': draft(); break;
+        case 'notes': toggleNotes(); break;
+        case 'world': toggleWorld(); break;
     }
 }
 function onGrab(e) {
@@ -298,10 +351,13 @@ function mount() {
         bar.id = 'dle-bar';
         bar.className = 'dle-bar dk';
         bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'DeepLore bar');
-        bar.innerHTML = '<button type="button" class="dle-bar-bubble" hidden>⏸ Waiting for your answer</button><div class="dle-bar-main"></div><div id="dle-bar-work"></div>';
+        bar.innerHTML = '<button type="button" class="dle-bar-bubble" hidden>⏸ Waiting for your answer</button><button type="button" class="dle-bar-bubble mero" hidden>☆ Mero wants to talk</button><div class="dle-bar-main"></div><div id="dle-bar-work"></div>';
         bar.addEventListener('click', onClick);
         bar.addEventListener('pointerdown', onGrab);
-        bar.querySelector('.dle-bar-bubble').addEventListener('click', () => window.__dleOpenRequests?.());
+        bar.addEventListener('pointerdown', pressStart, true);
+        for (const t of ['pointerup', 'pointercancel']) document.addEventListener(t, pressEnd, true);
+        bar.querySelector('.dle-bar-bubble:not(.mero)').addEventListener('click', () => window.__dleOpenRequests?.());
+        bar.querySelector('.dle-bar-bubble.mero').addEventListener('click', e => { e.currentTarget.hidden = true; window.__dleOpenMeroTalks?.(); });
     }
     if (bar.parentElement !== form) form.prepend(bar);
     document.body.classList.add('dle-bar-on');
@@ -313,9 +369,14 @@ function mount() {
 export function initBar() {
     if (!mount()) { setTimeout(initBar, 1000); return; }
     onRequestsChanged(soon);
+    onMeroChanged(soon);   // Mero's glow (seen / set aside)
+    window.addEventListener('dle-notes', soon);   // My notes opened / closed → the button's pressed look
+    window.addEventListener('dle-world', soon);   // the world panel opened / closed, or its board changed
     const later = () => setTimeout(() => { mount(); }, 300);
     try {
         eventSource.on(event_types.CHAT_CHANGED, later);
+        eventSource.on(event_types.MESSAGE_RECEIVED, soon);   // a reply may bring a big moment (Mero's glow)
+        eventSource.on(event_types.MESSAGE_DELETED, soon);
         eventSource.on(event_types.SETTINGS_UPDATED, later);
     } catch { /* noop */ }
     // the panel opening, closing, locking, switching tabs, moving sides → redraw the side-panel button

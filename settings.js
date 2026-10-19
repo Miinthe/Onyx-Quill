@@ -165,6 +165,13 @@ export const defaultSettings = {
     meroModel: '',
     meroMaxTokens: 1500,
     meroTimeout: 120000,
+    // world layer (Miinthe, 2026-10-19): its own pinned connection; empty = the story helper's (her pick: start on DeepSeek like the helper)
+    worldConnectionMode: 'profile',
+    worldProfileId: '',
+    worldProxyUrl: '',
+    worldModel: '',
+    worldMaxTokens: 1500,
+    worldTimeout: 60000,
     // LOCAL PATCH (Miinthe, 2026-10-13): one summary notice per message ('summary') or one per change ('each') — the rest in the What changed tab
     noticeStyle: 'summary',
     // overhaul step 4 (Miinthe, 2026-10-15): Settings → Interface → "Ask before removing" = every removal asks first.
@@ -177,6 +184,12 @@ export const defaultSettings = {
     vaults: [],
     drawerPinned: false,
     drawerSide: 'right',                   // overhaul 2a (Miinthe, 2026-10-15): the side panel on the 'left' or 'right', remembered
+    notesEnabled: true,                    // My notes (Miinthe, 2026-10-18): the notes button on the bar; off = no button, the notes stay in their file
+    notesSide: 'right',
+    notesLocked: false,
+    notesLibOpen: false,                   // My notes: the Everywhere folder open or folded, as she left it (2026-10-19)                    // My notes: locked = stays open whatever you do (and after a reload) until the bar button or ✕ closes it
+    notesLastOpen: '',                     // My notes: the note open when the window closed — reopening comes back to it (2026-10-19)
+    notesKeepOpen: false,                  // My notes: was open while locked → opens again after a reload                    // My notes (Miinthe, 2026-10-18): its window on the 'left' or 'right' (PC), remembered
     kitNoAsk: {},
     dkTheme: 'follow',                     // overhaul: DeepLore's look — 'follow' SillyTavern's theme, or always 'light' / 'dark'
     barShow: true,                         // overhaul: the DeepLore bar above the message box
@@ -321,6 +334,7 @@ const TOOL_SETTINGS_KEYS = {
     optimizeKeys: { mode: 'optimizeKeysConnectionMode', profileId: 'optimizeKeysProfileId', proxyUrl: 'optimizeKeysProxyUrl', model: 'optimizeKeysModel', maxTokens: 'optimizeKeysMaxTokens', timeout: 'optimizeKeysTimeout' },
     storyTracker: { mode: 'storyTrackerConnectionMode', profileId: 'storyTrackerProfileId', proxyUrl: 'storyTrackerProxyUrl', model: 'storyTrackerModel', maxTokens: 'storyTrackerMaxTokens', timeout: 'storyTrackerTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-03)
     mero: { mode: 'meroConnectionMode', profileId: 'meroProfileId', proxyUrl: 'meroProxyUrl', model: 'meroModel', maxTokens: 'meroMaxTokens', timeout: 'meroTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-05)
+    world: { mode: 'worldConnectionMode', profileId: 'worldProfileId', proxyUrl: 'worldProxyUrl', model: 'worldModel', maxTokens: 'worldMaxTokens', timeout: 'worldTimeout' },   // world layer (2026-10-19)
 };
 
 /**
@@ -352,6 +366,12 @@ export function resolveConnectionConfig(toolKey) {
             maxTokens,
             timeout,
         };
+    }
+
+    // the world layer starts on the story helper's connection until a profile of its own is picked (2026-10-19)
+    if (toolKey === 'world' && !s[keys.profileId]) {
+        const st = TOOL_SETTINGS_KEYS.storyTracker;
+        return { mode: 'profile', profileId: s[st.profileId], proxyUrl: s[st.proxyUrl] || '', model: toolModel || s[st.model] || '', maxTokens, timeout };
     }
 
     return {
@@ -411,6 +431,8 @@ export const settingsConstraints = {
     storyTrackerTimeout: { min: 3000, max: 120000 },
     meroMaxTokens: { min: 200, max: 8192 },          // LOCAL PATCH (Miinthe, 2026-10-05): Mero
     meroTimeout: { min: 5000, max: 300000 },
+    worldMaxTokens: { min: 200, max: 8192 },          // world layer (2026-10-19)
+    worldTimeout: { min: 5000, max: 300000 },
     graphRepulsion: { min: 0.1, max: 5.0 },
     graphGravity: { min: 0.1, max: 20 },
     graphDamping: { min: 0.3, max: 0.98 },
@@ -437,6 +459,7 @@ export const settingsConstraints = {
     // BUG-344: string-enum whitelist — validateSettings resets to defaults on mismatch.
     injectionMode: { enum: ['extension', 'prompt_list'] },
     drawerSide: { enum: ['left', 'right'] },
+    notesSide: { enum: ['left', 'right'] },
     dkTheme: { enum: ['follow', 'light', 'dark'] },
     // L-41: aiSearch is the inheritance ROOT — it must never be 'inherit' (a tool
     // resolving 'inherit' cascades to s[aiSearch.mode]; if that were 'inherit' too,
@@ -448,7 +471,8 @@ export const settingsConstraints = {
     storyTrackerConnectionMode: { enum: ['profile'] },   // LOCAL PATCH (Miinthe, 2026-10-03)
     noticeStyle: { enum: ['summary', 'each'] },   // LOCAL PATCH (Miinthe, 2026-10-13)
     newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
-    meroConnectionMode: { enum: ['profile'] },           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
+    meroConnectionMode: { enum: ['profile'] },
+    worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
     librarianConnectionMode: { enum: ['inherit', 'profile', 'proxy'] },
     librarianSystemPromptMode: { enum: ['default', 'append', 'override', 'strict-override'] },
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an

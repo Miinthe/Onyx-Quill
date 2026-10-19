@@ -2,23 +2,25 @@
 
 Features that use AI to help you build, maintain, and grow your vault. These run alongside [[AI Search]] (which selects entries during generation); the tools on this page actively create or improve vault content.
 
-The headline v2 feature on this page is the **Librarian**, which has two halves: writing-AI tools (`search` and `flag`) that fire mid-generation, and **Emma**, a separate chat agent that helps you author the missing entries.
+Your co-writer [[Mero]] ☆ has her own page. This page covers the other AI helpers, starting with the lore tools the writing AI can use during a reply (`search` and `flag`; the code and settings keys still call them the Librarian).
 
 > [!NOTE]
-> Each tool below has its own independent connection channel. You can route Emma to one model, the Scribe to another, AI Search to a third. Defaults inherit from AI Search. Each channel is a SillyTavern **Connection Profile** (or "Inherit"); the legacy Custom Proxy mode was removed in v2.5 — see [[AI Search#connection]] for the migration note.
+> Each tool below has its own independent connection channel, set in **Settings › AI & connections** (one row per job: Judge, Story helper, Mero ☆, Scribe, New lore, AI notepad, Optimize keywords). You can route the Scribe to one model and AI Search to another. Most default to inheriting from AI Search. Each channel is a SillyTavern **Connection Profile** (or "Inherit"); the legacy Custom Proxy mode was removed in v2.5 — see [[AI Search#connection]] for the migration note.
 
 ---
 
-## The Librarian (Emma)
+## Lore tools during replies (search and flag)
 
-The Librarian is how your vault grows as you roleplay. Two halves, one feature.
+These tools help your vault grow as you roleplay.
 
 **Half 1: writing-AI tools.** During generation, the writing AI gets two function-calling tools: `search` and `flag`. When it reaches for a detail and isn't sure if your vault has it, it calls `search`. If the vault genuinely doesn't have it, it calls `flag` instead of inventing.
 
-**Half 2: Emma.** A separate chat agent (her own connection channel, her own toolset) for authoring entries. You open a flag from the Librarian inbox in the drawer, and chat with Emma about the gap. She checks what already exists, finds similar entries to dedupe against, pulls in any style guides marked `lorebook-guide`, and drafts the new entry. Write-to-vault saves it back to Obsidian.
+**Where the gaps go.** Each flag shows up in [[Mero]]'s **Requests**, under **📚 Lore gaps**. **Write it** opens Write a new entry… with the gap filled in, and Mero can draft it there. For an entry that needs an update, **Open it** opens it in Obsidian. **Done** marks it as taken care of, **Hide** hides it until it is flagged again, and **No** removes it for good.
+
+**Emma.** The older entry-writing chat agent still exists behind `/dle-librarian` (her own connection channel, her own toolset). She checks what already exists, finds similar entries to dedupe against, pulls in any style guides marked `lorebook-guide`, and drafts the new entry.
 
 > [!IMPORTANT]
-> The Librarian auto-enables function calling on the active connection. If you disable function calling elsewhere on that profile, tool invocations break mid-generation with no error toast.
+> These tools auto-enable function calling on the active connection. If you disable function calling elsewhere on that profile, tool invocations break mid-generation with no error toast.
 
 ### Writing-AI tools (`search` and `flag`)
 
@@ -27,7 +29,7 @@ Both fire inside the writing AI's normal generation. Tool activity collapses int
 | Tool | Args | What it does |
 |---|---|---|
 | `search` | `queries: string[]` (up to 4) | BM25 vault search. Returns the single best hit with full content, plus up to 3 graph-linked entries in summary form. Excludes already-injected entries and `lorebook-guide` entries. |
-| `flag` | `title`, `reason`, `urgency` (`low`/`medium`/`high`), `flag_type` (`gap`/`update`), `entry_title` | Records a gap or update request to the Librarian inbox. Re-flagging a similar gap merges with the existing record (frequency increment, urgency escalation). |
+| `flag` | `title`, `reason`, `urgency` (`low`/`medium`/`high`), `flag_type` (`gap`/`update`), `entry_title` | Records a gap or update request (it shows up in Mero › Requests › 📚 Lore gaps). Re-flagging a similar gap merges with the existing record (frequency increment, urgency escalation). |
 
 The writing AI is capped at `librarianMaxSearches` searches per generation (default 2) and 5 flag calls. Internally a third tool, `write`, captures the final prose and transitions the loop from SEARCH to FLAG phase.
 
@@ -58,14 +60,12 @@ Supported tool-calling providers: Claude, Gemini (makersuite/vertexai), OpenAI-c
 
 ### Setup
 
-1. Enable **Librarian** in Settings → Features → Librarian
-2. Pick a connection mode (default `inherit` works if your AI Search profile is tool-calling)
+1. Run the Setup wizard (side panel ⋯ → **Setup wizard**, or `/dle-setup`) and, on its **Mero ☆** page, turn on **Let Mero look up lore during replies**. Under it you can switch the **Search tool** and the **Flag tool** on or off.
+2. Use a connection that supports tool calling (the default `inherit` works if your AI Search profile does)
 3. Verify with `/dle-health` (checks tool-calling support on the resolved profile)
-4. Roleplay normally; gaps will accumulate in the Librarian inbox in the drawer
+4. Roleplay normally; gaps collect in Mero › Requests › 📚 Lore gaps
 
 See also: `librarianPerMessageActivity` (default off) which changes whether gaps clear on each new generation. Off is the original behavior (gaps accumulate across messages); on ties gap and dropdown lifecycle to per-message scope.
-
-![Librarian tab with a flagged worldbuilding gap opened](https://i.imgur.com/V8RnLdy.png)
 
 ---
 
@@ -90,9 +90,8 @@ Auto-summarizes your roleplay into timestamped markdown notes written back to yo
 - **Connection Profile**: any saved Connection Manager profile. Use this to route summaries through a different (often cheaper) model.
 
 **Setup:**
-1. Enable **Session Scribe** in Settings → Features → Session Scribe
-2. Set the auto-scribe interval (every N messages)
-3. Set the Session Folder
+1. In **Settings › Story & memory › Scribe**, set **Session notes** to every N messages (0 = off)
+2. Set the **Folder**
 4. Pick a connection mode
 5. Optionally customize the summary prompt and message window depth (`scribeScanDepth`, default 20)
 
@@ -116,10 +115,9 @@ Scans recent chat for characters, places, items, and concepts that lack a vault 
 **Connection options:** Inherit (default), SillyTavern Connection, or Connection Profile.
 
 **Setup:**
-1. Enable **Auto Lorebook** in Settings → Features → Auto Lorebook
-2. Set the trigger interval
-3. Optionally set a target folder for new entries
-4. Pick a connection mode
+1. In **Settings › Story & memory › New entries**, set **Notice lore worth writing** to every N messages (0 = off)
+2. Choose **Where they go**: by what they're about (the run's folder or the character's base folder), or always the **Target folder**
+3. Pick a connection for the **New lore** job in Settings › AI & connections
 
 `/dle-newlore` triggers on-demand without enabling automatic suggestions. Accepted entries are written with proper frontmatter (type, priority, tags, keys, summary).
 
@@ -153,7 +151,7 @@ Suggestions appear in a popup for review. Apply changes in Obsidian, then run `/
 
 When enabled, the Session Scribe's latest summary is fed into the AI Search context as additional story background. This widens what AI Search "knows" about the ongoing narrative beyond the scan-depth window, so it can pick entries relevant to long-running plot arcs.
 
-**Setup:** enable **Scribe-Informed Retrieval** in [[Settings Reference|AI Search settings]].
+**Setup:** turn on **Give it the session notes** in **Settings › Lore selection › The judge** (behind More).
 
 **Requires:**
 - Session Scribe enabled

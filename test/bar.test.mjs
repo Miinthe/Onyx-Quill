@@ -7,13 +7,13 @@
  */
 import { assertEqual, test, summary } from './helpers.mjs';
 import { layerUnder } from '../src/drawer/drawer-stack.js';
-import { panelButton, toggleHot, isHot, hotButtons, normalHot, qrTitle, draftStep } from '../src/bar/bar-pure.js';
+import { panelButton, toggleHot, moveHot, isHot, hotButtons, normalHot, qrTitle, draftStep } from '../src/bar/bar-pure.js';
 
 test('unlocked: opens and closes the panel; with something from Mero, a dot and straight to her requests', () => {
     assertEqual(panelButton({}).action, 'open');
     assertEqual(panelButton({ open: true }).action, 'close');
     const m = panelButton({ waiting: 2 });
-    assertEqual([m.action, m.dot, m.icon], ['requests', 'mero', 'panel']);
+    assertEqual([m.action, m.dot, m.icon], ['requests', 'req', 'panel']);
     assertEqual(panelButton({ hold: true }).dot, 'hold');
     assertEqual(panelButton({ open: true, waiting: 1 }).action, 'close');
     assertEqual(panelButton({ left: true }).icon, 'panelL');
@@ -23,7 +23,7 @@ test('locked (PC): the button is the envelope, to her requests and back; never c
     const a = panelButton({ locked: true, open: true });
     assertEqual([a.icon, a.action, a.dot], ['mail', 'requests', '']);
     const b = panelButton({ locked: true, open: true, onRequests: true, waiting: 1 });
-    assertEqual([b.icon, b.action, b.pressed, b.dot], ['mail', 'back', true, 'mero']);
+    assertEqual([b.icon, b.action, b.pressed, b.dot], ['mail', 'back', true, 'req']);
     assertEqual(panelButton({ locked: true, open: true, hold: true }).dot, 'hold');
 });
 
@@ -70,6 +70,24 @@ test('a locked DeepLore sits one layer under SillyTavern\'s open panels, whateve
     assertEqual(layerUnder(['3000', '1000', 'auto']), 999);
     assertEqual(layerUnder([]), null);
     assertEqual(layerUnder(['auto']), null);
+});
+
+test('moveHot: one step earlier or later, ends stay put', () => {
+    const a = { set: 'S', label: 'a' }, b = { set: 'S', label: 'b' }, c = { set: 'T', label: 'c' };
+    const l = [a, b, c];
+    assertEqual(moveHot(l, c, -1).map(x => x.label).join(''), 'acb');
+    assertEqual(moveHot(l, a, 1).map(x => x.label).join(''), 'bac');
+    assertEqual(moveHot(l, a, -1).map(x => x.label).join(''), 'abc');
+    assertEqual(moveHot(l, c, 1).map(x => x.label).join(''), 'abc');
+    assertEqual(moveHot(l, { set: 'X', label: 'z' }, 1).map(x => x.label).join(''), 'abc');
+    assertEqual(l.map(x => x.label).join(''), 'abc', 'the stored list is not changed in place');
+});
+
+test('Mero wanting to talk: her pink dot; requests (orange) come first', () => {
+    assertEqual(panelButton({ glow: true }).dot, 'mero');
+    assertEqual(panelButton({ glow: true }).action, 'open');
+    assertEqual(panelButton({ glow: true, waiting: 2 }).dot, 'req');
+    assertEqual(panelButton({ glow: true, hold: true }).dot, 'hold');
 });
 
 summary();

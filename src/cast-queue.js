@@ -15,11 +15,14 @@
  */
 import { chat_metadata, sendMessageAsUser } from '../../../../../script.js';
 import { getContext, saveMetadataDebounced } from '../../../../extensions.js';
-import { live } from './board-live.js';
+import { live, sceneAway } from './board-live.js';
 import { WISHES_KEY, LEAVES_KEY, runDirector } from './cast.js';
 import { runAutoTrack } from './autotrack.js';
-import { speakAs, postAs, generationDone, cannotSpeak, npcTurnActive, waitForIdle } from './cast-voice.js';
-import { normalizeQueue, newRound, isMine, aiNpcs, npcOfMessage, regenRound, addItem, speaksOf } from './cast-voice-pure.js';
+import { speakAs, postAs, generationDone, cannotSpeak, npcTurnActive, waitForIdle, holdBox } from './cast-voice.js';
+import { normalizeQueue, newRound, isMine, aiNpcs, npcOfMessage, regenRound, addItem, speaksOf, SPEAKS_SYSTEM, SPEAKS_SCHEMA, speaksUser, parseSpeaks } from './cast-voice-pure.js';
+import { resolveConnectionConfig } from '../settings.js';
+import { callAI } from './ai/ai.js';
+import { escapeHtml } from '../../../../utils.js';
 import { presentPeople } from './cast-pure.js';
 
 export const QUEUE_KEY = 'deeplore_cast_queue';
@@ -68,10 +71,36 @@ export function getQueue() {
         if (speaksOf(x.p) !== 'self' || x.now.muted || skip.some(s => s.cast === x.cast.id && s.person === x.p.id)) continue;
         if (!q.some(y => y.kind === 'npc' && y.cast === x.cast.id && y.person === x.p.id && !isMine(y))) q = addItem(q, { kind: 'npc', cast: x.cast.id, person: x.p.id, stay: true });
     }
-    return q;
+    // you or the main character out of the scene: not in the round (they come back with their tile)
+    const away = sceneAway();
+    return q.filter(x => !(x.kind === 'you' && away.user) && !(x.kind === 'main' && away.main));
 }
+
+/**
+ * Who Send writes as while you're out of the scene: one of the NPCs you write yourself (✍️) who is in it — the one you
+ * picked, else the first. null when none of yours is here.
+ */
+const AS_KEY = 'deeplore_cast_as';
+export function ownHere() {
+    const L = live(); if (!L) return [];
+    return presentPeople(L.board, L.state).filter(x => speaksOf(x.p) === 'mine' && !x.now.muted).map(x => ({ cast: x.cast.id, person: x.p.id, name: x.p.name }));
+}
+export function writingAs() {
+    const own = ownHere(), k = chat_metadata?.[AS_KEY];
+    return own.find(x => `${x.cast}:${x.person}` === k) || own[0] || null;
+}
+export function setWritingAs(cast, person) { if (!chat_metadata) return; chat_metadata[AS_KEY] = `${cast}:${person}`; saveMetadataDebounced(); notify(); }
 /** People taken out of this round with ✕, or who already spoke in it — cleared when the next round starts. */
 const SKIP_KEY = 'deeplore_cast_skip';
+/**
+ * Already part of this round — waiting in it, speaking or done speaking, or staying by hand: never offered as "wants to
+ * join" (Miinthe, 2026-10-19: Kettle and Spoon showed as wanting to be added while they were in it).
+ */
+export function inRound(w) {
+    const same = y => y.cast === w.cast && y.person === w.person;
+    const spoke = Array.isArray(chat_metadata?.[SKIP_KEY]) ? chat_metadata[SKIP_KEY] : [];
+    return spoke.some(same) || getStay().some(same) || getQueue().some(y => y.kind === 'npc' && same(y));
+}
 /**
  * Take an item off the round. An NPC of the AI half is crossed off for the rest of this round, so "steps in by
  * themselves" doesn't put them straight back (live 2026-10-14: Spoon spoke three times in a row).
@@ -105,7 +134,8 @@ function takeWishes() {
     const spoke = Array.isArray(chat_metadata?.[SKIP_KEY]) ? chat_metadata[SKIP_KEY] : [];
     const auto = r.queue.filter(x => x.kind === 'npc' && !spoke.some(s => s.cast === x.cast && s.person === x.person) && !q.some(y => y.kind === 'npc' && y.cast === x.cast && y.person === x.person && !isMine(y)));
     if (auto.length) setQueue([...q, ...auto]);
-    if (r.suggest.length) setSuggestions(r.suggest);
+    const offer = r.suggest.filter(x => !inRound(x));
+    if (offer.length) setSuggestions(offer);
 }
 /**
  * Who wants to walk out (the director): "steps in by themselves" people get their turn in this round with a goodbye —
@@ -147,6 +177,30 @@ function nextRound() {
     }
     setQueue(q);
 }
+async function sitOuts() {
+    const L = live(); if (!L) return;
+    const hand = getStay();
+    const free = getQueue().filter(x => !isMine(x) && (x.kind === 'main' || (x.kind === 'npc' && x.stay && !x.why && !x.exit && !x.text && !writesOwn(x) && !hand.some(h => h.cast === x.cast && h.person === x.person))));
+    if (free.length < 2 && !(free.length === 1 && getQueue().filter(x => !isMine(x)).length > 1)) return;   // one voice alone always speaks
+    const conn = resolveConnectionConfig('storyTracker');
+    if (conn.mode !== 'profile' || !conn.profileId) return;
+    const nameOf = x => (x.kind === 'main' ? (getContext()?.name2 || 'The main character') : L.board.trackers.find(t => t.id === x.cast)?.people?.find(p => p.id === x.person)?.name || '');
+    const people = free.map(x => ({ x, name: nameOf(x), main: x.kind === 'main', wants: x.kind === 'npc' ? L.state.cast?.[x.cast]?.[x.person]?.wants || '' : '' })).filter(p => p.name);
+    const messages = (getContext()?.chat || []).filter(m => m && !m.is_system && typeof m.mes === 'string').slice(-6).map(m => ({ name: m.name, mes: m.mes }));
+    let speak = null;
+    try {
+        const r = await callAI(SPEAKS_SYSTEM, speaksUser({ messages, people }), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: SPEAKS_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
+        speak = parseSpeaks(r?.text, people.map(p => p.name));
+    } catch (err) { console.warn('[DLE] cast round: who speaks — skipped:', err?.message || err); }
+    if (!speak) return;   // unreadable: everyone speaks, as before
+    const quiet = people.filter(p => !speak.includes(p.name));
+    if (!quiet.length) return;
+    // never an empty AI half
+    if (getQueue().filter(x => !isMine(x)).length - quiet.length < 1) return;
+    for (const p of quiet) takeOff(p.x);
+    try { toastr.info(`${quiet.map(p => escapeHtml(p.name)).join(', ')} ${quiet.length === 1 ? 'has' : 'have'} nothing to add this time.`, 'Cast', { timeOut: 5000 }); } catch { /* noop */ }
+}
+
 /** Back to the default round (the tab's Reset). */
 export function resetRound() { const L = live(); if (!L) return; setQueue(newRound(L.board, L.state, []).queue); }
 
@@ -169,8 +223,10 @@ async function aiItem(x) {
     if (x.kind === 'main') {
         const done = generationDone();
         const before = getContext().chat.length;
-        try { await getContext().generate('normal'); } catch (err) { console.warn('[DLE] cast round: the main reply failed:', err?.message || err); return false; }
+        const giveBack = holdBox();
+        try { await getContext().generate('normal'); } catch (err) { console.warn('[DLE] cast round: the main reply failed:', err?.message || err); giveBack(); return false; }
         await done;
+        giveBack();
         if (getContext().chat.length <= before || getContext().chat.at(-1)?.is_user) return false;   // no reply came: stop the round
         takeWishes();
         return true;
@@ -200,6 +256,10 @@ export async function runQueue() {
                 try { await getContext().saveChat?.(); } catch { /* noop */ }
             } else await postAs(x.cast, x.person, x.text);
         }
+        // who actually has something to add now (Miinthe, 2026-10-19: "they should sit out at times … that counts for the
+        // main character"): those in the round only because they step in by themselves, and the main character, may sit
+        // this one out. People you added by hand, lines you wrote, someone saying goodbye or who asked to speak stay in.
+        if (!replay && !stopAsked) await sitOuts();
         // no main character this round: DeepLore's helper and director only run inside his reply, so they run now —
         // who came or left, what people know, plans, who wants to leave (live 2026-10-14: with the Toaster out, Spoon
         // never got to think, so she never left)
@@ -239,7 +299,8 @@ export function takeOverSend(type, abort) {
     const q = getQueue();
     // the plain round (You → the main character, nobody else): an ordinary send. Anything else — someone in it, or the
     // main character taken out of it — plays the round (Miinthe: "make toaster … also skip a round")
-    if (!q.some(x => x.kind === 'npc') && q.some(x => x.kind === 'main')) return false;
+    const away = sceneAway();
+    if (!away.user && !q.some(x => x.kind === 'npc') && q.some(x => x.kind === 'main')) return false;
     const c = getContext(), last = c?.chat?.at(-1);
     if (!last?.is_user) return false;                          // only a send with your message
     try { abort(true); } catch { return false; }
@@ -250,6 +311,18 @@ export function takeOverSend(type, abort) {
         const now = getContext(), m = now.chat?.at(-1);
         if (m?.is_user && m.mes === text) { try { await now.deleteLastMessage(); } catch { /* noop */ } }
         const box = document.getElementById('send_textarea');
+        // you're out of the scene: what you typed is your NPC's line (✍️), never your own
+        if (away.user) {
+            const as = writingAs();
+            if (!as) {
+                if (box) { box.value = text; box.dispatchEvent(new Event('input', { bubbles: true })); }
+                try { toastr.info('You are out of this scene and none of the people you write yourself is in it. Bring one in, or come back with your own tile in the Cast.', 'Cast', { timeOut: 9000 }); } catch { /* noop */ }
+                return;
+            }
+            setQueue(addItem(getQueue(), { kind: 'npc', cast: as.cast, person: as.person, text }));
+            runQueue();
+            return;
+        }
         if (box) { box.value = text; box.dispatchEvent(new Event('input', { bubbles: true })); }
         if (!getQueue().some(x => x.kind === 'you')) setQueue(addItem(getQueue(), { kind: 'you' }));
         runQueue();

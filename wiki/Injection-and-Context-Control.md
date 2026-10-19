@@ -49,7 +49,7 @@ A persistent per-chat scratchpad injected into every generation. Use it for auth
 
 **How it works:**
 
-1. Open the notebook via `/dle-notebook` or the "Open Notebook" button in settings.
+1. Open the notebook via `/dle-notebook`, the side panel's ⋯ → **Author’s notebook**, or Mero › Notes → **Notebook**.
 2. Write any text. It's saved per-chat in `chat_metadata`.
 3. The notebook content is injected into every generation as a separate prompt, independent of the entry pipeline.
 
@@ -85,7 +85,7 @@ Pin entries to always inject, or block entries from injecting, on a per-chat bas
 - Blocked entries are removed from the pipeline before injection, regardless of matches. Blocks override constants: a blocked constant is removed.
 - Pins and blocks apply after the main pipeline runs but before formatting.
 
-**UI access:** the [[Drawer]] Browse tab has inline pin/block buttons on each entry. No slash commands needed. Per-chat injection counts are displayed as badges on each entry.
+**UI access:** in the [[Drawer|side panel]]'s **Lore** tab, tap an entry (in Sent or All entries) for **Pin** and **Block** buttons, or use **Select** to pin or block several at once. No slash commands needed. The side panel's ⋯ → **Pins and blocks** lists them all.
 
 ---
 
@@ -125,7 +125,7 @@ Custom fields work the same way: add the field name to your entry's frontmatter 
 - Context state is stored per-chat in `chat_metadata.deeplore_context`.
 - Entries without contextual fields are unaffected (always pass through).
 - Partial matches work: an entry with only `era` set is filtered only on era, regardless of other fields.
-- Custom fields appear automatically in the [[Drawer]] Browse tab as filter dropdowns and in the Filters tab with status dots and impact counts.
+- Custom fields appear automatically in the [[Drawer|side panel]]: as filter chips in Lore › All entries, and in the Filters tab's **Fields** fold.
 - The relationship graph can color nodes by any custom gating field.
 - Force-injected entries (constants, seeds, bootstraps, pins) are exempt from contextual gating.
 

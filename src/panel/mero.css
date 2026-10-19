@@ -11,7 +11,7 @@
 /* her box: no padding around it, fitted to the panel's bottom edge by fitMount (src/mero-window.js) */
 #deeplore-panel #dle-panel-mero { padding: 0; }
 #deeplore-panel #dle-panel-mero .dle-mero-mount { min-height: 300px; overflow: hidden; }
-#deeplore-panel #dle-panel-mero .dle-mero-frame { background: var(--dk-page); }
+#deeplore-panel #dle-panel-mero .dle-mero-frame { background: transparent; color-scheme: normal; }   /* the theme shows through (2026-10-18) */
 
 /* while she is popped out, the tab says where she is */
 #deeplore-panel #dle-panel-mero .dle-mero-away { color: var(--dk-ink); font: var(--dk-fs)/1.45 var(--dk-f-body); }

@@ -15,10 +15,13 @@
 .dle-db.small { width: 30px; height: 30px; }
 .dle-db.env { color: var(--dk-muted); }
 .dle-db.env.mero { color: var(--dk-mero); }
-.dle-db.env.hold { color: var(--dk-wait); }
+.dle-db.env.hold, .dle-db.env.req { color: var(--dk-wait); }
 .dle-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--dk-mero); box-shadow: 0 0 0 2px var(--dk-page); }
-.dle-dot.hold { background: var(--dk-wait); }
+.dle-dot.hold, .dle-dot.req { background: var(--dk-wait); }
 .dle-dot.draft { background: var(--dk-good); width: 7px; height: 7px; }
+.dle-dot.world { background: var(--dk-good); }   /* world layer (2026-10-19): something new in the world */
+.dle-dot.world.rumor { background: var(--dk-wait); }   /* a rumor (orange), the news (blue): Miinthe, 2026-10-19 */
+.dle-dot.world.news { background: var(--dk-info); }
 @media (prefers-reduced-motion: no-preference) {
     /* the wiggle means "the reply waits for you"; ordinary requests only show the dot */
     .dle-db.wiggle { animation: dle-wiggle 4s ease-in-out infinite; }
@@ -31,6 +34,7 @@
 .dle-vsep { width: 1px; height: 22px; flex: none; margin: 0 3px; background: var(--dk-line); }
 .dle-bar-bubble { position: absolute; left: 44px; bottom: calc(100% + 4px); z-index: 4; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--dk-wait-soft); color: var(--dk-wait); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); cursor: pointer; }
 .dle-bar-bubble[hidden] { display: none; }
+.dle-bar-bubble.mero { background: var(--dk-mero-soft); color: var(--dk-mero); }   /* Mero wants to talk: her pink, gone once clicked */
 /* phone: the Quick Replies or the special buttons take over the row; pull the handle for more rows */
 .dle-take { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; }
 .dle-take.wrapped { flex-wrap: wrap; align-content: flex-start; overflow-y: auto; }
@@ -71,6 +75,13 @@ body.dle-bar-has-hot #qr--bar { display: none !important; }
 .dle-dq .run:hover { background: var(--dk-accent-soft); }
 .dle-dq .star { width: 34px; flex: none; border: 0; border-left: 1px solid var(--dk-line); background: transparent; color: var(--dk-muted); cursor: pointer; }
 .dle-dq .star.on { color: var(--dk-l1); background: var(--dk-accent-soft); }
+.dle-qrorder { display: flex; flex-wrap: wrap; gap: 6px; }
+.dle-qrorder .dle-dq { flex: 0 1 auto; max-width: 220px; }
+.dle-qrorder .run { cursor: default; padding: 7px 4px; }
+.dle-qrorder .run:hover { background: transparent; }
+.dle-dq .mv { width: 26px; flex: none; border: 0; background: transparent; color: var(--dk-muted); font-size: 16px; cursor: pointer; }
+.dle-dq .mv:hover:not(:disabled) { color: var(--dk-ink); background: var(--dk-accent-soft); }
+.dle-dq .mv:disabled { opacity: .3; cursor: default; }
 
 /* ── the side panel's header ─────────────────────────────────────────────── */
 #deeplore-panel.dle-framed .dle-ph { flex: none; height: 40px; display: flex; align-items: center; gap: 2px; padding: 0 6px; margin: -5px -5px 0; border-bottom: 1px solid var(--dk-line); border-radius: 10px 10px 0 0; background: var(--dk-menu); }
@@ -138,3 +149,8 @@ body.dle-bar-on #top-settings-holder .drawer-toggle:has(> #deeploreDrawerIcon) {
 /* iPhone Safari may enlarge text on its own after a layout change (Miinthe 2026-10-18: "closing the side panel makes the
    font in the messages HUGE"; not reproducible headless) — the page keeps the sizes it was given */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* 📎 picking context for Mero (mero.js pickContext): a banner, what can be picked lights up; a panel over the chat steps aside */
+.dle-pickbar { position: fixed; z-index: 100000; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--dk-mero-soft, #3b2130); color: var(--dk-mero, #ff79b0); font: 600 13px/1.3 var(--dk-f-body, sans-serif); box-shadow: 0 6px 20px rgba(0, 0, 0, .4); }
+.dle-pickbar button { border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; padding: 3px 10px; cursor: pointer; }
+body.dle-picking .dle-pick-hi { outline: 2px dashed var(--dk-mero, #ff79b0) !important; outline-offset: 2px; cursor: copy !important; }
+body.dle-picking-over #deeplore-panel { visibility: hidden !important; }

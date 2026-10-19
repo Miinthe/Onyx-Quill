@@ -628,6 +628,14 @@ const TOOL_CONNECTION_CONFIGS = {
         proxyUrlKey: 'meroProxyUrl', modelKey: 'meroModel',
         maxTokensKey: 'meroMaxTokens', timeoutKey: 'meroTimeout',
     },
+    // world layer (2026-10-19): profile only, starts on the story helper's
+    world: {
+        label: 'World', icon: 'globe',
+        supportedModes: ['profile'],
+        modeKey: 'worldConnectionMode', profileIdKey: 'worldProfileId',
+        proxyUrlKey: 'worldProxyUrl', modelKey: 'worldModel',
+        maxTokensKey: 'worldMaxTokens', timeoutKey: 'worldTimeout',
+    },
     optimizeKeys: {
         label: 'Optimize Keys', icon: 'key',
         supportedModes: ['inherit', 'profile', 'proxy'],

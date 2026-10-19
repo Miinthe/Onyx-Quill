@@ -105,8 +105,8 @@ export function mountLoreView(panel) {
     const helpB = K.iconButton({ icon: 'info', title: 'Search tricks', onClick: () => { S.help = !S.help; drawTop(); } });
     helpB.innerHTML = '<b aria-hidden="true">?</b>';
     const helpPop = h('div', 'dle-lv-help',
-        '<span><code>tag:</code>lorebook-always · <code>folder:</code>Kitchen · <code>key:</code>kettle · <code>summary:</code>fuse · <code>field:</code>era=modern</span>'
-        + '<span class="dle-lv-mini">Mix them with words: <code>folder:Kitchen fuse</code>. Plain words look in titles and keys.</span>');
+        '<span><code>tag:</code>lorebook-always · <code>folder:</code>People · <code>key:</code>captain · <code>summary:</code>storm · <code>field:</code>era=modern</span>'
+        + '<span class="dle-lv-mini">Mix them with words: <code>folder:People captain</code>. Plain words look in titles and keys.</span>');
     srch.append(sbox, helpB, helpPop);
     // the tricks lie over the filter chips: a press anywhere else folds them away again (bug hunt 2026-10-16)
     document.addEventListener('pointerdown', e => {

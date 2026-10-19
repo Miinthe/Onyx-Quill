@@ -83,6 +83,75 @@ button { cursor: pointer; }
 
 /* workspace */
 .work { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 16px; padding: 12px 16px 24px; flex: 1; }
+/* the World tab's choices stand out (Miinthe, 2026-10-19: "barely noticeable … needs a bigger contrast like the other choices in pitches") */
+.side .seg2.strong button { border: 1px solid transparent; }
+.side .seg2.strong button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 700; box-shadow: none; }
+.wpe { border-top: 1px dashed var(--line); margin-top: 4px; }
+.side textarea.wq { width: 100%; margin-top: 4px; resize: vertical; }
+.side input.wi { width: 100%; margin-top: 4px; }
+.side .wplist { display: flex; flex-direction: column; padding: 4px 0 8px; }
+.side .wphead, .side .wprow { display: grid; grid-template-columns: minmax(0, 1fr) auto 28px 28px; gap: 6px; align-items: center; }
+.side .wphead { font-size: 11px; color: var(--muted); padding: 2px 0 4px; border-bottom: 1px solid var(--line); }
+.side .wprow { padding: 3px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
+.side .wprow[hidden] { display: none; }
+.side .wpn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; } .side .wpn small { color: var(--muted); }
+.side .wpd { display: inline-flex; gap: 4px; }
+.side .wdot { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font-size: 11px; cursor: pointer; }
+.side .wdot b { color: var(--muted); font-weight: 700; } .side .wdot i { font-style: normal; letter-spacing: -1px; color: var(--accent); } .side .wdot i span { opacity: .25; color: var(--ink); }
+.side .wdot:hover { border-color: var(--accent); }
+.side .wmb { width: 28px; height: 26px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; filter: grayscale(1); opacity: .55; }
+.side .wmb:hover { border-color: var(--line); opacity: 1; } .side .wmb.on { filter: none; opacity: 1; border-color: var(--bad, #c55); }
+.side .wmb[data-wp-open] { filter: none; opacity: .8; }
+.side .wpx { padding: 4px 0 8px; border-bottom: 1px solid var(--line); }
+.side .wnever { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; }
+.side .wnever > span { display: flex; flex-wrap: wrap; gap: 4px; }
+.side .wchip { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; }
+.side .wchip.on { border-color: var(--bad, #c55); color: var(--bad, #c55); }
+.side input.wps { width: 100%; margin: 4px 0; }
+.side .wdials { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }
+.side .wdial { display: inline-flex; align-items: center; gap: 4px; } .side .wdial small { color: var(--muted); font-size: 11px; }
+.side .wdial .seg2 button { padding: 2px 6px; font-size: 11.5px; }
+.side .wmix { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-top: 1px dashed var(--line); }
+.side .wmixr { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; } .side .wmixr small { color: var(--muted); }
+.side .wsu-note { padding: 8px 10px; border-radius: 8px; background: color-mix(in oklab, #ff79b0 12%, transparent); border-left: 3px solid #ff79b0; font-size: 12.5px; line-height: 1.45; }
+.side .wqh { display: flex; align-items: center; gap: 8px; width: 100%; }
+.side .wqh .wmute { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.wpe .wpe-when { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.wpe textarea.s { width: 100%; margin-top: 6px; resize: vertical; }
+.side .linkish { border: 0; background: none; padding: 0; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.side .linkish:hover { text-decoration: underline; }
+/* the World tab's main space: the side panel's cards, without its layout */
+.wov.wide { max-width: none; }
+.wov .side.wpanel { position: static !important; top: auto !important; max-height: none !important; overflow: visible; padding: 0; border: 0; box-shadow: none; background: transparent; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 14px; align-items: start; }
+.wov .wband { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--good) 40%, var(--line)); background: linear-gradient(120deg, color-mix(in oklab, var(--good) 14%, var(--page)), var(--page) 70%); }
+.wov .wglobe { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font-size: 24px; background: color-mix(in oklab, var(--good) 22%, var(--page)); }
+.wov .wbt { flex: 1; min-width: 160px; } .wov .wbt h2 { margin: 0; } .wov .wbt small { color: var(--muted); }
+.wov .wbadges { display: flex; flex-wrap: wrap; gap: 6px; }
+.wov .wbadge { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--page); font-size: 12px; }
+.wov .wbadge.q { color: var(--muted); } .wov .wbadge.live { color: var(--good); border-color: color-mix(in oklab, var(--good) 50%, var(--line)); } .wov .wbadge.pause { color: var(--wait); border-color: var(--wait); }
+.wov.letters .wband { background: linear-gradient(120deg, color-mix(in oklab, #c8b48a 22%, var(--page)), var(--page) 70%); border-color: color-mix(in oklab, #c8b48a 50%, var(--line)); }
+.wov.letters .wbt h2 { font-family: Georgia, "Times New Roman", serif; letter-spacing: .02em; }
+.wov .wch { display: flex; align-items: center; gap: 8px; } .wov .wci { font-size: 16px; }
+.wov-card { border-top: 3px solid color-mix(in oklab, var(--good) 55%, var(--line)) !important; }
+.wov .wnums { display: flex; flex-wrap: wrap; gap: 4px 14px; } .wov .wnums b { font: 700 20px/1.1 var(--f-display); } .wov .wnums .hot b { color: var(--good); }
+.wov .wst { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; } .wov .wst small { grid-column: 1 / -1; color: var(--muted); }
+.wov .wpdots { display: inline-flex; gap: 3px; } .wov .wpdots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .wov .wpdots i.on { background: var(--good); }
+.wov .wli { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; } .wov .wli > span:last-child { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wov .wbz { display: grid; grid-template-columns: 22px minmax(0, 1fr) 60px auto; gap: 8px; align-items: center; font-size: 12.5px; }
+.wov .wbz i { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--good) var(--w), color-mix(in srgb, var(--line) 60%, transparent) var(--w)); } .wov .wbz small { color: var(--muted); }
+.wpic { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; overflow: hidden; font: 700 11px var(--f-body); color: #fff; background: hsl(var(--h, 200) 45% 42%); vertical-align: middle; margin-right: 6px; }
+.wpic img { width: 100%; height: 100%; object-fit: cover; } .wpic.sm { width: 20px; height: 20px; font-size: 10px; margin-right: 0; }
+.wov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.wov-card { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.wov-card .wch b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.wov-card small { color: var(--muted); }
+.wov { max-width: 640px; display: flex; flex-direction: column; gap: 10px; }
+.wov h2 { margin: 0; font: 700 20px/1.2 var(--f-display, inherit); }
+.wov .mini { margin: 0; }
+.wov-sec { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.wov-row { display: flex; flex-direction: column; } .wov-row small { color: var(--muted); }
+.wov-empty { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.wov-empty b { color: var(--ink); }
 .page { background: var(--page); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); min-width: 0; padding: 20px; }
 .page h1 { font: 700 26px/1.15 var(--f-display); margin: 0 0 2px; text-wrap: balance; }
 .page .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
@@ -1562,6 +1631,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
       <button role="tab" id="tab-board" aria-selected="true">Board</button>
       <button role="tab" id="tab-outline" aria-selected="false">Outline</button>
       <button role="tab" id="tab-time" aria-selected="false">Timeline</button>
+      <button role="tab" id="tab-world" aria-selected="false">World</button>
     </div>
     <span class="example">Mock-up · example data</span>
     <label class="chatpick">Chat
@@ -1629,6 +1699,10 @@ async function askMero(task, input) {
 // DeepLore window (pickers-pure.js), and SillyTavern's live theme colors (theme.js). They load as modules; the
 // board draws at once and the pickers fill in when they arrive (a click on an icon or color field comes later).
 let SWATCHES = [], searchEmoji = () => [];
+// World layer (Miinthe, 2026-10-19): the board's World tab — its rules live in src/world/world-pure.js
+let WORLD = null, WPLAN = null;
+import('../src/world/planned-pure.js').then(m => { WPLAN = m; if (tab === 'world') render(); }).catch(e => showBreak(`The planned messages did not load: ${e?.message || e}`));
+import('../src/world/world-pure.js').then(m => { WORLD = m; if (tab === 'world') render(); }).catch(e => showBreak(`The world layer's settings did not load: ${e?.message || e}`));
 import('../src/kit/pickers-pure.js').then(m => { SWATCHES = m.SWATCHES; searchEmoji = m.searchEmoji; }).catch(e => showBreak(`The icon and color lists did not load: ${e?.message || e}`));
 // Light / dark / follow SillyTavern (or the device, outside ST) — kept in DeepLore's settings (so PC and iPad share it), else in this browser.
 const THEMES = { system: HOST ? 'Follow SillyTavern' : 'Same as device', light: 'Light', dark: 'Dark' };
@@ -1790,7 +1864,7 @@ const TIMELINE = {
     { m: 9, t: 'fuse', to: 1, who: 'auto', q: 'every light in the kitchen flickers', why: 'The fuse visibly sparks.', conf: 'medium' },
     { m: 9, t: 'secret', to: 0, who: 'start', why: 'Started: the fuse sparked and Relationship is past Friends.' },
     { m: 11, t: 'secret', to: 1, who: 'auto', q: 'the kettle glances at the fuse box a little too quickly', why: 'A guilty glance is a hint, not proof — but the toaster now plainly suspects the kettle.', conf: 'low', asked: 'accepted' },
-    { m: 13, t: 'secret', to: 2, who: 'pending', q: "Fine, maybe I did touch the fuse box that night — but only to warm my handle, I swear, nothing else happened and you can't prove otherwise. Anyway, the toast is burning, shouldn't you check on that instead of staring at me like I'm some kind of criminal? I'm a kettle. Kettles don't sabotage things.", why: 'The kettle half-admits touching the fuse box, but denies the rest — it may or may not count as the secret being revealed.', conf: 'low', suggest: { n: 3, why: 'The argument is still going — the next few messages will likely show whether the kettle confesses.' } },
+    { m: 13, t: 'secret', to: 2, who: 'pending', q: "Fine, maybe I did open the letter that night — but only to check who it was from, I swear, nothing else happened and you can't prove otherwise. Anyway, the toast is burning, shouldn't you check on that instead of staring at me like I'm some kind of criminal? I'm a kettle. Kettles don't sabotage things.", why: 'Mara half-admits opening the letter, but denies the rest — it may or may not count as the secret being revealed.', conf: 'low', suggest: { n: 3, why: 'The argument is still going — the next few messages will likely show whether Mara confesses.' } },
     { m: 12, t: 'rel', to: 4, who: 'auto', q: 'married at the town hall, the toaster and me', why: 'A wedding, one step after Sweethearts.', conf: 'high' },
   ],
 };
@@ -3252,7 +3326,7 @@ function renderMenu() {
   const m = document.getElementById('menubar');
   m.innerHTML = `
     <div class="doc-name">${esc(cur)} ${dirty ? '<span class="dirty" title="Unsaved changes"></span>' : ''}<small>storyboard</small></div>
-    <div class="tabs mtabs" role="tablist">${[['vboard', 'board', 'Board'], ['voutline', 'outline', 'Outline'], ['vtime', 'time', 'Timeline']].map(([a, t, l]) => `<button role="tab" data-a="${a}" aria-selected="${tab === t}">${l}</button>`).join('')}</div>
+    <div class="tabs mtabs" role="tablist">${[['vboard', 'board', 'Board'], ['voutline', 'outline', 'Outline'], ['vtime', 'time', 'Timeline'], ['vworld', 'world', 'World']].map(([a, t, l]) => `<button role="tab" data-a="${a}" aria-selected="${tab === t}">${l}</button>`).join('')}</div>
     ${dirty ? `<span class="draftbar" title="Chats still use the saved board until you save">Draft <button class="btn primary" id="t-save">Save</button><button class="btn" id="t-discard">Discard</button></span>` : ''}
     <div class="menu" data-m="file"><button>File</button><div class="menu-list">
       <button data-a="new">New…</button>
@@ -3410,6 +3484,7 @@ function act(a) {
   if (a === 'vboard') { tab = 'board'; render(); }
   if (a === 'vtime') { tab = 'time'; render(); }
   if (a === 'voutline') { tab = 'outline'; render(); }
+  if (a === 'vworld') { tab = 'world'; render(); }
   if (a.startsWith('theme-')) { setTheme(a.slice(6)); render(); toast(`${THEMES[a.slice(6)]} — kept for next time.`); return; }
 }
 
@@ -3461,7 +3536,7 @@ const HELP = {
     ['hover a line', 'what it means'], ['Enter on an entry chip', 'open the entries menu'],
   ].map(([k, d]) => `<tr><td><kbd>${k}</kbd></td><td>${d}</td></tr>`).join('')}</table>`],
   cmds: ['Slash commands', () => `<p class="note">Typed in SillyTavern's chat box. They exist in DeepLore today; the board window does the same with clicks.</p><table class="keys">${[
-    ['/dle-board', 'show the storyboards — or apply one: /dle-board Toaster & Kettle'], ['/dle-board-saveas name', 'save this chat\'s trackers as a new board and use it here'],
+    ['/dle-board', 'show the storyboards — or apply one: /dle-board My Story'], ['/dle-board-saveas name', 'save this chat\'s trackers as a new board and use it here'],
     ['/dle-board-character name', 'default board for new chats with this character (off clears it)'], ['/dle-board-detach', 'this chat stops using its board and keeps its own copy'],
     ['/dle-tracker', 'list this chat\'s trackers — or make one: /dle-tracker Name = Step 1, Step 2'], ['/dle-tracker-next · /dle-tracker-back', 'move a tracker one step'],
     ['/dle-tracker-go Name = Step', 'jump a tracker to a step'], ['/dle-tracker-aside Name = text', 'set a detour beside the step (nothing after = clears it)'],
@@ -3652,7 +3727,7 @@ const AW = (() => {
       case 'clues': case 'suspects': case 'stash': case 'flags':
         return `<div class="afield"><span>Its states</span>${flow(k)}</div><p class="note">You add the ${k === 'flags' ? 'facts' : 'items'} on the board afterwards.</p>`;
       case 'counter': return `<div class="two"><label class="afield"><span>Starts at</span><input type="number" id="aw-start" value="${esc(d.start ?? 0)}"></label><label class="afield"><span>Unit (optional)</span><input type="text" id="aw-unit" value="${esc(d.unit ?? '')}" placeholder="coins"></label></div>`;
-      case 'meter': return `<div class="two"><label class="afield"><span>Starts at</span><input type="number" id="aw-start" value="${esc(d.start ?? 30)}"></label><label class="afield"><span>Whose? (optional)</span><input type="text" id="aw-who" value="${esc(d.who ?? '')}" placeholder="Kettle → you"></label></div>`;
+      case 'meter': return `<div class="two"><label class="afield"><span>Starts at</span><input type="number" id="aw-start" value="${esc(d.start ?? 30)}"></label><label class="afield"><span>Whose? (optional)</span><input type="text" id="aw-who" value="${esc(d.who ?? '')}" placeholder="e.g. Mara → {{user}}"></label></div>`;
       case 'state': return '<p class="note">It starts with a time of day and a day count (change them under More options). Weather, more fields and the calendar of due dates are added on the board.</p>';
       case 'cast': return '<p class="note">You add the people on the board afterwards, each with their own card.</p>';
     }
@@ -6081,6 +6156,301 @@ function renderNotepad(el) {
   el.querySelectorAll('[data-nedit]').forEach(b => b.onclick = () => { const n = notes[+b.dataset.nedit]; noteDialog(n.obj, n.where); });
   el.querySelectorAll('[data-ndel]').forEach(b => b.onclick = () => { delete notes[+b.dataset.ndel].obj.note; touch(); });
 }
+// ── World tab (world layer stage 0, 2026-10-19): settings in the side panel, the overview on the page ──
+const WLOOKS = [['phone', '📱 Phone'], ['letters', '✉️ Letters']];
+const WLOOK_HINT = { phone: 'Instant messages, read receipts.', letters: 'Letters take story time, have no read receipts and go astray more easily. Who writes to whom, and how often, gets noticed.' };
+// a stale world-pure.js (the page not reloaded since an update) may lack newer fields: fill them so the tab never breaks
+const WDEF = { rumorName: '', newsName: '', on: false, look: 'phone', sections: { feed: true, news: true, msgs: true }, alive: { open: true, big: true, time: true, every: false, everyN: 10, quiet: false, pulse: true, pace: 'normal', movesMin: 0, movesMax: 4, realReplies: true }, paused: false, first: { cast: true, main: true }, planned: [], people: {}, voices: [] };
+function worldDoc() { const w = WORLD ? WORLD.normWorld(doc.world) : null; return w ? { ...WDEF, ...w, planned: Array.isArray(w.planned) ? w.planned : (doc.world?.planned || []) } : WDEF; }
+function setWorld(patch) { doc.world = { ...worldDoc(), ...patch }; touch(); }
+function renderWorldSide(el) {
+  const w = worldDoc(), title = k => WORLD ? WORLD.sectionTitle(k, w.look) : k;
+  el.innerHTML = `<span class="kind">World</span><h2>${esc(cur)}</h2>
+    ${card('World layer', line('Use the world layer in this story', 'Off: no world button, no panel, no AI calls in this story\'s chats.', swH('w-on', w.on), w.on))}
+    ${w.on ? card('Look', line('How people reach each other', WLOOK_HINT[w.look], segH('w-look', WLOOKS, w.look), false, true))
+      + card('Sections', ['feed', 'news', 'msgs'].map(k => line(esc(title(k)), '', swH('w-sec-' + k, w.sections[k]), w.sections[k])).join('')
+        + '<div class="ln"><span class="mini">A section that\'s off leaves the rail and stays quiet. People is always there.</span></div>')
+      + card('How alive', line('Catch up when I open it', 'after a while away from the world', swH('w-a-open', w.alive.open), w.alive.open)
+        + line('When something big happens', 'something the people around would talk about: a public scene, a fight, an accident, news, a party. The story helper notices it in the reading it already does each turn.', swH('w-a-big', w.alive.big), w.alive.big)
+        + line('When story time passes', 'a new story day (a state tracker with a Day field)', swH('w-a-time', w.alive.time), w.alive.time)
+        + line(`Every <input type="number" class="s" id="w-a-n" min="1" max="999" value="${w.alive.everyN}" style="width:56px;margin:0 4px" aria-label="Every how many exchanges"> exchanges`, 'an exchange = your message and the reply', swH('w-a-every', w.alive.every), w.alive.every)
+        + line('When nothing is happening', 'small talk, waiting, everyday routine for a while. The story helper notices that too.', swH('w-a-quiet', w.alive.quiet), w.alive.quiet)
+        + line('Little things after every reply', 'small moves of their own once the story has moved, besides anything planned: a post, a comment, an answer to someone\'s comment, an old post dug up, now and then a text between two people who know each other. Uses the World AI connection, whichever you pick in Settings › AI & connections › World.', swH('w-a-pulse', w.alive.pulse), w.alive.pulse)
+        + (w.alive.pulse ? `<div class="ln stack"><span>How many after each reply</span>${segH('w-a-pace', [['quiet', 'Quiet 0–2'], ['normal', 'Normal 0–4'], ['lively', 'Lively 1–6'], ['own', 'Your own']], w.alive.pace || 'normal')}${w.alive.pace === 'own' ? `<span>From <input type="number" class="s" id="w-a-min" min="0" max="10" value="${w.alive.movesMin ?? 0}" style="width:56px" aria-label="At least"> to <input type="number" class="s" id="w-a-max" min="1" max="10" value="${w.alive.movesMax ?? 4}" style="width:56px" aria-label="At most"> moves</span>` : ''}</div>` : '')
+        + line('Replies take their time', 'each person answers by how chatty they are (their Messages dial below), later while busy in the scene with you, and in the morning when it\'s night on the story clock. Off: everyone answers right away.', swH('w-a-real', w.alive.realReplies !== false), w.alive.realReplies !== false)
+        + line('Pause the world', 'nothing new comes in until you switch it back', swH('w-pause', w.paused), w.paused))
+      + (w.sections.feed || w.sections.news ? card('News and rumors', `<div class="ln stack"><span>The news account<small>reports the news when this story has no newspaper voice of its own (Voices and regulars)${w.look === 'letters' ? '' : ''}</small></span><input class="s" id="w-news" value="${esc(w.newsName || '')}" placeholder="${w.look === 'letters' ? 'The Gazette' : 'Local News'}" aria-label="The news account's name"></div>`
+        + `<div class="ln stack"><span>The rumor account<small>anyone can post or send it a tip without a name${w.look === 'letters' ? ' — with Letters it shows as an unsigned note' : ''}</small></span><input class="s" id="w-rumor" value="${esc(w.rumorName || '')}" placeholder="Whispers" aria-label="The rumor account's name"></div>`
+        + `<div class="ln"><span class="mini">Rumors also start from the story and spread by word of mouth. To let them move a story tracker, switch it on in that tracker's settings ("News and rumors can move this").</span></div>`) : '')
+      + card('Who can write to you first', line('The Cast', 'when a plan calls for it, or now and then just to chat', swH('w-f-cast', w.first.cast), w.first.cast)
+        + line(esc(HD?.mainName || 'The main character'), '', swH('w-f-main', w.first.main), w.first.main)) : ''}`;
+  el.querySelectorAll('.seg2').forEach(x => x.classList.add('strong'));
+  wireSw(el, 'w-on', on => { setWorld({ on }); toast(on ? 'The world layer is on for this story. Save the board to use it.' : 'The world layer is off for this story.'); });
+  wireSeg(el, 'w-look', v => setWorld({ look: v }));
+  ['feed', 'news', 'msgs'].forEach(k => wireSw(el, 'w-sec-' + k, on => setWorld({ sections: { ...worldDoc().sections, [k]: on } })));
+  [['open', 'w-a-open'], ['big', 'w-a-big'], ['time', 'w-a-time'], ['every', 'w-a-every'], ['quiet', 'w-a-quiet'], ['pulse', 'w-a-pulse'], ['realReplies', 'w-a-real']].forEach(([k, id]) => wireSw(el, id, on => setWorld({ alive: { ...worldDoc().alive, [k]: on } })));
+  wireSeg(el, 'w-a-pace', v => setWorld({ alive: { ...worldDoc().alive, pace: v } }));
+  for (const [id, k] of [['w-a-min', 'movesMin'], ['w-a-max', 'movesMax']]) { const x = el.querySelector('#' + id); if (x) x.onchange = () => setWorld({ alive: { ...worldDoc().alive, [k]: Math.max(0, Math.min(10, Math.round(Number(x.value)) || 0)) } }); }
+  const nIn = el.querySelector('#w-a-n'); if (nIn) nIn.onchange = () => setWorld({ alive: { ...worldDoc().alive, everyN: Math.max(1, Math.round(Number(nIn.value)) || 10) } });
+  wireSw(el, 'w-pause', on => { setWorld({ paused: on }); toast(on ? 'The world is paused: nothing new comes in.' : 'The world goes on again.'); });
+  wireSw(el, 'w-f-cast', on => setWorld({ first: { ...worldDoc().first, cast: on } }));
+  const nn = el.querySelector('#w-news'); if (nn) { nn.oninput = () => { doc.world ||= {}; doc.world.newsName = nn.value.trim(); dirty = true; }; nn.onchange = () => setWorld({ newsName: nn.value.trim() }); }
+  const rn = el.querySelector('#w-rumor'); if (rn) { rn.oninput = () => { doc.world ||= {}; doc.world.rumorName = rn.value.trim(); dirty = true; }; rn.onchange = () => setWorld({ rumorName: rn.value.trim() }); }
+  wireSw(el, 'w-f-main', on => setWorld({ first: { ...worldDoc().first, main: on } }));
+}
+/** The World tab's main space (as in the mock-up): what's going on in this chat, then planned messages, people, voices. */
+// ☆ Set up with Mero (stage 6, 2026-10-19): she proposes the whole world at once, Miinthe ticks what she keeps
+let wSetup = null, wSetupAbout = '';   // null · 'loading' · { error } · Mero's proposal (+ .pick: what's ticked)
+const DW = ['', 'low', 'avg', 'high'];
+function setupCard(w) {
+  let h = '<div class="ln"><span class="mini">Tell Mero about this world, or leave it empty: she reads the board, its note and the people\'s cards. She proposes the look, how alive it is, the news and rumor accounts, voices and regulars, and how everyone writes. You tick what you keep.</span></div>'
+    + `<textarea class="s" id="w-su-about" rows="2" placeholder="e.g. a sleepy harbor town in the 1890s; everyone knows everyone; the paper is run by one nosy man">${esc(wSetupAbout)}</textarea>`
+    + `<div class="btnrow" style="padding:6px 0 8px"><button id="w-su-go"${wSetup === 'loading' ? ' disabled' : ''}>☆ ${wSetup && wSetup !== 'loading' && !wSetup.error ? 'Ask again' : 'Ask Mero'}</button></div>`;
+  if (wSetup === 'loading') return h + '<div class="ln"><span class="mini">☆ Mero is thinking about this world…</span></div>';
+  if (wSetup?.error) return h + `<div class="ln"><span class="mini">${esc(wSetup.error)}</span></div>`;
+  if (!wSetup) return h;
+  const S = wSetup, P = S.pick, row = (id, on, body) => `<label class="wmixr"><input type="checkbox" data-su="${id}"${on ? ' checked' : ''}><span>${body}</span></label>`;
+  h += `<div class="wmix">${S.note ? `<div class="wsu-note">☆ ${esc(S.note)}</div>` : ''}<b>Tick what to keep</b>`;
+  if (S.look) h += row('look', P.look, `<b>Look: ${S.look.value === 'letters' ? '✉️ Letters' : '📱 Phone'}</b><br><small>${esc(S.look.why)}</small>`);
+  if (S.alive) h += row('alive', P.alive, `<b>How alive: ${esc(WORLD?.aliveWords ? WORLD.aliveWords(S.alive) : '')}</b><br><small>${esc(S.alive.why)}</small>`);
+  if (S.newsName || S.rumorName) h += row('names', P.names, `<b>Accounts</b><br><small>${S.newsName ? `news: ${esc(S.newsName)}` : ''}${S.newsName && S.rumorName ? ' · ' : ''}${S.rumorName ? `rumors: ${esc(S.rumorName)}` : ''}</small>`);
+  S.voices.forEach((v, n) => { h += row('v' + n, P['v' + n], `<b>${esc(v.name)}</b> <small>${v.kind === 'regular' ? 'regular' : 'voice'} · gossips ${DW[v.g]}, posts ${DW[v.p]}</small><br><small>${esc(v.bio)}${v.quirks ? ' · writes: ' + esc(v.quirks) : ''}</small>`); });
+  S.people.forEach((p, n) => { h += row('p' + n, P['p' + n], `<b>${esc(S.names?.[p.key] || wName(p.key))}</b> <small>gossips ${DW[p.g]}, messages ${DW[p.m]}, posts ${DW[p.p]}${p.interests.length ? ' · ' + esc(p.interests.join(', ')) : ''}</small>${p.quirks ? `<br><small>writes: ${esc(p.quirks)}</small>` : ''}`); });
+  return h + '<div class="btnrow" style="padding:6px 0"><button id="w-su-ok">Use the ticked</button><button id="w-su-x">Discard</button></div></div>';
+}
+function wireSetup(el) {
+  const ab = el.querySelector('#w-su-about'); if (ab) ab.oninput = () => { wSetupAbout = ab.value; };
+  const go = el.querySelector('#w-su-go');
+  if (go) go.onclick = async () => {
+    if (!HOST?.worldSetup) { wSetup = { error: 'Open the board from SillyTavern to ask Mero.' }; render(); return; }
+    wSetup = 'loading'; render();
+    const w = worldDoc();
+    const r = await HOST.worldSetup({ storyName: cur, about: wSetupAbout.trim(), setting: doc.note || '', look: w.look, cast: doc.trackers.filter(t => t.kind === 'cast').flatMap(t => (t.people || []).map(p => ({ key: `${t.id}:${p.id}`, name: p.name, card: p.card || '' }))), existing: (w.voices || []).map(v => v.name) });
+    if (!r?.ok) { wSetup = { error: r?.error || 'No answer.' }; render(); return; }
+    const pick = { look: !!r.look && r.look.value !== w.look, alive: !!r.alive, names: !!(r.newsName || r.rumorName) };
+    r.voices.forEach((v, n) => { pick['v' + n] = true; }); r.people.forEach((p, n) => { pick['p' + n] = true; });
+    wSetup = { ...r, pick }; render();
+  };
+  el.querySelectorAll('[data-su]').forEach(c => c.onchange = () => { if (wSetup?.pick) wSetup.pick[c.dataset.su] = c.checked; });
+  const ok = el.querySelector('#w-su-ok');
+  if (ok) ok.onclick = () => {
+    const S = wSetup, P = S.pick, w = worldDoc(), patch = {};
+    if (S.look && P.look) patch.look = S.look.value;
+    if (S.alive && P.alive) { const { why: _w, ...al } = S.alive; patch.alive = al; }
+    if (P.names) { if (S.newsName) patch.newsName = S.newsName; if (S.rumorName) patch.rumorName = S.rumorName; }
+    const keepV = S.voices.filter((v, n) => P['v' + n]).map((v, n) => ({ ...v, id: 'vc' + Date.now().toString(36) + n }));
+    if (keepV.length) patch.voices = [...(w.voices || []), ...keepV];
+    const ppl = { ...(w.people || {}) }; let np = 0;
+    S.people.forEach((p, n) => { if (!P['p' + n]) return; np++; ppl[p.key] = { ...(ppl[p.key] || { quirks: '' }), g: p.g, m: p.m, p: p.p, interests: p.interests, ...(p.quirks ? { quirks: p.quirks } : {}) }; });
+    if (np) patch.people = ppl;
+    setWorld(patch);
+    toast(`Kept: ${[patch.look && 'the look', patch.alive && 'how alive', (patch.newsName || patch.rumorName) && 'the account names', keepV.length && `${keepV.length} voice${keepV.length === 1 ? '' : 's'} and regular${keepV.length === 1 ? '' : 's'}`, np && `how ${np} ${np === 1 ? 'person writes' : 'people write'}`].filter(Boolean).join(', ') || 'nothing'}. Save the board to use it; change anything below.`);
+    wSetup = null; render();
+  };
+  const x = el.querySelector('#w-su-x'); if (x) x.onclick = () => { wSetup = null; render(); };
+}
+function worldMainCards(w) {
+  return card('☆ Set up with Mero', setupCard(w)) + card('Planned messages', planList(w) + '<div class="btnrow" style="padding:6px 0 8px"><button id="w-p-add">+ Plan a message</button></div>' + planEditor(w))
+    + card('People in the world', '<div class="ln"><span class="mini">How each person acts in the world: how much they gossip, write to people and post, what they care about, and how they write (quirks, in your own words). Muted: they never write to you first or post, and their planned messages to you wait until you unmute them.</span></div>' + ((wPeople().length + 1) > 8 ? '<input class="s wps" id="w-p-search" placeholder="Find someone…" aria-label="Find someone">' : '') + '<div class="wplist"><div class="wphead"><span>Name</span><span>Gossips · Messages · Posts</span><span></span></div>' + [['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name])].map(([k, nm], n) => personBlock(w, k, nm, n)).join('') + '</div>')
+    + card('Voices and regulars', voicesCard(w));
+}
+function wireWorldMain(el) {
+  wireSetup(el);
+  wirePlans(el);
+  // the compact people list: a dial cycles low → avg → high, mute toggles, ✎ opens one person
+  const setP = (k, patch) => { const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }), ...patch }; if (patch.muted === false) delete ppl[k].muted; setWorld({ people: ppl }); };
+  el.querySelectorAll('[data-dial]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.dial.split('|'); const v = Number(dialOf(worldDoc().people?.[k], d)); setP(k, { [d]: v % 3 + 1 }); });
+  el.querySelectorAll('[data-mute]').forEach(b => b.onclick = () => { const k = b.dataset.mute, on = !(worldDoc().people?.[k]?.muted === true); setP(k, { muted: on }); toast(on ? `${wName(k)} is muted: a break from the world until you unmute them.` : `${wName(k)} is back: what waited for them gets answered.`); });
+  el.querySelectorAll('[data-never]').forEach(b => b.onclick = () => {
+    const [a, o] = b.dataset.never.split('|'), w = worldDoc(), on = !neverOn(w, a, o);
+    const ppl = { ...(w.people || {}) };
+    const set = (x, y, add) => { const cur = (ppl[x]?.never || []).filter(z => z !== y); ppl[x] = { ...(ppl[x] || { quirks: '' }), never: add ? [...cur, y] : cur }; if (!ppl[x].never.length) delete ppl[x].never; };
+    set(a, o, on); if (!on) set(o, a, false);   // off: from both lists
+    setWorld({ people: ppl });
+    toast(on ? `${wName(a)} and ${wName(o)} never talk to each other.` : `${wName(a)} and ${wName(o)} may talk again.`);
+  });
+  el.querySelectorAll('[data-wp-open]').forEach(b => b.onclick = () => { wPersonOpen = wPersonOpen === b.dataset.wpOpen ? null : b.dataset.wpOpen; render(); });
+  const ps = el.querySelector('#w-p-search'); if (ps) ps.oninput = () => { const q = ps.value.trim().toLowerCase(); el.querySelectorAll('[data-wrow]').forEach(r => { r.hidden = !!q && !r.dataset.wrow.includes(q); }); };
+  el.querySelectorAll('[data-wi]').forEach(t => t.oninput = () => { doc.world ||= {}; const ppl = (doc.world.people ||= {}); ppl[t.dataset.wi] = { ...(ppl[t.dataset.wi] || {}), interests: t.value.split(',').map(x => x.trim()).filter(Boolean).slice(0, 3) }; dirty = true; });
+  wireVoices(el);
+  // quirks: kept as typed (no redraw while typing), saved with the board
+  el.querySelectorAll('[data-wq]').forEach(t => t.oninput = () => { doc.world ||= {}; const ppl = (doc.world.people ||= {}); ppl[t.dataset.wq] = { ...(ppl[t.dataset.wq] || {}), quirks: t.value }; dirty = true; });
+  el.querySelectorAll('[data-wq]').forEach(t => t.onchange = () => { if (!document.querySelector('#t-save')) render(); });
+}
+// people in the world (stage 4, 2026-10-19): dials, interests, quirks, muted — one block per person
+const DIALS = [['g', 'Gossips'], ['m', 'Messages'], ['p', 'Posts']], DIAL_OPTS = [['1', 'low'], ['2', 'avg'], ['3', 'high']];
+const dialOf = (o, d) => String([1, 2, 3].includes(Number(o?.[d])) ? Number(o[d]) : 2);
+// small pictures for the World tab (cards' own pictures; voices and the test page get a colored initial)
+const wCardOf = k => (k === 'main' ? HD?.mainCard || '' : (doc.trackers.filter(t => t.kind === 'cast').flatMap(t => (t.people || []).map(p => [`${t.id}:${p.id}`, p.card])).find(([kk]) => kk === k) || [])[1] || '');
+function wPic(k, nm, cls = 'wpic') {
+  const card = wCardOf(k);
+  if (card && HOST) return `<span class="${cls}"><img src="/thumbnail?type=avatar&file=${encodeURIComponent(card)}" alt="" loading="lazy"></span>`;
+  let h = 0; for (const c of String(nm || '?')) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `<span class="${cls}" style="--h:${h}">${esc(String(nm || '?').trim().slice(0, 1).toUpperCase())}</span>`;
+}
+// compact (Miinthe, 2026-10-19: "the people in the world field will look crazy if you have a big cast"): one slim row per person —
+// three dot-dials that cycle on a tap, mute, ✎ opens interests + quirks for one person at a time; a search above 8 people
+let wPersonOpen = null;
+const DIAL_WORD = ['', 'low', 'avg', 'high'];
+// who never talks to whom (Miinthe, 2026-10-19: "don't allow this npc to dm X person … as safety"): either one's list names the other
+const neverOn = (w, a, b) => !!((w.people?.[a]?.never || []).includes(b) || (w.people?.[b]?.never || []).includes(a));
+const neverChoices = k => [['user', wName('user')], ['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name]), ...(worldDoc().voices || []).map(v => ['v:' + v.id, v.name])].filter(([o]) => o !== k);
+function personBlock(w, k, nm, n) {
+  const pp = w.people?.[k] || {}, open = wPersonOpen === k;
+  const dialBtn = (d, l) => { const v = Number(dialOf(pp, d)); return `<button class="wdot" data-dial="${esc(k)}|${d}" title="${l}: ${DIAL_WORD[v]} — tap to change" aria-label="${l}: ${DIAL_WORD[v]}"><b>${l[0]}</b><i>${'●'.repeat(v)}<span>${'●'.repeat(3 - v)}</span></i></button>`; };
+  return `<div class="wprow${open ? ' open' : ''}" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn" title="${esc(nm)}">${wPic(k, nm)}${esc(nm)}${pp.quirks || (pp.interests || []).length ? '<small> ✎</small>' : ''}</span>
+    <span class="wpd">${DIALS.map(([d, l]) => dialBtn(d, l)).join('')}</span>
+    <button class="wmb${pp.muted ? ' on' : ''}" data-mute="${esc(k)}" aria-pressed="${pp.muted === true}" title="${pp.muted ? 'Muted — tap to unmute' : 'Mute: a break from the world — writes, answers and posts nothing until you unmute them (still hears what goes around)'}">🔇</button>
+    <button class="wmb" data-wp-open="${esc(k)}" aria-expanded="${open}" title="Interests and quirks">${open ? '▴' : '✎'}</button></div>
+    ${open ? `<div class="wpx"><input class="s wi" data-wi="${esc(k)}" value="${esc((pp.interests || []).join(', '))}" placeholder="Cares about (comma between): memes, photos of her own life">
+    <textarea class="s wq" data-wq="${esc(k)}" rows="2" placeholder="Quirks, e.g. sends several short texts in a row · spells badly · loves emoji · never uses capitals">${esc(pp.quirks || '')}</textarea>
+    <div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>` : ''}`;
+}
+// voices (a newspaper, a shop) and regulars (recurring locals): list, editor, and a suggested mix to approve
+let wVoiceSel = null;
+function voicesCard(w) {
+  const vs = w.voices || [];
+  let h = vs.length ? vs.map(v => `<div class="ln${wVoiceSel === v.id ? ' on' : ''}"><span><button class="linkish" data-wv="${esc(v.id)}">${esc(v.name)}${v.muted ? ' 🔇' : ''}</button><small>${v.kind === 'regular' ? 'a regular' : 'a story voice'} · posts ${['', 'low', 'avg', 'high'][v.p || 2]}${v.interests?.length ? ' · ' + esc(v.interests.join(', ')) : ''}</small></span></div>`).join('')
+    : '<div class="ln"><span class="mini">None yet. A voice is an institution or publication that fits the setting (a local paper, a shop, a guild board); a regular is a recurring local with a personality (a gossip, a grump, a conspiracy theorist).</span></div>';
+  h += `<div class="btnrow" style="padding:6px 0 8px"><button id="w-v-add">+ Voice</button><button id="w-r-add">+ Regular</button></div>`;
+  const v = vs.find(x => x.id === wVoiceSel);
+  if (v) h += `<div class="wpe">
+    <div class="ln stack"><span>Name</span><input class="s" id="w-v-name" value="${esc(v.name)}"></div>
+    <div class="ln stack"><span>Kind</span>${segH('w-v-kind', [['voice', 'A story voice'], ['regular', 'A regular']], v.kind)}</div>
+    <div class="ln stack"><span>Who they are</span><textarea class="s" id="w-v-bio" rows="2" placeholder="e.g. the town's only newspaper, nosy and proud of it">${esc(v.bio || '')}</textarea></div>
+    <div class="ln stack"><span>Quirks</span><textarea class="s" id="w-v-quirks" rows="2" placeholder="e.g. ALL CAPS when excited · ends every post with a proverb">${esc(v.quirks || '')}</textarea></div>
+    <div class="wdials">${DIALS.map(([d, l]) => `<span class="wdial"><small>${l}</small>${segH(`w-v-d-${d}`, DIAL_OPTS, dialOf(v, d))}</span>`).join('')}</div>
+    <div class="ln stack"><span>Cares about</span><input class="s" id="w-v-int" value="${esc((v.interests || []).join(', '))}" placeholder="comma between"></div>
+    <div class="ln"><span>Muted</span>${swH('w-v-mute', v.muted === true)}</div>
+    <div class="btnrow" style="padding:6px 0 8px"><button id="w-v-done">Done</button><button id="w-v-del">Delete</button></div></div>`;
+  return h;
+}
+function setVoice(id, patch) { setWorld({ voices: (worldDoc().voices || []).map(v => (v.id === id ? { ...v, ...patch } : v)) }); }
+function wireVoices(el) {
+  el.querySelectorAll('[data-wv]').forEach(b => b.onclick = () => { wVoiceSel = wVoiceSel === b.dataset.wv ? null : b.dataset.wv; render(); });
+  const add = kind => () => { const id = 'vc' + Date.now().toString(36); setWorld({ voices: [...(worldDoc().voices || []), { id, name: kind === 'regular' ? 'New regular' : 'New voice', kind, g: 2, m: 1, p: 2, interests: [] }] }); wVoiceSel = id; render(); };
+  const va = el.querySelector('#w-v-add'); if (va) va.onclick = add('voice');
+  const ra = el.querySelector('#w-r-add'); if (ra) ra.onclick = add('regular');
+  const v = (worldDoc().voices || []).find(x => x.id === wVoiceSel); if (!v) return;
+  const id = v.id, inPlace = (sel, key, fn = x => x) => { const t = el.querySelector(sel); if (t) t.oninput = () => { const vv = (doc.world?.voices || []).find(x => x.id === id); if (vv) { vv[key] = fn(t.value); dirty = true; } }; };
+  inPlace('#w-v-name', 'name'); inPlace('#w-v-bio', 'bio'); inPlace('#w-v-quirks', 'quirks'); inPlace('#w-v-int', 'interests', x => x.split(',').map(y => y.trim()).filter(Boolean).slice(0, 3));
+  wireSeg(el, 'w-v-kind', k => setVoice(id, { kind: k }));
+  ['g', 'm', 'p'].forEach(d => wireSeg(el, `w-v-d-${d}`, x => setVoice(id, { [d]: Number(x) })));
+  wireSw(el, 'w-v-mute', on => setVoice(id, { muted: on }));
+  el.querySelector('#w-v-done').onclick = () => { wVoiceSel = null; render(); };
+  el.querySelector('#w-v-del').onclick = () => { setWorld({ voices: (worldDoc().voices || []).filter(x => x.id !== id) }); wVoiceSel = null; render(); toast('Removed.'); };
+}
+// planned messages (stage 3, 2026-10-19): who → whom, when (one of the board's own conditions), the words
+let wPlanSel = null;
+const wPeople = () => doc.trackers.filter(t => t.kind === 'cast').flatMap(t => (t.people || []).map(p => ({ key: `${t.id}:${p.id}`, name: p.name })));
+const wName = k => k === 'news' ? (worldDoc().newsName || (worldDoc().look === 'letters' ? 'The Gazette' : 'Local News')) : k === 'rumor' ? (worldDoc().rumorName || 'Whispers') : k === 'user' ? (HD?.userName || 'You') : k === 'main' ? (HD?.mainName || 'The main character') : String(k).startsWith('v:') ? ((WORLD ? WORLD.normWorld(doc.world).voices : []).find(v => 'v:' + v.id === k)?.name || '?') : (wPeople().find(x => x.key === k)?.name || '?');
+const wSteps = () => doc.trackers.filter(t => !t.kind || t.kind === 'steps');
+const wDays = () => doc.trackers.filter(t => t.kind === 'state' && (t.fields || []).some(f => f.type === 'day'));
+const wPlaces = () => doc.trackers.filter(t => t.kind === 'place');
+const wKindOf = c => !c ? 'day' : c.__kind || (c.world ? 'day' : c.place ? 'place' : c.cast ? 'arrive' : 'step');
+function planList(w) {
+  const fired = HD?.worldFired || {};
+  if (!w.planned.length) return '<div class="ln"><span class="mini">Nothing planned yet. A letter on Day 3, a text when the Heist plot reaches "Caught", news when someone walks in…</span></div>';
+  return w.planned.map(p => { const f = fired[p.id];
+    // no When picked yet (Miinthe, D5: a plan with none never went out, and nothing said why)
+    const status = f ? (f.hit ? `sent in this chat (#${f.i})` : 'its chance missed in this chat') : !p.cond || p.cond.__kind || ('cond2' in p && (!p.cond2 || p.cond2.__kind)) ? '⚠ pick a When: it never goes out without one' : 'waiting';
+    return `<div class="ln${wPlanSel === p.id ? ' on' : ''}"><span><button class="linkish" data-w-plan="${esc(p.id)}">${esc(wName(p.from))} → ${p.kind === 'post' ? 'a post' : p.kind === 'news' ? 'news' : p.kind === 'rumor' ? 'a rumor' : esc(wName(p.to))}</button><small>${esc(WPLAN ? WPLAN.whenText(doc, p.cond) + (p.cond2 ? ' and ' + WPLAN.whenText(doc, p.cond2).replace(/^when /, '') : '') : '')}${p.odds ? ` · 1 in ${p.odds}` : ''} · ${p.words === 'mine' ? 'your words' : 'a note'} · ${status}</small></span></div>`; }).join('');
+}
+function planEditor(w) {
+  const p = w.planned.find(x => x.id === wPlanSel); if (!p) return '';
+  const opt = (v, l, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  const ppl = [['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name]), ...(worldDoc().voices || []).map(v => ['v:' + v.id, v.name]), ...((worldDoc().voices || []).some(v => v.kind !== 'regular') ? [] : [['news', wName('news')]])];
+  const kindP = p.kind || 'msg';
+  // who can send it (Miinthe, 2026-10-19): news only from the news (its account, or the story's newspapers); a rumor also
+  // straight from the rumor account, with nobody behind it
+  const newsy = k => k === 'news' || (worldDoc().voices || []).some(v => 'v:' + v.id === k && v.kind !== 'regular');
+  const fromList = kindP === 'news' ? ppl.filter(([k]) => newsy(k)) : kindP === 'rumor' ? [['rumor', `${wName('rumor')} (nobody behind it)`], ...ppl.filter(([k]) => !newsy(k))] : ppl;
+  // When: one condition, or two that must both hold (Miinthe, 2026-10-19: "two people as well as two conditions")
+  const whenPick = (cc, sx) => {
+    const kind = wKindOf(cc), c = cc || {};
+    let ui = '';
+    if (kind === 'day') { const ts = wDays(); ui = ts.length ? `<select class="s" id="w-p-dt${sx}">${ts.map(t => opt(t.id, t.name, c.world || ts[0].id)).join('')}</select> Day <input type="number" class="s" id="w-p-day${sx}" min="1" value="${c.min || 2}" style="width:60px">` : '<span class="mini">This board has no state tracker with a Day field yet.</span>'; }
+    if (kind === 'step') { const ts = wSteps(), t = ts.find(x => x.id === c.tracker) || ts[0]; ui = t ? `<select class="s" id="w-p-st${sx}">${ts.map(x => opt(x.id, x.name, t.id)).join('')}</select> reaches <select class="s" id="w-p-step${sx}">${(t.steps || []).map(st => opt(st.id, st.name, c.step)).join('')}</select>` : '<span class="mini">No step trackers on this board.</span>'; }
+    if (kind === 'place') { const ts = wPlaces(), t = ts.find(x => x.id === c.place) || ts[0]; ui = t ? `<select class="s" id="w-p-pt${sx}">${ts.map(x => opt(x.id, x.name, t.id)).join('')}</select> is at <select class="s" id="w-p-at${sx}">${(t.places || []).map(pl => opt(pl.id, pl.name, c.at)).join('')}</select>` : '<span class="mini">No place trackers on this board.</span>'; }
+    if (kind === 'arrive') { const ps = wPeople(); ui = ps.length ? `<select class="s" id="w-p-who${sx}">${ps.map(x => opt(x.key, x.name, c.cast ? `${c.cast}:${c.person}` : ps[0].key)).join('')}</select> is in the scene` : '<span class="mini">No Cast on this board.</span>'; }
+    return `${segH('w-p-kind' + sx, [['day', 'Story day'], ['step', 'Tracker step'], ['place', 'Place'], ['arrive', 'Someone arrives']], cc ? kind : null)}<div class="wpe-when">${cc ? ui : `<span class="mini">${sx ? 'Pick the second condition.' : 'Pick when it goes out. Until then it waits forever.'}</span>`}</div>`;
+  };
+  const two = 'cond2' in p;
+  return `<div class="wpe">
+    <div class="ln stack"><span>What</span>${segH('w-p-what', [['msg', 'A message'], ['post', 'A post'], ['news', 'News'], ['rumor', 'A rumor']], kindP)}</div>
+    <div class="ln stack"><span>From</span><select class="s" id="w-p-from"><option value="">— pick someone</option>${fromList.map(([k, l]) => opt(k, l, p.from)).join('')}</select></div>
+    ${kindP === 'msg' ? `<div class="ln stack"><span>To</span><select class="s" id="w-p-to">${[['user', wName('user')], ...ppl.filter(([k]) => !k.startsWith('v:') && k !== 'news')].map(([k, l]) => opt(k, l, p.to)).join('')}</select></div>` : (kindP === 'rumor' ? '<div class="ln"><span class="mini">Goes out through the rumor account, without a name; whoever it\'s from is behind it (and knows).</span></div>' : '<div class="ln"><span class="mini">Goes to the feed (Chatter, and News for news).</span></div>')}
+    <div class="ln stack"><span>When</span>${whenPick(p.cond, '')}${two ? '' : '<button class="linkish" id="w-p-and">+ And when…</button>'}</div>
+    ${two ? `<div class="ln stack"><span>And when <small>both must hold</small></span>${whenPick(p.cond2, '2')}<button class="linkish" id="w-p-and-x">Remove the second condition</button></div>` : ''}
+    <div class="ln stack"><span>Chance <small>leave empty for always</small></span><span>1 in <input type="number" class="s" id="w-p-odds" min="2" value="${p.odds || ''}" placeholder="—" style="width:60px"></span></div>
+    <div class="ln stack"><span>Words</span>${segH('w-p-words', [['mine', 'My exact words'], ['note', 'My note, the AI writes it']], p.words)}<textarea class="s" id="w-p-text" rows="3" placeholder="${p.words === 'mine' ? 'The message, word for word' : 'What it should say, e.g. ask them to meet on Friday, sounding nervous'}">${esc(p.text || '')}</textarea>
+      <span class="mini">${p.words === 'mine' ? 'Sent exactly as written.' : 'Written in the sender\'s voice when it goes out, so it fits what happened by then.'} If the story skips past the moment, it arrives late. Every new run gets it fresh.</span></div>
+    <div class="btnrow" style="padding:6px 0 8px"><button id="w-p-done">Done</button><button id="w-p-del">Delete</button></div></div>`;
+}
+function setPlan(id, patch) { const w = worldDoc(); setWorld({ planned: w.planned.map(p => (p.id === id ? { ...p, ...patch } : p)) }); }
+function condFor(kind, el, sx = '') {
+  const v = id => el.querySelector('#' + id + sx)?.value;
+  if (kind === 'day') { const t = v('w-p-dt'); const t2 = doc.trackers.find(x => x.id === t); const f = (t2?.fields || []).find(x => x.type === 'day'); return t2 && f ? { world: t2.id, field: f.id, min: Math.max(1, Math.round(Number(v('w-p-day')) || 1)) } : null; }
+  if (kind === 'step') { const t = v('w-p-st'), s = v('w-p-step'); return t && s ? { tracker: t, step: s } : null; }
+  if (kind === 'place') { const t = v('w-p-pt'), a = v('w-p-at'); return t && a ? { place: t, at: a } : null; }
+  if (kind === 'arrive') { const k = v('w-p-who'); if (!k) return null; const [c, pp] = k.split(':'); return { cast: c, person: pp }; }
+  return null;
+}
+function wirePlans(el) {
+  el.querySelectorAll('[data-w-plan]').forEach(b => b.onclick = () => { wPlanSel = wPlanSel === b.dataset.wPlan ? null : b.dataset.wPlan; render(); });
+  const add = el.querySelector('#w-p-add');
+  if (add) add.onclick = () => { const id = 'pl' + Date.now().toString(36); const w = worldDoc(); const first = wPeople()[0]?.key || (HD?.mainName ? 'main' : ''); setWorld({ planned: [...w.planned, { id, from: first, to: 'user', cond: null, words: 'note', text: '' }] }); wPlanSel = id; render(); };
+  const p = worldDoc().planned.find(x => x.id === wPlanSel); if (!p) return;
+  const id = p.id;
+  const sel = (sid, fn) => { const x = el.querySelector('#' + sid); if (x) x.onchange = () => fn(x.value); };
+  sel('w-p-from', v => setPlan(id, { from: v }));
+  // another kind: a sender it doesn't allow (news from Kettle) becomes the first one it does
+  wireSeg(el, 'w-p-what', v => { setPlan(id, { kind: v }); setTimeout(() => { const f = document.getElementById('w-p-from'); if (f && !f.value && f.options[1]) setPlan(id, { from: f.options[1].value }); }, 0); });
+  sel('w-p-to', v => setPlan(id, { to: v }));
+  // a new kind: show its pickers, then take their first choices as the condition
+  for (const [sx, key] of [['', 'cond'], ['2', 'cond2']]) {
+    wireSeg(el, 'w-p-kind' + sx, k => { setPlan(id, { [key]: { __kind: k } }); setTimeout(() => { const c = condFor(k, document.querySelector('.wpanel') || document.getElementById('side'), sx); if (c) setPlan(id, { [key]: c }); }, 0); });
+    ['w-p-dt', 'w-p-day', 'w-p-st', 'w-p-step', 'w-p-pt', 'w-p-at', 'w-p-who'].forEach(sid => sel(sid + sx, () => setPlan(id, { [key]: condFor(wKindOf(p[key]), el, sx) })));
+  }
+  const and = el.querySelector('#w-p-and'); if (and) and.onclick = () => { setPlan(id, { cond2: null }); render(); };
+  const andX = el.querySelector('#w-p-and-x'); if (andX) andX.onclick = () => { setWorld({ planned: worldDoc().planned.map(x => { if (x.id !== id) return x; const { cond2: _c, ...rest } = x; return rest; }) }); render(); };
+  sel('w-p-odds', v => { const n = Math.round(Number(v)); const { odds: _o, ...rest } = worldDoc().planned.find(x => x.id === id) || {}; setWorld({ planned: worldDoc().planned.map(x => (x.id === id ? (n > 1 ? { ...rest, odds: n } : rest) : x)) }); });
+  wireSeg(el, 'w-p-words', v => setPlan(id, { words: v }));
+  // typing keeps the text in place without redrawing (a redraw on blur ate the click on Done)
+  const tx = el.querySelector('#w-p-text'); if (tx) tx.oninput = () => { const pl = (doc.world?.planned || []).find(x => x.id === id); if (pl) { pl.text = tx.value; dirty = true; } };
+  el.querySelector('#w-p-done').onclick = () => { if (tx) setPlan(id, { text: tx.value }); wPlanSel = null; render(); };
+  el.querySelector('#w-p-del').onclick = () => { setWorld({ planned: worldDoc().planned.filter(x => x.id !== id) }); wPlanSel = null; render(); toast('Planned message removed.'); };
+}
+function renderWorldPage(p) {
+  const w = worldDoc();
+  const shown = WORLD ? WORLD.railSections(w).map(k => WORLD.sectionTitle(k, w.look)) : [];
+  if (!w.on) {
+    p.innerHTML = `<div class="wov"><h2>World</h2><div class="wov-empty"><b>The world layer is off for this story.</b><span>Switch it on to get chatter, news, messages and the people of this story in its chats, in a panel of their own.</span><span class="btnrow"><button class="btn primary" id="w-on2">Switch it on</button><button class="btn" id="w-on3">☆ Switch it on and set it up with Mero</button></span></div></div>`;
+    p.querySelector('#w-on2').onclick = () => { setWorld({ on: true }); toast('The world layer is on for this story. Save the board to use it.'); };
+    p.querySelector('#w-on3').onclick = () => { setWorld({ on: true }); setTimeout(() => document.getElementById('w-su-go')?.click(), 0); };
+    return;
+  }
+  // what's going on in this chat (the host's summary), then planned messages, people, voices — the mock-up's main space
+  const S = HD?.worldSummary || { stories: [], posts: 0, msgs: 0, unread: 0, recent: [], busiest: [] };
+  const fired = HD?.worldFired || {}, waiting = w.planned.filter(pl => !fired[pl.id]).length, letters = w.look === 'letters';
+  const dots = (at, n) => `<span class="wpdots" aria-label="part ${at} of ${n}">${Array.from({ length: n }, (_, k) => `<i class="${k < at ? 'on' : ''}"></i>`).join('')}</span>`;
+  const maxB = Math.max(1, ...S.busiest.map(([, n]) => n));
+  const ov = [
+    `<div class="wov-card"><div class="wch"><span class="wci">📖</span><b>World stories</b></div>${S.stories.length ? S.stories.map(st => `<div class="wst"><span>${esc(st.title)}</span>${dots(Math.min(st.at, st.n), st.n)}<small>${st.at >= st.n ? 'told' : st.next ? 'next: ' + esc(st.next) : ''}</small></div>`).join('') : '<span class="mini">None yet. Start one in the panel\'s News, or the world starts one by itself.</span>'}</div>`,
+    `<div class="wov-card"><div class="wch"><span class="wci">💬</span><b>Lately</b></div><div class="wnums"><span><b>${S.posts}</b> post${S.posts === 1 ? '' : 's'}</span><span><b>${S.msgs}</b> message${S.msgs === 1 ? '' : 's'}</span>${S.unread ? `<span class="hot"><b>${S.unread}</b> unread</span>` : ''}</div>${S.recent.length ? S.recent.map(r => `<div class="wli">${wPic(r.by, wName(r.by), 'wpic sm')}<span><b>${esc(wName(r.by))}</b> ${esc(r.text)}</span></div>`).join('') : '<span class="mini">No posts yet.</span>'}</div>`,
+    `<div class="wov-card"><div class="wch"><span class="wci">⭐</span><b>Busiest</b></div>${S.busiest.length ? S.busiest.map(([k, n]) => `<div class="wbz">${wPic(k, wName(k), 'wpic sm')}<span>${esc(wName(k))}</span><i style="--w:${Math.round(100 * n / maxB)}%"></i><small>${n}</small></div>`).join('') : '<span class="mini">Nobody yet.</span>'}</div>`,
+    `<div class="wov-card"><div class="wch"><span class="wci">◌</span><b>Rumors going around</b></div>${(S.rumors || []).length ? S.rumors.map(r => `<div class="wli"><span><b>${esc(r.kind)}</b> “${esc(r.text)}”<br><small>heard by ${r.heard.length ? esc(r.heard.map(wName).join(', ')) : 'nobody yet'}</small></span></div>`).join('') : '<span class="mini">None yet. They start from the story, from tips to the rumor account, and from leaks.</span>'}</div>`,
+    `<div class="wov-card"><div class="wch"><span class="wci">📅</span><b>Coming up</b></div>${w.planned.length ? `<div class="wnums"><span><b>${waiting}</b> waiting</span><span><b>${w.planned.length - waiting}</b> sent</span></div><span class="mini">planned messages, posts, news and rumors in this chat</span>` : '<span class="mini">Nothing planned. Plan messages, posts or news below.</span>'}</div>`,
+  ];
+  p.innerHTML = `<div class="wov wide${letters ? ' letters' : ''}">
+    <div class="wband"><span class="wglobe">🌍</span><div class="wbt"><h2>World</h2><small>${esc(cur)} · in this chat: ${esc(HD?.chat || '—')}</small></div>
+      <div class="wbadges"><span class="wbadge">${letters ? '✉️ Letters' : '📱 Phone'}</span>${shown.map(t => `<span class="wbadge q">${esc(t)}</span>`).join('')}<span class="wbadge ${w.paused ? 'pause' : 'live'}">${w.paused ? '⏸ Paused' : '● Alive'}</span></div></div>
+    <div class="wov-grid">${ov.join('')}</div>
+    <div class="side wpanel">${worldMainCards(w)}</div></div>`;
+  p.querySelectorAll('.seg2').forEach(x => x.classList.add('strong'));
+  wireWorldMain(p);
+  tipify(p);
+}
 function renderBoardPanel(el) {
   el.innerHTML = `<span class="kind">Board</span><h2>${esc(cur)}</h2>
     ${card('Folders it reads', `<div class="fchips">${doc.folders.map(f => `<span class="fchip">${esc(folderLabel(f))}<button data-frm="${esc(f)}" aria-label="Stop reading ${esc(f)}">✕</button></span>`).join('')}</div><div class="fbgrid" style="padding-bottom:8px"><button class="btn" id="b-tree">Choose folders…</button></div><span class="mini" style="display:block;padding-bottom:8px">The board never looks outside these. Each tracker saves its new entries into one of them.</span>`)}
@@ -6485,7 +6855,9 @@ function renderSide0(el) {
       line('Moves back too', '', swH('t-back', t.direction !== 'forward'), t.direction !== 'forward') + '<div class="sub"><span class="mini tip">Off: forward only. Single steps can still be one-way or fall back to a detour.</span></div>'
       + line('Starts over after the last step', 'times of day, weekdays, seasons — the step after the last one is the first again', swH('t-loop', !!t.loop), !!t.loop) + `<div class="sub fb"><div class="ln"><span>Count each round in</span><select class="s" id="t-rounds"><option value="">— nothing</option>${doc.trackers.filter(isCounter).map(k => `<option value="${k.id}"${t.rounds === k.id ? ' selected' : ''}>${esc(k.name)}</option>`).join('')}</select></div></div>`
       + line('May skip steps', '', swH('t-skip', !!t.skip), !!t.skip) + '<div class="sub"><span class="mini tip">e.g. a time jump — otherwise a jump is refused and logged.</span></div>'
-      + line('Settle time', '', swH('t-settle', t.settle > 0), t.settle > 0) + `<div class="sub"><span class="mini">at least</span><input class="s num" id="t-settle-n" type="number" min="1" max="999" value="${t.settle || 2}"><span class="mini">messages between moves</span></div>`)}
+      + line('Settle time', '', swH('t-settle', t.settle > 0), t.settle > 0) + `<div class="sub"><span class="mini">at least</span><input class="s num" id="t-settle-n" type="number" min="1" max="999" value="${t.settle || 2}"><span class="mini">messages between moves</span></div>`
+      // world layer stage 5: off unless switched on (Miinthe: "but only if I set it up in the board")
+      + (worldDoc().on ? line('News and rumors can move this', 'the world layer may move it when a rumor or news would really change it — rarely; a notice with Undo each time', swH('t-world', t.worldMoves === true), t.worldMoves === true) : ''))}
     ${card('Story links',
       line('Starts later', '', swH('t-starts', (t.starts || []).length > 0), (t.starts || []).length > 0) + `<div class="sub fb">${condEditor(t.starts ||= [], t.id, 'starts')}${t.starts.length ? `<div class="fbgrid"><span class="mini">If it stops holding</span>${segH('t-fall', [['keep', 'keep running'], ['pause', 'pause']], t.onFall || 'keep')}</div>` : ''}</div>`
 )}
@@ -6498,6 +6870,7 @@ function renderSide0(el) {
   wireSeg(el, 't-ask', v => { t.askAt = v; touch(); });
   wireSw(el, 't-back', on => { t.direction = on ? 'both' : 'forward'; touch(); });
   wireSw(el, 't-skip', on => { t.skip = on; touch(); });
+  wireSw(el, 't-world', on => { if (on) t.worldMoves = true; else delete t.worldMoves; touch(); });
   wireSw(el, 't-loop', on => { t.loop = on; if (!on) delete t.rounds; touch(); });
   q('#t-rounds') && (q('#t-rounds').onchange = e => { if (e.target.value) t.rounds = e.target.value; else delete t.rounds; touch(); });
   wireSw(el, 't-settle', on => { t.settle = on ? (t.settle || 2) : 0; touch(); });
@@ -6845,11 +7218,11 @@ function answer(a) {
 }
 function askDemo() {
   dialog(`<div class="ask"><span class="kind">Before the reply — the helper isn't sure</span>
-    <h3>Kettle's Secret → Revealed?</h3>
+    <h3>Mara's Secret → Revealed?</h3>
     ${confPill('low', 'var(--l3)')}
-    <div><b>Its reasoning:</b> The kettle half-admits touching the fuse box, but denies the rest — it may or may not count as the secret being revealed.</div>
-    <div class="q">“Fine, maybe I did touch the fuse box that night — but only to warm my handle, I swear…”</div>
-    <div class="note">💡 The helper suggests re-checking in <b>3 messages</b>: the argument is still going — the next few messages will likely show whether the kettle confesses.</div>
+    <div><b>Its reasoning:</b> Mara half-admits opening the letter, but denies the rest — it may or may not count as the secret being revealed.</div>
+    <div class="q">“Fine, maybe I did open the letter that night — but only to check who it was from, I swear…”</div>
+    <div class="note">💡 The helper suggests re-checking in <b>3 messages</b>: the argument is still going — the next few messages will likely show whether Mara confesses.</div>
     <div class="btns"><button class="btn primary" id="dlg-ok">Accept</button><button class="btn" id="dlg-deny">Deny</button><label class="note">Re-check in ${recheckSelect('', 3)} messages</label><button class="btn" id="dlg-wait">Wait</button></div>
     <p class="note">The reply waits until you answer, so it already follows your choice. When it asks is set per tracker and per step: only low confidence (default), low or medium, every move, or never.</p></div>`, s => {
     s.querySelector('select')?.addEventListener('click', ev => ev.stopPropagation());
@@ -7123,6 +7496,7 @@ const leaveSideTool = () => { if (connForm || ['conn', 'checks', 'lines'].includ
 document.getElementById('tab-board').onclick = () => { leaveSideTool(); tab = 'board'; render(); };
 document.getElementById('tab-time').onclick = () => { leaveSideTool(); tab = 'time'; render(); };
 document.getElementById('tab-outline').onclick = () => { leaveSideTool(); tab = 'outline'; render(); };
+document.getElementById('tab-world').onclick = () => { leaveSideTool(); tab = 'world'; render(); };
 const searchEl = document.getElementById('search');
 searchEl.oninput = () => { searchQ = searchEl.value.trim().toLowerCase(); if (tab !== 'board') tab = 'board'; render(); };
 searchEl.onkeydown = e => { if (e.key === 'Escape') { searchEl.value = ''; searchQ = ''; render(); e.stopPropagation(); } };
@@ -7145,10 +7519,11 @@ function render() {
   document.getElementById('tab-board').setAttribute('aria-selected', tab === 'board');
   document.getElementById('tab-time').setAttribute('aria-selected', tab === 'time');
   document.getElementById('tab-outline').setAttribute('aria-selected', tab === 'outline');
+  document.getElementById('tab-world').setAttribute('aria-selected', tab === 'world');
   document.querySelector('.work').classList.toggle('timeline', tab === 'time');   // layout first, so the charts measure the right width
   const p = document.getElementById('page');
   { const sd = document.getElementById('side'); if (sd.parentElement !== document.querySelector('.work')) { sd.classList.remove('inline'); document.querySelector('.work').appendChild(sd); } }
-  if (tab === 'board') { if (focusC) renderFocusView(p); else renderBoard(p); } else if (tab === 'outline') renderOutline(p); else renderTimeline(p);
+  if (tab === 'board') { if (focusC) renderFocusView(p); else renderBoard(p); } else if (tab === 'outline') renderOutline(p); else if (tab === 'world') renderWorldPage(p); else renderTimeline(p);
   const side = document.getElementById('side');
   if (tab === 'time') {
     renderLogSide(side);
@@ -7159,6 +7534,7 @@ function render() {
     const sideBySide = getComputedStyle(document.querySelector('.work')).gridTemplateColumns.split(' ').length > 1;
     side.style.height = sideBySide ? p.getBoundingClientRect().height + 'px' : '';
     if (PHONE.matches && tlTracker && tlTracker !== 'all') { const ch = p.querySelector(`.tl-title [data-tlt="${tlTracker}"]`)?.parentElement?.nextElementSibling; if (ch) { side.classList.add('inline'); ch.after(side); } }
+  } else if (tab === 'world') { side.style.height = ''; renderWorldSide(side); tipify(side);
   } else { side.style.height = ''; renderSide(side); if (sel.kind === 'tracker' && T(sel.t)) wireRun(side, T(sel.t)); side.querySelector('#s-fork') && (side.querySelector('#s-fork').onclick = () => addFork(T(sel.t), sel.i)); tipify(side); foldCards(side); }
   phoneSheet(side);
   renderMeroWin();
@@ -7179,7 +7555,7 @@ if (HD) {
   if (HD.select && T(HD.select)) { sel = { kind: 'tracker', t: HD.select }; setTimeout(() => document.querySelector('.board .sel')?.scrollIntoView({ block: 'center', inline: 'nearest' }), 120); }
   // opened from the Story tab's New tracker: straight into the Add window
   if (HD.add) setTimeout(() => AW.open(), 150);
-  if (HD.view === 'time' || HD.view === 'outline') { tab = HD.view; render(); }   // Story → Timeline (Miinthe, 2026-10-16)
+  if (HD.view === 'time' || HD.view === 'outline' || HD.view === 'world') { tab = HD.view; render(); }   // Story → Timeline (Miinthe, 2026-10-16)
   // "Write a new entry…" (bar 📖, Mero's lore gaps — overhaul 2026-10-17): only the entries window, on its own
   if (HD.entry) setTimeout(() => EW.openLoose(HD.entry), 0);
   else if (HD.changed.length) setTimeout(() => toast(`Changed by commands since the board was last saved here — taken in: ${HD.changed.join(' · ')}`), 400);

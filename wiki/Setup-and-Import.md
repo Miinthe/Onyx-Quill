@@ -6,11 +6,11 @@ Onboarding tools and the World Info importer. Use the setup wizard to configure 
 
 ## Setup wizard
 
-A 9-page first-run wizard. Walks through Obsidian connection, lorebook tag, search mode, AI search connection, Librarian setup, vault structure, and a one-shot World Info import. Each page validates before letting you advance.
+A 9-page first-run wizard. Walks through Obsidian connection, lorebook tag, search mode, AI search connection, the Mero ☆ page (lore tools during replies), vault structure, and a one-shot World Info import. Each page validates before letting you advance.
 
 ![Setup Wizard welcome screen with step indicator, explanation of the two-stage pipeline, and Next button to begin guided configuration](images/dle-setup-wizard.png)
 
-**Open it:** run `/dle-setup`. The wizard also opens automatically the first time you load DeepLore.
+**Open it:** run `/dle-setup`, or use the side panel's ⋯ → **Setup wizard**. The wizard also opens automatically the first time you load DeepLore.
 
 You can re-run the wizard any time. It prefills from your current settings, so re-running is non-destructive unless you change a value.
 
@@ -18,19 +18,18 @@ You can re-run the wizard any time. It prefills from your current settings, so r
 
 ## Quick actions
 
-A toolbar at the top of the drawer (above the tab content) with one-click buttons for the operations you do most. Buttons run the same code paths as their slash commands; no roundtrip through the parser.
+The most-used actions sit in the [[Drawer|side panel]]'s header, next to **Ready**:
 
-| Button | Icon | Action | Slash command |
-|---|---|---|---|
-| **Refresh** | sync | Reload the vault index from Obsidian. | `/dle-refresh` |
-| **Scribe** | feather | Run Session Scribe: AI summarizes the conversation and writes notes back to the vault. | `/dle-scribe` |
-| **New Lore** | plus | Open the new-entry editor. | `/dle-newlore` |
-| **Librarian** | book-bookmark | Open the Librarian chat (Emma) for authoring entries. | `/dle-librarian` |
-| **Graph** | diagram-project | Open the relationship graph. | `/dle-graph` |
-| **Clear AI Cache** | eraser | Clear the AI search cache so the next generation re-selects lore from scratch. | (drawer only) |
-| **Skip Librarian** | ban | Skip the Librarian agentic loop for the next generation. Toggle. | (drawer only) |
+| Button | Action | Slash command |
+|---|---|---|
+| **Refresh** | Read your vault again. | `/dle-refresh` |
+| **Scribe** | Write session notes now. | `/dle-scribe` |
+| **New lore** | The AI suggests entries from the chat. | `/dle-newlore` |
+| **New run** | A fresh chat as the next run, with the same folders. | |
 
-Keyboard shortcuts when the drawer has focus: `r` refresh, `s` scribe, `n` new lore, `g` graph.
+The rest are in the side panel's **⋯** menu: Graph, Open the board, Pins and blocks, Try matching, Reroll lore, Review the vault with Mero, Write missing summaries, Optimize keywords, Import World Info, the notebooks, Setup wizard, Diagnostics and Settings. The [[DeepLore Bar]]'s 📖 menu has Open the board, Write a new entry…, Move an entry… and Setup and settings.
+
+Keyboard shortcuts when the side panel has focus: `r` refresh, `s` scribe, `n` new lore, `g` graph.
 
 ---
 
@@ -73,7 +72,7 @@ Three ways to feed the importer:
 
 ### Example Messages handling (v2.5)
 
-ST positions 5 (`before_example_messages`) and 6 (`after_example_messages`) have no DLE equivalent. Two modes, selectable via `Settings → Connection → WI Import → Example Messages`:
+ST positions 5 (`before_example_messages`) and 6 (`after_example_messages`) have no DLE equivalent. Two modes, selectable in **Settings › Story & memory › Importing World Info › Example messages**:
 
 - **Append (default)** — convert to normal entry, prepend `## Example Dialogue\n\n` to body, map position to before/after.
 - **Skip** — drop these entries entirely.

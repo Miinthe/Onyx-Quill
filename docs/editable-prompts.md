@@ -10,7 +10,9 @@ The 30 keys are everything `en.js` exports except `__meta` (`KNOWN_PROMPT_KEYS =
 - **Substantive (12)** — the 3 `EMMA_*_GREETING` keys, `LIBRARIAN_PRIMER`, `LIBRARIAN_FIRSTRUN_QA_SCRIPT`, `AGENTIC_ROLE_SECTION`, `AI_SEARCH_SYSTEM_PROMPT`, `AI_NOTEPAD_PROMPT`, `SCRIBE_PROMPT`, `AUTO_SUGGEST_PROMPT`, `OPTIMIZE_KEYS_PROMPT`, `SUMMARIZE_PROMPT`. Multi-line prose, real tuning surface.
 - **Agentic fragments (18)** — `AGENTIC_FENCE_*` headers (7), `AGENTIC_TOOL_*` descriptions (4), `AGENTIC_TOOLS_INTRO`, `AGENTIC_WORKFLOW*` step labels (5), `AGENTIC_IMPORTANT_FINAL`. Short, structural. Collapsible by default in the UI. (`AGENTIC_ROLE_SECTION` is the lone `AGENTIC_*` key NOT counted here.)
 
-> Counts verified 2026-05-28 via `Object.keys(PromptsEn)` against `en.js`: 30 keys, 12 substantive, 18 fragments. The grid headings render these counts live (`prompts-tab.js:263,268`).
+> Counts verified 2026-05-28 via `Object.keys(PromptsEn)` against `en.js`: 30 keys, 12 substantive, 18 fragments.
+
+> **This fork:** `classifyPromptKey()` and the two grid sections are gone. `renderPromptsGrid()` (`src/ui/prompts-tab.js`) shows one list sorted by plain name and leaves out every key matching `RETIRED_PROMPT = /^(EMMA_|LIBRARIAN_|AGENTIC_)/` (the retired writer-engine prompts; they stay loadable in code but are not listed). The substantive / fragment split above is kept for reference only.
 
 ## File layout
 
@@ -22,7 +24,7 @@ src/prompts/
 ├── prompt-store.js          — Runtime cache + getPrompt() + resolvePromptOrOverride() + boot loader
 └── prompt-api.js            — Obsidian REST helpers + DLE_DELETE_PRIMITIVE (L3-L6)
 
-src/ui/prompts-tab.js        — Settings popup Prompts tab (handlers, status grid, bulk-delete)
+src/ui/prompts-tab.js        — Prompts tab handlers (status grid, bulk-delete); in this fork the new settings window's Prompts section (src/settings/settings-view.js) binds them via bindPromptsTabHandlers()
 
 src/i18n/prompts/{locale}.js — Canonical prompt dicts (en is canonical; 6 machine-translated)
 
@@ -98,9 +100,9 @@ Hash computation uses `simpleHash` from `core/utils.js` (not cryptographic; just
 
 ## Settings UI
 
-**Prompts tab** (between Features and System; commit 5):
+**Prompts tab** (between Features and System in the old settings popup; commit 5). In this fork the settings window opens the new view (`src/settings/`, section **Prompts** under AI), which reuses these handlers:
 - Language dropdown writes `aiPromptLocale`. Change triggers confirm-and-overwrite-all if vault overrides exist (Q3).
-- Folder path field writes `promptsFolderPath`. Sanitized through `sanitizePromptsFolderPath()` on change; reverts to default with toastr warning if input is unsafe.
+- Folder path field writes `promptsFolderPath` (in the new settings window this row is under Vault › Prompts folder). Sanitized through `sanitizePromptsFolderPath()` on change; reverts to default with toastr warning if input is unsafe.
 - **Export Prompts to Vault** — writes all 30 prompts (`exportAllPrompts()` iterates `KNOWN_PROMPT_KEYS`, `prompts-tab.js:110-129`) via `writePromptFile()`. Confirms before clobbering existing overrides. The status line shows the live count (`Exporting ${KNOWN_PROMPT_KEYS.size} prompts…`, `prompts-tab.js:475`).
 - **Reload Prompts** — re-runs `loadPrompts()` to pick up vault edits.
 - **Reset All Prompts** — iterates `KNOWN_PROMPT_KEYS` through `deletePromptFile()`. Every delete passes the six-layer cage.

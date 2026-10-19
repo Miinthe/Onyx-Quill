@@ -21,6 +21,7 @@
  * v1 list. `toEngineList` / `fromEngineList` translate between the two, so the board
  * window (stage 2) can store v2 while every existing feature keeps working unchanged.
  */
+import { normWorld } from './world/world-pure.js';
 
 export const BOARD_VERSION = 2;
 export const KINDS = ['steps', 'collection', 'counter', 'place', 'state', 'cast'];   // cast: NPCs (cast-pure.js, 2026-10-13)
@@ -177,6 +178,7 @@ function normTracker(t, i) {
         if (num(t.settle) > 0) out.settle = Math.round(num(t.settle));
         if (['relaxed', 'normal', 'strict'].includes(t.strict)) out.strict = t.strict;
         if (['low', 'medium', 'all', 'never'].includes(t.askAt)) out.askAt = t.askAt;
+        if (t.worldMoves === true) out.worldMoves = true;   // world layer stage 5: news and rumors can move this (off unless switched on)
         return out;
     }
     if (kind === 'collection') {
@@ -238,6 +240,7 @@ export function normalizeBoard(raw, fallbackName = 'Storyboard') {
         exclusive: arr(b.exclusive).filter(c => isObj(c) && ids.has(c.a) && ids.has(c.b) && c.a !== c.b)
             .map(c => ({ a: c.a, b: c.b, ...(num(c.color) >= 1 && num(c.color) <= 6 ? { color: Math.round(num(c.color)) } : {}), ...(c.own === true ? { own: true } : {}), ...note(c) })),
         ...(isObj(b.look) ? { look: b.look } : {}), ...note(b), trackers,
+        ...(isObj(b.world) ? { world: normWorld(b.world) } : {}),   // world layer (Miinthe, 2026-10-19)
     };
 }
 

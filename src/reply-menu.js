@@ -42,11 +42,15 @@ function items(n) {
     return [
         { heading: `DeepLore · message #${n}` },
         { label: 'Pitch from here', icon: 'pitch', onClick: () => window.__dleOpenPitches?.(n) },
+        // Miinthe, 2026-10-19: Mero opens with this message attached (also: 📎 in her box, or @reply-#n)
+        { label: 'Ask Mero about this', icon: 'mero', onClick: () => window.__dleAskMero?.({ label: `#${n} ${m.name}: ${String(m.mes || '').replace(/\s+/g, ' ').slice(0, 60)}`, text: `#${n} ${m.name}: ${String(m.mes || '').slice(0, 2500)}` }) },
         sources?.length
             ? { label: 'Why these entries', icon: 'why', sub: `${sources.length} ${sources.length === 1 ? 'entry' : 'entries'}`, onClick: () => why(n) }
             : { label: 'Why these entries', icon: 'why', sub: m.extra?.dle_npc ? 'no entries linked to them on the board' : 'no lore used', disabled: true },
         { label: 'What this changed', icon: 'history', sub: changes ? `${changes} ${changes === 1 ? 'change' : 'changes'}` : undefined, onClick: () => whatChanged(n) },
         { label: 'Branch here as a new run', icon: 'newrun', onClick: () => branch(n) },
+        // world layer stage 5 (Miinthe, 2026-10-19: "how can I start a rumor from a scene or message") — only where the world is on
+        window.__dleWorldRumorsOn?.() ? { label: 'Start a rumor from this…', icon: 'leak', sub: 'someone spreads it', onClick: () => window.__dleWorldRumorFrom?.(n) } : null,
         'sep',
         isNewestReply(n)
             ? { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'undoes its changes', onClick: async () => { const { reEvaluate } = await import('./reevaluate.js'); reEvaluate(); } }

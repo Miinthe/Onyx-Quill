@@ -26,7 +26,7 @@ If SillyTavern runs on a remote server and you access it from a mobile browser, 
 ### What is the Librarian (Emma)?
 Two linked things:
 - **Generation tools.** While the writing AI generates, it can call `search` to look up vault entries the pipeline missed and `flag` to record gaps when the lore it needs is not in the vault. Tool activity collapses into one expandable dropdown on the final message.
-- **Emma.** A separate chat agent. You open her from the drawer's Librarian tab, from `/dle-librarian`, or by clicking a flag. She helps you author a vault entry from a flagged gap, fetches `lorebook-guide` entries for style reference, finds similar entries to dedupe against, and writes the new file to Obsidian when you confirm.
+- **Emma.** A separate chat agent. You open her with `/dle-librarian`. In this fork, flagged gaps show up as cards in [[Mero]]'s **Requests** (the side panel's Mero tab). She helps you author a vault entry from a flagged gap, fetches `lorebook-guide` entries for style reference, finds similar entries to dedupe against, and writes the new file to Obsidian when you confirm.
 
 The Librarian needs a tool-calling provider (Claude, Gemini, OpenAI-compatible, Cohere). Emma uses her own connection channel, separate from AI search.
 
@@ -86,13 +86,13 @@ The vault connection **Name** in DLE settings must match the Obsidian vault name
 
 ### How do I see what DeepLore injected?
 Three ways:
-1. **Context Cartographer.** Click the lore sources button on any AI message to see exactly what was injected, why, and at what token cost.
+1. **Context Cartographer.** Press the 📖 button on any AI message, then **Why these entries**, to see exactly what was injected, why, and at what token cost.
 2. **`/dle-inspect`.** Shows the full pipeline trace from the last generation.
-3. **The drawer.** The Injection tab shows injected entries in real time.
+3. **The side panel.** **Lore › Sent** shows the entries sent with the last reply.
 
 ### Why is the Librarian not flagging anything?
 Check that:
-1. The Librarian is enabled (drawer Librarian tab shows status, or run `/dle-librarian`).
+1. The Librarian is enabled (run `/dle-librarian`: it warns when the Librarian is off).
 2. Your active connection supports tool calling (Claude, Gemini, OpenAI-compatible, Cohere). If function calling is disabled on the profile, the writing AI cannot call `flag`.
 3. The writing AI is actually reaching for missing lore. If your scenes do not call for unwritten characters, places, or rules, there are no gaps to flag.
 
@@ -104,7 +104,7 @@ SillyTavern's built-in World Info matches keywords from a JSON file. DeepLore re
 - Obsidian as your editor: backlinks, templates, graph view, your usual workflow.
 - Multi-vault support for separating worlds or campaigns.
 - Per-chat overrides: pin, block, contextual gating on era, location, scene, custom fields.
-- Diagnostics: relationship graph, activation simulator, the live drawer.
+- Diagnostics: relationship graph, activation simulator, the live side panel.
 - The Librarian: gap-flagging during generation and Emma for authoring entries from those gaps.
 
 ### Can I import my existing SillyTavern lorebooks?

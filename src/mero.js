@@ -17,7 +17,10 @@ import { currentCharacter } from './characters.js';
 import { runOf } from './characters-pure.js';
 import { BOARD_KEY } from './storyboard-pure.js';
 import { readActiveTrackers } from './trackers.js';
-import { writerBlock } from './trackers-pure.js';
+import { writerBlock, describe as describeTracker } from './trackers-pure.js';
+import { readTrackers } from './trackers.js';
+import { peopleOf } from './world/messages-pure.js';
+import { personNow } from './cast-pure.js';
 import { liveWriterLines, liveStepJudgeSection, live } from './board-live.js';
 import { GLOW_KEY, asGlow, glowNow, recentMoments, momentOpener } from './mero-glow-pure.js';
 import { getCurrentForChat } from './verdict/verdict-store.js';
@@ -189,7 +192,93 @@ function contextPackage() {
     const all = meroNotes();
     let moments = [];
     try { const L = live(); if (L) moments = recentMoments(L.board, L.state, chat.length - 1).map(m => `${m.text} (#${m.i})`); } catch { /* no board */ }
-    return { replies, board, entries, cards, persona, moments, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
+    let world = ''; try { world = worldSink?.digest?.() || ''; } catch { /* no world here */ }
+    return { replies, board, entries, cards, persona, moments, world, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
+}
+
+// the world layer registers itself (world.js — no import loop): its summary, and the things the 📎 picker offers
+let worldSink = null;
+export function setWorldSink(s) { worldSink = s; }
+
+/**
+ * @-mentions in Mero's box (Miinthe, 2026-10-19: "Like @ tracker-relationship. or @ cast-kettle or @ worldmessage kettle-toaster
+ * or @ reply-#"): everything that can be mentioned, as { tag, label, group, text() } — text only read when sent.
+ */
+const slug = s => String(s ?? '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'x';
+function mentionables() {
+    const out = [], chat = getContext()?.chat || [];
+    for (let n = chat.length - 1; n >= 0 && n >= chat.length - 40; n--) {
+        const m = chat[n]; if (!m || m.is_system || typeof m.mes !== 'string') continue;
+        out.push({ tag: `reply-#${n}`, group: 'Replies', label: `#${n} ${m.name}: ${m.mes.replace(/\s+/g, ' ').slice(0, 50)}`, text: () => `#${n} ${m.name}: ${splitOoc(m.mes).clean.slice(0, 2500)}` });
+    }
+    let lines = []; try { lines = liveWriterLines(); } catch { /* no board */ }
+    try {
+        for (const t of readTrackers()) {
+            if (!t?.name) continue;
+            const mine = lines.filter(l => l.toLowerCase().includes(String(t.name).toLowerCase()));
+            out.push({ tag: `tracker-${slug(t.name)}`, group: 'Trackers', label: `${t.name}: ${describeTracker(t)}`, text: () => [`${t.name}: ${describeTracker(t)}`, Array.isArray(t.steps) ? `Steps: ${t.steps.join(' → ')}` : '', ...mine].filter(Boolean).join('\n') });
+        }
+        // the main character too (Miinthe, H3: "I cannot mention the Toaster")
+        const c = getContext(), card = c?.groupId ? null : c?.characters?.[c?.characterId];
+        if (card?.name) out.push({ tag: `cast-${slug(card.name)}`, group: 'Cast', label: `${card.name} (the main character)`, text: () => [`${card.name} — the main character`, String(card.description || '').slice(0, 1500), card.personality ? `Personality: ${String(card.personality).slice(0, 600)}` : ''].filter(Boolean).join('\n') });
+        const L = live();
+        if (L) for (const x of peopleOf(L.board, L.state)) {
+            const now = personNow(L.state, x.cast, x.p);
+            out.push({ tag: `cast-${slug(x.p.name)}`, group: 'Cast', label: `${x.p.name}${now.here ? ' (in the scene)' : ''}`, text: () => [`${x.p.name} — ${now.here ? 'in the scene' : 'away'}`, now.wants ? `Wants: ${now.wants}` : '', now.plans.length ? `Plans: ${now.plans.map(p => p.text).join(' · ')}` : '', now.knows.length ? `Knows: ${now.knows.slice(-12).map(k => k.fact).join('; ')}` : '', x.p.note ? `Note: ${x.p.note}` : ''].filter(Boolean).join('\n') });
+        }
+    } catch { /* no board */ }
+    try { for (const w of worldSink?.items?.() || []) out.push({ tag: w.tag, group: w.tagGroup || 'World', label: w.label, text: () => w.text }); } catch { /* no world */ }
+    for (const e of (vaultIndex || []).filter(x => !x.guide && x.title).slice(0, 600)) out.push({ tag: `lore-${slug(e.title)}`, group: 'Lore', label: e.title, text: () => String(e.content || e.summary || '').slice(0, 2000) });
+    return out;
+}
+export const mentionList = () => mentionables().map(({ tag, label, group }) => ({ tag, label, group }));
+/** The mentioned ones, as context for the message. Unknown tags are left as plain text. */
+export function mentionResolve(tags) {
+    const want = new Set((Array.isArray(tags) ? tags : []).map(t => String(t).toLowerCase()));
+    if (!want.size) return [];
+    return mentionables().filter(m => want.has(m.tag.toLowerCase())).slice(0, 8).map(m => ({ label: `@${m.tag} — ${m.label}`.slice(0, 120), text: m.text() }));
+}
+
+/**
+ * 📎 picking (Miinthe, 2026-10-19: "click add context and then click the actual thing you want to add"): Mero's 📎 starts it,
+ * she clicks a message in the chat, a post / news item / conversation in the world panel, or a lore entry in the Lore tab.
+ * Resolves { label, text } or null (Esc, Cancel). A side panel lying over the chat steps aside while she picks.
+ */
+let picking = null;
+export function pickContext() {
+    picking?.(null);
+    return new Promise(resolve => {
+        const panel = document.getElementById('deeplore-panel');
+        const over = !!panel && (panel.classList.contains('dle-overlay-mode') || panel.classList.contains('dle-mobile'));
+        document.body.classList.add('dle-picking'); if (over) document.body.classList.add('dle-picking-over');
+        const bar = document.createElement('div'); bar.className = 'dle-pickbar';
+        bar.innerHTML = '<span>📎 Click what Mero should see: a message in the chat, a post or conversation in the world panel, a lore entry</span><button type="button">Cancel</button>';
+        document.body.append(bar);
+        const what = el => {
+            const mes = el.closest?.('#chat .mes[mesid]');
+            if (mes) { const n = Number(mes.getAttribute('mesid')), m = getContext()?.chat?.[n]; return m ? { label: `#${n} ${m.name}: ${String(m.mes).replace(/\s+/g, ' ').slice(0, 60)}`, text: `#${n} ${m.name}: ${splitOoc(m.mes).clean.slice(0, 2500)}` } : null; }
+            const lore = el.closest?.('#deeplore-panel [data-title][role="listitem"]');
+            if (lore) { const e = (vaultIndex || []).find(x => x.title === lore.dataset.title); return e ? { label: `Lore: ${e.title}`, text: String(e.content || e.summary || '').slice(0, 2000) } : null; }
+            try { return worldSink?.pick?.(el) || null; } catch { return null; }
+        };
+        const finish = v => {
+            picking = null;
+            document.removeEventListener('click', click, true); document.removeEventListener('keydown', key, true); document.removeEventListener('mouseover', hover, true);
+            document.querySelectorAll('.dle-pick-hi').forEach(x => x.classList.remove('dle-pick-hi'));
+            document.body.classList.remove('dle-picking', 'dle-picking-over'); bar.remove();
+            resolve(v);
+        };
+        const click = e => {
+            if (bar.contains(e.target)) { if (e.target.closest('button')) finish(null); return; }
+            const v = what(e.target);
+            if (!v) return;   // anything else works as usual (switching a tab, scrolling, opening a conversation)
+            e.preventDefault(); e.stopPropagation(); finish(v);
+        };
+        const hover = e => { document.querySelectorAll('.dle-pick-hi').forEach(x => x.classList.remove('dle-pick-hi')); const t = e.target.closest?.('#chat .mes[mesid], #deeplore-panel [data-title][role="listitem"], .dle-world [data-post-id], .dle-world [data-art], .dle-world [data-peek], .dle-world .bw'); if (t && what(t)) t.classList.add('dle-pick-hi'); };
+        const key = e => { if (e.key === 'Escape') { e.stopPropagation(); finish(null); } };
+        document.addEventListener('click', click, true); document.addEventListener('keydown', key, true); document.addEventListener('mouseover', hover, true);
+        picking = finish;
+    });
 }
 
 /** What Mero knows, for her other jobs (💡 pitches): the talk package, who she is, where, Miinthe's name. */
@@ -206,11 +295,12 @@ const flatten = messages => messages.map(m => `${m.role === 'user' ? 'Miinthe' :
  * Miinthe's message either way. `text` may be the 🧭 question. `opener`: Mero speaks first (a big moment) — `text`
  * is then only her cue, never shown as Miinthe's message.
  */
-export async function sendToMero(talkId, text, { opener = false } = {}) {
+export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}) {
     const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
     const said = String(text || '').trim(); if (!said) return { ok: false, error: 'nothing to send' };
     const first = !t.msgs.some(m => m.who === 'mero');
-    if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString() });
+    const extra = (Array.isArray(ctx) ? ctx : []).filter(c => c && c.label).slice(0, 6).map(c => ({ label: String(c.label).slice(0, 120), text: String(c.text || '').slice(0, 2000) }));
+    if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
     if (t.state !== 'open') t.state = 'open';
     t.updated = new Date().toISOString(); saveStore();
     const conn = resolveConnectionConfig('mero');
@@ -222,7 +312,7 @@ export async function sendToMero(talkId, text, { opener = false } = {}) {
     lastTold.set(t.id, { model: conn.profileId, sections: [
         ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
         ['🗺 The board — plans included', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
-        ['✨ Big moments lately', pkg.moments.join('\n')], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
+        ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
     ] });
     busy++; changed();

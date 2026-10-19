@@ -16,6 +16,7 @@
  * NOT YET (stage 3, one function at a time): the engine acting on collections, places,
  * state, forks, odds, triggers; real entries created from the board; the timeline's history.
  */
+import { setupPrompt, parseSetup, SETUP_SCHEMA } from './world/setup-pure.js';   // the world layer's ☆ Set up with Mero (stage 6)
 import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { getContext, saveMetadataDebounced, extension_settings } from '../../../../extensions.js';
 import { vaultIndex, setIndexTimestamp, loreGaps } from './state.js';
@@ -167,6 +168,25 @@ function load() {
         mero: meroStatus(),
         // the character cards an NPC can be (the Cast, 2026-10-13): name + avatar file, as SillyTavern lists them
         cards: (getContext()?.characters || []).map(c => ({ name: c.name, avatar: c.avatar })).filter(c => c.avatar),
+        mainName: getContext()?.groupId ? '' : (getContext()?.name2 || ''),
+        userName: getContext()?.name1 || '',   // the persona's name where the board shows {{user}} (Miinthe: never a bare macro)
+        mainCard: getContext()?.groupId ? '' : (getContext()?.characters?.[getContext()?.characterId]?.avatar || ''),   // the World tab's pictures   // the world layer's "who can write first" (2026-10-19)
+        // planned messages already sent (or a chance missed) in this chat — the World tab shows each plan's status
+        // the World tab's overview of this chat (Miinthe, 2026-10-19: "the main space is like strangely empty")
+        worldSummary: (() => {
+            const recs = Array.isArray(chat_metadata?.deeplore_world?.records) ? chat_metadata.deeplore_world.records : [];
+            const posts = recs.filter(r => r?.kind === 'post'), msgs = recs.filter(r => r?.kind === 'msg'), by = {};
+            for (const r of [...posts, ...msgs]) { const k = r.by || r.from; if (k && k !== 'user') by[k] = (by[k] || 0) + 1; }
+            return {
+                stories: recs.filter(r => r?.kind === 'wstory').map(s => ({ title: s.title, at: Number(s.at) || 0, n: (s.phases || []).length, next: (s.phases || [])[Number(s.at) || 0] || '' })),
+                posts: posts.length, msgs: msgs.length, unread: msgs.filter(m => m.to === 'user' && !m.read).length,
+                recent: posts.slice(-3).reverse().map(p => ({ by: p.by, text: (p.title ? p.title + ': ' : '') + String(p.text || '').slice(0, 140) })),
+                busiest: Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 4),
+                // stage 5: the rumors going around and who heard them (the poster behind the account stays hidden)
+                rumors: posts.filter(p => p.rumor && typeof p.rumor === 'object').slice(-4).reverse().map(p => ({ kind: ({ true: 'True', twisted: 'Twisted', madeup: 'Made up', planned: 'Planned' })[p.rumor.kind] || 'Rumor', text: String(p.text || '').slice(0, 120), heard: Array.isArray(p.rumor.heard) ? p.rumor.heard.slice(0, 8) : [] })),
+            };
+        })(),
+        worldFired: Object.fromEntries((chat_metadata?.deeplore_world?.records || []).filter(r => r?.kind === 'fired' && r.plan).map(r => [r.plan, { i: r.i, hit: r.hit !== false }])),
         prefs: { ...prefs() },
         askBeforeRemoving: askBeforeRemoving(),   // overhaul step 4: Edit ▸ Ask before removing = the setting in Settings → Interface
         stDark: stIsDark(),
@@ -218,6 +238,35 @@ async function meroAsk(task, input) {
         console.warn('[DLE] Mero on the board could not answer:', err?.message || err);
         return { ok: false, error: `Mero could not answer: ${err?.message || err}` };
     } finally { meroAsking = false; }
+}
+
+/**
+ * The world layer's "Suggest a mix" (stage 4, 2026-10-19): voices + regulars for this story, and dials + interests for its
+ * people, from their cards — the World connection (stage 6 hands this to Mero). The window shows them to approve.
+ * input: { storyName, setting, cast: [{ key, name, card }], existing: [names] }
+ */
+let worldSettingUp = false;
+/**
+ * ☆ Set up with Mero (world layer stage 6, Miinthe 2026-10-18: "describe it to Mero; she suggests voices and style; Miinthe approves"):
+ * one call on Mero's own connection, in her voice. Returns her proposal for the window to tick through — nothing is written.
+ */
+async function worldSetup(input) {
+    const status = meroStatus();
+    if (status.block) return { ok: false, error: status.block };
+    if (worldSettingUp) return { ok: false, error: 'Mero is still thinking about the last one.' };
+    const ctx = getContext(), chars = ctx?.characters || [];
+    const about = card => { const ch = card ? chars.find(c => c.avatar === card) : null; return ch ? [ch.description || ch.data?.description, ch.personality || ch.data?.personality].filter(Boolean).join('\n') : ''; };
+    const main = !ctx?.groupId && ctx?.characters?.[ctx?.characterId] ? ctx.characters[ctx.characterId] : null;
+    const people = [...(main ? [{ key: 'main', name: main.name, about: about(main.avatar) }] : []), ...(input?.cast || []).map(c => ({ key: c.key, name: c.name, about: about(c.card) }))];
+    const { system, user } = setupPrompt({ persona: meroSettings().persona, user: ctx?.name1 || 'Miinthe', storyName: input?.storyName || 'the story', about: input?.about || '', setting: input?.setting || '', people, existing: input?.existing || [], look: input?.look || 'phone' });
+    worldSettingUp = true;
+    try {
+        const conn = resolveConnectionConfig('mero');
+        const r = await callAI(system, user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 2500), caller: 'mero', skipThrottle: true, jsonSchema: SETUP_SCHEMA, disableThinkingOnClaude: true });
+        const s = parseSetup(r?.text, people);
+        return s ? { ok: true, ...s, names: Object.fromEntries(people.map(p => [p.key, p.name])) } : { ok: false, error: 'Mero\'s answer came back unreadable. Try again.' };
+    } catch (err) { return { ok: false, error: `Mero couldn't answer: ${err?.message || err}` }; }
+    finally { worldSettingUp = false; }
 }
 
 /**
@@ -360,7 +409,7 @@ function openCast(personKey) {
     try { window.__dleOpenCast?.(personKey || null); } catch { /* noop */ }
 }
 
-window.__dleBoardHost = { load, save, rename, remove, apply: (name, picked) => { applyTargets(name, picked); notifyTrackersView(); }, close, report, setPref, writeEntries, goto, openCast, setAskBeforeRemoving, meroAsk, meroStatus, createEntry };
+window.__dleBoardHost = { load, save, rename, remove, apply: (name, picked) => { applyTargets(name, picked); notifyTrackersView(); }, close, report, setPref, writeEntries, goto, openCast, setAskBeforeRemoving, meroAsk, meroStatus, createEntry, worldSetup };
 
 /**
  * Open the board window over SillyTavern; `select` opens it at that row (a tracker or collection id), `add` straight

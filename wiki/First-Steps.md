@@ -4,7 +4,7 @@ You've installed DeepLore and connected your vault ([[Quick Start]]). This page 
 
 ## Pick a pipeline mode
 
-DLE has three modes. The setup wizard sets one for you; you can change it any time in **Settings → Matching**.
+DLE has three modes. The setup wizard sets one for you; you can change it any time in **Settings → Lore selection → Mode**.
 
 | Mode | How it works | Cost | Best for |
 |------|--------------|------|----------|
@@ -96,8 +96,8 @@ Start with scan depth 4 and budget 3000, then adjust based on `/dle-inspect` out
 
 When you're ready to switch from keywords-only to two-stage:
 
-1. Go to **Settings → Matching → Search Mode** and select **Two-Stage**
-2. In **Settings → Connection → AI Connections**, select or create a SillyTavern Connection Manager profile for AI search, pointed at a fast, cheap model (Haiku, GPT-4o-mini, or any local model that handles structured output well)
+1. Go to **Settings → Lore selection → Mode → How lore is picked** and select **keywords, then the judge**
+2. In **Settings → AI & connections**, select or create a SillyTavern Connection Manager profile for AI search, pointed at a fast, cheap model (Haiku, GPT-4o-mini, or any local model that handles structured output well)
 3. Run `/dle-status`. It should show "AI search: enabled"
 
 > [!NOTE]
@@ -123,7 +123,7 @@ Aim for grade A or A+.
 Three diagnostics show what the pipeline picked:
 
 1. **`/dle-inspect`:** shows the last pipeline trace. What matched, why, and what was injected
-2. **Context Cartographer** (book icon on AI messages): shows the per-message source list with token counts
+2. **Context Cartographer** (📖 on AI messages → **Why these entries**): shows the per-message source list with token counts
 3. **`/dle-simulate`:** replays the entire chat showing which entries activate at each message
 
 ## Common early mistakes

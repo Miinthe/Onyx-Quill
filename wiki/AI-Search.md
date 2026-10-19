@@ -2,8 +2,6 @@
 
 AI search is the second pipeline stage that asks an AI to pick relevant entries from a compact manifest of candidates. It catches entries the chat needs even when no exact keyword appears. This is the layer DeepLore added on top of pure keyword matching.
 
-![Drawer Browse tab showing AI-matched entries with contextual gating filter dropdowns and a highlighted entry selection](images/dle-browser.png)
-
 > [!NOTE]
 > Two-stage mode is the default and what you want unless you have a reason. Keywords pre-filter, an AI ranks the candidates. Adds roughly one extra provider call per turn.
 
@@ -66,7 +64,7 @@ Any provider works: Anthropic, OpenAI, OpenRouter, local models (Ollama, LM Stud
 - You can override the model (e.g., a cheap, fast Haiku-class model even if your profile defaults to a larger one)
 - The profile dropdown shows all compatible saved profiles
 
-**Setup:** open Settings → Connection → AI Connections, expand **AI Search**, select a profile from the dropdown, and optionally set a model override. Click **Test AI Search** to verify.
+**Setup:** open **Settings › AI & connections**. AI search is the **Judge** row ("picks the lore for a reply"). Pick a profile there; the **Fine print** fold has the model override and **Test**.
 
 > [!NOTE]
 > The legacy **Custom Proxy** mode (routing AI calls through an external Anthropic-compatible endpoint via SillyTavern's CORS proxy) was removed in v2.5. Connection Profiles cover every provider, including local proxies you previously pointed at via the proxy URL — just add them as a Custom OpenAI-compatible profile in Connection Manager. If you previously used proxy mode, DLE migrated you to Connection Profile automatically on upgrade. DLE AI features no longer require `enableCorsProxy: true` in `config.yaml`.
@@ -181,7 +179,7 @@ The timeout is configurable (default 10000ms, range 1000-999999ms). Local LLMs m
 
 ## AI stats
 
-The AI Search section of the settings panel shows session statistics:
+The side panel's **Ready** pop-up (and **Settings › Advanced › Diagnostics**) shows session statistics:
 
 - **AI Calls:** API calls made this session
 - **Cache Hits:** times cached results were reused

@@ -42,11 +42,11 @@ Extract mode is useful when your writing model doesn't reliably follow the `<dle
 
 ## Enabling
 
-1. Open **Settings** (gear icon in the drawer, or the extension settings panel)
-2. Go to the **Features** tab
-3. Check **Enable AI Notebook**
-4. Choose **Tag** or **Extract** mode
-5. For Extract mode, configure the AI connection (Inherit or a Connection Profile)
+1. Open **Settings** (the bar's 📖 menu → **Setup and settings**, or the side panel's ⋯ → **Settings**)
+2. Go to **Story & memory** → **Notebook and notepad**
+3. Switch on **AI notepad**
+4. Under **How it gets its notes**, choose **tags** or **extract**
+5. For extract, pick its AI in **Settings › AI & connections** (the "AI notepad" job)
 
 ---
 
@@ -75,7 +75,7 @@ Extract mode is useful when your writing model doesn't reliably follow the `<dle
 
 `/dle-ai-notepad clear` clears all notes for the current chat.
 
-Notes are also visible per-message in the **Context Cartographer** popup (the sources button on AI messages).
+Notes are also visible per-message in the **Context Cartographer** popup (📖 on AI messages → **Why these entries**).
 
 ---
 

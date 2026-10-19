@@ -1,0 +1,264 @@
+/* World layer, stage 0 (2026-10-19) — the panel from src/world/world.js, after mock-up v5. Colors: the kit's --dk-* tokens only. */
+
+.dle-world {
+    /* z-index: set by world.js — over DeepLore's side panel, under SillyTavern's own panels while one is open */
+    --w: var(--dk-good); --w-soft: var(--dk-good-soft);
+    position: fixed; z-index: 1001; top: calc(var(--topBarBlockSize, 50px) + 10px); bottom: 120px; left: 12px;
+    width: min(380px, calc(100vw - 24px)); display: flex; flex-direction: row-reverse;   /* the rail on the outer edge, like Mero's */
+    background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 12px; box-shadow: var(--dk-shadow); overflow: hidden;
+}
+.dle-world.right { left: auto; right: 12px; flex-direction: row; }
+/* docked (Miinthe, 2026-10-19, screenshot): when there is room beside the chat, fill that side the way DeepLore's side panel
+   and SillyTavern's own side panels do — flush to the edge, top bar to bottom, as wide as the space next to the chat */
+.dle-world.docked { top: var(--topBarBlockSize, 50px); bottom: 0 !important; left: 0; width: calc((100dvw - var(--sheldWidth, 50vw) - 2px) / 2);
+    border-radius: 0; border-width: 0 1px 0 0; box-shadow: none; }
+.dle-world.docked.right { left: auto; right: 0; border-width: 0 0 0 1px; }
+/* phone: the screen under SillyTavern's top bar; the rail runs along the bottom */
+.dle-world.phone { inset: var(--topBarBlockSize, 50px) 0 auto 0; width: auto; height: calc(100dvh - var(--topBarBlockSize, 50px)); border-radius: 0; border: 0; flex-direction: column; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dle-world [hidden] { display: none !important; }
+
+.dle-wd-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.dle-wd-head { display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--dk-line); background: var(--dk-menu); }
+.dle-wd-head h2 { flex: 1; min-width: 0; margin: 0; display: flex; align-items: center; gap: 8px; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); color: var(--dk-ink); }
+.dle-wd-head h2 .g { display: grid; color: var(--w); }
+.dle-wd-head h2 .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-wd-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.dle-wd-empty { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px dashed var(--dk-line); border-radius: 10px; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-wd-empty b { color: var(--dk-ink); font-size: var(--dk-fs-m, inherit); }
+
+/* the rail, like Mero's: on the panel's outer edge */
+.dle-wd-rail { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; border-right: 1px solid var(--dk-line); }
+.dle-world.right .dle-wd-rail { border-right: 0; border-left: 1px solid var(--dk-line); }
+.dle-wd-rail .sp { flex: 1; }
+.dle-wd-rail .ri { position: relative; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dk-muted); cursor: pointer; }
+.dle-wd-rail .ri .dk-i { width: 18px; height: 18px; }
+.dle-wd-rail .ri:hover { color: var(--dk-ink); background: var(--dk-desk); }
+.dle-wd-rail .ri[aria-pressed="true"] { color: var(--w); background: var(--w-soft); }
+.dle-wd-rail .ri:focus-visible { outline: 2px solid var(--w); outline-offset: 1px; }
+.dle-world.phone .dle-wd-rail { order: 2; width: auto; height: 50px; flex-direction: row; justify-content: space-around; padding: 0 8px; border: 0; border-top: 1px solid var(--dk-line); }
+.dle-world.phone .dle-wd-rail .sp { display: none; }
+
+/* ── Messages (stage 1, 2026-10-19) ── */
+.dle-wd-body.msgs { padding: 0; gap: 0; overflow: hidden; }
+.dle-wd-as { position: relative; flex: none; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--dk-line); font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-wd-asbtn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 4px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-desk); color: var(--dk-ink); font: inherit; cursor: pointer; }
+.dle-wd-asbtn.npc { border-color: var(--dk-wait); background: var(--dk-wait-soft); }
+.dle-wd-asbtn .dk-i { width: 14px; height: 14px; }
+.dle-world .fa, .dle-world .av { flex: none; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--dk-menu); color: var(--dk-ink); font-weight: 700; }
+.dle-world .fa { width: 22px; height: 22px; font-size: 11px; }
+.dle-world .av { width: 36px; height: 36px; font-size: 15px; }
+.dle-world .fa img, .dle-world .av img { width: 100%; height: 100%; object-fit: cover; }
+.dle-wd-asmenu { position: absolute; z-index: 5; margin: 0 10px; top: 92px; width: min(260px, calc(100% - 20px)); padding: 5px; background: var(--dk-menu); border: 1px solid var(--dk-line); border-radius: 10px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; }
+.dle-wd-asmenu button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 7px; background: transparent; color: var(--dk-ink); text-align: left; font: inherit; cursor: pointer; }
+.dle-wd-asmenu button:hover, .dle-wd-asmenu button.on { background: var(--dk-desk); }
+.dle-wd-asmenu small { display: block; color: var(--dk-muted); font-size: var(--dk-fs-xs); }
+.dle-wd-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 6px; gap: 2px; }
+.dle-wd-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 1px 10px; align-items: center; padding: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--dk-ink); text-align: left; font: inherit; cursor: pointer; width: 100%; }
+.dle-wd-row:hover { background: var(--dk-desk); }
+.dle-wd-row .av { grid-row: 1 / 3; }
+.dle-wd-row .nm { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-wd-row .tm { font-size: var(--dk-fs-xs); color: var(--dk-muted); white-space: nowrap; }
+.dle-wd-row .pv { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-wd-row.unread .pv { color: var(--dk-ink); }
+.dle-wd-row .ud { grid-column: 3; justify-self: end; width: 9px; height: 9px; border-radius: 50%; background: var(--w); }
+.dle-wd-cvh { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--dk-line); }
+.dle-wd-cvh .av { width: 30px; height: 30px; font-size: 13px; }
+.dle-wd-cvh .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dle-wd-cvh .who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-wd-cvh .who small { font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.dle-wd-scene { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-desk); color: var(--dk-ink); font: inherit; font-size: var(--dk-fs-s); cursor: pointer; }
+.dle-wd-scene:hover { border-color: var(--w); }
+.dle-wd-scene .dk-i { width: 13px; height: 13px; }
+.dle-wd-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 4px; }
+.dle-wd-thread .daymark { align-self: center; padding: 6px 0 2px; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.dle-wd-thread .bw { display: flex; flex-direction: column; gap: 2px; }
+.dle-wd-thread .bw.in { align-items: flex-start; } .dle-wd-thread .bw.out { align-items: flex-end; }
+.dle-wd-thread .bub { max-width: 84%; padding: 7px 11px; border-radius: 16px; line-height: 1.45; overflow-wrap: anywhere; }
+.dle-wd-thread .bub.in { background: var(--dk-menu); color: var(--dk-ink); border-bottom-left-radius: 5px; }
+.dle-wd-thread .bub.out { background: color-mix(in oklab, var(--w) 38%, var(--dk-page)); color: var(--dk-ink); border-bottom-right-radius: 5px; }
+.dle-wd-thread .bub.edit { outline: 2px solid var(--w); }
+.dle-wd-thread .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 0 6px; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.dle-wd-thread .meta button { border: 0; background: transparent; color: var(--dk-muted); font: inherit; padding: 0 2px; border-radius: 4px; cursor: pointer; }
+.dle-wd-thread .meta button:hover { color: var(--dk-ink); }
+.dle-wd-thread .meta .acts { display: inline-flex; gap: 2px; opacity: .6; }
+.dle-wd-thread .bw:hover .acts, .dle-wd-thread .bw:focus-within .acts { opacity: 1; }
+.dle-wd-thread .swipe { display: inline-flex; align-items: center; gap: 2px; }
+.dle-wd-thread .swipe .dk-i { width: 13px; height: 13px; }
+.dle-wd-thread .typing { align-self: flex-start; display: inline-flex; gap: 4px; padding: 9px 12px; border-radius: 16px; background: var(--dk-menu); }
+.dle-wd-thread .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--dk-muted); animation: dle-wd-blink 1s infinite; }
+.dle-wd-thread .typing i:nth-child(2) { animation-delay: .2s; } .dle-wd-thread .typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes dle-wd-blink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .dle-wd-thread .typing i { animation: none; } }
+/* letters: paper, a wax seal, the salutation and signature in a hand — dark, aged paper (Miinthe, 2026-10-19: the light paper
+   "burns my eyes"); one set of colors for letters, the board's notes and articles */
+.dle-world { --dle-paper: #3a3128; --dle-paper-out: #30342e; --dle-paper-2: #4a3f33; --dle-paper-ink: #ece0c8; --dle-paper-muted: #bba98a; --dle-paper-line: #5e503e; }
+.dle-wd-thread.letters .bub { max-width: 94%; border-radius: 3px; padding: 12px 14px; background: var(--dle-paper); color: var(--dle-paper-ink); box-shadow: 0 2px 0 var(--dle-paper-line), 0 6px 16px rgba(0, 0, 0, .25); }
+.dle-wd-thread.letters .bub.out { background: var(--dle-paper-out); }
+.dle-wd-thread.letters .bub .sal, .dle-wd-thread.letters .bub .sig { display: block; font: italic 600 1.05em/1.2 Georgia, "Times New Roman", serif; }
+.dle-wd-thread.letters .bub .sal { margin-bottom: 4px; } .dle-wd-thread.letters .bub .sig { text-align: right; margin-top: 6px; }
+.dle-wd-thread.letters .meta .seal { width: 9px; height: 9px; border-radius: 50%; background: #a8433a; }
+.dle-wd-compose { flex: none; display: flex; gap: 6px; align-items: flex-end; padding: 8px; border-top: 1px solid var(--dk-line); }
+.dle-wd-compose textarea { flex: 1; min-width: 0; min-height: 36px; max-height: 120px; resize: vertical; }
+.dle-wd-compose .send { flex: none; height: 36px; min-width: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 10px; border: 0; border-radius: 18px; background: var(--w); color: var(--dk-on-mero, #101216); font: inherit; font-weight: 700; cursor: pointer; }
+.dle-wd-compose .send.seal { border-radius: 8px; background: #a8433a; color: #fff; }
+.dle-wd-body.msgs > .dle-wd-empty { margin: 10px; }
+.dle-wd-thread > .dle-wd-empty { margin-top: 6px; }
+/* the rail's dot: a message waiting */
+.dle-wd-rail .ri .rdot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--w); }
+.dle-wd-rail .ri .rdot.rumor { background: var(--dk-wait); }
+.dle-wd-rail .ri .rdot.news { background: var(--dk-info); }
+.dle-wd-rail .ri[data-wpause][aria-pressed="true"] { color: var(--dk-wait); background: var(--dk-wait-soft); }
+/* the main character and "Between others" (Miinthe, 2026-10-19) */
+.dle-wd-lgh { padding: 10px 8px 4px; font: 700 var(--dk-fs-xs)/1.3 var(--dk-f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--dk-muted); }
+.dle-wd-lgh small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 4px; }
+.dle-world .av2 { position: relative; width: 36px; height: 36px; flex: none; }
+.dle-world .av2 .fa { position: absolute; width: 24px; height: 24px; box-shadow: 0 0 0 2px var(--dk-page); }
+.dle-world .av2 .fa:first-child { left: 0; top: 0; } .dle-world .av2 .fa:last-child { right: 0; bottom: 0; }
+.dle-wd-row .av2 { grid-row: 1 / 3; }
+.dle-wd-cvh .av2 { width: 30px; height: 30px; } .dle-wd-cvh .av2 .fa { width: 20px; height: 20px; }
+.dle-wd-thread .bub .from { display: block; font-size: var(--dk-fs-xs); color: var(--dk-muted); margin-bottom: 2px; }
+.dle-wd-peeknote { flex: none; padding: 8px 12px; border-top: 1px solid var(--dk-line); font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+/* spying, leaking, meet-ups, time headers (Miinthe's notes, 2026-10-19) */
+.dle-wd-lgh.fold { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 6px; border: 0; border-top: 1px solid var(--dk-line); background: transparent; text-align: left; cursor: pointer; }
+.dle-wd-lgh.fold .dk-i { width: 14px; height: 14px; transform: rotate(-90deg); transition: transform .15s; }
+.dle-wd-lgh.fold[aria-expanded="true"] .dk-i { transform: none; }
+.dle-wd-lgh.fold .n { font-family: var(--dk-f-mono); font-weight: 400; }
+.dle-wd-row .pv.blur { filter: blur(4px); user-select: none; }
+.dle-wd-thread .daymark { margin: 4px 0; padding: 2px 10px; border-radius: 999px; background: var(--dk-menu); }
+.dle-wd-thread .meta .lk { display: inline-flex; align-items: center; gap: 3px; color: var(--dk-wait); }
+.dle-wd-thread .meta .lk .dk-i { width: 12px; height: 12px; }
+.dle-wd-thread.leaking .bw { cursor: pointer; position: relative; }
+.dle-wd-thread.leaking .bw .bub { outline: 1px dashed var(--dk-line-strong); }
+.dle-wd-thread.leaking .bw.picked .bub { outline: 2px solid var(--dk-wait); }
+.dle-wd-thread.leaking .bw:focus-visible .bub { outline: 2px solid var(--w); }
+.dle-wd-meet { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-bottom: 1px solid var(--dk-line); background: var(--dk-desk); }
+.dle-wd-meet input { flex: 1 1 180px; min-width: 0; }
+.dle-wd-leakbar { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 1px solid var(--dk-line); background: var(--dk-desk); font-size: var(--dk-fs-s); }
+.dle-wd-leakbar .lt { color: var(--dk-muted); } .dle-wd-leakbar .lt b { color: var(--dk-ink); font-weight: 700; }
+.dle-wd-leakbar .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.dle-wd-leakbar .chips .dk-chip { display: inline-flex; align-items: center; gap: 5px; }
+.dle-wd-leakbar .chips .fa { width: 18px; height: 18px; }
+.dle-wd-leakbar .btns { display: flex; justify-content: flex-end; gap: 6px; }
+.dle-wd-cvh .dk-ib.on { color: var(--dk-wait); }
+.dle-wd-lgh.fold .lt { flex: none; }
+.dle-wd-lgh.fold small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-wd-lgh.fold .cnt { flex: none; margin-left: auto; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--dk-menu); color: var(--dk-ink); font: 700 var(--dk-fs-xs)/18px var(--dk-f-body); letter-spacing: 0; text-align: center; }
+.dle-wd-row .nm .muted { font-size: 11px; opacity: .8; }
+/* editing keeps the message's lines (a text box, not the bubble itself) */
+.dle-wd-thread .bub.edit { width: 84%; padding: 4px; }
+.dle-wd-thread .bub .edit-ta { display: block; width: 100%; min-height: 3em; resize: vertical; border: 0; background: transparent; color: inherit; font: inherit; line-height: 1.45; padding: 4px 6px; white-space: pre-wrap; }
+.dle-wd-thread .bub .edit-ta:focus-visible { outline: none; }
+.dle-wd-thread.letters .bub.edit { width: 94%; }
+
+/* ── the feed: Chatter, News, People (stage 4, 2026-10-19) ── */
+.dle-wd-body:has(> .dle-wd-feed), .dle-wd-body:has(> .dle-wd-news), .dle-wd-body:has(> .dle-wd-ppl) { padding: 0; gap: 0; }
+.dle-wd-feed, .dle-wd-news, .dle-wd-ppl { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 14px; }
+.dle-wd-fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dle-wd-postbox { display: flex; gap: 6px; align-items: flex-end; padding: 8px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); }
+.dle-wd-postbox textarea { flex: 1; min-width: 0; min-height: 34px; resize: vertical; }
+.dle-wd-hint { font-size: var(--dk-fs-xs); color: var(--dk-muted); padding: 0 2px; }
+.dle-wd-post { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 3px 10px; padding: 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); }
+.dle-wd-post > .av { grid-row: 1 / 7; width: 36px; height: 36px; }
+.dle-wd-post .ph { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; min-width: 0; }
+.dle-wd-post .ph small { color: var(--dk-muted); font-size: var(--dk-fs-xs); }
+.dle-wd-post .pt { font: 700 var(--dk-fs-l)/1.25 var(--dk-f-display); }
+.dle-wd-post .px { line-height: 1.45; overflow-wrap: anywhere; }
+.dle-wd-post .pf { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: var(--dk-fs-xs); margin-top: 2px; padding-top: 6px; border-top: 1px solid color-mix(in oklab, var(--dk-line) 70%, transparent); }   /* the post's text and its row of actions apart (Miinthe, 2026-10-19: "visually melting together") */
+.dle-wd-post .pf button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; padding: 0; color: var(--dk-muted); font: inherit; cursor: pointer; }
+.dle-wd-post .pf button:hover { color: var(--dk-ink); }
+.dle-wd-post .pf button.on { color: var(--w); }
+.dle-wd-post .pf .dk-i { width: 14px; height: 14px; }
+.dle-wd-post .pf .dots { display: inline-flex; gap: 3px; } .dle-wd-post .pf .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--dk-muted); animation: dle-wd-blink 1s infinite; }
+.dle-wd-post .pf .dots i:nth-child(2) { animation-delay: .2s; } .dle-wd-post .pf .dots i:nth-child(3) { animation-delay: .4s; }
+.dle-wd-post .likes { font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.dle-wd-post .cmts { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }   /* each comment its own soft bubble (Miinthe, 2026-10-19: comments "melt a little together") */
+.dle-wd-post .cmt { font-size: var(--dk-fs-s); overflow-wrap: anywhere; padding: 5px 9px; border-radius: 9px; background: color-mix(in oklab, var(--dk-ink) 6%, transparent); }
+.dle-wd-post .cmt > b:first-child { display: block; font-size: var(--dk-fs-xs); margin-bottom: 1px; }
+/* ⋯ / versions / ✎ on posts and comments (Miinthe, 2026-10-19: no way to delete or edit a post) */
+.dle-wd-post { position: relative; } .dle-wd-post .ph { padding-right: 22px; }
+.dle-wd-post .ph .pmore { position: absolute; top: 9px; right: 8px; border: 0; background: transparent; padding: 0 2px; color: var(--dk-muted); cursor: pointer; line-height: 0; }   /* ⋯ in the name row (Miinthe, 2026-10-19) */
+.dle-wd-post .ph .pmore:hover { color: var(--dk-ink); }
+.dle-wd-post .ph .pmore .dk-i { width: 16px; height: 16px; }
+.dle-wd-post .pf .pv { display: inline-flex; align-items: center; gap: 2px; color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+.dle-wd-post .cmt { position: relative; padding-right: 24px; }
+.dle-wd-post .cmore { position: absolute; right: 4px; top: 4px; border: 0; background: transparent; padding: 1px; color: var(--dk-muted); cursor: pointer; opacity: 0; }
+.dle-wd-post .cmore .dk-i { width: 14px; height: 14px; }
+.dle-wd-post .cmt:hover .cmore, .dle-wd-post .cmore:focus-visible { opacity: 1; }
+@media (hover: none) { .dle-wd-post .cmore { opacity: .7; } }
+.dle-wd-post .cmt.cin { padding-right: 0; display: flex; gap: 6px; }
+.dle-wd-post .cmt.cedit { flex-direction: column; align-items: stretch; }   /* editing a comment: the whole text shows (Miinthe, E3) */
+.dle-wd-post .cmt.cedit textarea { width: 100%; resize: vertical; line-height: 1.4; }
+.dle-wd .pedit, .dle-world .pedit { display: flex; flex-direction: column; gap: 6px; }
+.dle-world .pedit textarea { resize: vertical; white-space: pre-wrap; }
+.dle-world .pe-btns { display: flex; gap: 6px; }
+.dle-world .vbtn { border: 0; background: transparent; color: var(--dk-muted); cursor: pointer; padding: 0 3px; font: inherit; }
+.dle-wd-post .cin { display: flex; gap: 4px; } .dle-wd-post .cin input { flex: 1; min-width: 0; }
+.dle-world .stag { display: inline-flex; align-items: center; padding: 0 8px; border: 1px solid color-mix(in oklab, var(--w) 60%, var(--dk-line)); border-radius: 999px; background: transparent; color: var(--w); font: inherit; font-size: var(--dk-fs-xs); cursor: pointer; }
+/* letters: notes pinned to a board */
+.dle-wd-body.letters .dle-wd-post { background: var(--dle-paper); color: var(--dle-paper-ink); border-color: var(--dle-paper-line); border-radius: 3px; box-shadow: 0 2px 0 var(--dle-paper-line); }
+.dle-wd-body.letters .dle-wd-post:nth-child(odd) { transform: rotate(-.3deg); } .dle-wd-body.letters .dle-wd-post:nth-child(even) { transform: rotate(.3deg); }
+.dle-wd-body.letters .dle-wd-post .ph small, .dle-wd-body.letters .dle-wd-post .pf button, .dle-wd-body.letters .dle-wd-post .likes { color: var(--dle-paper-muted); }
+.dle-wd-body.letters .dle-wd-post .cmt { background: var(--dle-paper-2); }
+.dle-wd-body.letters .dle-wd-post .stag { color: #86c9b8; }
+/* news */
+.dle-wd-addstory { align-self: flex-start; padding: 5px 11px; border: 1px dashed var(--dk-line); border-radius: 8px; background: transparent; color: var(--dk-muted); font: inherit; font-size: var(--dk-fs-s); cursor: pointer; }
+.dle-wd-start { display: flex; flex-wrap: wrap; gap: 6px; } .dle-wd-start input { flex: 1 1 200px; min-width: 0; }
+.dle-wd-art-row { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); color: var(--dk-ink); text-align: left; font: inherit; cursor: pointer; width: 100%; }
+.dle-wd-art-row .hl { font: 700 var(--dk-fs-l)/1.25 var(--dk-f-display); }
+.dle-wd-art-row small, .dle-wd-art-row .pv { color: var(--dk-muted); font-size: var(--dk-fs-xs); }
+.dle-wd-art { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.dle-wd-art h3 { margin: 0; font: 700 20px/1.2 var(--dk-f-display); }
+.dle-wd-art .ab { line-height: 1.55; }
+.dle-wd-art .devs { display: grid; gap: 6px; padding: 10px; border: 1px solid color-mix(in oklab, var(--w) 45%, var(--dk-line)); border-radius: 9px; }
+.dle-wd-art .dev { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: var(--dk-fs-s); }
+.dle-wd-art .dev span { color: var(--dk-muted); } .dle-wd-art .dev.next div { color: var(--dk-muted); font-style: italic; }
+.dle-wd-masthead { text-align: center; font: 700 22px/1 Georgia, "Times New Roman", serif; color: var(--dle-paper-ink); background: var(--dle-paper); padding: 10px; border-bottom: 3px double var(--dle-paper-ink); }
+.dle-wd-art.letters, .dle-wd-body.letters .dle-wd-art-row { background: var(--dle-paper); color: var(--dle-paper-ink); }
+.dle-wd-art.letters h3, .dle-wd-body.letters .dle-wd-art-row .hl { font-family: Georgia, "Times New Roman", serif; }
+/* people */
+.dle-wd-prow { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 1px 10px; align-items: center; padding: 6px 4px; }
+.dle-wd-prow > .av { grid-row: 1 / 4; }
+.dle-wd-prow small { color: var(--dk-muted); font-size: var(--dk-fs-xs); overflow-wrap: anywhere; }
+.dle-wd-prow .hab span { white-space: nowrap; } .dle-wd-prow .hab .off { opacity: .3; }
+.dle-wd-ppl > .dk-btn { align-self: flex-start; margin-top: 6px; }
+.dle-wd-newsbtns { display: flex; flex-wrap: wrap; gap: 6px; }
+/* People: the summary ends neatly after two lines (Miinthe: "cut off in a very ugly way") */
+.dle-wd-prow small.ab { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* fake photos, @-tags, the tag list (Miinthe, 2026-10-19) */
+.dle-world .photo { display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 14px 12px; border: 1px dashed var(--dk-line-strong); border-radius: 8px; background: repeating-linear-gradient(45deg, var(--dk-menu), var(--dk-menu) 8px, var(--dk-desk) 8px, var(--dk-desk) 16px); font-style: italic; color: var(--dk-ink); }
+.dle-world .photo .ph-i { font-style: normal; font-size: 18px; }
+.dle-wd-body.letters .photo, .dle-wd-thread.letters .photo { background: var(--dle-paper-2); border-color: var(--dle-paper-line); color: var(--dle-paper-ink); }
+.dle-world .wd-at { display: inline; color: var(--w); font: inherit; font-weight: 600; letter-spacing: normal; padding: 0; margin: 0; border: 0; background: none; }   /* same size as the text around it — not "tag": SillyTavern styles that class (Miinthe, 2026-10-19), her color kept */
+.dle-wd-tagmenu { position: absolute; z-index: 8; min-width: 160px; padding: 4px; background: var(--dk-menu); border: 1px solid var(--dk-line); border-radius: 9px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; }
+.dle-wd-tagmenu button { padding: 6px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-ink); text-align: left; font: inherit; cursor: pointer; }
+.dle-wd-tagmenu button:hover, .dle-wd-tagmenu button:focus-visible, .dle-wd-tagmenu button.on { background: var(--dk-desk); }
+.dle-wd-postbox .dk-ib, .dle-wd-compose .dk-ib { flex: none; align-self: flex-end; }
+.dle-wd-cvh .dots { display: inline-flex; gap: 3px; } .dle-wd-cvh .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--dk-muted); animation: dle-wd-blink 1s infinite; }
+/* stage 5: rumors (mock-up v5) — the ◌ tag, 👁 who posted, ◌ what's behind it */
+.dle-wd-post .rtag { display: inline-flex; gap: 4px; align-items: center; font-size: 10.5px; padding: 0 7px; border-radius: 999px; border: 1px dashed var(--dk-wait); color: var(--dk-wait); }
+.dle-wd-post .peek { border: 1px dashed var(--dk-line); background: transparent; border-radius: 999px; font: inherit; font-size: 10.5px; padding: 0 7px; color: var(--dk-muted); cursor: pointer; }
+.dle-wd-post .peek.on { border-style: solid; border-color: var(--dk-wait); color: var(--dk-wait); }
+.dle-wd-post .rinfo { font-size: var(--dk-fs-xs); color: var(--dk-muted); padding: 6px 8px; border-radius: 7px; background: color-mix(in oklab, var(--dk-wait) 8%, var(--dk-page)); overflow-wrap: anywhere; }
+.dle-world .av.rumor, .dle-world .fa.rumor { background: color-mix(in oklab, var(--dk-wait) 18%, var(--dk-page)); }
+.dle-wd-body.letters .dle-wd-post .rtag { color: #e3a955; border-color: #a87a32; }
+.dle-wd-body.letters .dle-wd-post .peek { color: var(--dle-paper-muted); border-color: var(--dle-paper-line); }
+.dle-wd-body.letters .dle-wd-post .rinfo { background: var(--dle-paper-2); color: var(--dle-paper-muted); }
+
+/* group chats (Miinthe, 2026-10-19; mock-up J4WdnTXjzgPTdY9DUtEL7i) */
+.dle-wd-newg { padding: 4px 4px 6px; display: flex; }
+.dle-world .av2.g3 { position: relative; width: 36px; height: 34px; display: block; grid-row: 1 / 3; }
+.dle-world .av2.g3 .fa { position: absolute; width: 22px; height: 22px; font-size: 10px; border: 2px solid var(--dk-page); }
+.dle-world .av2.g3 .fa:nth-child(1) { left: 0; top: 0; } .dle-world .av2.g3 .fa:nth-child(2) { right: 0; top: 2px; } .dle-world .av2.g3 .fa:nth-child(3) { left: 7px; bottom: -2px; }
+.dle-wd-cvh .av2.g3 { flex: none; }
+.dle-wd-gmenu { position: absolute; z-index: 6; right: 10px; top: 92px; width: min(240px, calc(100% - 20px)); padding: 5px; background: var(--dk-menu); border: 1px solid var(--dk-line); border-radius: 10px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; }
+.dle-wd-gmenu button { text-align: left; border: 0; background: transparent; color: var(--dk-ink); font: inherit; padding: 6px 8px; border-radius: 7px; cursor: pointer; }
+.dle-wd-gmenu button:hover { background: var(--dk-desk); }
+.dle-wd-gmenu small { display: block; color: var(--dk-muted); font-size: var(--dk-fs-xs); }
+.dle-wd-gform { padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.dle-wd-gform label, .dle-wd-gform .lt { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; flex-direction: column; gap: 4px; }
+.dle-wd-gform .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.dle-wd-gform .warn { font-size: var(--dk-fs-s); color: var(--dk-wait); }
+.dle-wd-gform .hint { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-wd-gform .btns { display: flex; gap: 6px; }
+.dle-wd-meet .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dle-wd-row .nm .pin { color: var(--dk-wait); margin-right: 4px; font-size: .9em; }

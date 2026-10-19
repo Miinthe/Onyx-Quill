@@ -1953,9 +1953,10 @@ test('M3: vault.js does NOT call getTokenCountAsync serially inside a for-loop a
     // bail-out is asserted by M1+M2.
     const src = readFileSync(join(REPO_ROOT, 'src/vault/vault.js'), 'utf8');
 
-    // buildIndex must use Promise.all for tokenization.
-    assert(/Promise\.all\(entries\.map\(async/.test(src),
-        'buildIndex still uses Promise.all for parallel tokenization');
+    // 2026-10-18: both paths count through tokenizeEntries — DeepLore's own memory by text, then small parallel
+    // batches (Promise.all per batch, a yield between) — never one serial await per file.
+    assert(/await tokenizeEntries\(entries\)/.test(src), 'buildIndex counts tokens through tokenizeEntries');
+    assert(/Promise\.all\(todo\.slice\(i, i \+ TOK_BATCH\)/.test(src), 'tokenizeEntries counts in parallel batches');
 });
 
 test('M4: vault.js V-H4 early-return precedes the per-file serial tokenize loop', () => {
@@ -1971,18 +1972,10 @@ test('M4: vault.js V-H4 early-return precedes the per-file serial tokenize loop'
     const vh4Idx = src.indexOf('V-H4');
     assert(vh4Idx > 0, 'V-H4 marker found');
 
-    // The reuse path's serial tokenize is the one near _reuseTokenizerFailCount.
-    const reuseFailCounterIdx = src.indexOf('_reuseTokenizerFailCount++');
-    assert(reuseFailCounterIdx > 0, 'reuse-path token fallback counter found');
-
-    // Walk backwards from the fail counter to find the nearest preceding
-    // `entry.tokenEstimate = await getTokenCountAsync` — that's the serial site.
-    const serialTokenSig = 'entry.tokenEstimate = await getTokenCountAsync';
-    const reuseSerialIdx = src.lastIndexOf(serialTokenSig, reuseFailCounterIdx);
-    assert(reuseSerialIdx > 0, 'reuse-path serial tokenize site located');
-
-    assert(vh4Idx < reuseSerialIdx,
-        'V-H4 early-return is positioned BEFORE the reuse-path serial tokenize loop');
+    // The reuse path counts its changed entries through tokenizeEntries (2026-10-18).
+    const reuseTokIdx = src.indexOf('_reuseTokenizerFailCount += await tokenizeEntries(_needTokenize)');
+    assert(reuseTokIdx > 0, 'reuse-path tokenize site located');
+    assert(vh4Idx < reuseTokIdx, 'V-H4 early-return is positioned BEFORE the reuse-path tokenize');
 });
 
 test('M5: vault.js fallback chain documented — caller falls through to buildIndex', () => {

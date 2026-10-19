@@ -10,7 +10,7 @@ import { normalizeBoard, freshState, normalizeState } from '../src/board-model-p
 import { personNow, validateDirector } from '../src/cast-pure.js';
 import {
     npcPrompt, storyLinesFor, stripName, writerSeesNpcs, normalizeQueue, newRound, moveItem, removeItem, addItem, setText, isMine, aiNpcs,
-    queueText, npcMessagesOf, npcOfMessage, speaksOf, regenRound, SPEAKS_WORDS,
+    queueText, npcMessagesOf, npcOfMessage, speaksOf, regenRound, SPEAKS_WORDS, speaksUser, parseSpeaks,
 } from '../src/cast-voice-pure.js';
 
 const board = (kettle = {}, gerry = {}) => normalizeBoard({ v: 2, trackers: [{ id: 'cast', kind: 'cast', name: 'Cast', people: [
@@ -104,7 +104,8 @@ test('a new round: You, then the AI half — "steps in" NPCs who want to, then t
     const r = newRound(b, st, [{ cast: 'cast', person: 'kettle', why: 'he asked her' }, { cast: 'cast', person: 'gerry' }, { cast: 'cast', person: 'spoon' }]);
     assertEqual(r.queue.map(x => [x.kind, x.person ?? null]), [['you', null], ['npc', 'gerry'], ['main', null]]);
     assertEqual(r.suggest, [{ cast: 'cast', person: 'kettle', why: 'he asked her' }]);
-    assertEqual(queueText(b, r.queue), 'You → Gerry → Main character');
+    assertEqual(queueText(b, r.queue), '{{user}} → Gerry → Main character');
+    assertEqual(queueText(b, r.queue, { user: 'Miinthe', main: 'Toaster' }), 'Miinthe → Gerry → Toaster');
     assertEqual(newRound(b, st, []).queue.map(x => x.kind), ['you', 'main']);
     assertEqual(newRound(b, here(b, []), [{ cast: 'cast', person: 'gerry' }]).queue.map(x => x.kind), ['you', 'main']);   // not in the scene: not in it
 });
@@ -155,6 +156,13 @@ test('regenerate redoes the whole round after your last message, like a group ch
     assertEqual(regenRound([you, ai]), null);                                  // no NPC in the round: SillyTavern's own regenerate
     assertEqual(regenRound([you, ai, npc('kettle', true), ai, npc('spoon')]).from, 3);   // a line you wrote as Kettle stays
     assertEqual(regenRound([you]), null);
+});
+
+test('who speaks this round: known names only; nothing readable → everyone speaks', () => {
+    assertEqual(parseSpeaks('{"speak":["kettle","Nobody"]}', ['Kettle', 'Spoon', 'Toaster']), ['Kettle']);
+    assertEqual(parseSpeaks('{"speak":[]}', ['Kettle']), null);
+    assertEqual(parseSpeaks('nope', ['Kettle']), null);
+    assert(speaksUser({ messages: [{ name: 'Miinthe', mes: 'Kettle, tea?' }], people: [{ name: 'Toaster', main: true }, { name: 'Kettle', wants: 'hide the fuse' }] }).includes('Toaster (the main character)'));
 });
 
 summary();

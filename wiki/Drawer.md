@@ -1,229 +1,81 @@
-# Drawer Panel
+# Side Panel
 
-The drawer is DLE's persistent side panel. It shows live pipeline feedback during your chat: which entries were injected, why, and how your token budget is being used.
+The side panel is DeepLore's home in SillyTavern. It shows what lore went out with the last reply, what this chat reads, where your story stands, your Cast, and Mero ☆, your co-writer.
 
-The drawer opens automatically when DLE is enabled and has data to display.
-
-![DLE drawer panel showing the Browse tab with a scrollable entry list, Idle status indicator, 234 entries indexed, token budget bar at 1,138 tokens, and per-entry priority badges and injection counts](images/dle-drawer.png)
+**Where to find it:** press the side-panel button on the [[DeepLore Bar]] (above the message box), or open SillyTavern's DeepLore drawer icon. Press the same bar button again to close it. The bar's 📖 menu also has **Open the side panel**.
 
 ---
 
-## Layout
+## The header
 
-The drawer has three zones:
+Along the top of the panel:
 
-1. **Status zone** (fixed at top): connection status, stats, token and entry bars, quick action buttons
-2. **Tabs** (scrollable middle): five tabs with different views
-3. **Footer** (fixed at bottom): context window bar, recent activity feed, health icons, AI session stats
+- **Ready** (with a colored dot and your entry count): tap it for this reply's numbers and health. The dot is green when all is well, amber or red when a health check found something, and it shows "busy" while DeepLore works.
+- **Refresh**: read your vault again.
+- **Scribe**: write session notes now.
+- **New lore**: the AI suggests entries from the chat.
+- **New run**: a fresh chat as the next run, with the same folders.
+- **Lock** (PC only): keeps the panel open, even under SillyTavern's own panels, until you unlock it. A locked panel comes back open after a reload. Phones have no lock; there a ✕ closes the panel.
 
----
+### Ready: numbers and health
 
-## Status zone
+Tapping **Ready** opens a small window with two parts:
 
-- **Status dot**: color-coded. Green (connected, healthy), yellow (indexing or stale), red (disconnected or error).
-- **Pipeline label**: current activity. "Idle", "Choosing Lore...", "Consulting vault...", "Generating...".
-- **Stats row**: vault entry count and AI search mode (Two-Stage, AI Only, Keywords) at a glance.
-- **Lore budget bar**: how much of your configured token budget is being used. Color gradient: green (low usage) through yellow to red (near or at budget).
-- **Entry count bar**: entries injected versus configured max entries cap.
-- **Active gating filters**: shows currently set era, location, scene type, characters present, folder filter, and any custom fields when set.
-- **Quick action buttons** (left to right):
-  - **Refresh**: reload lore from Obsidian
-  - **Scribe**: run Session Scribe on the current chat
-  - **New lore**: create a new vault entry from scratch
-  - **Librarian chat**: open the Librarian chat session (Emma)
-  - **Graph**: open the relationship graph
-  - **Clear AI Cache**: clear AI search cache so the next generation re-selects from scratch
-  - **Skip Librarian**: skip Librarian tools for the next generation only
+- **This reply**: Lore budget, Entries and Context as small meters, the mode, and any active filters.
+- **Health**: Vault, Connection, Lore selection, Cache and AI service, each with a dot. Click a row to run its check. **Reset the AI pause** shows only while the AI is paused. **Recent activity** folds open, and the session numbers sit at the bottom.
 
 ---
 
-## Tabs
+## The tabs
 
-### Injection tab
+The tabs are **Lore · Filters · Story · Cast · Mero**, then **⋯**.
 
-Shows what happened in the last generation. Tab and panel header both read "Injection".
+### Lore
 
-**Filter toggle**: switch between Injected, Filtered, or Both.
+Three lists, switched at the top: **Sent**, **Left out** and **All entries**.
 
-**Injected entries** show:
-- Entry title with match label (CONST, PIN, INIT, SEED, KEY, AI)
-- For AI matches: confidence level and selection reason
-- For keyword matches: the triggering keyword(s)
-- Token count with color-gradient indicator
-- Temperature indicator (see [Temperature heatmap](#temperature-heatmap) below)
-- Browse navigation button (arrow icon): jumps to this entry in the Browse tab
+- **Sent**: the entries that went out with the last reply. A line at the top counts them (matched, picked, sent), with a button to copy the titles. Each row shows a small "how sure" mark; tap a row to see why it went in, and get **Pin**, **Block**, **Move to folder…** and **Open in Obsidian**. **Timers** folds open at the bottom (cooldowns and other waiting entries).
+- **Left out**: entries that did not go in, grouped by reason (for example "Blocked by you", "Not this chat's folders", "Over budget", "Resting", "Needs another entry"). Tap one for **Let it in next time** or **Find in All entries**.
+- **All entries**: search your whole vault. Press **?** for search tricks like `tag:`, `folder:`, `key:`, `summary:` and `field:`. Filter chips narrow the list (this chat's folders or any folder, status, tags, your own fields, sort, since last reply). **Group by folder** shows folders, and **Select** lets you pick several entries for one action: **Pin**, **Block**, **Move to folder…**, **Optimize keywords** or **Write summaries**.
+- **New**: shows when your vault has an inbox folder. It lists the new entries waiting there, each with a **Move…** button. Press it again to go back.
+- **⧉** pops the current list out into a big window.
 
-**Filtered entries** show categorized rejection reasons:
-- Budget and limit cuts
-- Contextual gating filters
-- Requires and excludes gating
-- Cooldown, warmup, probability
-- Re-injection cooldown
-- Strip dedup
-- AI rejection
-- Click an entry to expand its full diagnosis
+### Filters
 
-**Generation diff**: when the injected set changes between generations, badges show `+N new` and `-N removed` with brief reasons (e.g., "Bootstrap fall-off", "No longer matched").
+A card for what this chat is: the character (and run), the folders it reads, how many entries sit outside them, and **DeepLore in this chat** (on, off, or follow the character). Below it, the **Fields** fold lets you set a field (like era or location) for this chat only. **Show** lists the unused fields too.
 
-**Toolbar buttons**:
-- **Copy titles**: copies injected entry titles to clipboard
-- **Full View**: opens the full `/dle-why` popup
+**Change folders and fields…** holds the rest: **Filters in settings…**, **Run folders…**, **This chat's own folders…**, **Edit the filter fields…**, **Clear all field values** and **All field values in a window**.
 
-**Entry Timers** (collapsible at the bottom) shows active per-entry state:
-- Cooldown entries with generations remaining
-- Stale entries (above the decay boost threshold, not recently injected)
-- Decay penalties (injected too many consecutive times)
+### Story
 
----
+Your story trackers for this chat, from the [[Storyboards|storyboard]].
 
-### Browse tab
+- The top line has **Pause board** (nothing of the board runs in this chat until you **Resume board**) and **Timeline** (opens the board on its Timeline). Its **⋯** chooses how trackers move: **By themselves when the story says so** or **Only by hand**, and has **Open the board**.
+- Each step tracker is a card with ◀ ▶ to move it a step, and a note line (for example a quote from the reply that moved it, with **Undo**). Tap a card for its steps (tap a step to jump there) and **Pause**, **Edit steps**, **Abandon** and more.
+- **On the board** folds open to show time, places and collections, including new finds the story wants to keep (**Keep it** / **Not worth keeping**).
+- **What changed** folds open to list what the helper, the director and the board changed, newest first, each with Undo. **Clear list** empties it.
 
-![Browse tab with expanded filter dropdowns for Era, Location, Scene Type, and Character Present, showing a selected entry highlighted in red with CONST badges on always-inject entries](images/dle-browser.png)
+### Cast
 
-Searchable, filterable list of all indexed entries. Virtual scrolling handles vaults with hundreds of entries.
+Your NPCs, when the board has a 🎭 Cast. See [[Cast]].
 
-**Search**: type to filter by title or keyword (300ms debounce). Press `/` to focus the search field.
+### Mero
 
-**Status filters** (8 options):
-- All: show everything
-- Injected: entries injected in the last generation
-- Pinned: entries pinned to this chat
-- Blocked: entries blocked from this chat
-- Constant: always-inject entries (`lorebook-always`)
-- Seed: seed entries (`lorebook-seed`)
-- Bootstrap: bootstrap entries (`lorebook-bootstrap`)
-- Never Injected: entries that have never been injected (all-time analytics)
+Mero ☆, your co-writer, lives here. A dot on the tab means she has something for you (amber while a reply waits for your answer). See [[Mero]].
 
-**Tag filter**: dropdown populated from all tags found in the vault.
+### ⋯ (more)
 
-**Folder filter**: dropdown populated from all Obsidian folder paths in the vault. Filters entries by folder location.
+The last tab button holds the tools:
 
-**Custom field filters**: dropdowns for any custom gating fields defined in `field-definitions.yaml` are added automatically alongside the tag filter.
-
-**Sort options** (7 options):
-- Priority ascending or descending (default: priority ascending)
-- Alphabetical A-Z or Z-A
-- Token count ascending or descending
-- Injection count descending (most-injected first, this chat)
-
-**Entry rows** show:
-- Title, priority badge, token count
-- Per-chat injection count badge (e.g., `3x`)
-- Temperature heatmap coloring (see below)
-- Status indicators (injected, pinned, blocked markers)
-
-**Expand an entry** to see:
-- Content preview (first 200 characters)
-- Keywords list
-- Pin and block toggle buttons (per-chat)
-- Deep link to open in Obsidian
+- **See**: Graph, Open the board, Pins and blocks.
+- **Tools**: Try matching, Reroll lore (on the next reply), Review the vault with Mero, Write missing summaries, Optimize keywords, Import World Info.
+- **Notebooks**: Author's notebook, AI notepad, Scribe history.
+- **DeepLore**: Setup wizard, Diagnostics (opens Ready), Move the side panel to the left / right (remembered), and **Settings**.
 
 ---
 
-### Filters tab
+## Good to know
 
-The Filters tab (panel id `gating`) shows and edits the contextual gating state for the current chat.
-
-**Folder filter section** at the top:
-- Status dot (green when filter active, grey when off)
-- Active folder chips
-- Plus-circle button to pick folders to filter by
-- "All folders active" empty state when no filter is set
-
-**Field-by-field controls** for each defined gating field:
-- **Era**: current era filter (with entry impact count: "filtering N entries")
-- **Location**: current location filter
-- **Scene Type**: current scene type filter
-- **Characters Present**: list of characters currently flagged as present
-- **Custom fields**: any user-defined gating field appears here with status dots and impact counts
-
-Each field has an Edit button that triggers the matching `/dle-set-field` command and its browse popup.
-
-**Toolbar buttons**:
-- **Clear all gating filters**: resets every gating field to unset
-- **Manage Fields** (gear icon): opens the rule builder UI to add, remove, or modify custom gating fields. Field definitions are stored in `field-definitions.yaml` in your vault. Each field has a type (`string`, `number`, or `boolean`), a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, or `lt`), and a tolerance level.
-- **Full View**: opens the full `/dle-context-state` popup
-
----
-
-### Librarian tab
-
-Lore gap inbox. Surfaces references the writing AI mentioned during chat that don't have matching vault entries, so you can decide whether to author them.
-
-**Sub-tabs**:
-- **Flags**: lore gaps detected during pipeline runs
-- **Activity**: recent Librarian actions and draft history
-
-Each sub-tab shows a count badge.
-
-**Sort options**: Newest, Frequency, Urgency.
-
-**Bulk selection**: select-all checkbox plus per-item checkboxes for batch operations on multiple gaps at once.
-
-**Action buttons** (enabled when items are selected):
-- **Open**: open the selected gap in the Librarian editor
-- **Mark Done**: mark selected gaps as written
-- **Remove**: hide on first click; dismiss forever on second click
-
-**Bottom toolbar** (always visible):
-- **New Entry**: create a new vault entry from scratch
-- **Vault Review**: AI-guided review of your vault for coverage gaps
-
-**Empty state** shows the same New Entry and Vault Review buttons when no gaps are recorded yet.
-
----
-
-### Tools tab
-
-Quick-access buttons for slash commands, organized in five groups:
-
-| Group | Tools |
-|-------|-------|
-| **Inspect** | Health Check, Inspect, Status, Simulate |
-| **Notebooks & History** | Author Notebook, AI Notebook, Scribe History |
-| **AI Utilities** | AI Review, Summarize, Optimize Keys |
-| **Vault Ops** | Import World Info, Graph, Refresh, Pins/Blocks |
-| **Get Help** | Setup Wizard, Help |
-
-Each button triggers the matching `/dle-*` slash command. See [[Slash Commands]] for details.
-
-The "AI Notebook" button is wired to `/dle-ai-notepad` (the AI Notepad feature); the button label is the source's working name.
-
----
-
-## Footer
-
-- **Context window bar**: total context tokens used (prompt + lore + system) versus the response token reservation. Two-color bar: used (left) and reserved (right). Tooltip shows the breakdown.
-- **Recent Activity** (collapsible): recent pipeline run summaries (entries injected, match types, timing).
-- **Health icons** (five buttons, one click each):
-  - Vault health (runs `/dle-health`)
-  - Connection status (runs `/dle-status`)
-  - Pipeline trace (runs `/dle-inspect`)
-  - Cache info popup
-  - AI service status (circuit breaker state, session stats)
-- **AI session statistics**: calls made, cache hits, tokens used. Session-scoped: accumulates across chat switches and resets on page reload.
-
----
-
-## Temperature heatmap
-
-The Browse tab uses color tinting to show injection frequency relative to the per-chat average:
-
-- **Hot entries** (red tint): injected more frequently than average. The deeper the red, the more over-represented this entry is.
-- **Cold entries** (blue tint): injected less frequently than average, or never injected.
-- **Neutral entries** (no tint): near the average injection rate.
-
-Temperature is computed per-chat from injection counts. Constants and contextually-gated entries are excluded from the average calculation.
-
----
-
-## Drawer behavior
-
-- **Auto-opens** when DLE is enabled and has entries to display.
-- **Pin toggle**: pin the drawer open so it stays visible across chat switches.
-- **Overlay mode**: on wide chat layouts, the drawer floats over the chat instead of squeezing it.
-- **Close button**: quick-dismiss next to the lock icon.
-- **Tab persistence**: remembers your last-viewed tab across sessions. Librarian tab always lands on the Flags sub-tab.
-- **Live updates**: refreshes after each generation via observer callbacks.
-- **Keyboard shortcuts** (when drawer focused): `r` refresh, `s` scribe, `n` new lore, `g` graph, `/` focus search.
-- **Accessibility**: ARIA roving tabindex, keyboard navigation, screen reader announcements via live region, reduced-motion support.
+- **Left or right:** ⋯ → **Move the side panel to the left** (or right). It is remembered, and Mero's rail follows to the outer edge.
+- **Keyboard** (when the panel has focus and you are not typing): `r` refresh, `s` scribe, `n` new lore, `g` graph.
+- **Every reply** has a DeepLore button (📖) next to SillyTavern's own message buttons, with **Why these entries**, **What this changed** and more. See [[DeepLore Bar]].

@@ -168,7 +168,7 @@ export const surpriseText = p => `Now is the moment for this — work it into th
 
 const PITCH_RULES = [
     'Build pitches ONLY from this story — its people, threads, places, lore and what just happened. Never from genre templates or stock tropes.',
-    'Each pitch grows from something specific below; name it in "from" in a few words (e.g. "Kettle\'s plan: fix the toaster", "the cellar door, last mentioned at #12", "Relationship stuck on Friends for 22 messages", "lore: The Broken Fuse").',
+    'Each pitch grows from something specific below; name it in "from" in a few words (e.g. "Mara\'s plan: win back the shop", "the cellar door, last mentioned at #12", "Relationship stuck on Friends for 22 messages", "lore: The Old Debt").',
     'Kinds: "twist" — something unexpected happens · "acts" — a character does something on their own, out of what they want, plan or know (name them in "who") · "callback" — something mentioned earlier and left open comes back · "ask" — a question to Miinthe about her story whose answer would unlock better ideas (at most one per batch, never for a single pitch).',
     'Strength: "nudge" — small, could happen in passing · "turn" — changes where the scene is going · "bomb" — a bombshell that changes the story.',
     'Each pitch is one or two concrete sentences that the next reply or two can play. Make the pitches of a batch different from each other — different people, threads and kinds.',
@@ -178,7 +178,7 @@ const PITCH_RULES = [
 
 const ITEM = '{"kind": "twist"|"acts"|"callback"|"ask", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "source": "cast"|"board"|"lore"|"loose", "from": "what it grew from, a few words", "text": "the pitch"}';
 const PLAN_ITEM = '{"kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "source": "cast"|"board"|"lore"|"loose", "from": "what it grew from, a few words", "goal": "where the plan leads, one sentence", "beats": ["first this happens", "then this", …]}';
-const PLAN_RULES = 'This is a MULTISTEP pitch — a PLAN: 3 to 5 beats in order, each one concrete thing that happens in the story and can be recognized when it does ("Kettle notices the toaster keeps looking at the door"), building slowly toward the goal. The story will take several replies per beat — so no beat is a whole scene\'s worth, and no beat depends on what Miinthe\'s character decides.';
+const PLAN_RULES = 'This is a MULTISTEP pitch — a PLAN: 3 to 5 beats in order, each one concrete thing that happens in the story and can be recognized when it does ("Mara notices the stranger keeps looking at the door"), building slowly toward the goal. The story will take several replies per beat — so no beat is a whole scene\'s worth, and no beat depends on what Miinthe\'s character decides.';
 
 /**
  * The prompt for a batch (visible) or one hidden pitch.
@@ -199,7 +199,7 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
         multi
             ? (hidden ? `${ctx.user || 'Miinthe'} asked for ONE HIDDEN plan — a surprise for her too: she will not read it; the writer is led through it beat by beat.` : `${ctx.user || 'Miinthe'} asked for ${n} plan${n > 1 ? 's' : ''}: multistep ideas for where her story could go. She picks.`)
             : hidden
-                ? `${ctx.user || 'Miinthe'} asked for ONE HIDDEN pitch — a surprise for her too: she will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Kettle is alone with the toaster") — never a count of messages.${m.moment ? ' Miinthe named the moment herself — use hers.' : ''}`
+                ? `${ctx.user || 'Miinthe'} asked for ONE HIDDEN pitch — a surprise for her too: she will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Mara is alone with the stranger") — never a count of messages.${m.moment ? ' Miinthe named the moment herself — use hers.' : ''}`
                 : `${ctx.user || 'Miinthe'} asked for ${n} pitch${n > 1 ? 'es' : ''}: short ideas for where her story could go next. She picks.`,
         PITCH_RULES,
         multi ? PLAN_RULES : '',
@@ -226,6 +226,7 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
         sec('Other notes the writer follows', list(ctx.notes)),
         sec('The board — where the story stands', arr(ctx.board).join('\n')),
         sec('Threads that have gone quiet', list(ctx.quiet)),
+        sec('The world around the story (chatter, rumors, messages) — a pitch may come from it: a rumor reaching the scene, a feud in the messages', ctx.world),
         sec('The cast — the story\'s side characters', arr(ctx.cast).join('\n')),
         sec('Lore of this story that hasn\'t come up lately', arr(ctx.lore).join('\n')),
         sec('Character and persona', ctx.cards),

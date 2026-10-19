@@ -220,6 +220,7 @@ export const SECTIONS = [
         ] },
         { t: 'The bar', rows: [
             { id: 'ui-bar', label: 'Show the DeepLore bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },
+            { id: 'ui-notes', label: 'My notes', tip: 'A notes button on the bar: your own notes, never sent to the AI', type: 'switch', key: 'notesEnabled' },
             { id: 'ui-barqr', label: 'Hide SillyTavern’s Quick Reply row', tip: 'While you have Quick Replies starred on the bar', type: 'switch', key: 'barHideStQr' },
         ] },
         { t: 'Notices', rows: [
@@ -397,6 +398,7 @@ export const JOBS = [
     { tool: 'aiSearch', job: 'Judge', what: 'picks the lore for a reply', modes: ['profile', 'proxy'], root: true },
     { tool: 'storyTracker', job: 'Story helper', what: 'moves trackers; the Cast’s director', modes: ['profile'] },
     { tool: 'mero', job: 'Mero ☆', what: 'talks, pitches, entry ideas', modes: ['profile'] },
+    { tool: 'world', job: 'World', what: 'chatter, news, messages, rumors', modes: ['profile'] },
     { tool: 'scribe', job: 'Scribe', what: 'session notes', modes: ['inherit', 'st', 'profile', 'proxy'] },
     { tool: 'autoSuggest', job: 'New lore', what: 'notices lore worth writing', modes: ['inherit', 'st', 'profile', 'proxy'] },
     { tool: 'aiNotepad', job: 'AI notepad', what: 'keeps notes from replies (extract)', modes: ['inherit', 'profile', 'proxy'] },
@@ -406,6 +408,7 @@ export const JOB_KEYS = {
     aiSearch: { mode: 'aiSearchConnectionMode', profileId: 'aiSearchProfileId', model: 'aiSearchModel', maxTokens: 'aiSearchMaxTokens', timeout: 'aiSearchTimeout' },
     storyTracker: { mode: 'storyTrackerConnectionMode', profileId: 'storyTrackerProfileId', model: 'storyTrackerModel', maxTokens: 'storyTrackerMaxTokens', timeout: 'storyTrackerTimeout' },
     mero: { mode: 'meroConnectionMode', profileId: 'meroProfileId', model: 'meroModel', maxTokens: 'meroMaxTokens', timeout: 'meroTimeout' },
+    world: { mode: 'worldConnectionMode', profileId: 'worldProfileId', model: 'worldModel', maxTokens: 'worldMaxTokens', timeout: 'worldTimeout' },
     scribe: { mode: 'scribeConnectionMode', profileId: 'scribeProfileId', model: 'scribeModel', maxTokens: 'scribeMaxTokens', timeout: 'scribeTimeout' },
     autoSuggest: { mode: 'autoSuggestConnectionMode', profileId: 'autoSuggestProfileId', model: 'autoSuggestModel', maxTokens: 'autoSuggestMaxTokens', timeout: 'autoSuggestTimeout' },
     aiNotepad: { mode: 'aiNotepadConnectionMode', profileId: 'aiNotepadProfileId', model: 'aiNotepadModel', maxTokens: 'aiNotepadMaxTokens', timeout: 'aiNotepadTimeout' },
@@ -417,6 +420,7 @@ export function jobRuns(tool, s) {
         case 'aiSearch': return s.aiSearchEnabled ? 'every reply' : 'off (keywords only)';
         case 'storyTracker': return 'with the story';
         case 'mero': return 'when you ask';
+        case 'world': return 'in stories with the world layer on';
         case 'scribe': return s.scribeEnabled ? `every ${s.scribeInterval} messages` : 'off';
         case 'autoSuggest': return s.autoSuggestEnabled ? `every ${s.autoSuggestInterval} messages` : 'off';
         case 'aiNotepad': return !s.aiNotepadEnabled ? 'off' : s.aiNotepadMode === 'extract' ? 'every reply' : 'not used (tags)';
@@ -428,7 +432,7 @@ export function jobRuns(tool, s) {
 export function connChoice(tool, s) {
     const k = JOB_KEYS[tool];
     const mode = s[k.mode];
-    if (mode === 'profile') return s[k.profileId] || '';
+    if (mode === 'profile') return s[k.profileId] || (tool === 'world' ? s[JOB_KEYS.storyTracker.profileId] || '' : '');   // world: the story helper's until its own is picked
     return mode;
 }
 /** Store a connection choice the way the old radio + profile list did. */

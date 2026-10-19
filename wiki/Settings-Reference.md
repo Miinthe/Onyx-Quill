@@ -1,377 +1,342 @@
 # Settings reference
 
-Every DeepLore setting, with default, range, and effect. Values match `settings.js` defaults; the constraints column matches `settingsConstraints` (numeric clamp ranges enforced on every load).
+Every setting in DeepLore's settings window, with its default and what it does. The `code names` at the end of each row are the saved setting, for anyone reading the code.
 
-![Settings popup showing the Connection tab with Enable toggle, vault connection configuration for test-vault, Add Vault and Test All buttons, multi-vault conflict resolution dropdown, field definitions path, and Vault Tags section](images/dle-settings.png)
+## Opening the settings
 
-> [!IMPORTANT]
-> ## v2.5: Custom Proxy mode removed
->
-> Earlier versions let any AI feature route through a "Custom Proxy" connection mode (ST's CORS proxy to an external endpoint such as `claude-code-proxy`). **That mode was removed in v2.5.** Every DLE AI feature now uses **[[Connection profile|Connection Profiles]]** (or, where supported, inherits another feature's connection).
->
-> - The Custom Proxy radio is **hidden** in the settings UI — you can no longer select it.
-> - If a chat still has a feature saved in proxy mode, DLE shows a boot-time deprecation notice and the AI call throws a descriptive error. `/dle-health` flags it with a fix: pick a Connection Profile.
-> - **`enableCorsProxy: true` is no longer required** for DLE's AI features. (ST's own AI requests may still need it for raw-URL backends.)
-> - **Migration:** open **Connection → AI Connections**, set the feature's Connection Mode to **Connection Profile** (or **Inherit**), and pick a saved Connection Manager profile. Any provider works.
->
-> Valid connection modes per feature are now: AI Search → `profile`; Session Scribe / Auto Lorebook → `inherit` / `st` / `profile`; AI Notepad / Librarian / Optimize Keys → `inherit` / `profile`.
+- The [[DeepLore Bar]]'s 📖 menu → **Setup and settings**.
+- The [[Drawer|side panel]]'s ⋯ → **Settings**.
+- SillyTavern's Extensions panel → DeepLore → **Open DeepLore Settings**. The **Enable DeepLore** checkbox there is the same on/off switch as in the window.
 
-## Master toggle (About tab)
+## The window
 
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable DeepLore** | Off | Toggle | Master switch (`enabled`). When off, no entries match, no AI calls run, no prompts get injected. The setting is mirrored in the bottom of the SillyTavern Extensions panel and on the About tab of the settings popup. |
-
-## Vault connections (Connection tab → Obsidian sub-tab)
-
-DLE supports multiple Obsidian vaults. Each vault has its own host, port, API key, HTTPS toggle, and enable flag. Entries from all enabled vaults merge into one index, disambiguated by `vaultSource`.
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| **Vault Name** | (none) | Display name. Must match the actual Obsidian vault name exactly so deep links into Obsidian resolve. |
-| **Host** | `127.0.0.1` | IP or hostname of the machine running Obsidian. Change for remote vault connections. |
-| **Port** | `27123` | Port for the Obsidian Local REST API plugin. The plugin listens on `27123` for HTTP and `27124` for HTTPS by default. |
-| **HTTPS** | Off | Toggle to use HTTPS. Requires a trusted certificate (the plugin's self-signed cert must be in your OS trust store, or you've imported it via the auto-diagnostic flow). |
-| **API Key** | (none) | Bearer token from the Local REST API plugin's settings. Stored plaintext in ST's extension settings JSON. |
-| **Enabled** | On | Toggle this vault on/off without deleting the connection. |
-
-**Add Vault** adds another connection. **Test All** verifies every enabled connection. **Scan Vaults** sweeps a port range looking for responding Local REST API instances.
+- **On / Off everywhere** (top left): DeepLore's master switch (`enabled`).
+- **Search settings…**: finds a setting by its name, its explanation, or its old name from earlier versions.
+- **Everywhere · a character ▾ · This chat**: whose settings you are changing. A character or a chat can have its own budget and folders; the most specific wins.
+- **Simple · Sandbox**: Simple hides the rarely used settings (the ones marked **(More)** below). Sandbox shows everything.
+- **Only what I changed (N)**: lists only the settings you changed from their defaults. Each changed setting can be put back with **Reset**.
+- The sections are grouped as **Lore** (Vault, Filters, Lore selection, Budget & variety, Where it goes), **AI** (AI & connections, Prompts, Mero), **Story** (Story & memory) and **Look** (Interface, Advanced). On a phone, tap a section to open it and **← All settings** to go back.
 
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Multi-Vault Conflict Resolution** | `all` | Dropdown | How to handle entries with the same title across vaults. `all`: keep all (disambiguated by vault source). `first`: keep the first vault's version. `last`: keep the last vault's version. `merge`: merge content from all vaults. |
-
-## Vault tags (Connection tab → Obsidian sub-tab)
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Lorebook Tag** | `lorebook` | Obsidian tag (without `#`) that marks a note as a lorebook entry. Only notes with this tag get indexed. |
-| **Always-Send Tag** | `lorebook-always` | Tag that forces a note to always inject regardless of keyword matches. Equivalent to `constant: true`. |
-| **Never-Insert Tag** | `lorebook-never` | Tag that prevents a note from ever being injected, even on keyword match. Good for drafts or WIP notes. |
-| **Seed Tag** | `lorebook-seed` | Tag for entries whose content is sent to the AI as story context on new chats. Not injected; only informs AI selection. See [[Features#New Chat Features]]. |
-| **Bootstrap Tag** | `lorebook-bootstrap` | Tag for entries that force-inject when chat is short, then become regular entries. See [[Features#New Chat Features]]. |
-| **Librarian Guide Tag** | `lorebook-guide` | Tag for entries Emma reads but the writing AI never sees. Used for writing-style guides. The conflict rule: if both `lorebook-guide` and a regular lorebook tag are set, `guide` wins at runtime. |
-| **New Chat Threshold** | `3` | 1-20 | Message count below which seed context is sent and bootstrap entries force-inject. |
-
-## Field definitions path (Connection tab → Obsidian sub-tab)
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Field Definitions Path** | `DeepLore/field-definitions.yaml` | Vault path to the YAML file containing custom gating field definitions. **Edit Fields** opens the visual rule builder (add, remove, modify custom gating fields with type, operator, tolerance). The four default fields (`era`, `location`, `scene_type`, `character_present`) live in this file too. |
-
-![Custom Gating Fields editor showing three defined fields (era, location, and scene_type) each with Type, Gating operator, Context Key, Tolerance, and Allowed Values configuration](images/dle-custom-gating.png)
-
-## Prompts (Prompts tab)
-
-DLE's AI-facing default prompts (search, scribe, notepad, librarian, etc.) are editable. Override files live as `.md` in your vault, and a per-prompt grid lets you Export, Reload, and Reset each one. Two settings govern the tab:
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **AI Prompt Language** (`aiPromptLocale`) | (follow UI) | Locale for the AI-facing default prompts, separate from the UI locale. Empty follows the SillyTavern UI locale. Pin to a specific language (e.g. English) if you do not trust machine-translated prompts to preserve model behavior. User-overridden prompt text is unaffected. |
-| **Prompts Folder Path** (`promptsFolderPath`) | `DeepLore/prompts/` | Vault folder where editable prompt-override `.md` files live. Sibling to `field-definitions.yaml`. |
-
-## AI connections (Connection tab → AI Connections sub-tab)
-
-This sub-tab houses one accordion section per AI feature. Each section configures a connection channel: AI Search, Session Scribe, Auto Lorebook, AI Notepad (extract mode), Librarian, and Optimize Keys. The per-feature connection settings live with the feature in this reference, so look up each setting in its own section below.
-
-**Connection modes** (see the [v2.5 migration callout](#v25-custom-proxy-mode-removed) above — Custom Proxy is gone):
-
-| Mode | Meaning | Available on |
-|------|---------|--------------|
-| `profile` | Use a saved Connection Manager profile. Any provider works. | All features |
-| `inherit` | Reuse the AI Search connection. | All except AI Search (it is the inheritance root) |
-| `st` | Use SillyTavern's own active connection. | Session Scribe, Auto Lorebook only |
-
-AI Search is the only feature that cannot inherit (it is the source). Librarian's default mode is `inherit` (it was `profile` before; changed in a settings migration). Each feature can override mode, profile, and model independently — even when inheriting, the per-feature Model / Max Tokens / Timeout still apply. The channels are deliberately independent so users can route Emma to a tool-calling model while AI search runs on something cheap.
-
-## Search mode (Matching tab)
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Search Mode** | `two-stage` | Dropdown. `keywords-only`: keywords only, no AI. `two-stage`: keywords pre-filter, then AI selects from the manifest. `ai-only`: full vault sent to AI. See [[AI Search]]. |
-
-## Matching and budget (Matching tab)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Messages to Search** (Scan Depth) | `4` | 0-100 | Number of recent chat messages scanned for keyword matches. Set to 0 to disable keyword matching (AI search only). |
-| **Auto-match active character** | Off | Toggle | Auto-match the active character's vault entry by name or keyword, even when not mentioned in chat. See [[Features#Active Character Boost]]. |
-| **Flexible Matching (BM25)** | Off | Toggle | Supplement keyword matching with BM25/TF-IDF scoring. Catches partial or approximate keyword matches. The inverted index is built during index build. |
-| **Match Sensitivity** (Fuzzy Min Score) | `0.5` | 0.1-2.0 | Shown when Flexible Matching is on. Minimum BM25 score for a fuzzy match. Lower is more permissive, higher is stricter. |
-| **Unlimited Entries** | Off | Toggle | Remove the cap on how many entries get injected per generation. |
-| **Max Entries** | `10` | 1-100 | Maximum entries to inject when Unlimited Entries is off. Sorted by priority. |
-| **Unlimited Token Budget** | Off | Toggle | Remove the token budget cap. A warning toast fires if injected lore exceeds 20% of context. |
-| **Token Budget** | `3072` | 100-100000 | Maximum total tokens to inject when Unlimited Token Budget is off. Entries are added in priority order until the budget hits. |
-
-### Repetition control (Matching tab)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable Repetition Control** (Entry Decay) | Off | Toggle | Track entry freshness and adjust AI manifest priorities. Stale entries get a boost; frequently injected entries get a penalty. See [[Features#Entry Decay & Freshness]]. |
-| **Boost After N Skips** | `5` | 2-20 | Consecutive generations an entry is skipped before its freshness boost kicks in. |
-| **Penalize After N in a Row** | `2` | 2-10 | Consecutive generations an entry is injected before its frequency penalty kicks in. |
-
-### Matching advanced (Matching tab → Show Advanced)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Case Sensitive** | Off | Toggle | When on, keyword matching respects case (`Eris` will not match `eris`). |
-| **Match Whole Words** | Off | Toggle | When on, keywords use word boundaries (`war` will not match `warning`). |
-| **Keyword Occurrence Weighting** | Off | Toggle | Entries with more keyword occurrences in the scan text sort higher within the same priority tier. May increase processing time on large vaults. |
-| **Chain Matching** (Recursive Scanning) | Off | Toggle | After initial matches, scan matched entries' content for keywords that trigger more entries. |
-| **Max Recursion Steps** | `3` | 1-10 | Maximum recursive scan passes. |
-| **Repeat Cooldown** (Re-injection Cooldown) | `0` | 0-50 | Skip re-injecting an entry for N generations after last injection. 0 disables. Constants are exempt. |
-| **Skip Recently Injected** (Strip Duplicate Injections) | On | Toggle | Skip re-injecting entries already injected in recent generations. Tracked per-chat. Constants are exempt. |
-| **Messages to check** (Lookback Depth) | `2` | 1-10 | Number of previous generations to check for already-injected entries. Higher values dedupe more aggressively. |
-| **Filter Strictness** (Contextual Gating Tolerance) | `strict` | Dropdown | How strictly contextual gating filters entries. `strict`: block when context dimensions are missing. `moderate`: block only on direct mismatch. `lenient`: allow when no context dimensions are set. Custom fields can override per-field. |
-| **Reverse priority order** (`priorityReversed`) | Off | Toggle | Off (default): lower priority number wins, matching Obsidian/World Info convention. On: higher number wins. Affects budget allocation, the Librarian view, and the Cartographer display. The Browse popup's explicit priority sort is unaffected. |
-| **Compress imports by default** (`importCompressByDefault`) | Off | Toggle | When on, World Info import compresses each entry's body (caveman-style) before writing to the vault, annotated `compress: caveman` in frontmatter. Per-import option can override. |
-| **Example Messages import handling** (`wiImportEmHandling`) | `append` | Dropdown | How World Info import treats Example Messages entries (ST positions 5/6). `append`: convert to a normal entry with a "## Example Dialogue" subheader. `skip`: drop them. |
-
-## Injection (Injection tab)
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Injection Mode** | `extension` | Radio. `extension`: classic `setExtensionPrompt()` with fixed position/depth/role. `prompt_list`: registers named prompts (`deeplore_constants`, `deeplore_lore`) that appear in SillyTavern's Prompt Manager list. Drag them wherever you want. Requires Chat Completion API. |
-
-The Injection Overview table on the Injection tab covers three injection types (Lore Entries, Author's Notebook, AI Notepad), each with its own position, depth, and role. Constants follow the Lore Entries position.
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Lore Entries: Position** | In-chat | Dropdown | Where to inject lore. Options: Before Main Prompt, After Main Prompt, In-chat @ Depth. |
-| **Lore Entries: Depth** | `4` | 0-9999 | Chat depth for in-chat injection (0 is the last message). |
-| **Lore Entries: Role** | System | Dropdown | Message role for in-chat injection: System, User, or Assistant. |
-| **Author's Notebook: Position** | In-chat | Dropdown | Same options as Lore Entries. |
-| **Author's Notebook: Depth** | `4` | 0-9999 | Chat depth. |
-| **Author's Notebook: Role** | System | Dropdown | System, User, or Assistant. |
-| **AI Notepad: Position** | In-chat | Dropdown | Same options as Lore Entries. |
-| **AI Notepad: Depth** | `4` | 0-9999 | Chat depth. |
-| **AI Notepad: Role** | System | Dropdown | System, User, or Assistant. |
-| **Show Lore Sources Button** | On | Toggle | Add a book icon to AI messages showing which entries were injected and why. See [[Features#Context Cartographer]]. |
-| **Injection Template** | `<{{title}}>\n{{content}}\n</{{title}}>` | Text | Format for each injected entry. `{{title}}` is the entry name, `{{content}}` is the note body. |
-| **Allow World Info Scan** | Off | Toggle | Let SillyTavern's built-in World Info system scan injected lore for WI keyword matches. Enables cross-system triggering. |
-
-> Entries can override position, depth, and role via frontmatter. See [[Writing Vault Entries]].
->
-> In `prompt_list` mode, the global Lore Entries position/depth/role settings are ignored. The Prompt Manager controls placement. Per-entry frontmatter overrides with custom depth or position still create separate injection groups that bypass the PM.
-
-## AI search (AI Search tab)
-
-Visible when Search Mode is `two-stage` or `ai-only`.
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Connection Mode** | `profile` | Radio | AI Search routes through a saved Connection Manager profile. (Custom Proxy mode was removed in v2.5 — see the migration callout at the top of this page.) |
-| **Connection Profile** | (none) | Select | Pick a saved Connection Manager profile. Any provider works. |
-| **Model Override** | (none) | Text | Optional model override. Leave empty to use the profile's model. |
-| **Max Response Tokens** | `1024` | 64-4096 | Token limit for the AI response. Keep low; only a small JSON array is needed. |
-| **Timeout (ms)** | `20000` | 1000-999999 | Maximum wait before falling back to keyword-only results. Local models may need 60000-120000ms; cloud APIs typically respond in 5000-15000ms. Cap is intentionally permissive — set this past 120000ms only if you know your provider routinely runs longer. |
-| **AI Confidence Threshold** | `low` | Dropdown | Minimum confidence level for AI selections. `low`: accept all (high+medium+low). `medium`: accept medium and high. `high`: high only. |
-| **AI Error Fallback** | `keyword` | Dropdown | What to inject when AI search errors out. `keyword`: fall back to keyword-matched results. `constants_only`: constants only. `bootstrap_only`: constants and bootstrap entries. `none`: nothing. |
-| **AI Empty Result Fallback** | `constants` | Dropdown | What to inject when the AI intentionally returns `[]`. `constants`: constants only. `constants_bootstrap`: constants and bootstrap entries. `keyword`: keyword results. `none`: nothing. |
-
-**Test AI Search** tests the connection. **Preview AI Prompt** shows the full prompt that would be sent. **AI Stats** shows session usage: AI calls, cache hits, estimated input/output tokens.
-
-### AI search prompt and context (AI Search → Show Prompt & Context)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Messages Sent to AI** (AI Scan Depth) | `4` | 1-100 | Number of recent messages sent to the AI for context. Can differ from the keyword scan depth. |
-| **Max Summary Length (chars)** (Entry Description Length) | `600` | 100-1000 | Max characters for entry descriptions in the AI manifest. Only applies to entries without a `summary` field. |
-| **System Prompt Override** | (none) | Text | Custom system prompt for AI selection. Empty uses the default. Supports the `{{maxEntries}}` placeholder. |
-| **Claude system prefix** (Prepend "You are Claude Code") | Off | Toggle | Legacy proxy-mode toggle. Only had an effect in the removed Custom Proxy mode, so it is now a no-op in profile mode. Left in place for rollback. |
-| **Force merge system prompt into user message** | Off | Toggle | Merge the system prompt into the user message. Use when the provider rejects or mishandles the system role (e.g., some Z.AI GLM versions). Try Prompt Post-Processing Semi/Strict first. |
-| **Use Session Notes as AI Context** | Off | Toggle | Feed the Session Scribe's latest summary into AI search context for better entry selection. See [[Features#Use Session Notes as AI Context]]. |
-| **Custom Fields in AI Manifest** (`aiManifestIncludeFields`) | (all) | Text | Comma-separated whitelist of custom-field names to send to the AI alongside each candidate entry. Empty includes every custom field that has a value. Populate (e.g. `era, faction`) to prune the manifest for token control. |
-| **Response Prefill Mode** (`responsePrefillMode`) | `off` | Dropdown | Inject seed text as the last assistant message so the writing AI continues from it. `off`: no injection. `anthropic-only`: only when the model is Claude. `all-providers`: apply to every chat-completion source. |
-| **Response Prefill Seed** (`responsePrefillSeed`) | (none) | Text | The prefill text injected when a prefill mode is active. |
-
-### AI search filtering (AI Search → Show Filtering)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Category Pre-filter** (Hierarchical Pre-filter) | Off | Toggle | When on, large candidate sets (40+ keyword matches across 4+ categories) are narrowed by category in an extra AI call before final selection. When off, all keyword-matched entries go directly to the AI. |
-| **Category Filtering Strength** (Hierarchical Aggressiveness) | `0.8` | 0.0-0.8 | How aggressively the category pre-filter culls entries. 0.0 keeps all categories. 0.8 trims up to 80%. The safety valve falls back to the full manifest if filtering would remove more than this fraction. |
-| **AI Entry Description Mode** (Manifest Summary Mode) | `prefer_summary` | Dropdown | How entry descriptions are built for the AI manifest. `prefer_summary`: use `summary` if present, fall back to truncated content. `summary_only`: only include entries with summaries. `content_only`: always truncate content, ignore summaries. |
-
-### Optimize Keys (AI Search → Show AI Utilities)
-
-Settings for the `/dle-optimize-keys` command, which refines entry keywords using AI analysis.
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Optimize Keys Mode** | `keyword` | Dropdown | `keyword`: refine existing keywords without AI. `two-stage`: use AI to analyze entry content and suggest better keywords. |
-| **Optimize Keys Prompt** | (none) | Text | Override the default optimization prompt. |
-| **Connection Mode** | `inherit` | Radio | `inherit` uses the AI Search connection, or pick `profile` (saved profile). |
-| **Connection Profile** | (none) | Select | Profile mode only. |
-| **Model Override** | (none) | Text | Override the model used for keyword optimization. Empty inherits from AI Search. |
-| **Max Tokens** | `1024` | 256-8192 | Maximum tokens for the optimization response. |
-| **Timeout (ms)** | `30000` | 5000-999999 | Request timeout for optimization calls. |
-
-## Author's Notebook (Features tab → Author Notebook)
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Enable Author's Notebook** | Off | A persistent per-chat scratchpad injected into every generation. Edit via `/dle-notebook` or **Open Author Notebook**. See [[Features#Author's Notebook]]. |
-
-Position, depth, and role for the Author's Notebook live on the Injection tab. See the Injection table above.
-
-## AI Notepad (Features tab → AI Notebook)
-
-AI-managed session notes that accumulate context across a conversation. The AI either writes notes inline using `<dle-notes>` tags (`tag` mode) or a post-generation extraction call pulls notes from the AI's response (`extract` mode). The accumulated notes get injected alongside regular lore. See [[Features#AI Notepad]].
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable AI Notepad** | Off | Toggle | Enable AI-managed session notes that persist across a conversation. |
-| **Capture Mode** | `tag` | Radio | `tag`: AI uses `<dle-notes>` tags inline during generation. Free, no extra API calls. Best with flagship models. `extract`: a separate post-generation call extracts notes. Works with any writing model. Costs one extra API call per message. |
-| **Custom Tag Instruction** | (none) | Text | Custom instruction prompt for tag mode. Empty uses the default. |
-| **Custom Extraction Prompt** | (none) | Text | Custom extraction prompt for extract mode. Empty uses the default. |
-| **Connection Mode** | `inherit` | Radio | Extract mode only. `inherit` uses AI Search, or pick `profile`. |
-| **Connection Profile** | (none) | Select | Extract mode, profile only. |
-| **Model Override** | (none) | Text | Extract mode. Override the extraction model. |
-| **Max Response Tokens** | `1024` | 256-8192 | Extract mode. Maximum tokens for the extraction response. |
-| **Timeout (ms)** | `30000` | 5000-999999 | Extract mode. Request timeout. |
-
-Position, depth, and role for the AI Notepad live on the Injection tab.
-
-## Session Scribe (Features tab → Session Scribe)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable Session Scribe** | Off | Toggle | Auto-summarize sessions to your Obsidian vault. See [[Features#Session Scribe]]. |
-| **Auto-Scribe Every N Messages** | `5` | 1-50 | Number of new messages between automatic summaries. Tracked by chat position. |
-| **Session Folder** | `Sessions` | Text | Vault folder where session notes get saved. Created if missing. |
-| **Messages to Include** | `20` | 5-100 | Number of recent chat messages included as context for the summary. |
-| **Custom Summary Prompt** | (none) | Text | Override the default summary prompt. The default covers events, character dynamics, revelations, and state changes. |
-| **Connection Mode** | `inherit` | Radio | `inherit` (use AI Search), `st` (use SillyTavern's own active connection), or `profile` (saved profile). |
-| **Connection Profile** | (none) | Select | Profile mode only. |
-| **Model Override** | (none) | Text | Override the model used for summaries. Empty inherits from AI Search. |
-| **Max Response Tokens** | `1024` | 256-4096 | Maximum tokens for the summary response. |
-| **Timeout (ms)** | `60000` | 5000-999999 | Request timeout for summary generation. |
-
-## Auto Lorebook (Features tab → Auto Lorebook)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable Auto Lorebook** | Off | Toggle | AI analyzes chat for entities not in the lorebook and suggests new entries with human review. See [[Features#Auto Lorebook]]. |
-| **Interval (messages)** | `10` | 3-50 | Trigger auto-suggest every N messages. |
-| **Target Folder** | (none) | Text | Obsidian folder for new entries. Empty saves to vault root. |
-| **Write directly (skip review popup)** | Off | Toggle | When on, auto-suggested entries write to the vault immediately without the review popup. Use with caution. |
-| **Custom Prompt** | (none) | Text | Override the default auto-suggest prompt. |
-| **Connection Mode** | `inherit` | Radio | `inherit` (use AI Search), `st` (use SillyTavern's own active connection), or `profile` (saved profile). |
-| **Connection Profile** | (none) | Select | Profile mode only. |
-| **Model Override** | (none) | Text | Override the model used for suggestions. Empty inherits from AI Search. |
-| **Max Tokens** | `2048` | 256-4096 | Maximum tokens for the suggestion response. |
-| **Timeout (ms)** | `30000` | 5000-999999 | Request timeout for auto-suggest generation. |
-
-Use `/dle-newlore` to trigger on-demand at any time.
-
-## Librarian (Features tab → Librarian)
-
-Tool-assisted lore retrieval and gap detection. When enabled, the writing AI can call `search` and `flag` tools during generation to look up vault entries and flag missing lore. The Librarian session UI (`/dle-librarian`) opens an interactive chat with Emma for drafting new entries. See [[Features#Librarian]].
-
-### Tools
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Enable Librarian** | Off | Toggle | Enables Librarian generation-time tools and the interactive session UI. Requires a tool-calling-capable connection; falls back to plain generation if unsupported. |
-| **Allow vault searches during generation** (Search Tool) | On | Toggle | Enables the `search` tool during generation (gated by Enable Librarian). |
-| **Allow flagging missing lore** (Flag Tool) | On | Toggle | Enables the `flag` tool during generation (gated by Enable Librarian). |
-| **Show tool call details on messages** | On | Toggle | Show the "Consulted lore vault" dropdown on assistant messages when the AI used Librarian tools. |
-| **Per-message activity** | Off | Toggle | When on, gap and flag records are tied to messages: cleared on new generation, kept on swipe, dropdown data persisted per-message. When off (default), gaps accumulate and dropdowns are ephemeral. |
-| **Searches per reply** | `2` | 1-10 | Maximum `search` calls per generation. |
-| **Results per search** | `5` | 1-20 | Maximum entries returned per `search` call. |
-| **Result size limit (tokens)** | `1500` | 500-5000 | Token budget for search results returned to the AI per call. |
-
-### Writing sessions
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Write Folder** | (none) | Text | Destination folder in Obsidian for entries written from Librarian sessions. Empty saves to vault root. |
-| **Auto-draft when opening a gap** (Auto-Send on Gap) | On | Toggle | Automatically send the draft prompt when opening a flagged gap in the Librarian session. |
-| **Connection Mode** | `inherit` | Radio | `inherit` (use AI Search) or `profile` (saved profile). Defaults to `inherit`. Librarian intentionally has its own channel so users can route Emma to a different model. |
-| **Connection Profile** | (none) | Select | Profile mode only. |
-| **Model Override** | (none) | Text | Override the model. Empty inherits from AI Search (when in `inherit` mode). |
-| **Session Max Tokens** | `4096` | 1024-16384 | Maximum tokens for Librarian session responses. |
-| **Session Timeout (ms)** | `120000` | 10000-999999 | Request timeout for Librarian session AI calls. The 120s default leaves headroom for forced-final-response loops on large contexts and reasoning models. |
-
-### Writing sessions advanced
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Manifest Budget (chars)** | `8000` | 0-200000 (UI: 2000-30000) | Maximum characters for the vault manifest in Librarian session prompts. Char-based truncation; divide by ~3.5 for a token estimate. |
-| **Related Entries Budget (chars)** | `4000` | 0-200000 (UI: 1000-10000) | Maximum characters for related-entries context. |
-| **Chat Context Budget (chars)** | `4000` | 0-200000 (UI: 1000-10000) | Maximum characters for chat context. |
-| **Draft Budget (chars)** | `4000` | 0-200000 (UI: 2000-10000) | Maximum characters for the serialized draft JSON. |
-| **System Prompt Mode** | `default` | Radio | `default`: built-in Librarian system prompt. `append`: add custom text after the default. `override`: replace the role/persona section only (manifest, gap context, chat, draft, tools, response format still appended). `strict-override`: pure passthrough, custom text IS the entire system prompt. |
-| **Custom System Prompt** | (none) | Text | Custom system prompt text. Used in `append`, `override`, and `strict-override` modes. |
-
-## Graph (Features tab → Graph)
-
-Settings for the interactive entry relationship graph (`/dle-graph`). The graph also has its own in-window settings panel (gear icon) with live sliders and presets. Changes save to your DLE settings and persist.
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Default Color Mode** | `type` | Dropdown | Initial node coloring scheme. Options: `type` (by entry type), `priority`, `centrality`, `frequency`, `community` (Louvain clusters). |
-| **Hover Dim Distance** | `3` | 0-15 | BFS hops kept visible on hover. Nodes farther than this get dimmed. 0 disables. |
-| **Focus Tree Depth** | `2` | 1-15 | Hop depth for ego-centric focus mode. Controls how many relationship hops show from the focused node. |
-| **Show Labels** | On | Toggle | Show node title labels on the graph. |
-| **Repulsion** | `0.3` | 0.1-5.0 | ForceAtlas2 repulsion coefficient. Higher pushes nodes further apart. |
-| **Gravity** | `11.0` | 0.1-20 | Pull toward center. Higher keeps the graph more compact. |
-| **Damping** | `0.50` | 0.3-0.98 | Velocity damping. Higher settles faster. |
-| **Hover Falloff** | `0.55` | 0.3-0.85 | Transmission per hop for hover dimming. Light propagates as `t^d` (mirrors-and-lasers model). Higher lets light reach further hops; lower dims more aggressively. |
-| **Hover Ambient** | `0.06` | 0.0-0.2 | Ambient floor for off-set elements on hover. Nodes beyond the dim distance never go below this opacity. |
-| **Edge Filter Alpha** | `0.05` | 0.01-0.5 | Serrano disparity filter threshold. Lower shows fewer (more significant) edges. |
-| **Node Size Mode** | `centrality` | Dropdown | How node sizes are determined. `centrality` (size by graph centrality), `priority` (by entry priority), `uniform` (all same). |
-
-Graph physics presets (Compact, Balanced, Spacious, Ginormous) set Repulsion / Gravity / Damping to recommended combinations. Individual sliders fine-tune from there.
-
-## Index and cache (System tab → Show Advanced)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Cache Duration (seconds)** | `300` | 0-86400 | How long to cache the vault index before re-fetching. 0 always fetches fresh (slower). |
-| **Auto-Sync Interval** | `0` | 0-3600 | Seconds between automatic vault re-checks. 0 disables. See [[Features#Vault Change Detection & Auto-Sync]]. |
-| **Show Sync Change Toasts** | On | Toggle | Show toast notifications when vault changes get detected during index refresh. |
-| **Index Rebuild Trigger** | `ttl` | Dropdown | When to rebuild the vault index. `ttl`: rebuild when cache duration expires. `generation`: rebuild every N generations. `manual`: only rebuild on explicit refresh. |
-| **Rebuild Every N Generations** | `10` | 1-100 | Shown when trigger is `generation`. How many generations between automatic index rebuilds. |
-
-**Refresh Index** clears the cache and re-fetches all entries. **Test Match** simulates a generation to show which entries would match. **Browse** opens the entry browser.
-
-## System advanced (System tab)
-
-| Setting | Default | Range | Description |
-|---------|---------|-------|-------------|
-| **Review Response Tokens** | `0` | 0-100000 | Token limit for `/dle-review` responses. 0 is auto (uses your connection profile's Max Response Length). |
-| **Debug Mode** | Off | Toggle | Log detailed match info to browser console (F12). Shows keyword matches, AI results, gating, token counts, injection details. |
-
-## Internal and migration settings
-
-These keys appear in `defaultSettings` but are not surfaced in the UI as user-editable. Listed here for completeness (power users editing the JSON or reading diagnostics will see them).
-
-| Key | Default | Description |
-|---------|---------|-------------|
-| `lenientAuthoring` | `true` | Frontmatter parser auto-fixes common authoring mistakes (case-mismatched field names, quoted numbers, comma-string keys) and records a warning. Set to `false` to match pre-v2 strict behavior (silent drops). |
-| `drawerPinned` | `false` | Drawer UI state. Whether the drawer is pinned open. |
-| `drawerCompactTabs` | `false` | Drawer tabs render as icon-only (`true`) or icon plus text (`false`). |
-| `advancedVisible` | `{}` | Per-section "Show Advanced" toggle states. |
-| `promptPresets` | `{}` | Saved prompt presets keyed by tool name (`{ [toolKey]: { [presetName]: promptText } }`). |
-| `analyticsData` | `{}` | All-time analytics counters. |
-| `_wizardCompleted` | `false` | First-run setup wizard completion flag. |
-| `settingsVersion` | `5` | Settings schema version. Migrations run on load when stored version is behind. |
-| `graphSavedLayout` | `null` | Saved graph node positions: `{ positions: { title: { x, y } }, timestamp }`. |
-| `aiSearchEnabled` | `false` | Internal mirror of `aiSearchMode` being non-`keywords-only`. Auto-managed; do not edit. |
-
-## Automatic features (no settings)
-
-These work automatically with no configuration:
-
-- **Obsidian circuit breaker:** the Obsidian connection uses a per-vault circuit breaker (closed/open/half-open) with exponential backoff (2s to 15s). Keyed by `host:port` so each vault has independent failure tracking. Resets when a call succeeds.
-- **AI circuit breaker:** AI search has its own circuit breaker (2 consecutive failures to trip, 30s cooldown). Prevents repeated full-timeout waits when the AI service is down. The AI throttle (500ms minimum between calls) does not trip the breaker. User aborts, timeouts, rate-limit (429), and auth errors also do not trip the breaker.
-- **IndexedDB persistent cache:** the parsed vault index is saved to IndexedDB (`DeepLoreEnhanced` database, `vaultCache` store) after every successful build. On page load, hydrates instantly from cache, then validates in background.
-- **Reuse sync:** auto-sync fetches all file contents but skips re-parsing/tokenizing unchanged entries (detected by content hash). Falls back to full rebuild automatically if reuse fails.
-- **Hierarchical manifest clustering:** for vaults with 40+ selectable entries and 4+ categories, the optional Category Pre-filter uses a two-call AI approach for better scaling. Off by default.
-- **Sliding window AI cache:** AI search cache tracks manifest and chat hashes separately for smarter cache reuse. New chat lines are reused unless they reference vault entities.
-- **Confidence-gated budget:** AI search over-requests entries (2x), sorts by confidence tier before applying the budget cap.
-- **Confidence tiers:** AI selections carry a confidence level (high/medium/low); the AI Confidence Threshold setting decides which tiers are accepted before the budget cap applies.
-- **Settings migrations:** run automatically on load when the stored `settingsVersion` is behind the current schema (5). 1→2 consolidated Librarian model fields. 2→3 changed Librarian's default connection mode from `profile` to `inherit` for unconfigured users (explicit profile selections preserved). 3→4 (v2.5) flipped any feature still on Custom Proxy mode to `profile` and shows a one-time deprecation notice — see the migration callout at the top of this page. 4→5 added the `wiImportEmHandling` default.
+Board, tracker and Cast settings are not here: they live on the board ([[Storyboards]]).
+
+## Vault
+
+Where your lore lives and how DeepLore reaches it.
+
+### Vaults
+
+Each vault is a card with its **Name** (must match your Obsidian vault's name exactly), **Address**, **Port**, **HTTPS** (with **Trust its certificate**), **API key** (from Obsidian's Local REST API plugin), and **Test** / **Remove** buttons. Below the list: **Add a vault**, **Scan for vaults** (looks for Obsidian vaults on this computer) and **Test all**.
+
+| Setting | Default | What it does |
+|---|---|---|
+| **When two vaults have the same entry** | keep both | Choices: keep both · first vault wins · last vault wins · merge (combine keywords). `multiVaultConflictResolution` |
+
+### Reading
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Re-read the vault every** | 0 | Seconds · 0 = only by hand. `syncPollingInterval` |
+| **Tell me what changed** | on | A notice after a re-read finds changes. `showSyncToasts` |
+| **Re-read now** | — | Button: **Re-read**. |
+| **Rebuild the index** (More) | after a time | Choices: after a time · every N replies · only by hand. `indexRebuildTrigger` |
+| **Keep the index for** (More) | 300 | Seconds. Used by “after a time”. `cacheTTL` |
+| **Every N replies** (More) | 10 | Used by “every N replies”. `indexRebuildGenerationInterval` |
+
+### Tags
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Lore tag** | lorebook | Notes with this tag are lore. `lorebookTag` |
+| **Always-send tag** | lorebook-always | Sent with every reply. `constantTag` |
+| **Never-send tag** (More) | lorebook-never | `neverInsertTag` |
+| **Seed tag** (More) | lorebook-seed | Sent quietly in the background while a chat is new. `seedTag` |
+| **Starter tag** (More) | lorebook-bootstrap | Sent openly while a chat is new. `bootstrapTag` |
+| **Writing-guide tag** (More) | lorebook-guide | Entries with this tag are writing guides, not lore. `librarianGuideTag` |
+| **A chat counts as new for** (More) | 3 | Messages. `newChatThreshold` |
+
+### Files
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Field definitions file** | DeepLore/field-definitions.yaml | In your vault. `fieldDefinitionsPath` |
+| **Prompts folder** | DeepLore/prompts/ | In your vault. `promptsFolderPath` |
+
+## Filters
+
+Folders for each character and run. **Open now** shows the chat that is open: its character and run, the folders it reads, whether DeepLore is on, and the board it uses, with **Edit <character>** and **This chat only…**. Below it, **Find a character…** and **Rescan cards** list every character; each has **Base folders** and, per run, **Run X adds**, each with **Edit**. **More** holds **Edit the filter fields…** (add, rename or remove fields; saved in the field definitions file). For one chat's own folders and field values, see the side panel's **Filters** tab ([[Drawer|Side Panel]]).
+
+## Lore selection
+
+How DeepLore finds the lore for a reply.
+
+### Mode
+
+| Setting | Default | What it does |
+|---|---|---|
+| **How lore is picked** | keywords only | Choices: keywords only · keywords, then the judge · the judge only. |
+
+### Keywords
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Messages to read** | 4 | How far back keywords are looked for. `scanDepth` |
+| **Match the active character** | off | `characterContextScan` |
+| **Loose matching** | off | Also finds entries whose words are close to the chat, not only exact keywords. `fuzzySearchEnabled` |
+| **How close** | 0.5 | Low = more matches. The lowest score that still counts (0.1 – 2). The preview shows sample entries, not your vault. `fuzzySearchMinScore` |
+| **Case sensitive** (More) | off | `caseSensitive` |
+| **Whole words only** (More) | off | `matchWholeWords` |
+| **Entries can call other entries** (More) | 0 | Steps · 0 = off. An entry’s text can match more entries, up to this many steps. `recursiveScan` + `maxRecursionSteps` |
+| **Count how often a keyword appears** (More) | off | Can slow down big vaults. `keywordOccurrenceWeighting` |
+| **Higher priority number wins** (More) | off | Off: a lower number wins (as in Obsidian and World Info). `priorityReversed` |
+| **When a chat has no field value set** (More) | strict: block the entry | Choices: strict: block the entry · moderate: block only a mismatch · lenient: allow it. `contextualGatingTolerance` |
+
+### The judge
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Leave out below** | low (keep all) | How sure the judge must be. Choices: low (keep all) · medium · high. `aiConfidenceThreshold` |
+| **Messages the judge reads** | 4 | `aiSearchScanDepth` |
+| **Its prompt** | — | See exactly what the judge is sent for this chat. Button: **Preview**. |
+| **If the judge fails** (More) | use the keyword picks | Choices: use the keyword picks · always-send entries only · starter entries only · send no lore. `aiErrorFallback` |
+| **If the judge picks nothing** (More) | always-send entries only | Choices: always-send entries only · always-send + starter entries · use the keyword picks · send no lore. `aiEmptyFallback` |
+| **The judge reads** (More) | the summary, else the text | Choices: the summary, else the text · summaries only · the text only. `manifestSummaryMode` |
+| **Longest summary sent** (More) | 600 | Characters. `aiSearchManifestSummaryLength` |
+| **Give it the session notes** (More) | off | Scribe’s latest notes go to the judge too. `scribeInformedRetrieval` |
+| **Your fields it sees** (More) | (empty) | Comma list · empty = all. |
+| **Sort by category first** (More) | off | An extra AI call that narrows a big list. `hierarchicalPreFilter` |
+| **How much it trims** (More) | 0.8 | 0 keep all … 0.8 trim most. `hierarchicalAggressiveness` |
+
+### Writing helpers
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Start the writer’s reply for it** | off | So it doesn’t open with “Certainly, here’s…”. Choices: off · Claude only · every provider. `responsePrefillMode` |
+| **The opening text** | (empty) | Empty = none. `responsePrefillSeed` |
+| **Optimize keywords** | keywords only | Choices: keywords only · keywords, then AI. `optimizeKeysMode` |
+
+## Budget & variety
+
+How much lore, and not the same entries every reply. Set here for Everywhere; a character or a chat can set its own.
+
+### Budget
+
+Set for **Everywhere** here; a character or a chat can set its own budget (the most specific wins: this chat → its character → Everywhere). **Follow Everywhere again** drops a character's or chat's own numbers.
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Entries per reply** | 10 | `maxEntries` |
+| **No limit on entries** | off | Big vaults may feel slower. `unlimitedEntries` |
+| **Lore budget** | 3072 | Tokens per reply. `maxTokensBudget` |
+| **No limit on tokens** | off | `unlimitedBudget` |
+
+### Variety
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Give others a turn** | off | An entry sent many times in a row steps back; one skipped a long time gets a boost. `decayEnabled` |
+| **Rest after sending** | 0 | Replies. An entry waits this many replies before it can be sent again. `reinjectionCooldown` |
+| **Skip what was just sent** | 2 | Messages back · 0 = off. Leave out entries already sent in this many recent messages. |
+| **Bring one back after** (More) | 5 | Replies skipped. `decayBoostThreshold` |
+| **Hold one back after** (More) | 2 | Times in a row. `decayPenaltyThreshold` |
+
+## Where it goes
+
+Where DeepLore’s parts go in the prompt.
+
+### How
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Place DeepLore’s parts** | by these settings | “In SillyTavern’s prompt list”: drag each part where you want it there; the positions below then step aside. Choices: by these settings · in the prompt list. `injectionMode` |
+| **Let World Info see DeepLore’s lore** | off | `allowWIScan` |
+
+### Lore entries
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Position** | in the chat | Choices: before the main prompt · after the main prompt · in the chat. `injectionPosition` |
+| **Depth** | 4 | In the chat. `injectionDepth` |
+| **As** | system | Choices: system · user · assistant. `injectionRole` |
+| **How each entry is written** (More) | <{{title}}>
+{{content}}
+</{{title}}> | {{title}} and {{content}}. `injectionTemplate` |
+
+### Story state and notes
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Story trackers block** | in the chat | Where the story’s trackers, the board and the Cast are told to the writer. Choices: before the main prompt · after the main prompt · in the chat. `storyBlockPosition` |
+| **Its depth** | 4 | `storyBlockDepth` |
+| **As** | system | Choices: system · user · assistant. `storyBlockRole` |
+| **Author’s notebook** | in the chat | Choices: before the main prompt · after the main prompt · in the chat. `notebookPosition` |
+| **Its depth** | 4 | `notebookDepth` |
+| **As** | system | Choices: system · user · assistant. `notebookRole` |
+| **AI notepad** (More) | in the chat | Choices: before the main prompt · after the main prompt · in the chat. `aiNotepadPosition` |
+| **Its depth** (More) | 4 | `aiNotepadDepth` |
+| **As** (More) | system | Choices: system · user · assistant. `aiNotepadRole` |
+
+## AI & connections
+
+Which AI does which job. One row per job, with its **Connection**, when it **Runs**, and **Answer up to** (the most the AI may answer):
+
+| Job | What it does | Connection choices |
+|---|---|---|
+| **Judge** | picks the lore for a reply | a connection profile |
+| **Story helper** | moves trackers; the Cast's director | a connection profile |
+| **Mero ☆** | talks, pitches, entry ideas | a connection profile |
+| **Scribe** | session notes | Same as the judge · SillyTavern's own connection · a profile |
+| **New lore** | notices lore worth writing | Same as the judge · SillyTavern's own connection · a profile |
+| **AI notepad** | keeps notes from replies (extract) | Same as the judge · a profile |
+| **Optimize keywords** | better keys for an entry | Same as the judge · a profile |
+
+Connection profiles are made in SillyTavern's API Connections (the plug icon) → Connection Profile. **Fine print** holds, per job, **Model** (a different model on the same connection), **Answer up to**, **Time limit** and **Test** (a one-line test message), plus **Put the system prompt into the user message** (for providers that have no system role). A job saved in the old custom proxy mode shows **Custom proxy (old)**; pick a profile instead.
+
+## Prompts
+
+The prompt each AI job uses: **The judge**, **Scribe**, **New lore**, **Optimize keywords**, **AI notepad: tags** and **AI notepad: extract**. **Edit** opens a prompt (empty = the built-in one; **Back to the built-in**, **Save as preset…**, **Saved presets…**), and **Revert** goes back to the built-in. **+ Your own prompt** adds a piece of your own that goes into every prompt, where you say. Also here: **Language** (the prompt language) and the prompt files in your vault: **Export to vault**, **Reload** and **Reset all** (asks first).
+
+## Mero
+
+Your co-writer: who she is and how she helps. Her AI is picked in AI & connections. See [[Mero]].
+
+### Who she is
+
+| Setting | Default | What it does |
+|---|---|---|
+| **In your words** | — | Button: **Edit**. |
+| **Who she is: first draft** | — | Button: **Reset**. |
+
+### Her job
+
+| Setting | Default | What it does |
+|---|---|---|
+| **How much she does** | Part-timer | Her lore upkeep: how often she checks the entries. Choices: Off duty · Freelancer · Part-timer · Full-timer. `job` |
+| **Needs my sign-off** | on | On: nothing is written without your yes. Off: she writes changes herself, each with an Undo. `signoff` |
+
+### How she talks
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Chattiness** | Chatty | Choices: Quiet · Chatty · Very chatty · Custom. `chatty` |
+| **The writer’s initiative** | balanced | From “follow my lead” to “brings events”. Choices: follow my lead · mostly follows · balanced · brings events · takes the wheel. `initiative` |
+| **She reads the latest** | 12 | Replies. `replies` |
+| **How much she talks** (More) | some | Choices: a little · some · a lot. `talk` |
+| **Brings things up herself** (More) | off | `bringUp` |
+| **The glow** (More) | big moments | A soft light while she has something; costs nothing until you click it. Choices: off · big moments · + quiet threads. `glow` |
+| **Her settings** (More) | — | Chattiness, initiative, replies, job and sign-off back to how they shipped. Who she is stays. Button: **Reset**. |
+
+## Story & memory
+
+What DeepLore writes down, and the story tools. Trackers, boards and the Cast are set up on the board itself (see [[Storyboards]] and [[Cast]]); this section only points there.
+
+### Trackers and board
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Trackers, board, Cast** | — | This chat: its board and DeepLore on or off. Button: **This chat…**. |
+| **The board** | — | Button: **Open**. |
+
+### New entries
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Notice lore worth writing** | 0 | Every N messages · 0 = off. `autoSuggestEnabled` + `autoSuggestInterval` |
+| **Where they go** | by what they’re about | By what they’re about: about the run → the run’s folder · about the character → the character’s base folder. Choices: by what they’re about · always the Target folder. `newEntryPlacement` |
+| **Target folder** | (empty) | When a chat has no folders yet. Empty = the top of the vault. `autoSuggestFolder` |
+| **Mark them** | on | Made_by, from (chat and message), the made-by-mero tag. The date is always written. `newEntryMark` |
+| **Write into the vault** (More) | (empty) | `autoSuggestWriteVaultId` |
+| **Write them straight in** (More) | off | Off: you review each one first. `autoSuggestSkipReview` |
+
+### Scribe
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Session notes** | 0 | Every N messages · 0 = off. `scribeEnabled` + `scribeInterval` |
+| **Folder** | Sessions | `scribeFolder` |
+| **Messages it reads** (More) | 20 | `scribeScanDepth` |
+| **Write into the vault** (More) | (empty) | `scribeWriteVaultId` |
+
+### Notebook and notepad
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Author’s notebook** | off | `notebookEnabled` |
+| **AI notepad** | off | `aiNotepadEnabled` |
+| **How it gets its notes** | tags | Tags: the writer adds them, no extra call · Extract: a helper reads each reply. Choices: tags · extract. `aiNotepadMode` |
+| **Notes it keeps** (More) | 50 | 0 = no limit. The oldest drop first. `aiNotepadMaxEntries` |
+| **Count as the same note from** (More) | 0.85 | 0.1 … 1 how alike. `aiNotepadFuzzyDedupThreshold` |
+
+### Importing World Info
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Shrink imported entries** | off | Saves tokens. `importCompressByDefault` |
+| **Example messages** | add them under a subheading | In a World Info book. Choices: add them under a subheading · skip them. `wiImportEmHandling` |
+
+## Interface
+
+Colors, the bar, notices, removing things, and the graph. About the bar: [[DeepLore Bar]].
+
+### Look
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Colors** | follow SillyTavern | Follow SillyTavern’s theme (your own colors too), or keep DeepLore always light or dark. Choices: follow SillyTavern · light · dark. `dkTheme` |
+
+### The bar
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Show the DeepLore bar** | on | Above the message box. `barShow` |
+| **Hide SillyTavern’s Quick Reply row** | on | While you have Quick Replies starred on the bar. `barHideStQr` |
+
+### Notices
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Pop-ups** | one per message | Choices: one per message · every change. `noticeStyle` |
+| **Ask before removing** | off | On: everything asks first. Off: small things go at once with Undo; big ones ask. `askBeforeRemoving` |
+
+### Graph
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Spacing** | normal | Sets the physics under More for you. Choices: tight · normal · loose. |
+| **Color by** | type | Choices: type · priority · connections · frequency · community. `graphDefaultColorMode` |
+| **Labels** | on | `graphShowLabels` |
+| **Repulsion** (More) | 0.3 | `graphRepulsion` |
+| **Gravity** (More) | 11 | `graphGravity` |
+| **Damping** (More) | 0.5 | `graphDamping` |
+| **Hover dim distance** (More) | 3 | `graphHoverDimDistance` |
+| **Focus tree depth** (More) | 2 | `graphFocusTreeDepth` |
+| **Hover falloff** (More) | 0.55 | `graphHoverFalloff` |
+| **Edge filter alpha** (More) | 0.05 | `graphEdgeFilterAlpha` |
+
+## Advanced
+
+For troubleshooting.
+
+### Troubleshooting
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Debug mode** | off | More detail in the browser console. `debugMode` |
+| **Diagnostics** | — | Health, recent activity, session stats. Button: **Open**. |
+| **Export diagnostics** | — | A file to share, with names removed. Button: **Export**. |
+| **The AI pause** | — | After repeated AI errors DeepLore pauses its AI; this clears it. Button: **Reset**. |
+| **Try matching** | — | Replays this chat and shows which entries each message calls up (the side panel’s Try matching). Button: **Open**. |
+| **Answer length for a vault review** | 0 | Tokens · 0 = Mero’s own. `reviewResponseTokens` |
+
+### Reference
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Slash commands** | — | Button: **Show**. |
+| **Setup wizard** | — | Button: **Run**. |
+| **About** | — | Button: **Show**. |
+
+### Start over
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Reset all settings** | — | Every section back to the defaults. Your vaults, AI connections, prompt presets and your own prompts stay. Asks first. Button: **Reset all**. |

@@ -10,11 +10,12 @@
 
 If you've used SillyTavern's World Info (lorebooks), you know the pain: keyword matching breaks down as your world grows, and the entry you needed stays cold because nobody typed the magic word. DeepLore fixes that. It runs keyword matching first, then asks an AI to read what survived and pick the entries that actually fit the scene — so the right lore fires *even when the keyword was never typed.*
 
-It plugs into [SillyTavern](https://github.com/SillyTavern/SillyTavern) and works in the background while you write. As you roleplay, the writing AI can flag gaps in your world mid-generation, and Emma — the Librarian agent — helps you fill them in. Your story builds your world; your world flows back into your story.
+It plugs into [SillyTavern](https://github.com/SillyTavern/SillyTavern) and works in the background while you write. As you roleplay, the writing AI can flag gaps in your world mid-generation, and they wait for you in Mero ☆'s requests. Your story builds your world; your world flows back into your story.
 
 New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get it running in five minutes.
 
-![DeepLore drawer panel showing the Browse tab with a filterable entry list, token budget bar, priority badges, and temperature heatmap coloring](images/dle-drawer.png)
+> [!NOTE]
+> **This fork** adds [[Storyboards]] (a board window with trackers), the [[Cast]] (NPCs who speak in their own messages), [[Mero]] ☆ (your co-writer), the [[DeepLore Bar]] above the message box, [[My Notes]] (private notes per chat, story or character), and a new [[Drawer|Side Panel]] with the tabs Lore, Filters, Story, Cast and Mero.
 
 > [!NOTE]
 > The older standalone [`sillytavern-DeepLore`](https://github.com/pixelnull/sillytavern-DeepLore) extension is deprecated. This repo (formerly DeepLore) is the active project. Do not run both at once. Running both corrupts prompt injection.
@@ -24,10 +25,12 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 - **Three pipeline modes:** two-stage (keywords pre-filter, then AI selects), AI-only (full vault sent to AI, no keyword filtering), and keywords-only (no AI). Two-stage is the default.
 - **Any LLM provider:** Anthropic, OpenAI, OpenRouter, Gemini, DeepSeek, local backends (Ooba, KoboldCpp, llama.cpp), and anything else SillyTavern's Connection Manager supports.
 - **Multi-vault support:** connect multiple Obsidian vaults at once with content-hash dedup.
-- **The Librarian (Emma):** writing-AI tools (`search`, `flag`) that detect missing lore mid-generation, plus Emma, a chat agent who helps you author the entry. See `lorebook-guide` for Librarian-only writing guides.
+- **Lore gaps:** optional writing-AI tools (`search`, `flag`) that detect missing lore mid-generation; the gaps wait in [[Mero]]'s Requests, where you can write the entry.
+- **Storyboards and the Cast:** plan your story on a board; a helper AI moves the trackers as the story goes, and NPCs can speak for themselves. See [[Storyboards]] and [[Cast]].
+- **Mero ☆:** a co-writer to talk with about the story, with pitches, plans and notes. See [[Mero]].
 - **Per-chat pin and block:** override entry selection per chat. Force-include or exclude specific entries.
 - **Contextual gating:** filter entries by era, location, scene type, characters present, and any custom field you define in `field-definitions.yaml`. Visual rule builder included.
-- **Context Cartographer:** per-message trace showing which entries fired and why (keyword hit, AI selection, constant, cascade, pin).
+- **Context Cartographer:** per-message trace (each message's 📖 → Why these entries) showing which entries fired and why (keyword hit, AI selection, constant, cascade, pin).
 - **Session Scribe:** auto-summarize sessions back to your Obsidian vault as timestamped notes.
 - **Auto Lorebook:** AI suggests new entries from chat content; accept or reject each one.
 - **Author's Notebook and AI Notepad:** per-chat scratchpads (one human-written, one AI-written) injected as context.
@@ -57,9 +60,13 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 | [[Features]] | Linked catalog of all features |
 | | |
 | **Feature pages** | |
-| [[Drawer]] | Live side panel: Why?, Browse, Gating, Librarian, Tools tabs, temperature heatmap |
+| [[Drawer\|Side Panel]] | The side panel: Lore, Filters, Story, Cast, Mero tabs and the ⋯ tools |
+| [[DeepLore Bar]] | The bar above the message box, and the 📖 menu on each message |
+| [[Storyboards]] | The board window and its tracker kinds |
+| [[Cast]] | NPCs with their own cards and their own messages |
+| [[Mero]] | Mero ☆, your co-writer: talks, requests, notes, pitches and plans |
 | [[Inspection and Diagnostics]] | Context Cartographer, "Why Not?" tracing, health check, simulation |
-| [[AI-Powered Tools]] | Session Scribe, Auto Lorebook, Optimize Keys, Auto-Summary |
+| [[AI-Powered Tools]] | Lore gap tools, Session Scribe, Auto Lorebook, Optimize Keys, Auto-Summary |
 | [[Entry Matching and Behavior]] | Cooldown, warmup, gating, fuzzy search, decay, cascade links |
 | [[Injection and Context Control]] | Injection positions, Prompt Manager integration, pin and block, contextual gating |
 | [[Custom Fields]] | User-defined frontmatter fields for contextual gating |

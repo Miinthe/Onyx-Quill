@@ -16,7 +16,7 @@ import { live } from './board-live.js';
 import {
     onMeroChanged, meroWhere, meroTalks, meroNotes, meroSettings, meroBusy, meroTold, newTalk, updateTalk, deleteTalk,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
-    meroGlow, seeGlow, setMomentsAside, talkAboutMoments, meroConnectionName,
+    meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
 } from './mero.js';
 import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequests } from './requests.js';   // 📬 (step 3)
 import { lookAtLore, undoEntry, meroLooking, onLookChanged, initMeroLore } from './mero-lore.js';   // ☆ entry ideas
@@ -158,7 +158,9 @@ function popToggle() {
 
 window.__dleMeroHost = {
     load, dark: () => stIsDark(),
-    send: (id, text) => sendToMero(id, text),
+    send: (id, text, ctx) => sendToMero(id, text, { ctx }),
+    mentionList: () => clone(mentionList()), mentionResolve: tags => clone(mentionResolve(tags)),
+    pickContext: async () => { const v = await pickContext(); const tab = document.getElementById('dle-tab-mero'); if (v && tab && !tab.classList.contains('active')) tab.click(); return v ? clone(v) : null; },
     where: id => whereAreWe(id),
     newTalk: tag => clone(newTalk(tag)),
     updateTalk: (id, patch) => updateTalk(id, patch),
@@ -218,6 +220,9 @@ window.__dleOpenRequests = () => openRequests();
 window.__dleOpenPitches = (fromIdx = null) => openMeroDrawer(w => w.__meroOpenPitches?.(fromIdx));   // the "waiting in the mailbox" notices (autotrack.js, board-grow.js)
 /** Open Mero on one talk (📚 a vault review just started). */
 export function openMeroTalk(id) { openMeroDrawer(w => w.__meroOpenTalk?.(id)); }
+// "Ask Mero about this" from a thing's own menu (a chat message, a post, a conversation): Mero opens with it attached
+window.__dleAskMero = item => { if (item?.label) openMeroDrawer(w => w.__meroAddContext?.(item)); };
+window.__dleOpenMeroTalks = () => openMeroDrawer(w => w.__meroOpenTalks?.());   // the bar's "☆ Mero wants to talk" banner
 export function openRequests() { openMeroDrawer(w => w.__meroOpenRequests?.()); }
 /** Open Mero (the panel, her tab — or her window when popped out), then `fn(the page's window)`. */
 function openMeroDrawer(fn) {

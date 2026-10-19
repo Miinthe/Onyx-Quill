@@ -1,7 +1,8 @@
 /**
  * DeepLore — Vault index building and cache management
  */
-import { getTokenCountAsync } from '../../../../../tokenizers.js';
+import * as tokenizers from '../../../../../tokenizers.js';
+const { getTokenCountAsync } = tokenizers;
 import { oai_settings } from '../../../../../openai.js';
 import { main_api, amount_gen } from '../../../../../../script.js';
 import { getSettings, getVaultByName } from '../../settings.js';
@@ -39,6 +40,43 @@ import { pushEvent } from '../diagnostics/interceptors.js';
 import { buildBM25Index, setDebugMode as setBm25DebugMode } from './bm25.js';
 
 import { computeEntityDerivedState, deduplicateMultiVault, detectCrossVaultDuplicates, PARTIAL_FETCH_FAILURE_THRESHOLD, conflictModeMessage } from './vault-pure.js';
+
+// ── token counts (Miinthe 2026-10-18: "while indexing I cannot switch tabs") ──
+// SillyTavern remembers token counts per CHAT, so the first index in each chat sent every entry (~1000 for her vault)
+// to the server at once, and handling the answers kept the page from reacting to taps. DeepLore keeps its own
+// memory by entry text and tokenizer (the same in every chat; an entry is counted again only when its text changes),
+// and counts what is left in small batches with a breath between them.
+const TOK_KEY = 'dle-token-counts-v1', TOK_KEEP = 6000, TOK_BATCH = 8;
+let tokMem = null, tokSaveTimer = null;
+function tokStore() {
+    if (!tokMem) { try { tokMem = new Map(Object.entries(JSON.parse(localStorage.getItem(TOK_KEY) || '{}'))); } catch { tokMem = new Map(); } }
+    return tokMem;
+}
+function tokSave() {
+    clearTimeout(tokSaveTimer);
+    tokSaveTimer = setTimeout(() => { try { localStorage.setItem(TOK_KEY, JSON.stringify(Object.fromEntries([...tokStore()].slice(-TOK_KEEP)))); } catch { /* full or blocked: memory only */ } }, 2000);
+}
+function tokKey(text) {
+    let model = '';
+    try { model = `${main_api}|${tokenizers.getTokenizerModel?.() ?? ''}`; } catch { /* no tokenizer yet */ }
+    return `${model}|${text.length}|${simpleHash(text)}`;
+}
+/** Fill `tokenEstimate` on every entry; returns how many fell back to a character estimate. */
+async function tokenizeEntries(list) {
+    const mem = tokStore(), todo = [];
+    let fails = 0;
+    for (const e of list) { const v = mem.get(tokKey(e.content || '')); if (typeof v === 'number') e.tokenEstimate = v; else todo.push(e); }
+    for (let i = 0; i < todo.length; i += TOK_BATCH) {
+        await Promise.all(todo.slice(i, i + TOK_BATCH).map(async (e) => {
+            try { e.tokenEstimate = await getTokenCountAsync(e.content); mem.delete(tokKey(e.content || '')); mem.set(tokKey(e.content || ''), e.tokenEstimate); }
+            catch { e.tokenEstimate = Math.ceil((e.content || '').length / 4.0); fails++; }
+        }));
+        await new Promise(r => setTimeout(r, 0));   // let a tap through
+    }
+    if (todo.length) tokSave();
+    return fails;
+}
+
 export { computeEntityDerivedState, deduplicateMultiVault, detectCrossVaultDuplicates };
 
 // P3 (2026-05-22): incremental derived-state updates for reuse-sync.
@@ -575,15 +613,7 @@ export async function buildIndex() {
             return;
         }
 
-        let _tokenizerFailCount = 0;
-        await Promise.all(entries.map(async (entry) => {
-            try {
-                entry.tokenEstimate = await getTokenCountAsync(entry.content);
-            } catch {
-                entry.tokenEstimate = Math.ceil(entry.content.length / 4.0);
-                _tokenizerFailCount++;
-            }
-        }));
+        const _tokenizerFailCount = await tokenizeEntries(entries);
         if (_tokenizerFailCount > 0) {
             console.warn(`[DLE] Tokenizer failed for ${_tokenizerFailCount}/${entries.length} entries — using character-based estimates (budget accuracy degraded)`);
         }
@@ -1201,14 +1231,7 @@ export async function buildIndexWithReuse() {
         // no-change and merge-carry-forward early returns so we never tokenize
         // entries that get discarded. Mirrors buildIndex's :561 batch pass.
         if (_needTokenize.length > 0) {
-            await Promise.all(_needTokenize.map(async (entry) => {
-                try {
-                    entry.tokenEstimate = await getTokenCountAsync(entry.content);
-                } catch {
-                    entry.tokenEstimate = Math.ceil(entry.content.length / 4.0);
-                    _reuseTokenizerFailCount++;
-                }
-            }));
+            _reuseTokenizerFailCount += await tokenizeEntries(_needTokenize);
             if (isZombie()) { _reuseResult = false; return; }
         }
         if (_reuseTokenizerFailCount > 0) {

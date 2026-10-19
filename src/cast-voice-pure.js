@@ -183,9 +183,9 @@ export function setText(q, id, text) {
 /** The AI half's NPC lines (what runs after the main character when you just press Send). */
 export const aiNpcs = q => arr(q).filter(x => x.kind === 'npc' && !isMine(x));
 
-/** The queue as words, for the tab and the notices: "Kettle → You". */
-export function queueText(board, q) {
-    const nameOf = x => (x.kind === 'you' ? 'You' : x.kind === 'main' ? 'Main character' : arr(board?.trackers).find(t => t.id === x.cast)?.people?.find(p => p.id === x.person)?.name ?? '?');
+/** The queue as words, for the tab and the notices: "Anna → Miinthe" (the persona's name, never "You"). */
+export function queueText(board, q, { user = '{{user}}', main = 'Main character' } = {}) {
+    const nameOf = x => (x.kind === 'you' ? user : x.kind === 'main' ? main : arr(board?.trackers).find(t => t.id === x.cast)?.people?.find(p => p.id === x.person)?.name ?? '?');
     return arr(q).map(nameOf).join(' → ');
 }
 
@@ -222,4 +222,28 @@ export function regenRound(chat) {
     const speakers = round.map(npcOfMessage).filter(Boolean);
     const seq = round.filter(m => !m?.is_system).map(m => { const n = npcOfMessage(m); return n ? { kind: 'npc', ...n } : { kind: 'main' }; });
     return speakers.length ? { from, speakers, seq } : null;
+}
+
+// ── who has something to add this round (Miinthe, 2026-10-19: "they should sit out at times. just because they're in the
+// same scene doesn't mean they have anything to add every time. I also think that counts for the main character") ──
+
+export const SPEAKS_SYSTEM = `You direct a group roleplay. The player just wrote the newest message. Below are the people in the scene who could speak next. For each, decide whether they have something to add RIGHT NOW: they were spoken to or about (spoken to everyone — "all of you", "everyone" — means each of them), it touches their wants, plans or secrets, or they would naturally react. Someone with nothing to add stays quiet this round — that's normal and good; a busy scene doesn't need everyone. At least one person speaks. Answer with JSON only: {"speak": ["exact name", ...]}`;
+export const SPEAKS_SCHEMA = { name: 'cast_speaks', strict: false, value: { type: 'object', properties: { speak: { type: 'array', items: { type: 'string' } } }, required: ['speak'] } };
+/** o: { messages: [{ name, mes }], people: [{ name, main?, wants? }] } */
+export function speaksUser({ messages = [], people = [] }) {
+    return [`THE NEWEST MESSAGES (last is newest)\n${arr(messages).map(m => `${m.name}: ${clip(m.mes, 700)}`).join('\n\n')}`,
+        `WHO COULD SPEAK NOW\n${arr(people).map(p => `- ${p.name}${p.main ? ' (the main character)' : ''}${p.wants ? ` — wants: ${clip(p.wants, 140)}` : ''}`).join('\n')}`,
+        'Who speaks this round?'].join('\n\n');
+}
+/** The names that speak (known ones only); null when the answer can't be read (then everyone speaks, as before). */
+export function parseSpeaks(text, names) {
+    const raw = String(text ?? '').trim(), a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+    const known = new Map(arr(names).map(n => [String(n).trim().toLowerCase(), n]));
+    for (const t of [raw, a !== -1 && b > a ? raw.slice(a, b + 1) : '']) {
+        let v; try { v = JSON.parse(t); } catch { continue; }
+        if (!v || !Array.isArray(v.speak)) continue;
+        const out = [...new Set(v.speak.map(n => known.get(String(n).trim().toLowerCase())).filter(Boolean))];
+        return out.length ? out : null;
+    }
+    return null;
 }

@@ -6,7 +6,7 @@ DeepLore lets you define your own frontmatter fields for contextual gating. Beyo
 
 1. **Define fields** in a YAML file in your vault (or use the visual editor)
 2. **Tag entries** with field values in their frontmatter
-3. **Set the active context** with slash commands or the drawer's Filters tab
+3. **Set the active context** with slash commands or the side panel's **Filters** tab
 4. Entries whose field values don't match the active context are filtered out during lore selection
 
 ## Built-in fields
@@ -26,7 +26,7 @@ All four use the `match_any` operator and `moderate` tolerance by default.
 
 ### Visual editor (recommended)
 
-Open the rule builder from the gear icon in the drawer's **Filters** tab toolbar, or the **Edit Fields** button in the Settings popup. The rule builder lets you:
+Open the rule builder from the side panel's **Filters** tab → **Change folders and fields…** → **Edit the filter fields…**, or from **Settings › Filters** (Edit the filter fields). The rule builder lets you:
 
 - Add, delete, duplicate, and reorder fields
 - Set field name (snake_case), display label, data type, and multi-value toggle
@@ -130,7 +130,7 @@ The built-in fields have shorthand aliases:
 
 View all active filters with `/dle-context-state` (alias: `/dle-ctx`).
 
-You can also set context from the drawer's **Filters** tab by clicking the value buttons.
+You can also set context from the side panel's **Filters** tab, in its **Fields** fold (values set there are for this chat only).
 
 ## Gating operators
 
@@ -172,8 +172,8 @@ These entries always bypass contextual gating regardless of field values:
 
 ## Integration
 
-- **Drawer Filters tab:** shows all active fields with status dots, impact counts ("excluding N entries"), and quick-set buttons
-- **Browse tab:** custom field filter dropdowns appear automatically for fields with values in the vault
+- **Side panel Filters tab:** the **Fields** fold shows the fields set for this chat, lets you set or clear them, and **Show** lists the unused ones
+- **Lore › All entries:** your own fields appear as filter chips
 - **Graph:** color nodes by any custom field value
 - **AI manifest:** field labels shown in AI search manifests for better selection
 - **`/dle-inspect`:** shows per-field mismatch reasons (e.g., `era: medieval != renaissance`)

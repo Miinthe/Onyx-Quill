@@ -106,7 +106,7 @@ Set the active context with `/dle-set-era`, `/dle-set-location`, `/dle-set-scene
 - Use `/dle-context-state` to see the current active context.
 - Context is stored per-chat in `chat_metadata.deeplore_context`.
 
-These four fields ship out of the box. You can add, remove, or modify gating fields via the "Manage Fields" rule builder (Filters tab toolbar or Settings popup). Custom field definitions are stored in `DeepLore/field-definitions.yaml` in your vault, where each field gets a type (`string`, `number`, `boolean`), a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, `lt`), and a tolerance level (`strict`, `moderate`, `lenient`). See [[Custom Fields]] for the full schema.
+These four fields ship out of the box. You can add, remove, or modify gating fields via the rule builder (side panel **Filters** tab → **Change folders and fields…** → **Edit the filter fields…**, or **Settings › Filters**). Custom field definitions are stored in `DeepLore/field-definitions.yaml` in your vault, where each field gets a type (`string`, `number`, `boolean`), a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, `lt`), and a tolerance level (`strict`, `moderate`, `lenient`). See [[Custom Fields]] for the full schema.
 
 ## outlet — macro-based injection
 

@@ -99,7 +99,7 @@ A per-chat override that forces an entry to always inject, bypassing keyword mat
 A per-chat override that prevents an entry from ever injecting, even if it matches. Overrides constants. Set via `/dle-block <name>`.
 
 **Folder filter**
-A per-chat restriction that limits which vault entries are considered, by filtering on folder path. Set via `/dle-set-folder` (or the drawer Filters tab). Only entries whose `folderPath` starts with one of the allowed folders are included in matching.
+A per-chat restriction that limits which vault entries are considered, by filtering on folder path. Set via `/dle-set-folder` (or the side panel's Filters tab → **Change folders and fields…**). Only entries whose `folderPath` starts with one of the allowed folders are included in matching.
 
 ## Injection
 
@@ -148,21 +148,21 @@ A saved SillyTavern Connection Manager profile DLE can route an AI feature to. C
 The choice of how a DLE feature reaches its AI. As of v2.5 the modes are: `profile` (use a saved Connection Manager profile), `inherit` (reuse the AI Search connection), and `st` (use SillyTavern's own active connection — Session Scribe and Auto Lorebook only). The old `proxy` mode was removed in v2.5; see [[Settings Reference]] for the migration. AI Search itself is profile-only.
 
 **Connection channel**
-A per-feature connection. DLE has independent channels for AI search, the Librarian, the Scribe, the Notepad, Auto Lorebook, and Optimize Keys. They do not share settings — each can override mode, profile, model, max tokens, and timeout.
+A per-feature connection. Settings › AI & connections lists one row per job: Judge (AI search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad, and Optimize keywords. They do not share settings — each can override mode, profile, model, max tokens, and timeout.
 
 **Librarian**
 Two linked systems sharing the name:
 1. **Generation tools.** The writing AI gets `search` and `flag` tools during generation. `search` queries the vault for entries the pipeline missed; `flag` records gaps when the writing AI reaches for lore that is not in your vault. (Each is independently gated by its own setting under the master Librarian toggle.)
-2. **Emma.** A separate chat agent (opened via `/dle-librarian`, the drawer Librarian tab, or by clicking a flag) that helps you author or update vault entries from flagged gaps. Her toolset is roughly a dozen tools: `search_vault`, `get_entry`, `get_links`, `get_backlinks`, `get_full_content`, `find_similar`, `list_flags`, `list_entries`, `get_recent_chat`, `flag_entry_update`, `compare_entry_to_chat`, plus `get_writing_guide` (only when guide entries exist). Both halves require a tool-calling provider on their connection. Emma uses her own connection channel, separate from AI search.
+2. **Emma.** A separate chat agent (opened via `/dle-librarian`) that helps you author or update vault entries from flagged gaps. Her toolset is roughly a dozen tools: `search_vault`, `get_entry`, `get_links`, `get_backlinks`, `get_full_content`, `find_similar`, `list_flags`, `list_entries`, `get_recent_chat`, `flag_entry_update`, `compare_entry_to_chat`, plus `get_writing_guide` (only when guide entries exist). Both halves require a tool-calling provider on their connection. Emma uses her own connection channel, separate from AI search.
 
 **Emma**
-The Librarian persona. She/her in user-facing copy. Opens from the drawer's Librarian tab, the `/dle-librarian` command, or by clicking a flag.
+The Librarian persona. Opens from the `/dle-librarian` command.
 
 **Flag**
-A record of a gap the writing AI hit during generation. Lives in the Librarian inbox until you open it (to author the entry with Emma), hide it (soft-removal; re-flagging resurfaces), or dismiss it (permanent).
+A record of a gap the writing AI hit during generation. It shows up in [[Mero]]'s **Requests** under **📚 Lore gaps**, with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** (until it is flagged again), and **No** (gone for good).
 
 **Gap**
-The missing lore the flag records. The writing AI flagged the gap to the Librarian inbox.
+The missing lore the flag records. It waits in Mero › Requests › 📚 Lore gaps.
 
 **Session Scribe**
 An AI feature that periodically summarizes the chat and writes the summary to an Obsidian note. Useful for maintaining session continuity. See [[Features#Session Scribe]].
@@ -177,24 +177,24 @@ A per-chat feature for AI-extracted session notes. The writing AI emits notes in
 An AI feature that analyzes the chat and suggests new lorebook entries to create in your vault.
 
 **Context Cartographer**
-A UI feature that shows which entries were injected into each AI response and why. Appears as a "Lore Sources" button on chat messages. See [[Features#Context Cartographer]].
+A UI feature that shows which entries were injected into each AI response and why. Open it from a message's DeepLore ⋯ button → **Why these entries**. See [[Features#Context Cartographer]].
 
 ## UI
 
 **Drawer**
-DLE's persistent side panel. Shows live pipeline feedback during chat: which entries were injected, why they matched, token usage, and vault statistics. Five tabs: Injection, Browse, Filters, Librarian, Tools. See [[Drawer]].
+DLE's side panel (the code still calls it the drawer). Shows live feedback during chat: which entries were sent, why, and what was left out. Tabs: Lore, Filters, Story, Cast, Mero, plus a ⋯ menu for tools. See [[Drawer|Side Panel]].
 
 **Drawer tab**
-One of the five panels in the drawer. Capitalized tab names verbatim: Injection tab, Browse tab, Filters tab, Librarian tab, Tools tab.
+One of the side panel's tabs: Lore, Filters, Story, Cast, Mero. The tools that used to sit in a Tools tab are in the ⋯ menu at the end of the tab row.
 
 **Temperature heatmap**
-Color-coded indicator in the Browse tab showing entry injection frequency relative to the vault average. Hot entries (red tint) are injected more often than average; cold entries (blue tint) are injected less often or never.
+Color-coded count (for example `3×`) on entries in the Lore tab's All entries list, showing how often an entry was sent in this chat. Hot entries are sent more often than most; cold entries less often.
 
-**Virtual scroll**
-A rendering optimization in the Browse tab that only displays visible rows in a long list, enabling smooth handling of vaults with 100+ entries.
+**Show more**
+Long lists in the Lore tab draw 100 rows at a time; the **Show … more** button at the bottom draws the next ones. This keeps big vaults smooth.
 
-**Overlay mode**
-A responsive layout mode where the drawer converts to a dismissible overlay on narrow screens (when chat width exceeds 60% of the viewport).
+**On a phone**
+On a phone, the side panel slides over the chat and has no lock; close it with its ✕.
 
 ## Infrastructure
 
@@ -205,7 +205,7 @@ Automatic backoff that stops calls after repeated failures. DLE uses two: one pe
 Browser-side persistent storage used to cache the vault index. Enables instant page load: the index hydrates from cache, then validates in the background.
 
 **Reuse sync**
-An optimization where all files are fetched from Obsidian, but unchanged entries (detected by content hash) skip re-parsing and tokenization. The savings come from avoiding the expensive parse/tokenize step, not from reducing network calls.
+An optimization where all files are fetched from Obsidian, but unchanged entries (detected by content hash) skip re-parsing and tokenization. The savings come from avoiding the expensive parse/tokenize step, not from reducing network calls. Token counts are also remembered by entry text in the browser (the same in every chat), so an entry is counted again only when its text changes; what is left is counted a few at a time so the page stays responsive.
 
 **Cache TTL**
 Time-to-live for the vault index cache, in seconds. After this period, the index refreshes from Obsidian on the next generation.

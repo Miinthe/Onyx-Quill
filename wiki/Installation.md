@@ -45,7 +45,7 @@ Stop and restart SillyTavern to load the new extension.
 ## First-time setup
 
 > [!TIP]
-> Run `/dle-setup` in the SillyTavern chat input to use the guided setup wizard. It walks through vault connection, tags, matching, AI search, the Librarian, vault structure, and lorebook import in one flow. See [[Setup Wizard]].
+> Run `/dle-setup` in the SillyTavern chat input to use the guided setup wizard. It walks through vault connection, tags, matching, AI search, Mero ☆ (lore tools during replies), vault structure, and lorebook import in one flow. See [[Setup Wizard]].
 
 The rest of this section covers manual setup. Skip it if you ran the wizard.
 
@@ -111,7 +111,7 @@ git pull
 - **Profile missing or broken:** Confirm the selected profile still exists and its underlying API connection works. Test the connection in SillyTavern's main API panel first.
 - **No profile selected:** Pick a profile in AI Search settings, or create one in Connection Manager.
 - **Timeout:** AI search has a configurable timeout (default 20 seconds). Slow providers — especially local models — may need a longer timeout. See [[Settings Reference]].
-- **"Custom Proxy mode was removed in v2.5":** You (or an old setting) still point a channel at proxy mode. Open **Settings → Connection → AI Connections** and pick a Connection Profile for that channel.
+- **"Custom Proxy mode was removed in v2.5":** You (or an old setting) still point a channel at proxy mode. Open **Settings › AI & connections** and pick a Connection Profile for that job.
 
 ### No entries found after Refresh Index
 

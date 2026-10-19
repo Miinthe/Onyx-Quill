@@ -122,6 +122,9 @@ import { tr, trf } from './src/i18n/i18n.js';
 import { followTheme, configureTheme, repaintTheme } from './src/kit/theme.js';
 import { initLegacySkin } from './src/kit/legacy-skin.js';
 import { configureKit } from './src/kit/kit.js';   // overhaul step 4: the shared parts read "Ask before removing" from settings
+import { initNotes } from './src/notes.js';                // My notes (Miinthe, 2026-10-18)
+import { initWorld, worldWriterLines } from './src/world/world.js';          // the world layer (Miinthe, 2026-10-19)
+import { initRegenWatch, keepForDelete } from './src/regen.js';   // regenerate keeps hand + world changes (2026-10-19)
 import { initBar } from './src/bar/bar.js';               // overhaul 2a: the DeepLore bar above the message box
 import { initReplyMenu } from './src/reply-menu.js';      // overhaul 2a: one DeepLore ⋯ on each reply
 
@@ -1710,6 +1713,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // empty string clears the block once the last tracker is removed.
         let _boardLines = [];
         try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[DLE] board lines skipped:', err?.message || err); }
+        _boardLines = [..._boardLines, ...worldWriterLines()];   // the world layer: what the main character knows from messages (2026-10-19)
         _injectAuxPrompt('deeplore_story_trackers', writerBlock(readActiveTrackers(), _boardLines),   // engine on v2, step 2: read from v2
             settings.storyBlockPosition ?? extension_prompt_types.IN_CHAT, settings.storyBlockDepth ?? 4, settings.storyBlockRole ?? extension_prompt_roles.SYSTEM);   // overhaul (2026-10-17): its place is a setting (was fixed: in chat, depth 4, system)
         // overhaul (2026-10-17): her own prompt pieces (Settings › Prompts › + Your own prompt), each where it says
@@ -2396,12 +2400,16 @@ async function _doInit() {
         registerCharacterCommands();   // LOCAL PATCH (Miinthe, 2026-10-04): characters own their folders (WIP commands)
         try { initMeroTab(); } catch (err) { console.warn('[DLE] Mero tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
         try { initBar(); } catch (err) { console.warn('[DLE] bar skipped:', err?.message || err); }   // overhaul 2a (2026-10-15)
+        try { initNotes(); } catch (err) { console.warn('[DLE] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
+        try { initRegenWatch(); } catch (err) { console.warn('[DLE] regenerate watch skipped:', err?.message || err); }
+        try { initWorld(); } catch (err) { console.warn('[DLE] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)
         try { initReplyMenu(); } catch (err) { console.warn('[DLE] reply menu skipped:', err?.message || err); }   // overhaul 2a
         try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
         // LOCAL PATCH (Miinthe, 2026-10-04): Re-evaluate + swipe (WIP command; its real home is the DeepLore bar)
         import('./src/reevaluate.js').then(m => m.registerReevaluateCommand()).catch(err => console.warn('[DLE] re-evaluate command not registered:', err?.message));
         _registerEs(event_types.MESSAGE_DELETED, () => {
-            reconcileTrackers({ prune: true }).catch(err => console.warn('[DLE] tracker rewind failed:', err?.message));
+            // a regenerate's delete keeps what was done by hand or by the world (regen-pure.js, Miinthe 2026-10-19)
+            reconcileTrackers({ prune: true, keep: keepForDelete() }).catch(err => console.warn('[DLE] tracker rewind failed:', err?.message));
         });
         _registerEs(event_types.CHAT_CHANGED, () => {
             setTimeout(async () => {

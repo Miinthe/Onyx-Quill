@@ -2,6 +2,8 @@
 
 All mutable state lives in `src/state.js`. This doc covers the state architecture, every variable's scope, the observer pattern, and the full CHAT_CHANGED reset sequence.
 
+> **This fork:** the storyboard, trackers, the Cast and Mero keep their own state outside `state.js` (mostly in `chat_metadata` and `extension_settings`): see `docs/storyboard/9 storyboard as built.md` §1 for where each piece is kept, and `src/board-live.js`, `src/trackers.js`, `src/board-store.js`, `src/mero.js` for the code.
+
 ---
 
 ## Architecture
@@ -112,7 +114,7 @@ under `multiVaultConflictResolution='all'` (CLAUDE.md trackerKey invariant).
 ### Librarian State
 | Variable | Type | Reset scope | Writers | Readers |
 |---|---|---|---|---|
-| `loreGaps` | `array` | Chat (hydrated) | persistGaps, CHAT_CHANGED | drawer librarian tab |
+| `loreGaps` | `array` | Chat (hydrated) | persistGaps, CHAT_CHANGED | drawer librarian tab (hidden in this fork), Mero › Requests (`src/mero-window.js`) |
 | `loreGapSearchCount` | `number` | Generation (→0) | onGenerate (agentic dispatch), searchLoreAction | max search limit |
 | `librarianSessionStats` | `{searchCalls, flagCalls, estimatedExtraTokens}` | **Session** (NOT reset) | librarian-tools.js | drawer footer |
 | `librarianChatStats` | `{searchCalls, flagCalls, estimatedExtraTokens}` | Chat (→zeroed) | librarian-tools.js, CHAT_CHANGED | drawer (settings popup readout only — NOT footer) |
@@ -202,7 +204,7 @@ Each observable is a `Set<() => void>`. Registration returns an unsubscribe func
 | Generation lock | `onGenerationLockChanged` | `notifyGenerationLockChanged` | setGenerationLock | drawer status |
 | Field definitions | `onFieldDefinitionsUpdated` | `notifyFieldDefinitionsUpdated` | setFieldDefinitions | drawer gating tab, rule builder |
 | Indexing state | `onIndexingChanged` | `notifyIndexingChanged` | setIndexing | drawer status |
-| Lore gaps | `onLoreGapsChanged` | `notifyLoreGapsChanged` | setLoreGaps | drawer librarian tab |
+| Lore gaps | `onLoreGapsChanged` | `notifyLoreGapsChanged` | setLoreGaps | drawer librarian tab (hidden), Mero › Requests (`src/mero-window.js`) |
 | Claude auto-effort **(DORMANT, gotcha #82)** | `onClaudeAutoEffortChanged` | (inline in setter) | ~~setClaudeAutoEffortState~~ no live caller | drawer chip, settings banner (dormant) |
 | Pipeline phase | `onPipelinePhaseChanged` | `notifyPipelinePhase` (via `setPipelinePhase`) | `setPipelinePhase()` | drawer status display |
 
