@@ -28,10 +28,10 @@ import {
 import { live, saveLiveState, entryText, liveStepJudgeSection } from './board-live.js';
 import { worldOf } from './world/world-pure.js';                 // the world layer (2026-10-19): the helper also reads the moment
 import { parseMoment } from './world/alive-pure.js';
-import { placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange } from './places-pure.js';   // round 3: places
+import { placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange, placeFromUserMessage } from './places-pure.js';   // round 3: places
 import { stateHelperSection, validateStateChanges, applyStateChanges, describeStateChange } from './state-pure.js';   // round 4: state + dates
 import { metersHelperSection, validateMeterChanges, applyMeterChanges, describeMeterChange, driftChanges, crossesBand } from './meters-pure.js';   // meters (2026-10-12)
-import { castHelperSection, validateCastChanges, applyCastChanges, describeCastChange, splitPeopleEvents } from './cast-pure.js';   // the Cast (2026-10-13): who comes and goes, who learns what
+import { castHelperSection, validateCastChanges, applyCastChanges, describeCastChange, splitPeopleEvents, leftBehind } from './cast-pure.js';   // the Cast (2026-10-13): who comes and goes, who learns what
 import { placeOf, trackerOf } from './board-model-pure.js';
 import { handleFinds } from './board-grow.js';   // collections that grow (2026-10-04)
 import { helperSection, validateCollectionChanges, applyCollectionChanges, undoCollectionChange, describeCollectionChange } from './collections-pure.js';
@@ -172,7 +172,13 @@ export async function runAutoTrack(chatMessages, type, signal) {
     }
     // Collections: checked against the state as it is now (Miinthe may have changed it meanwhile).
     const finds = [];   // collections that grow: new things (board-grow.js)
-    const colApplied = [...applyState(state, dates, messages), ...applyPlaces(places, messages), ...applyCast(cast, learns, messages), ...applyCollections(items, money, messages, finds), ...applyMeters(meters, messages)];
+    const Lq = live();   // the places safety net: her own message moves the scene when the helper said nothing (Miinthe, 2026-10-19)
+    const placesIn = Lq ? [...places, ...placeFromUserMessage(Lq.board, Lq.state, messages, places)] : places;
+    const stateApplied = applyState(state, dates, messages), placesApplied = applyPlaces(placesIn, messages);
+    // people stay behind when the scene moves without them (Miinthe, 2026-10-19) — after the place move, before the Cast's own changes
+    const Lp = placesApplied.length ? live() : null;
+    const behind = Lp ? leftBehind(Lp.board, Lp.state, placesApplied, messages, cast, ch => describePlaceChange(Lp.board, ch).replace(/^.*the scene is now at\s*/, '')) : [];
+    const colApplied = [...stateApplied, ...placesApplied, ...applyCast([...cast, ...behind], learns, messages), ...applyCollections(items, money, messages, finds), ...applyMeters(meters, messages)];
     if (finds.length) colApplied.push(...await handleFinds(finds, lastMessageIndex()));
     // LOCAL PATCH (Miinthe, 2026-10-05) — Mero's 📬: a move the board says to ask about (requests-pure.js askLevel: the
     // step's own asking, else the tracker's "Ask me at"; low by default) is not applied — it becomes a card, and the

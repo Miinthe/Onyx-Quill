@@ -140,6 +140,29 @@ const confOf = c => (['high', 'medium', 'low'].includes(low(c)) ? low(c) : null)
  *   { kind: 'cast', key, col, person, field: 'here', from, to, quote, msgIdx, reason, confidence }
  *   { kind: 'cast', key, col, person, field: 'knows', add: { id, fact, how, quote, i }, quote, ... }
  */
+/**
+ * LOCAL PATCH (Miinthe, 2026-10-19): "people usually leave when the scene moves unless they go somewhere else as group".
+ * When a place move happened this turn, everyone in the scene who isn't named in the user's newest message (and isn't
+ * already reported) stays behind — unless that message says the group goes together. Returns presence changes in the
+ * helper's own shape ({ person, here: false, quote, reason, confidence }), quoting the place move, so they are checked,
+ * logged and undoable like any other.
+ * @param placeChanges the applied place moves ({ quote, to }), placeName(change) → the new place's name
+ */
+export function leftBehind(board, st, placeChanges, messages, presence = [], placeName = () => 'somewhere else') {
+    const moves = arr(placeChanges).filter(c => c?.quote);
+    if (!moves.length) return [];
+    const userMsg = [...arr(messages)].reverse().find(m => m?.is_user)?.mes || '';
+    if (/\b(we all|all of us|everyone|everybody|together|the (?:whole )?group|the others (?:come|follow))\b/i.test(userMsg)) return [];
+    const reported = new Set(arr(presence).map(c => String(c?.person ?? '').trim().toLowerCase()));
+    const named = n => new RegExp(`(^|[^\\p{L}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\p{L}])`, 'iu').test(userMsg);
+    const out = [];
+    for (const cast of runningCasts(board, st)) for (const p of arr(cast.people)) {
+        if (!personNow(st, cast, p).here || reported.has(p.name.toLowerCase()) || named(p.name)) continue;
+        out.push({ person: p.name, here: false, quote: moves[0].quote, reason: `stayed behind when the scene moved to ${placeName(moves[0])}`, confidence: 'high' });
+    }
+    return out;
+}
+
 export function validateCastChanges(presence, learns, board, st, messages) {
     const rejected = [], changes = [];
     const best = new Map();   // person → the presence change from the newest line

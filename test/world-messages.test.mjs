@@ -25,6 +25,7 @@ let id = 0; const nid = () => 'm' + (++id);
 
 test('people and keys', () => {
     assertEqual(peopleOf(BOARD, ST).map(x => x.key), [K, S]);
+    assertEqual(peopleOf({ ...BOARD, world: { ...(BOARD.world || {}), people: { [K]: { out: true } } } }, ST).map(x => x.key), [S], 'someone taken out of the world is not in it');
     assertEqual(personByKey(BOARD, S).p.name, 'Spoon');
     assertEqual(personByKey(BOARD, 'c1:gone'), null);
     assertEqual(convKey(K, USER), convKey(USER, K));

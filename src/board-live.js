@@ -11,6 +11,7 @@
  */
 import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { saveMetadataDebounced, getContext } from '../../../../extensions.js';
+import { user_avatar } from '../../../../personas.js';
 import { BOARD_KEY } from './storyboard-pure.js';
 import { setExternalConditions } from './conditions-pure.js';
 import { normalizeBoard, normalizeState, freshState, holds, condText, fromEngineList, certain, stepEntries, capLog } from './board-model-pure.js';
@@ -21,7 +22,7 @@ import { placeLines, filterByPlace, pinnedHere, locationValue } from './places-p
 import { stateLines } from './state-pure.js';   // round 4: state + dates
 import { meterLines } from './meters-pure.js';   // meters (2026-10-12): the band, never the number
 import { castLines, castJudgeLines, castPins, presentNames, arrivalLines, offscreenLines } from './cast-pure.js';   // the Cast (2026-10-13): who is here, their plans and knowledge
-import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection } from './board-links-pure.js';   // what the writer gets (2026-10-04)
+import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, steerLines } from './board-links-pure.js';   // what the writer gets (2026-10-04)
 import { vaultIndex } from './state.js';
 import { boardStore } from './board-store.js';   // engine on v2, step 5: one board store
 
@@ -195,8 +196,22 @@ export function syncLivePresent() {
 /** The judge entries' text (a place tracker's rules for the helper). */
 export const entryText = title => {
     const e = (vaultIndex || []).find(x => x.title === title);
-    return e ? (e.content || e.summary || '') : '';
+    return e ? fillNames(e.content || e.summary || '') : '';
 };
+
+// LOCAL PATCH (Miinthe, 2026-10-19): the helper got judge notes with a literal {{user}} and had to guess who that is —
+// writing a scene as Mei could have moved the Ladder. {{user}} is found by the chat's persona ID (names repeat, IDs
+// don't: she has four personas called "Lucan"), its name looked up from that ID; {{char}} is the chat's character.
+export function playerName(ctx = getContext(), avatar = user_avatar) {
+    const byId = ctx?.powerUserSettings?.personas?.[avatar];
+    return String(byId ?? ctx?.name1 ?? '').trim();
+}
+export function fillNames(text, user = playerName(), char = String(getContext()?.name2 ?? '').trim()) {
+    let t = String(text ?? '');
+    if (user) t = t.replace(/\{\{user\}\}/gi, user);
+    if (char) t = t.replace(/\{\{char\}\}/gi, char);
+    return t;
+}
 
 /** The tracker helper's step rules: judge entries of the next steps, the detours of the current ones. */
 export function liveStepJudgeSection() {
@@ -219,7 +234,7 @@ export function liveBoardPins() {
  */
 export function liveWriterLines() {
     const L = live();
-    return L ? [...stateLines(L.board, L.state), ...placeLines(L.board, L.state), ...castLines(L.board, L.state), ...awayLines(), ...arrivalLines(L.board, L.state, lastIndex()), ...offscreenLines(L.board, L.state, lastIndex()), ...meterLines(L.board, L.state, lastIndex()), ...collectionLines(L.board, L.state), ...toFindLines(L.board, L.state), ...justHappenedLines(L.board, L.state, lastIndex()), ...guidanceLines(L.board, L.state, entryText)] : [];
+    return L ? [...stateLines(L.board, L.state), ...placeLines(L.board, L.state), ...castLines(L.board, L.state), ...awayLines(), ...arrivalLines(L.board, L.state, lastIndex()), ...offscreenLines(L.board, L.state, lastIndex()), ...meterLines(L.board, L.state, lastIndex()), ...collectionLines(L.board, L.state), ...toFindLines(L.board, L.state), ...justHappenedLines(L.board, L.state, lastIndex()), ...guidanceLines(L.board, L.state, entryText), ...steerLines(L.board, L.state)] : [];
 }
 /** The last AI reply before the one being written (a final AI message is the one a swipe redoes). */
 const lastIndex = () => {

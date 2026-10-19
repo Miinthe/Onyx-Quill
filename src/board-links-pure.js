@@ -110,6 +110,7 @@ export function guidanceLines(board, st, contentOf = () => '') {
  * (and of each way of a fork it waits at), and the detours of the step it is at. `judgeText(title)`
  * returns an entry's text. Empty when there is nothing to say.
  */
+const JUDGE_CLIP = 2200;   // her longest Dragon rung note is ~2000 characters
 export function stepJudgeSection(board, st, judgeText = () => '') {
     const lines = [];
     const rule = (o) => arr(o?.entries).filter(title => kindOf(o, title) === 'judge').map(title => String(judgeText(title) || '').replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
@@ -120,12 +121,33 @@ export function stepJudgeSection(board, st, judgeText = () => '') {
         if (k < 0) continue;
         const cur = t.steps[k];
         const open = arr(cur.fork?.branches).length && !(st.trackers[t.id].forks || {})[cur.id];
-        if (open) for (const b of cur.fork.branches) { const r = rule(b); if (r) lines.push(`- ${t.name}, way "${b.name}" after ${cur.name}: ${clip(r, 600)}`); }
+        // LOCAL PATCH (Miinthe, 2026-10-19): judge text up to 2200 characters (her Dragon rung notes run long), and a
+        // detour's own judge entries reach the helper too (before, only its name did — Nuisance was set on a cheeky greeting)
+        if (open) for (const b of cur.fork.branches) { const r = rule(b); if (r) lines.push(`- ${t.name}, way "${b.name}" after ${cur.name}: ${clip(r, JUDGE_CLIP)}`); }
         const next = !open && t.steps[k + 1];
-        if (next) { const r = rule(next); if (r) lines.push(`- ${t.name} → ${next.name}: ${clip(r, 600)}`); }
-        const det = arr(cur.detours).map(d => d.name);
-        if (det.length) lines.push(`- ${t.name} at ${cur.name}: possible detours (aside) — ${det.map(d => `"${d}"`).join(', ')}`);
+        if (next) { const r = rule(next); if (r) lines.push(`- ${t.name} → ${next.name}: ${clip(r, JUDGE_CLIP)}`); }
+        const det = arr(cur.detours);
+        if (det.length) lines.push(`- ${t.name} at ${cur.name}: possible detours (aside) — ${det.map(d => `"${d.name}"`).join(', ')}`);
+        for (const d of det) { const r = rule(d); if (r) lines.push(`- ${t.name}, aside "${d.name}" (set or clear it): ${clip(r, JUDGE_CLIP)}`); }
     }
     return lines.length ? ['', 'STEP RULES (what counts as reaching a step — only move when the messages plainly meet it)', ...lines].join('\n') : '';
 }
 
+/**
+ * LOCAL PATCH (Miinthe, 2026-10-19) — steering, when the board's switch is on: per running step tracker, the step it is heading
+ * toward, told to the writer gently. Miinthe: "non intruding, just kind of letting my rp model know the next step, but also not
+ * to be dumb and just rush into it". Never at an open fork (that would pick a way); never for an ended tracker.
+ */
+export function steerLines(board, st) {
+    if (board?.steer !== true) return [];
+    const out = [];
+    for (const t of arr(board?.trackers)) {
+        if (t.kind !== 'steps' || !isActive(board, st, t)) continue;
+        const k = t.steps.findIndex(s => s.id === st?.trackers?.[t.id]?.at);
+        if (k < 0 || k >= t.steps.length - 1) continue;
+        const cur = t.steps[k];
+        if (arr(cur.fork?.branches).length && !(st.trackers[t.id].forks || {})[cur.id]) continue;
+        out.push(`HEADING TOWARD (${t.name}): ${t.steps[k + 1].name} — where this line is going next. Let the story drift that way only when it has earned it; it may take many replies. Don't rush it, announce it, or jump to it; this reply simply continues the scene.`);
+    }
+    return out;
+}

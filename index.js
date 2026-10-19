@@ -107,6 +107,7 @@ import { clearSessionActivityLog, persistGaps } from './src/librarian/librarian-
 import { injectLibrarianDropdown, removeLibrarianDropdown } from './src/librarian/librarian-ui.js';
 import { clearSessionState as clearLibrarianSessionState } from './src/librarian/librarian-session.js';
 import { runAgenticLoop } from './src/librarian/agentic-loop.js';
+const REPLY_TAKEOVER = false;   // Miinthe 2026-10-05: the Librarian's reply takeover is off (see the agentic dispatch below)
 import { isToolCallingSupported, getActiveMaxTokens, isReasoningOnlyModel, getResolvedModel, isUnderlyingClaude } from './src/librarian/agentic-api.js';
 import { buildChatMessages } from './src/librarian/agentic-messages.js';
 import {
@@ -1945,7 +1946,11 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         if (suppressNextAgenticLoop) {
             setSuppressNextAgenticLoop(false);
             if (settings.debugMode) console.debug('[DLE] Agentic loop suppressed for this generation (one-shot)');
-        } else if (settings.librarianEnabled && isToolCallingSupported()
+        // LOCAL PATCH (Miinthe, 2026-10-05, built 2026-10-19): "Librarian: the reply takeover off now, its code deleted later".
+        // The agentic loop wrote the reply itself with search/write tools; LM Studio's Gemma template for MeroMero v2 can't
+        // render tools, so every reply on her account failed ("Error rendering prompt with jinja template"). SillyTavern
+        // writes the reply; the rest of the Librarian is untouched.
+        } else if (REPLY_TAKEOVER && settings.librarianEnabled && isToolCallingSupported()
             && type !== 'continue' && type !== 'append' && type !== 'appendFinal') {
             // BUG-AUDIT (Fix 30): pass `true` so ST's runGenerationInterceptors breaks
             // the chain immediately. Plain abort() flags aborted=true but lets every

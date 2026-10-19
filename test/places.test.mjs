@@ -7,6 +7,7 @@
  * Run: npm run test:places
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
+import { placeFromUserMessage } from '../src/places-pure.js';
 import { normalizeBoard, freshState, holds } from '../src/board-model-pure.js';
 import {
     placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange, locationValue,
@@ -110,6 +111,22 @@ test('cloud bug hunt 2026-10-04: with the scene in the Kitchen, its spots are no
     const b = board(), st = freshState(b);
     st.places.where = 'kitchen';
     assertEqual(placeLines(b, st), ['PLACE: Kitchen', 'KNOWN PLACES, NOT HERE: Garden, Cellar'], 'Counter and Pantry sit in the kitchen');
+});
+
+
+test('safety net: her own message moves the scene when the helper said nothing — not talk, plans or hearsay', () => {
+    const b = normalizeBoard({ v: 2, name: 'D', trackers: [{ id: 'where', kind: 'place', name: 'Where', places: [
+        { id: 'throne-hall', name: 'Throne Hall' }, { id: 'garden', name: 'Palace Garden' }, { id: 'kitchens', name: 'Kitchens' }, { id: 'teahouse', name: 'Lantern Teahouse' }] }] });
+    const st = freshState(b);   // here: Throne Hall
+    const u = t => [{ mes: 'Some reply.', is_user: false, _i: 3 }, { mes: t, is_user: true, _i: 4 }];
+    const g = placeFromUserMessage(b, st, u('*Later, Ottilie and I walk together to the palace garden.*'));
+    assertEqual(g.length, 1); assertEqual(g[0].place, 'Palace Garden'); assertEqual(g[0].tracker, 'Where');
+    assert(g[0].quote.includes('walk together to the palace garden'), g[0].quote);
+    assertEqual(placeFromUserMessage(b, st, u('That evening I head down to the kitchens alone.'))[0].place, 'Kitchens');
+    assertEqual(placeFromUserMessage(b, st, u("I'm told the Lantern Teahouse serves the best tea. Perhaps one day you'll let me go to the Lantern Teahouse.")).length, 0, 'hearsay and a wish');
+    assertEqual(placeFromUserMessage(b, st, u('Tomorrow I will walk to the kitchens.')).length, 0, 'a plan');
+    assertEqual(placeFromUserMessage(b, st, u('I walk to the throne hall.')).length, 0, 'already here');
+    assertEqual(placeFromUserMessage(b, st, u('I walk into the kitchens.'), [{ tracker: 'Where', place: 'Kitchens' }]).length, 0, 'the helper already reported it');
 });
 
 summary('places');

@@ -179,3 +179,37 @@ export function placeLines(board, st) {
     }
     return out;
 }
+
+/**
+ * LOCAL PATCH (Miinthe, 2026-10-19) — the safety net for places. In her Dragon test the helper, busy with the Cast, the world and
+ * five trackers, left out its "places" part and the scene stayed put while she walked to the garden and the kitchens. When
+ * the helper says nothing for a place tracker, HER OWN newest message may still move the scene: a movement word, then
+ * to / into / toward, then one of the tracker's places — in one sentence, and not a plan, a wish or hearsay.
+ * Returns changes in the helper's own shape, so they are checked, logged and undoable like any other.
+ */
+const MOVE = /\b(walk|walks|walked|walking|go|goes|went|going|head|heads|headed|heading|follow|follows|followed|step|steps|stepped|return|returns|returned|hurry|hurries|hurried|run|runs|ran|wander|wanders|wandered|stroll|strolls|strolled|slip|slips|slipped|move|moves|moved|retire|retires|retired|make my way|make our way|makes (?:his|her|their) way|made (?:my|our|his|her|their) way|lead|leads|led)\b/i;
+const NOT_NOW = /\b(tomorrow|later today|one day|someday|some day|perhaps|maybe|will|would|could|should|might|want to|wants to|plan|plans|planning|thinking of|if|i'm told|i am told|i hear|i heard|they say)\b/i;
+export function placeFromUserMessage(board, st, messages, reported = []) {
+    const user = [...arr(messages)].reverse().find(m => m?.is_user);
+    if (!user?.mes) return [];
+    const out = [];
+    const told = new Set(arr(reported).map(r => String(r?.tracker ?? '').trim().toLowerCase()));
+    const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const t of runningPlaces(board, st)) {
+        if (told.has(t.name.toLowerCase())) continue;
+        const here = hereOf(st, t);
+        let best = null;
+        for (const sentence of String(user.mes).split(/(?<=[.!?…])\s+|\n+|\*/)) {
+            if (!MOVE.test(sentence) || NOT_NOW.test(sentence)) continue;
+            for (const p of t.places) {
+                const names = [p.name, p.name.replace(/^the\s+/i, '')].filter(Boolean);
+                for (const n of names) {
+                    const m = sentence.match(new RegExp(`\\b(?:to|into|toward|towards|inside)\\s+(?:the\\s+)?${esc(n)}\\b`, 'i'));
+                    if (m && (!best || n.length > best.len)) best = { p, len: n.length, quote: sentence.trim() };
+                }
+            }
+        }
+        if (best && best.p.id !== here) out.push({ tracker: t.name, place: best.p.name, quote: best.quote, reason: 'your own message moves the scene there (the helper said nothing about it)', confidence: 'high' });
+    }
+    return out;
+}

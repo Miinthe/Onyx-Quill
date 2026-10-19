@@ -262,3 +262,5 @@
 .dle-wd-gform .btns { display: flex; gap: 6px; }
 .dle-wd-meet .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .dle-wd-row .nm .pin { color: var(--dk-wait); margin-right: 4px; font-size: .9em; }
+
+.dle-wd-newchat { width: 100%; box-sizing: border-box; margin: 0 0 8px; }

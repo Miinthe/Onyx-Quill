@@ -126,7 +126,8 @@ function normStep(s) {
     const o = typeof s === 'string' ? { name: s } : isObj(s) ? s : { name: 'Step' };
     const out = { id: o.id, name: str(o.name, 'Step').trim() || 'Step', ...entryPart(o), needs: conds(o.needs), blocks: conds(o.blocks) };
     const det = withIds(arr(o.detours).map(d => (typeof d === 'string' ? { name: d } : d)).filter(isObj));
-    if (det.length) out.detours = det.map(d => ({ id: d.id, name: str(d.name, 'Detour'), ...entryPart(d), ...note(d) }));
+    // `once` (Miinthe, 2026-10-19: "limiting the fall back to one"): once left, the helper never sets it again in that chat
+    if (det.length) out.detours = det.map(d => ({ id: d.id, name: str(d.name, 'Detour'), ...entryPart(d), ...note(d), ...(d.once === true ? { once: true } : {}) }));
     if (isObj(o.fallTo) && o.fallTo.step) out.fallTo = { step: String(o.fallTo.step), ...(o.fallTo.detour ? { detour: String(o.fallTo.detour) } : {}) };
     if (o.oneWay === true) out.oneWay = true;
     if (['relaxed', 'normal', 'strict'].includes(o.strict)) out.strict = o.strict;
@@ -236,6 +237,7 @@ export function normalizeBoard(raw, fallbackName = 'Storyboard') {
         v: BOARD_VERSION, name: str(b.name, fallbackName) || fallbackName,
         folders: arr(b.folders).map(String), applied: arr(b.applied).map(String), off: arr(b.off).map(String),
         mode: b.mode === 'immersion' ? 'immersion' : 'director',
+        ...(b.steer === true ? { steer: true } : {}),   // LOCAL PATCH (Miinthe, 2026-10-19): the writer hears the next step, gently (board-links-pure steerLines)
         ask: { level: ['rarely', 'some', 'often'].includes(b.ask?.level) ? b.ask.level : 'some', found: b.ask?.found !== false, unsure: b.ask?.unsure !== false, suggest: b.ask?.suggest === true },
         exclusive: arr(b.exclusive).filter(c => isObj(c) && ids.has(c.a) && ids.has(c.b) && c.a !== c.b)
             .map(c => ({ a: c.a, b: c.b, ...(num(c.color) >= 1 && num(c.color) <= 6 ? { color: Math.round(num(c.color)) } : {}), ...(c.own === true ? { own: true } : {}), ...note(c) })),
@@ -656,6 +658,7 @@ export function toEngineList(board, st, prev = []) {
         const p = st?.trackers?.[t.id] || {}, keep = old.find(x => x.id === t.id) || {};
         const index = Math.max(0, stepIndex(t, p.at ?? p.waitAt));
         const aside = p.aside ? stepOf(t, p.at)?.detours?.find(d => d.id === p.aside)?.name ?? null : p.asideText || null;
+        const onceAsides = [...new Set(t.steps.flatMap(s => arr(s.detours).filter(d => d.once === true).map(d => d.name)))];   // detours the helper may set once per chat
         const col = c => (c.color ? { color: c.color } : {});    // the line's colour on the board
         const sName = (tid, sid) => stepOf(trackerOf(board, tid), sid)?.name;
         const bName = (tid, sid, bid) => branchOf(trackerOf(board, tid), sid, bid)?.name;
@@ -674,7 +677,7 @@ export function toEngineList(board, st, prev = []) {
                 ...(b.then ? { then: { kind: b.then.kind, ...(b.then.step ? { step: sName(b.then.tracker || t.id, b.then.step) } : {}), ...(b.then.tracker ? { tracker: b.then.tracker } : {}) } } : {}) })),
         }]));
         const took = Object.fromEntries(Object.entries(p.forks || {}).map(([sid, bid]) => [stepOf(t, sid)?.name, branchOf(t, sid, bid)?.name]).filter(([a, b]) => a && b));
-        return { ...(isObj(p.memo) ? structuredClone(p.memo) : {}), ...keep, id: t.id, name: t.name, steps: t.steps.map(s => s.name), direction: t.direction, skip: t.skip, index, aside,
+        return { ...(isObj(p.memo) ? structuredClone(p.memo) : {}), ...keep, id: t.id, name: t.name, steps: t.steps.map(s => s.name), direction: t.direction, skip: t.skip, index, aside, ...(onceAsides.length ? { onceAsides } : {}),
             ...(starts.length ? { starts } : { starts: undefined }), ...(needs.length ? { needs } : { needs: undefined }), ...(t.onFall === 'pause' ? { onFall: 'pause' } : { onFall: undefined }),
             ...(Object.keys(forks).length ? { forks } : { forks: undefined }), ...(Object.keys(took).length ? { took } : { took: undefined }),
             ...(t.starts.length ? { started: p.at != null, ...(p.startedAt ? { startedAt: p.startedAt } : {}) } : {}),

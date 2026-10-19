@@ -27,7 +27,8 @@ export const partnerIn = (conv, me) => { const [a, b] = String(conv).split('|');
 
 /** Everyone in the board's running casts: [{ key, cast, p }]. */
 export function peopleOf(board, st) {
-    return runningCasts(board, st).flatMap(cast => arr(cast.people).map(p => ({ key: keyOf(cast, p), cast, p })));
+    // someone taken out of the world (world.people[key].out) writes, posts and shows up nowhere in it — the Cast keeps them
+    return runningCasts(board, st).flatMap(cast => arr(cast.people).map(p => ({ key: keyOf(cast, p), cast, p }))).filter(x => board?.world?.people?.[x.key]?.out !== true);
 }
 /** A person by key, or null (someone removed from the board). */
 export function personByKey(board, key) {

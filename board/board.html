@@ -115,6 +115,7 @@ button { cursor: pointer; }
 .side .wmixr { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; } .side .wmixr small { color: var(--muted); }
 .side .wsu-note { padding: 8px 10px; border-radius: 8px; background: color-mix(in oklab, #ff79b0 12%, transparent); border-left: 3px solid #ff79b0; font-size: 12.5px; line-height: 1.45; }
 .side .wqh { display: flex; align-items: center; gap: 8px; width: 100%; }
+.wprow.out { opacity: .6; } .wprow.out .wpn small { color: var(--muted); }
 .side .wqh .wmute { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .wpe .wpe-when { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .wpe textarea.s { width: 100%; margin-top: 6px; resize: vertical; }
@@ -953,7 +954,8 @@ body.mode-remove .board .step, body.mode-remove .board .thead, body.mode-remove 
 .scrim .dialog:has(.ft-list) { width: min(560px, 100%); }
 .ft-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; margin: 6px 0 8px; }
 .ft-search { width: 100%; box-sizing: border-box; height: 32px; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 999px; padding: 0 12px; background: var(--desk); color: var(--ink); font: inherit; font-size: 13px; }
-.ft-list { border: 1px solid var(--line); border-radius: 10px; max-height: 300px; overflow: auto; }
+.ft-list { border: 1px solid var(--line); border-radius: 10px; max-height: 300px; min-height: 180px; overflow: auto; flex-shrink: 0; }   /* never squeezed by the Chosen chips (Miinthe, 2026-10-19) */
+.ft-sel { max-height: 100px; overflow: auto; flex-shrink: 0; }   /* many chosen folders scroll here instead */
 .ft-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 10px; align-items: center; padding: 4px 10px; border-bottom: 1px solid var(--line); }
 .ft-row:last-child { border-bottom: 0; }
 .ft-row.on { background: var(--accent-soft); }
@@ -6260,6 +6262,7 @@ function wireWorldMain(el) {
   // the compact people list: a dial cycles low → avg → high, mute toggles, ✎ opens one person
   const setP = (k, patch) => { const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }), ...patch }; if (patch.muted === false) delete ppl[k].muted; setWorld({ people: ppl }); };
   el.querySelectorAll('[data-dial]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.dial.split('|'); const v = Number(dialOf(worldDoc().people?.[k], d)); setP(k, { [d]: v % 3 + 1 }); });
+  el.querySelectorAll('[data-wout]').forEach(b => b.onclick = () => { const k = b.dataset.wout, on = !(worldDoc().people?.[k]?.out === true); const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }) }; if (on) ppl[k].out = true; else delete ppl[k].out; setWorld({ people: ppl }); toast(on ? `${wName(k)} is out of the world — still in your scenes. ↩ brings them back.` : `${wName(k)} is back in the world.`); });
   el.querySelectorAll('[data-mute]').forEach(b => b.onclick = () => { const k = b.dataset.mute, on = !(worldDoc().people?.[k]?.muted === true); setP(k, { muted: on }); toast(on ? `${wName(k)} is muted: a break from the world until you unmute them.` : `${wName(k)} is back: what waited for them gets answered.`); });
   el.querySelectorAll('[data-never]').forEach(b => b.onclick = () => {
     const [a, o] = b.dataset.never.split('|'), w = worldDoc(), on = !neverOn(w, a, o);
@@ -6297,11 +6300,13 @@ const neverOn = (w, a, b) => !!((w.people?.[a]?.never || []).includes(b) || (w.p
 const neverChoices = k => [['user', wName('user')], ['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name]), ...(worldDoc().voices || []).map(v => ['v:' + v.id, v.name])].filter(([o]) => o !== k);
 function personBlock(w, k, nm, n) {
   const pp = w.people?.[k] || {}, open = wPersonOpen === k;
+  if (pp.out) return `<div class="wprow out" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn" title="${esc(nm)}">${wPic(k, nm)}${esc(nm)} <small>— not in the world</small></span><button class="wmb" data-wout="${esc(k)}" title="Bring ${esc(nm)} back into the world">↩</button></div>`;
   const dialBtn = (d, l) => { const v = Number(dialOf(pp, d)); return `<button class="wdot" data-dial="${esc(k)}|${d}" title="${l}: ${DIAL_WORD[v]} — tap to change" aria-label="${l}: ${DIAL_WORD[v]}"><b>${l[0]}</b><i>${'●'.repeat(v)}<span>${'●'.repeat(3 - v)}</span></i></button>`; };
   return `<div class="wprow${open ? ' open' : ''}" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn" title="${esc(nm)}">${wPic(k, nm)}${esc(nm)}${pp.quirks || (pp.interests || []).length ? '<small> ✎</small>' : ''}</span>
     <span class="wpd">${DIALS.map(([d, l]) => dialBtn(d, l)).join('')}</span>
     <button class="wmb${pp.muted ? ' on' : ''}" data-mute="${esc(k)}" aria-pressed="${pp.muted === true}" title="${pp.muted ? 'Muted — tap to unmute' : 'Mute: a break from the world — writes, answers and posts nothing until you unmute them (still hears what goes around)'}">🔇</button>
-    <button class="wmb" data-wp-open="${esc(k)}" aria-expanded="${open}" title="Interests and quirks">${open ? '▴' : '✎'}</button></div>
+    <button class="wmb" data-wp-open="${esc(k)}" aria-expanded="${open}" title="Interests and quirks">${open ? '▴' : '✎'}</button>
+    <button class="wmb" data-wout="${esc(k)}" title="Not in the world: ${esc(nm)} stays in your scenes, but writes, posts and shows up nowhere in the world">✕</button></div>
     ${open ? `<div class="wpx"><input class="s wi" data-wi="${esc(k)}" value="${esc((pp.interests || []).join(', '))}" placeholder="Cares about (comma between): memes, photos of her own life">
     <textarea class="s wq" data-wq="${esc(k)}" rows="2" placeholder="Quirks, e.g. sends several short texts in a row · spells badly · loves emoji · never uses capitals">${esc(pp.quirks || '')}</textarea>
     <div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>` : ''}`;
@@ -6455,6 +6460,7 @@ function renderBoardPanel(el) {
   el.innerHTML = `<span class="kind">Board</span><h2>${esc(cur)}</h2>
     ${card('Folders it reads', `<div class="fchips">${doc.folders.map(f => `<span class="fchip">${esc(folderLabel(f))}<button data-frm="${esc(f)}" aria-label="Stop reading ${esc(f)}">✕</button></span>`).join('')}</div><div class="fbgrid" style="padding-bottom:8px"><button class="btn" id="b-tree">Choose folders…</button></div><span class="mini" style="display:block;padding-bottom:8px">The board never looks outside these. Each tracker saves its new entries into one of them.</span>`)}
     ${card('Mode', line('While playing', 'Director: notices and everything visible · Immersion: no notices, spoilers hidden', segH('b-mode', [['director', 'Director'], ['immersion', 'Immersion']], doc.mode || 'director'), false, true))}
+    ${card('Steering', line('Let the writer know the next step', 'gently: where each story line is heading, never rushed or announced', swH('b-steer', doc.steer === true), doc.steer === true))}
     ${card('How often may the AI ask you?', line('Asks', 'whatever it doesn\'t ask, it decides on its own and logs — with Undo', segH('b-ask', MAIL_LEVELS, askCfg().level), false, true)
       + line('New items and clues', 'a key pocketed, a clue found', swH('b-afound', askCfg().found && askCfg().level !== 'rarely'), askCfg().found)
       + line('Moves it isn\'t sure about', 'the confidence line is set per tracker', swH('b-aunsure', askCfg().unsure && askCfg().level !== 'rarely'), askCfg().unsure)
@@ -6472,6 +6478,7 @@ function renderBoardPanel(el) {
   wireSw(el, 'b-asugg', on => { a.suggest = on; if (on) a.level = 'often'; touch(); });
   el.querySelectorAll('[data-offrm]').forEach(b => b.onclick = () => { doc.off = (doc.off || []).filter(x => x !== b.dataset.offrm); touch(); });
   el.querySelector('#b-off').onchange = e => { if (e.target.value) { (doc.off ||= []).push(e.target.value); touch(); } };
+  wireSw(el, 'b-steer', on => { if (on) doc.steer = true; else delete doc.steer; touch(); toast(on ? 'Steering on: the writer hears where each story line is heading, gently.' : 'Steering off: the writer only knows where the story stands.'); });
   wireSeg(el, 'b-mode', v => { doc.mode = v; touch(); toast(v === 'immersion' ? 'Immersion: no notices while playing; spoilers hidden on the board.' : 'Director: notices on, everything visible.'); });
   el.querySelector('#b-apply').onclick = () => act('apply');
   const nb2 = el.querySelector('#n-edit'); if (nb2) nb2.onclick = () => noteDialog(doc, 'the board');
@@ -6764,9 +6771,11 @@ function renderSide0(el) {
       ${entryCard(d, t, d.name)}
       <p class="note">Active only while the detour is on — the writer knows the story is at ${esc(st.name)}, <i>${esc(d.name)}</i>.</p>
       ${card('Name', `<div class="ln"><input class="s" id="d-name" value="${esc(d.name)}" style="width:100%"></div>`)}
+      ${card('How often', line('Only once per story', 'once the story has left it, the AI never sets it again in that chat — you still can, by hand', swH('d-once', d.once === true), d.once === true))}
       ${noteCard(d)}
       <div class="btnrow" style="margin-top:4px"><button id="d-del">Remove detour</button></div>`;
     el.querySelector('#d-name').onchange = e => renameDetour(t, st, d, e.target.value);
+    wireSw(el, 'd-once', on => { if (on) d.once = true; else delete d.once; touch(); toast(on ? `${d.name}: only once per story.` : `${d.name}: as often as the story goes there.`); });
     el.querySelector('#d-del').onclick = () => removeDetour(t, st, d);
     wireEntrySection(el, d, t, d.name); wireNote(d, d.name); return;
   }

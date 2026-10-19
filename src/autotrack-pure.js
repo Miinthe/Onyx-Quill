@@ -155,6 +155,11 @@ export function validateChanges(changes, trackers, messages, unmetNeedsOf = () =
         const lastMove = Number.isFinite(t.lastMoveAt) ? t.lastMoveAt : Math.max(-1, ...(t.journal || []).map(e => (Number.isFinite(e?.i) ? e.i : -1)));
         const at = messages[msgIdx]?._i;
         if (Number.isFinite(at) && at <= lastMove) { rejected.push({ tracker: t.name, reason: 'older than its last move' }); continue; }
+        // LOCAL PATCH (Miinthe, 2026-10-19): the reply that answers the message a move was made on is the same moment
+        // retold, not news — in her Dragon test the Ladder went Known Envoy → Liked Envoy on Corvin's reply restating
+        // the "weeks pass" line that had just moved it. The next real development can still move it.
+        const mv = messages.find(m => m?._i === lastMove), nx = messages.find(m => m?._i === lastMove + 1);
+        if (Number.isFinite(at) && at === lastMove + 1 && mv?.is_user === true && nx?.is_user === false) { rejected.push({ tracker: t.name, reason: 'the reply to its last move (the same moment)' }); continue; }
 
         const fromIndex = Math.min(Math.max(t.index, 0), t.steps.length - 1);
         // a fork's branch (forks-pure.js): only while the tracker waits at that fork
@@ -183,6 +188,9 @@ export function validateChanges(changes, trackers, messages, unmetNeedsOf = () =
         let toAside = toIndex !== fromIndex ? null : fromAside;
         if (typeof c.aside === 'string') toAside = c.aside.trim() || null;
 
+        // LOCAL PATCH (Miinthe, 2026-10-19): a detour marked "only once" the story has already been in is never set again by the helper
+        const low = x => String(x ?? '').trim().toLowerCase();
+        if (toAside && low(toAside) !== low(fromAside) && (t.onceAsides || []).some(n => low(n) === low(toAside)) && (t.journal || []).some(e => low(e?.aside) === low(toAside))) { rejected.push({ tracker: t.name, reason: `${toAside} only once — the story has already been there` }); continue; }
         const prev = best.get(t.name);
         if (prev && prev.msgIdx > msgIdx) { rejected.push({ tracker: t.name, reason: 'an older line than another change for it' }); continue; }
         if (prev) rejected.push({ tracker: t.name, reason: 'superseded by a change from a newer line' });

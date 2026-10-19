@@ -39,11 +39,13 @@ export function normWorld(raw) {
         // each person's quirks (Miinthe, 2026-10-19: "sends multiple messages after each other. or makes spelling mistakes, or uses a lot of emojis")
         people: Object.fromEntries(Object.entries(isObj(w.people) ? w.people : {}).filter(([k, v]) => k && isObj(v))
             .map(([k, v]) => [k, { quirks: typeof v.quirks === 'string' ? v.quirks.slice(0, 600) : '', ...(v.muted === true ? { muted: true } : {}),
+                // not in the world at all (Miinthe, 2026-10-19: "I want to remove character from the world cast list") — still in the Cast's scenes
+                ...(v.out === true ? { out: true } : {}),
                 // who they never talk to (Miinthe, 2026-10-19: "don't allow this npc to dm X person" — as safety); both ways, see neverTalk
                 ...(Array.isArray(v.never) && v.never.some(x => typeof x === 'string' && x && x !== k) ? { never: [...new Set(v.never.filter(x => typeof x === 'string' && x && x !== k))].slice(0, 40) } : {}),
                 // stage 4: their dials and interests (feed-pure.js normHabits), kept once set
                 ...(['g', 'm', 'p'].some(d => v[d] != null) || (Array.isArray(v.interests) && v.interests.length) ? (({ g, m, p, interests }) => ({ g, m, p, interests }))(normHabits(v)) : {}) }])
-            .filter(([, v]) => v.quirks.trim() || v.muted || v.g != null || v.never)),
+            .filter(([, v]) => v.quirks.trim() || v.muted || v.out || v.g != null || v.never)),
         // stage 4: the story's own voices (a newspaper, a shop) and regulars (recurring locals)
         voices: normVoices(w.voices),
         // stage 5: the story's one rumor account, named per board (Miinthe: "the rumor chat name per story board sounds right")

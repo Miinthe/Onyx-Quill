@@ -155,6 +155,31 @@ test('a line older than the tracker\'s last move cannot move it again', () => {
     assertEqual(validateChanges([{ tracker: 'Relationship', step: 'Sweethearts', quote: 'We are sweethearts again, truly.' }], [handBack], fresh).moves.length, 1, 'a newer line still works');
 });
 
+test('the reply to the message a tracker just moved on cannot move it again (the same moment retold)', () => {
+    const msgs = [
+        { mes: 'Weeks pass. You greet me yourself now.', is_user: true, _i: 7 },
+        { mes: 'He began greeting him himself, as a known quantity.', is_user: false, _i: 8 },
+        { mes: 'We walk into the garden.', is_user: true, _i: 9 },
+    ];
+    const known = moveTo(rel(), 1, 7);   // moved on the user's message 7
+    const r = validateChanges([{ tracker: 'Relationship', step: 'Friends', quote: 'He began greeting him himself' }], [known], msgs);
+    assertEqual(r.moves.length, 0, 'the echo does not move it');
+    assertEqual(r.rejected[0].reason, 'the reply to its last move (the same moment)', 'reason');
+    const later = [...msgs, { mes: 'He pours your tea himself and asks you to stay.', is_user: false, _i: 10 }];
+    assertEqual(validateChanges([{ tracker: 'Relationship', step: 'Friends', quote: 'He pours your tea himself' }], [known], later).moves.length, 1, 'a later development still moves it');
+});
+
+test('a detour marked only once is never set again by the helper once the story has been in it', () => {
+    const msgs = [{ mes: 'You are a costly nuisance again.', is_user: false, _i: 20 }];
+    const t = rel({ onceAsides: ['Nuisance'], journal: [{ i: 3, index: 0, aside: 'Nuisance' }, { i: 9, index: 1, aside: null }] });
+    const r = validateChanges([{ tracker: 'Relationship', aside: 'Nuisance', quote: 'You are a costly nuisance again.' }], [t], msgs);
+    assertEqual(r.moves.length, 0, 'blocked'); assert(/only once/.test(r.rejected[0].reason), r.rejected[0].reason);
+    const fresh = rel({ onceAsides: ['Nuisance'], journal: [] });
+    assertEqual(validateChanges([{ tracker: 'Relationship', aside: 'Nuisance', quote: 'You are a costly nuisance again.' }], [fresh], msgs).moves.length, 1, 'the first time is allowed');
+    const notOnce = rel({ journal: [{ i: 3, index: 0, aside: 'Nuisance' }] });
+    assertEqual(validateChanges([{ tracker: 'Relationship', aside: 'Nuisance', quote: 'You are a costly nuisance again.' }], [notOnce], msgs).moves.length, 1, 'without the switch: as before');
+});
+
 test('undo is remembered: the same line does not re-apply the same move', () => {
     const move = validateChanges([{ tracker: 'Relationship', step: 'Neighbours', quote: "I'm your new neighbour" }], [rel()], MSGS).moves[0];
     const t = rel({ undone: rememberUndo([], move) });

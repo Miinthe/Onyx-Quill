@@ -8,7 +8,7 @@
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { normalizeBoard, freshState, setRun } from '../src/board-model-pure.js';
-import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, judgeTitles, stepLinks } from '../src/board-links-pure.js';
+import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, judgeTitles, stepLinks, steerLines } from '../src/board-links-pure.js';
 
 const board = () => normalizeBoard({ v: 2, name: 'B', trackers: [
     { id: 'rel', name: 'Relationship', steps: [
@@ -71,8 +71,34 @@ test('the helper gets the next step\'s judge rules, a waiting fork\'s ways, and 
     assertEqual(stepJudgeSection(b, at(b, 'str'), txt), '', 'nothing to say: empty');
 });
 
+test('a detour\'s own judge entries reach the helper, and long judge text survives to 2200 characters', () => {
+    const b = board();
+    const fr = b.trackers[0].steps.find(s => s.id === 'fr');
+    const d = fr.detours.find(x => x.name === 'Nuisance');
+    d.entries = [...(d.entries || []), 'Judge · Nuisance']; d.kinds = { ...(d.kinds || {}), 'Judge · Nuisance': 'judge' };
+    const long = 'w '.repeat(1300);
+    const txt = t => ({ 'Judge · Nuisance': 'Only when he treats her as costly friction.', 'Judge · Married': long })[t] || '';
+    const s = stepJudgeSection(b, at(b, 'fr'), txt);
+    assert(s.includes('- Relationship, aside "Nuisance" (set or clear it): Only when he treats her as costly friction.'), 'detour judge text is given');
+    assert(s.includes('possible detours (aside) — "Nuisance"'), 'the detour list stays');
+    const line = s.split('\n').find(l => l.startsWith('- Relationship → Married'));
+    assert(line.length > 2000 && line.length < 2300, 'judge text kept to about 2200 characters');
+});
+
 test('stepLinks lists steps, detours and branches with their kind', () => {
     assertEqual(stepLinks(board()).map(l => `${l.title}:${l.kind}${l.pin ? ':pin' : ''}`), ['Rel · Strangers:context', 'Rel · Friends:context:pin', 'How friends act:guidance', 'Judge · Friends:judge', 'Rel · Nuisance:context', 'Rel · Married:context', 'Judge · Married:judge', 'Judge · Happy:judge']);
+});
+
+
+test('steering: with the board switch on, the writer hears the next step gently; off, at a fork or at the end, nothing', () => {
+    const b = board();
+    assertEqual(steerLines(b, at(b, 'fr')), [], 'off by default');
+    const on = { ...b, steer: true };
+    const s = steerLines(on, at(on, 'fr'));
+    assertEqual(s.length, 1); assert(s[0].startsWith('HEADING TOWARD (Relationship): Married'), s[0]);
+    assert(/don't rush it/i.test(s[0]), 'tells it not to rush');
+    assertEqual(steerLines(on, at(on, 'mar')), [], 'waiting at an open fork: no way is named');
+    assertEqual(steerLines(on, at(on, 'fr', { run: 'paused' })), [], 'a paused tracker: nothing');
 });
 
 summary('board-links');

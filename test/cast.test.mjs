@@ -9,7 +9,7 @@
 import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { normalizeBoard, normalizeState, freshState, holds, condText, checkBoard } from '../src/board-model-pure.js';
 import {
-    personNow, presentPeople, castHelperSection, validateCastChanges, applyCastChanges, handChange, directorUser, parseDirector,
+    leftBehind, personNow, presentPeople, castHelperSection, validateCastChanges, applyCastChanges, handChange, directorUser, parseDirector,
     validateDirector, splitPeopleEvents, castLines, appearAtPlaces, awayCandidates, arrivalLines, validateComes, parseDirectorAll, appearsOf, oddsOf, exitFrom, backFrom, leftAt, offscreenChanges, offscreenLines, offscreenUser, parseOffscreen, MIN_AWAY, castJudgeLines, castPins, presentNames, describeCastChange, MAX_PLANS,
 } from '../src/cast-pure.js';
 import { undoCollectionChange, rewindCollections } from '../src/collections-pure.js';
@@ -402,6 +402,20 @@ test('walking out in their own message: a yes needs the words that show it, from
     const next = 'The toaster rolls after her and gently tugs her handle. "Stay. Please." Spoon stops at the door.';
     assertEqual(exitFrom('{"back": true, "quote": "gently tugs her handle"}', next, 'back'), 'gently tugs her handle');
     assertEqual(exitFrom('{"back": false}', next, 'back'), null);
+});
+
+
+test('people stay behind when the scene moves without them, unless named or the group goes together', () => {
+    const b = board(); const st = withHere(b, ['kettle']);
+    const mv = [{ quote: 'I walk down to the cellar.', to: 'cellar' }];
+    const msg = t => [{ mes: t, is_user: true, _i: 5 }];
+    const r = leftBehind(b, st, mv, msg('I walk down to the cellar.'), [], () => 'Cellar');
+    assertEqual(r.length, 1, 'Kettle stays behind'); assertEqual(r[0].here, false); assertEqual(r[0].quote, 'I walk down to the cellar.');
+    assert(r[0].reason.includes('Cellar'), 'reason names the place');
+    assertEqual(leftBehind(b, st, mv, msg('I take Kettle down to the cellar.')).length, 0, 'named: comes along');
+    assertEqual(leftBehind(b, st, mv, msg('We all go down to the cellar together.')).length, 0, 'the group goes together');
+    assertEqual(leftBehind(b, st, [], msg('I walk down to the cellar.')).length, 0, 'no place move: nobody leaves');
+    assertEqual(leftBehind(b, st, mv, msg('I walk down to the cellar.'), [{ person: 'Kettle', here: true }]).length, 0, 'already reported by the helper');
 });
 
 summary();

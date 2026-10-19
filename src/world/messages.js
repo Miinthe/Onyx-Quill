@@ -98,18 +98,21 @@ export function renderMessages(body, w) {
     if (groupOpen()) { renderGroup(body, w, asRow); return; }
     if (!openWith) {
         const main = mainInfo();
-        const list = conversationsFor(H.store(), L.board, L.state, me, clock, li, main ? { name: main.name, card: main.card } : null, { rumor: w.sections.feed, news: H.store().records.some(r => r.kind === 'msg' && (r.from === NEWS || r.to === NEWS)) });
+        let list = conversationsFor(H.store(), L.board, L.state, me, clock, li, main ? { name: main.name, card: main.card } : null, { rumor: w.sections.feed, news: H.store().records.some(r => r.kind === 'msg' && (r.from === NEWS || r.to === NEWS)) });
         const others = othersConversations(H.store(), me, clock, li);
         const gr = groupRows(w, me), nOthers = others.length + gr.others.length;
         if (talkForm) { body.innerHTML = asRow + talkFormHtml(w); return; }
         if (!list.length) { body.innerHTML = asRow + '<div class="dle-wd-empty"><b>Nobody to write to yet.</b><span>Add people to the Cast on the board, and they show up here.</span></div>'; return; }
         const pins = H.store().pins || [];
         // pinned first (groups, then people), then the rest — each newest first
+        // only conversations that exist (or are pinned) are rows; everyone else is in the + New chat dropdown
+        const fresh = list.filter(c => !c.last && !pins.includes(c.key)); list = list.filter(c => c.last || pins.includes(c.key));
+        const newChat = fresh.length ? `<select class="dk-field dle-wd-newchat" data-newchat aria-label="${letters ? 'New letter' : 'New chat'}"><option value="">＋ ${letters ? 'New letter to…' : 'New chat with…'}</option>${fresh.map(c => `<option value="${esc(c.key)}">${esc(nameOf(c.key))}</option>`).join('')}</select>` : '';
         const rowOf = c => `<button type="button" class="dle-wd-row${c.unread ? ' unread' : ''}" data-open="${esc(c.key)}">${avatar(c.key)}` +
             `<span class="nm">${pins.includes(c.key) ? '<span class="pin" title="Pinned">★</span>' : ''}${esc(nameOf(c.key))}${w.people?.[c.key]?.muted ? '<span class="muted" title="Muted on the board: never writes to you first">🔇</span>' : ''}</span><span class="tm">${c.last ? esc(stampText(c.last.stamp)) : ''}</span>` +
             `<span class="pv">${c.last ? (c.last.from === me ? esc(nameOf(me)) + ': ' : '') + esc(textOf(c.last)) : `<i>${letters ? 'Write the first letter' : 'Start a conversation'}</i>`}</span>` +
             (c.unread ? '<span class="ud" aria-label="unread"></span>' : '') + '</button>';
-        body.innerHTML = asRow + `<div class="dle-wd-list">${gr.btn}${gr.pinned}${list.filter(c => pins.includes(c.key)).map(rowOf).join('')}${gr.rest}${list.filter(c => !pins.includes(c.key)).map(rowOf).join('')}<div class="dle-wd-newg"><button type="button" class="dk-btn" data-talk-new title="Two people of the story start talking, now">+ Start a talk between others</button></div>${nOthers ? `<button type="button" class="dle-wd-lgh fold" data-others aria-expanded="${othersOpen}">${I('chev')}<span class="lt">Between others</span><small>${othersOpen ? 'tap one to spy — only you see this' : 'tap to open'}</small><span class="cnt" aria-label="${nOthers} conversation${nOthers === 1 ? '' : 's'}">${nOthers}</span></button>${!othersOpen ? '' : gr.others.map(r => r.html).join('') + others.map(o => `<button type="button" class="dle-wd-row peek" data-peek="${esc(o.conv)}"><span class="av2">${avatar(o.a, 'fa')}${avatar(o.b, 'fa')}</span>` +
+        body.innerHTML = asRow + `<div class="dle-wd-list">${newChat}${gr.btn}${gr.pinned}${list.filter(c => pins.includes(c.key)).map(rowOf).join('')}${gr.rest}${list.filter(c => !pins.includes(c.key)).map(rowOf).join('')}<div class="dle-wd-newg"><button type="button" class="dk-btn" data-talk-new title="Two people of the story start talking, now">+ Start a talk between others</button></div>${nOthers ? `<button type="button" class="dle-wd-lgh fold" data-others aria-expanded="${othersOpen}">${I('chev')}<span class="lt">Between others</span><small>${othersOpen ? 'tap one to spy — only you see this' : 'tap to open'}</small><span class="cnt" aria-label="${nOthers} conversation${nOthers === 1 ? '' : 's'}">${nOthers}</span></button>${!othersOpen ? '' : gr.others.map(r => r.html).join('') + others.map(o => `<button type="button" class="dle-wd-row peek" data-peek="${esc(o.conv)}"><span class="av2">${avatar(o.a, 'fa')}${avatar(o.b, 'fa')}</span>` +
             `<span class="nm">${esc(nameOf(o.a))} ↔ ${esc(nameOf(o.b))}</span><span class="tm">${esc(stampText(o.last.stamp))}</span><span class="pv blur" aria-label="hidden until you open it">${esc(textOf(o.last))}</span></button>`).join('')}` : ''}</div>`;
         return;
     }
@@ -238,6 +241,8 @@ export function onMessagesClick(e, body, w) {
     return false;
 }
 export function onMessagesInput(e) {
+    // + New chat / New letter: pick who from the dropdown (Miinthe, 2026-10-19: "add chat -> dropdown list")
+    if (e.target.matches?.('[data-newchat]')) { if (e.target.value) { openWith = e.target.value; editing = null; meetOpen = false; stopLeak(); H.render(); } return; }
     if (!talkForm) return;
     if (e.target.matches?.('[data-talk-from]')) { talkForm.from = e.target.value; H.render(); }
     else if (e.target.matches?.('[data-talk-to]')) { talkForm.to = e.target.value; H.render(); }
