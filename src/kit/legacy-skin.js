@@ -48,7 +48,7 @@ function maskUrl(name) {
 }
 
 /** The CSS that draws mapped FontAwesome icons as kit line icons inside a skinned pop-up. */
-export function iconMaskCss(scope = ':is(dialog.dle-skin, [id="dle-panel-librarian"])') {
+export function iconMaskCss(scope = 'dialog.dle-skin') {
     const byIcon = {};
     for (const [fa, ic] of Object.entries(FA_MAP)) if (ICONS[ic]) (byIcon[ic] ||= []).push(fa);
     let css = `${scope} :is(${Object.keys(FA_MAP).map(f => '.fa-' + f).join(',')})::before { content: '' !important; display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.16em; background: currentColor; -webkit-mask: var(--dk-fa) center / contain no-repeat; mask: var(--dk-fa) center / contain no-repeat; }\n`;

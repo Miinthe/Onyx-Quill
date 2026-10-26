@@ -92,9 +92,6 @@
                 <button type="button" class="dle-settings-tab" id="dle-sp-tab-graph" data-settings-tab="graph">
                     <i class="fa-solid fa-diagram-project" aria-hidden="true"></i><span data-i18n="dle_feature_graph_h4">Graph</span>
                 </button>
-                <button type="button" class="dle-settings-tab" id="dle-sp-tab-librarian" data-settings-tab="librarian">
-                    <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i><span data-i18n="dle_analytics_section_librarian">Librarian</span>
-                </button>
             </div>
         </div>
 
@@ -201,9 +198,9 @@
                         </div>
                     </div>
                     <div class="flex-container">
-                        <div class="flex1" title="Tag for Librarian-only writing/style guides. These entries never reach the writing AI — only the Librarian can fetch them via its chat tool." data-i18n="[title]dle_guide_tag_tooltip">
-                            <label for="dle-sp-librarian-guide-tag"><small data-i18n="dle_guide_tag_label">Librarian Guide Tag</small></label>
-                            <input id="dle-sp-librarian-guide-tag" type="text" class="text_pole" placeholder="lorebook-guide" data-i18n="[placeholder]dle_guide_tag_placeholder">
+                        <div class="flex1" title="Tag for writing/style guides. These entries are never sent to the writing AI as lore." data-i18n="[title]dle_guide_tag_tooltip">
+                            <label for="dle-sp-guide-tag"><small data-i18n="dle_guide_tag_label">Writing-guide tag</small></label>
+                            <input id="dle-sp-guide-tag" type="text" class="text_pole" placeholder="lorebook-guide" data-i18n="[placeholder]dle_guide_tag_placeholder">
                         </div>
                         <div class="flex1" title="Message count threshold for new chat features. Default: 3." data-i18n="[title]dle_new_chat_threshold_tooltip">
                             <label for="dle-sp-new-chat-threshold"><small data-i18n="dle_new_chat_threshold_label">New Chat Threshold</small></label>
@@ -378,7 +375,7 @@
                 <span class="dle-text-xs dle-muted dle-sp-indent"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> May increase processing time on large vaults — counts occurrences for every matched entry.</span>
 
                 <label class="dle-advanced-subheader"><small data-i18n="dle_settings_priority_order_subheader">Priority Order</small></label>
-                <label class="checkbox_label" for="dle-sp-priority-reversed" title="By default, LOWER priority numbers win (Obsidian/WI convention: 0 = most important). When checked, HIGHER numbers win instead. Affects pipeline budget allocation, Librarian view, Cartographer, and the default Browse sort. Explicit priority_asc/priority_desc dropdown choices in Browse still sort literally." data-i18n="[title]dle_priority_reversed_tooltip">
+                <label class="checkbox_label" for="dle-sp-priority-reversed" title="By default, LOWER priority numbers win (Obsidian/WI convention: 0 = most important). When checked, HIGHER numbers win instead. Affects pipeline budget allocation, Cartographer, and the default Browse sort. Explicit priority_asc/priority_desc dropdown choices in Browse still sort literally." data-i18n="[title]dle_priority_reversed_tooltip">
                     <input id="dle-sp-priority-reversed" type="checkbox" class="checkbox">
                     <span data-i18n="dle_priority_reversed_label">Reverse Priority (higher number wins)</span>
                 </label>
@@ -1082,220 +1079,6 @@
                 <p class="dle-section-desc" style="margin-top: var(--dle-space-2);"><small><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Graph also has its own in-window settings panel (gear icon) with live sliders and presets.</small></p>
             </div>
             </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════════════
-             TAB: Librarian (Assistants)
-             ═══════════════════════════════════════════════════════════════════ -->
-        <div class="dle-settings-panel" id="dle-sp-feat-librarian" data-settings-panel="librarian"
-             aria-labelledby="dle-sp-tab-librarian" hidden>
-
-            <div class="dle-panel-header">
-                <h3 class="dle-panel-title" data-i18n="dle_analytics_section_librarian">Librarian</h3>
-                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_librarian">Emma the Librarian — in-generation lore tools, writing sessions, and gap tracking.</p>
-            </div>
-
-            <!-- Section 1: Tools (generation-time behavior) -->
-            <div class="dle-settings-section">
-            <h4 data-i18n="dle_librarian_tools_h4">Tools</h4>
-            <p class="dle-section-desc" data-i18n="dle_librarian_tools_p">During each AI reply, these tools let the AI look up lore and flag anything missing from your vault.</p>
-
-            <div class="flex-container flexFlowColumn">
-                <div style="margin-bottom: var(--dle-space-2);">
-                    <button id="dle-sp-librarian-tour" type="button" class="menu_button" title="Open a Librarian session focused on writing-style guides for Emma." data-i18n="[title]dle_librarian_tour_tooltip">
-                        <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i>
-                        <span data-i18n="dle_librarian_tour_button">Library Tour…</span>
-                    </button>
-                    <small class="dle-muted" style="display:block; margin-top:var(--dle-space-1);">
-                        Open Emma the Librarian to write a meta/style guide. Guides are read by Emma only — never by the writing AI.
-                    </small>
-                </div>
-
-                <label class="checkbox_label" for="dle-sp-librarian-enabled" title="Enable the Librarian feature." data-i18n="[title]dle_librarian_enabled_tooltip">
-                    <input id="dle-sp-librarian-enabled" type="checkbox" class="checkbox">
-                    <span data-i18n="dle_librarian_enabled_label">Enable Librarian</span>
-                </label>
-
-                <div id="dle-sp-librarian-sub" class="flex-container flexFlowColumn dle-sp-indent">
-                    <label class="checkbox_label" for="dle-sp-librarian-search" title="Registers the search_lore tool. Lets the AI search the vault for entries the pipeline missed." data-i18n="[title]dle_librarian_search_tooltip">
-                        <input id="dle-sp-librarian-search" type="checkbox" class="checkbox">
-                        <span data-i18n="dle_librarian_search_label">Allow vault searches during generation</span>
-                    </label>
-                    <label class="checkbox_label" for="dle-sp-librarian-flag" title="Registers the flag_lore tool. Lets the AI flag gaps in the lore vault." data-i18n="[title]dle_librarian_flag_tooltip">
-                        <input id="dle-sp-librarian-flag" type="checkbox" class="checkbox">
-                        <span data-i18n="dle_librarian_flag_label">Allow flagging missing lore</span>
-                    </label>
-                    <label class="checkbox_label" for="dle-sp-librarian-show-tool-calls" title="Show a 'Consulted lore vault' dropdown on assistant messages when tool calls were used. Disable to hide all tool call traces from chat." data-i18n="[title]dle_librarian_show_tool_calls_tooltip">
-                        <input id="dle-sp-librarian-show-tool-calls" type="checkbox" class="checkbox">
-                        <span data-i18n="dle_librarian_show_tool_calls_label">Show tool call details on messages</span>
-                    </label>
-                    <label class="checkbox_label" for="dle-sp-librarian-per-message" title="Tie search/flag activity to messages. Gap records are cleared when a new generation starts and rebuilt from the new response. Keeps activity in sync with what's actually in the chat." data-i18n="[title]dle_librarian_per_message_tooltip">
-                        <input id="dle-sp-librarian-per-message" type="checkbox" class="checkbox">
-                        <span data-i18n="dle_librarian_per_message_label">Keep activity in sync with the visible chat</span>
-                    </label>
-
-                    <div class="flex-container">
-                        <div class="flex1" title="Maximum vault searches per AI reply. Default: 2." data-i18n="[title]dle_librarian_max_searches_tooltip">
-                            <label for="dle-sp-librarian-max-searches"><small data-i18n="dle_librarian_max_searches_label">Searches per reply</small></label>
-                            <input id="dle-sp-librarian-max-searches" type="number" class="text_pole" min="1" max="10" />
-                        </div>
-                        <div class="flex1" title="Maximum entries returned per search call. Default: 5." data-i18n="[title]dle_librarian_max_results_tooltip">
-                            <label for="dle-sp-librarian-max-results"><small data-i18n="dle_librarian_max_results_label">Results per search</small></label>
-                            <input id="dle-sp-librarian-max-results" type="number" class="text_pole" min="1" max="20" />
-                        </div>
-                        <div class="flex1" title="Token budget for search results returned to the AI. Default: 1500." data-i18n="[title]dle_librarian_token_budget_tooltip">
-                            <label for="dle-sp-librarian-token-budget"><small data-i18n="dle_librarian_token_budget_label">Result size limit (tokens)</small></label>
-                            <input id="dle-sp-librarian-token-budget" type="number" class="text_pole" min="500" max="5000" step="100" />
-                        </div>
-                    </div>
-
-                    <p class="dle-section-desc" style="margin-top: var(--dle-space-1);"><small><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Requires a model that supports function calling (tool use).</small></p>
-                </div>
-            </div>
-            </div>
-
-            <!-- Section 2: Writing Sessions -->
-            <div class="dle-settings-section">
-            <h4 data-i18n="dle_librarian_sessions_h4">Writing Sessions</h4>
-            <p class="dle-section-desc" data-i18n="dle_librarian_sessions_p">Controls for the Librarian's entry editor and AI assistant.</p>
-
-            <div class="flex-container flexFlowColumn">
-                <span class="dle-text-xs dle-muted" data-i18n-html="dle_settings_connection_settings_note">Connection settings: <a href="#" class="dle-goto-ai-connections">AI Connections</a> under Setup.</span>
-                <div class="flex-container">
-                    <div class="flex1" title="Folder path for written entries (relative to vault root). Leave blank for root." data-i18n="[title]dle_librarian_write_folder_tooltip">
-                        <label for="dle-sp-librarian-write-folder"><small data-i18n="dle_librarian_write_folder_label">Write Folder</small></label>
-                        <input id="dle-sp-librarian-write-folder" type="text" class="text_pole" placeholder="Root of vault" data-i18n="[placeholder]dle_librarian_write_folder_placeholder">
-                    </div>
-                    <div class="flex1" title="Default vault the Librarian writes new entries to. Per-write override is available in the entry popup when multiple vaults are enabled." data-i18n="[title]dle_librarian_write_vault_tooltip">
-                        <label for="dle-sp-librarian-write-vault"><small data-i18n="dle_librarian_write_vault_label">Default Write Vault</small></label>
-                        <select id="dle-sp-librarian-write-vault" class="text_pole"></select>
-                    </div>
-                </div>
-                <label class="checkbox_label" for="dle-sp-librarian-auto-send" title="Automatically send a draft prompt when opening a gap from the inbox." data-i18n="[title]dle_librarian_auto_send_tooltip">
-                    <input id="dle-sp-librarian-auto-send" type="checkbox" class="checkbox">
-                    <span data-i18n="dle_librarian_auto_send_label">Auto-draft when opening a gap</span>
-                </label>
-
-                <!-- Advanced (collapsible) -->
-                <div class="dle-advanced-toggle" data-section="sp_librarian_advanced" tabindex="0" role="button" aria-expanded="false">
-                    <i class="fa-solid fa-chevron-right fa-xs dle-advanced-chevron" aria-hidden="true"></i>
-                    <span data-i18n="dle_librarian_show_advanced_toggle">Show Advanced</span>
-                </div>
-                <div class="dle-advanced-content" data-section="sp_librarian_advanced" style="display: none;">
-                    <div class="flex-container">
-                        <div class="flex1" title="Maximum characters of the vault manifest section of the Librarian session prompt. As a rough guide, 8,000 characters is about 2,300 tokens. Default: 8000." data-i18n="[title]dle_librarian_manifest_max_tooltip">
-                            <label for="dle-sp-librarian-manifest-max"><small data-i18n="dle_librarian_manifest_max_label">Manifest Budget (characters)</small></label>
-                            <input id="dle-sp-librarian-manifest-max" type="number" class="text_pole" min="2000" max="30000" step="500" />
-                        </div>
-                        <div class="flex1" title="Maximum characters of related-entries context. As a rough guide, 4,000 characters is about 1,150 tokens. Default: 4000." data-i18n="[title]dle_librarian_related_max_tooltip">
-                            <label for="dle-sp-librarian-related-max"><small data-i18n="dle_librarian_related_max_label">Related Entries Budget (characters)</small></label>
-                            <input id="dle-sp-librarian-related-max" type="number" class="text_pole" min="1000" max="10000" step="500" />
-                        </div>
-                    </div>
-                    <div class="flex-container">
-                        <div class="flex1" title="Maximum characters of chat context in the Librarian session prompt. As a rough guide, 4,000 characters is about 1,150 tokens. Default: 4000." data-i18n="[title]dle_librarian_chat_context_max_tooltip">
-                            <label for="dle-sp-librarian-chat-context-max"><small data-i18n="dle_librarian_chat_context_max_label">Chat Context Budget (characters)</small></label>
-                            <input id="dle-sp-librarian-chat-context-max" type="number" class="text_pole" min="1000" max="10000" step="500" />
-                        </div>
-                        <div class="flex1" title="Maximum characters of the serialized draft JSON in the Librarian session prompt. As a rough guide, 4,000 characters is about 1,150 tokens. Default: 4000." data-i18n="[title]dle_librarian_draft_max_tooltip">
-                            <label for="dle-sp-librarian-draft-max"><small data-i18n="dle_librarian_draft_max_label">Draft Budget (characters)</small></label>
-                            <input id="dle-sp-librarian-draft-max" type="number" class="text_pole" min="2000" max="10000" step="500" />
-                        </div>
-                    </div>
-
-                    <h5 class="dle-settings-subsection-label" style="margin-top: var(--dle-space-3);" data-i18n="dle_settings_tool_call_budgets_h5">Tool-Call Budgets</h5>
-                    <p class="dle-text-xs dle-muted" data-i18n="dle_settings_tool_call_budgets_desc">Raise these if Emma keeps hitting "tool call limit reached" before finishing a write. Lower them to bound runaway agentic loops.</p>
-                    <div class="flex-container">
-                        <div class="flex1" title="Maximum search/flag tool calls Emma can make within a single user turn before being forced to finalize. Default: 10." data-i18n="[title]dle_librarian_max_tool_calls_per_turn_tooltip">
-                            <label for="dle-sp-librarian-max-tool-calls-per-turn"><small data-i18n="dle_librarian_max_tool_calls_per_turn_label">Max Tool Calls / Turn</small></label>
-                            <input id="dle-sp-librarian-max-tool-calls-per-turn" type="number" class="text_pole" min="1" max="50" />
-                        </div>
-                        <div class="flex1" title="How many times Emma retries when her response fails JSON validation (truncation, bad tool args, etc.) before giving up. Default: 3." data-i18n="[title]dle_librarian_max_validation_retries_tooltip">
-                            <label for="dle-sp-librarian-max-validation-retries"><small data-i18n="dle_librarian_max_validation_retries_label">Validation Retries</small></label>
-                            <input id="dle-sp-librarian-max-validation-retries" type="number" class="text_pole" min="0" max="10" />
-                        </div>
-                    </div>
-                    <div class="flex-container">
-                        <div class="flex1" title="How many of Emma's own session messages she sees as context when continuing a draft. Default: 10." data-i18n="[title]dle_librarian_session_history_tooltip">
-                            <label for="dle-sp-librarian-session-history"><small data-i18n="dle_librarian_session_history_label">Emma Session Memory (msgs)</small></label>
-                            <input id="dle-sp-librarian-session-history" type="number" class="text_pole" min="5" max="100" />
-                        </div>
-                        <div class="flex1" title="How many recent chat messages the writing AI sees as grounding context during agentic dispatch. Default: 40." data-i18n="[title]dle_librarian_agentic_history_tooltip">
-                            <label for="dle-sp-librarian-agentic-history"><small data-i18n="dle_librarian_agentic_history_label">Writing-AI Grounding (msgs)</small></label>
-                            <input id="dle-sp-librarian-agentic-history" type="number" class="text_pole" min="10" max="200" />
-                        </div>
-                    </div>
-                    <div class="flex-container">
-                        <div class="flex1" title="Optional session-wide cap on total tool calls (search + flag) across all turns since page load. Empty/0 = unlimited. Useful for runaway-budget protection on long sessions." data-i18n="[title]dle_librarian_session_tool_cap_tooltip">
-                            <label for="dle-sp-librarian-session-tool-cap"><small data-i18n="dle_librarian_session_tool_cap_label">Session Tool-Call Cap (empty or 0 = unlimited)</small></label>
-                            <input id="dle-sp-librarian-session-tool-cap" type="number" class="text_pole" min="0" max="1000" placeholder="unlimited" data-i18n="[placeholder]dle_librarian_session_tool_cap_placeholder">
-                        </div>
-                    </div>
-
-                    <h5 class="dle-settings-subsection-label" style="margin-top: var(--dle-space-3);" data-i18n="dle_librarian_system_prompt_h5">System Prompt</h5>
-                    <div class="flex-container flexFlowColumn">
-                        <div class="radio_group">
-                            <label class="checkbox_label" title="Use the built-in entry writing guide." data-i18n="[title]dle_librarian_prompt_mode_default_tooltip">
-                                <input type="radio" name="dle-sp-librarian-prompt-mode" value="default" class="checkbox"> <span data-i18n="dle_librarian_prompt_mode_default_label">Default</span>
-                            </label>
-                            <label class="checkbox_label" title="Append custom text after the built-in guide." data-i18n="[title]dle_librarian_prompt_mode_append_tooltip">
-                                <input type="radio" name="dle-sp-librarian-prompt-mode" value="append" class="checkbox"> <span data-i18n="dle_librarian_prompt_mode_append_label">Append</span>
-                            </label>
-                            <label class="checkbox_label" title="Replace the role/persona section only. Entry writing guide, manifest, gap context, chat, draft JSON, tools, and response format still included." data-i18n="[title]dle_librarian_prompt_mode_override_tooltip">
-                                <input type="radio" name="dle-sp-librarian-prompt-mode" value="override" class="checkbox"> <span data-i18n="dle_librarian_prompt_mode_override_label">Override (partial)</span>
-                            </label>
-                            <label class="checkbox_label" title="Pure passthrough — custom text IS the entire system prompt. No guide, manifest, chat, draft, tools, or response format appended. Advanced." data-i18n="[title]dle_librarian_prompt_mode_strict_override_tooltip">
-                                <input type="radio" name="dle-sp-librarian-prompt-mode" value="strict-override" class="checkbox"> <span data-i18n="dle_librarian_prompt_mode_strict_override_label">Strict Override (full)</span>
-                            </label>
-                        </div>
-                        <div class="flex-container" style="align-items: center; gap: 6px; display: none;" id="dle-sp-librarian-preset-row">
-                            <select class="dle-prompt-preset-select text_pole" data-tool="librarian" style="flex: 0 0 auto; width: auto; font-size: 0.85em;" title="Load a saved prompt preset" data-i18n="[title]dle_autosuggest_preset_tooltip"></select>
-                        </div>
-                        <textarea id="dle-sp-librarian-custom-prompt" class="text_pole" rows="6" placeholder="Custom system prompt text..." style="display: none;" data-prompt-tool="librarian" data-i18n="[placeholder]dle_librarian_custom_prompt_placeholder"></textarea>
-                    </div>
-                </div>
-            </div>
-            </div>
-
-            <!-- Section 3: Analytics -->
-            <div class="dle-settings-section">
-            <h4 data-i18n="dle_librarian_analytics_h4">Analytics</h4>
-            <div class="dle-librarian-stats-panel">
-                <table class="dle-librarian-stats-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th data-i18n="dle_librarian_table_searches_th">Searches</th>
-                            <th data-i18n="dle_librarian_table_flags_th">Flags</th>
-                            <th data-i18n="dle_librarian_table_tokens_th">Est. Tokens</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td data-i18n="dle_librarian_stats_this_chat">This Chat</td>
-                            <td id="dle-sp-lib-chat-searches">0</td>
-                            <td id="dle-sp-lib-chat-flags">0</td>
-                            <td id="dle-sp-lib-chat-tokens">0</td>
-                        </tr>
-                        <tr>
-                            <td data-i18n="dle_librarian_stats_this_session">This Session</td>
-                            <td id="dle-sp-lib-session-searches">0</td>
-                            <td id="dle-sp-lib-session-flags">0</td>
-                            <td id="dle-sp-lib-session-tokens">0</td>
-                        </tr>
-                        <tr class="dle-librarian-stats-alltime">
-                            <td data-i18n="dle_librarian_stats_alltime">All-Time</td>
-                            <td id="dle-sp-lib-all-searches">0</td>
-                            <td id="dle-sp-lib-all-flags">0</td>
-                            <td id="dle-sp-lib-all-tokens">-</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div id="dle-sp-lib-entries-written" class="dle-text-xs dle-muted" style="margin-top: 6px;"></div>
-                <div id="dle-sp-lib-unmet-queries" style="margin-top: var(--dle-space-2);"></div>
-            </div>
-            </div>
-
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════

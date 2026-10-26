@@ -13,6 +13,7 @@ import { RUMOR, NEWS } from './rumor-pure.js';
 import { castsOf, runningCasts, personNow, MAX_PLANS } from '../cast-pure.js';
 import { stateTrackersOf } from '../state-pure.js';
 import { stateNow, fieldValue } from '../board-model-pure.js';
+import { GOSSIP_RULE } from './feed-pure.js';   // who people never gossip about (Miinthe 2026-10-26)
 
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -259,7 +260,7 @@ export function parseExtract(text) {
  * The prompt for `name` answering a message (or a letter).
  * o: { name, card, now (personNow), fromName, userName, look, thread: [{ who, text, stamp }], story: [{ name, mes }], storyLines, stampNow }
  */
-export function replyPrompt({ name, card = '', now = null, fromName, userName = 'User', look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [] }) {
+export function replyPrompt({ name, card = '', now = null, fromName, userName = 'User', look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [], discretion = '' }) {
     const letters = look === 'letters';
     const parts = [
         `You are ${name}, a character in an ongoing roleplay. You are not in the scene with ${fromName} right now; ${fromName} has just ${letters ? 'sent you a letter' : 'texted you'}, and you answer ${letters ? 'with a letter of your own' : 'by text'}.`,
@@ -277,6 +278,8 @@ export function replyPrompt({ name, card = '', now = null, fromName, userName = 
         ? `Write ${name}'s letter: in their own voice, shaped by who they are and the time they live in. A few short paragraphs at most. No "Dear …" line and no signature — those are added.`
         : `Write ${name}'s text message(s): in their own voice — the way this person would text (some use emoji and shorthand, some write properly). Short, like real texting: usually one to three lines. Rarely, when it fits, they send a photo: describe it as [photo: what it shows].`);
     if (quirks) parts.push(quirkRule(name, quirks, letters));
+    if (discretion) parts.push(discretion);
+    parts.push(GOSSIP_RULE);
     if (mayPass) parts.push(`${name} doesn't have to answer. If they wouldn't reply now — or the conversation has run its course — answer exactly: (no reply)`);
     parts.push(`Answer with ${name}'s ${letters ? 'letter' : 'message'} only — no name in front, no notes.`);
     const lines = arr(thread).map(m => `${m.who}${m.stamp ? ` (${m.stamp})` : ''}: ${m.text}`);

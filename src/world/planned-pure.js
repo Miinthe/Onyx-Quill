@@ -8,6 +8,7 @@
  * holds, so a message the story skipped past arrives late. Firing is a world record (`kind: 'fired'`, auto).
  */
 import { holds, normCond } from '../board-model-pure.js';
+import { GOSSIP_RULE } from './feed-pure.js';   // who people never gossip about (Miinthe 2026-10-26)
 
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -54,7 +55,7 @@ export function duePlans(board, st, plans, store, rand = Math.random, muted = ()
 }
 
 /** The prompt for a note written up in the moment, in the sender's voice. */
-export function plannedPrompt({ name, card = '', now = null, toName, note, look = 'phone', when = '', quirks = '', kind = 'msg' }) {
+export function plannedPrompt({ name, card = '', now = null, toName, note, look = 'phone', when = '', quirks = '', kind = 'msg', discretion = '' }) {
     const letters = look === 'letters';
     const what = kind === 'rumor' ? (letters ? 'an unsigned note with a rumor, pinned to the town board at night' : 'a rumor, posted anonymously through the story\'s gossip account') : kind === 'news' ? (letters ? 'a short article for the gazette' : 'a short news item') : kind === 'post' ? (letters ? 'a note to pin on the town board' : 'a post for the local feed') : (letters ? `a letter to ${toName}` : `a text message to ${toName}`);
     const parts = [`You are ${name}, a character in an ongoing roleplay. You write ${what} now.`];
@@ -64,6 +65,7 @@ export function plannedPrompt({ name, card = '', now = null, toName, note, look 
     if (arr(now?.knows).length) parts.push(`What ${name} knows:\n${now.knows.slice(-12).map(k => `- ${k.fact || k}`).join('\n')}\nNever let them know more.`);
     if (when) parts.push(`In the story it is now ${when}.`);
     if (quirks) parts.push(`How ${name} writes — follow this closely: ${clip(quirks, 600)}` + (letters ? '' : `\nIf ${name} sends several messages in a row, put a line with only --- between them.`));
+    if (kind !== 'rumor') { if (discretion) parts.push(discretion); parts.push(GOSSIP_RULE); }
     parts.push(`What the message is about (the author's note — write it as ${name} would, don't copy it): ${clip(note, 600)}`);
     if (kind === 'news') parts.push('First line: the headline. Then the article: a few short paragraphs, in the voice of the publication.');
     else if (kind === 'rumor') parts.push('Write it short and juicy, as gossip — never name who is behind it.');

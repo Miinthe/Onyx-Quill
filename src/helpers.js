@@ -352,7 +352,7 @@ const TOP_LEVEL_FM_KEY = /^([\p{L}\p{N}_][\p{L}\p{N}_.-]*)\s*:(?:\s.*)?$/u;
 /**
  * #10 (DATA LOSS fix) — merge a freshly-built entry file over the on-disk
  * original, PRESERVING any top-level frontmatter key present on disk but absent
- * from the new file. Emma's editor only models a handful of frontmatter fields
+ * from the new file. Entry editors only model a handful of frontmatter fields
  * (type/status/priority/tags/keys/summary); without this merge, writing an edit
  * to an existing entry silently drops every unmodeled key the user authored
  * (cooldown, requires, excludes, era, position, probability, refine_keys, and
@@ -429,8 +429,7 @@ export function mergePreservingExtraFrontmatter(newFileText, originalFileText) {
 /**
  * #16 — Reverse-priority comparator. By default lower priority number = higher
  * importance (Obsidian/WI convention). When `reversed` is true, flip so higher
- * number wins. Applies to pipeline budget allocation, Librarian view order,
- * and Cartographer display. Browse popup's explicit `priority_asc/desc`
+ * number wins. Applies to pipeline budget allocation and Cartographer display. Browse popup's explicit `priority_asc/desc`
  * dropdown bypasses this — user-typed sort always wins literal.
  *
  * Default priority value 50 matches what callers already coalesced inline.
@@ -469,10 +468,9 @@ export function sanitizeFilename(title) {
  * zero-width space after `</` so a literal `</entry>` inside an entry's summary
  * or content can't close the fence and inject instructions into the
  * lore-selection prompt. NOT XML escaping — the text stays human-readable for
- * the model; only the fence-breaking sequence is defused. Shared by
- * `src/ai/manifest.js` (buildCandidateManifest) and
- * `src/librarian/librarian-tools.js` (formatLinkedManifest) — import it, don't
- * re-inline the regex.
+ * the model; only the fence-breaking sequence is defused. Used by
+ * `src/ai/manifest.js` (buildCandidateManifest) — import it, don't re-inline
+ * the regex.
  * @param {string} text - Untrusted text about to be wrapped in <tagName>...</tagName>
  * @param {string} tagName - The fence tag to defuse (literal, e.g. 'entry')
  * @returns {string}
@@ -1542,189 +1540,3 @@ export function extractAiNotes(messageText) {
     return { notes: extracted.join('\n'), cleanedMessage };
 }
 
-// ── Librarian: Session Response Parsing ──
-
-/**
- * Parse a Librarian AI response. Tries direct JSON, code-fenced JSON, then
- * bracket-balanced first-object extraction. Pure, Node-testable.
- * @param {string} text
- * @returns {object|null}
- */
-export function parseSessionResponse(text) {
-    if (!text || typeof text !== 'string') return null;
-
-    try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed === 'object' && parsed !== null) return parsed;
-    } catch { /* noop */ }
-
-    const fenceMatch = text.match(/`{3,}(?:json)?\s*([\s\S]*?)`{3,}/);
-    if (fenceMatch) {
-        try {
-            const parsed = JSON.parse(fenceMatch[1].trim());
-            if (typeof parsed === 'object' && parsed !== null) return parsed;
-        } catch { /* noop */ }
-    }
-
-    const firstBrace = text.indexOf('{');
-    if (firstBrace >= 0) {
-        let depth = 0;
-        let inString = false;
-        let escape = false;
-        for (let i = firstBrace; i < text.length; i++) {
-            const ch = text[i];
-            if (escape) { escape = false; continue; }
-            if (ch === '\\' && inString) { escape = true; continue; }
-            if (ch === '"') { inString = !inString; continue; }
-            if (inString) continue;
-            if (ch === '{') depth++;
-            else if (ch === '}') {
-                depth--;
-                if (depth === 0) {
-                    try {
-                        const parsed = JSON.parse(text.slice(firstBrace, i + 1));
-                        if (typeof parsed === 'object' && parsed !== null) return parsed;
-                    } catch { /* noop */ }
-                    break;
-                }
-            }
-        }
-    }
-
-    return null;
-}
-
-// ── Librarian: Session Response Validation ──
-
-const VALID_ENTRY_TYPES = ['character', 'location', 'lore', 'organization', 'story'];
-const VALID_SESSION_ACTIONS = ['update_draft', 'propose_queue', 'propose_options', 'tool_call'];
-const VALID_QUEUE_ACTIONS = ['create', 'update'];
-const VALID_URGENCIES = ['low', 'medium', 'high'];
-
-/**
- * Validate a parsed Librarian session response. Pure, Node-testable.
- * @param {object} parsed
- * @returns {{ valid: boolean, errors: string[] }}
- */
-export function validateSessionResponse(parsed) {
-    const errors = [];
-
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return { valid: false, errors: ['Response must be a JSON object'] };
-    }
-    if (typeof parsed.message !== 'string' || !parsed.message.trim()) {
-        errors.push("Missing required 'message' field (must be a non-empty string)");
-    }
-    if (parsed.action !== undefined && parsed.action !== null && !VALID_SESSION_ACTIONS.includes(parsed.action)) {
-        errors.push(`'action' must be one of: ${VALID_SESSION_ACTIONS.join(', ')}, null. Got: '${parsed.action}'`);
-    }
-
-    if (parsed.action === 'tool_call') {
-        if (!Array.isArray(parsed.tool_calls) || parsed.tool_calls.length === 0) {
-            errors.push("'tool_calls' must be a non-empty array when action is 'tool_call'");
-        } else {
-            for (let i = 0; i < parsed.tool_calls.length; i++) {
-                const tc = parsed.tool_calls[i];
-                if (!tc || typeof tc !== 'object') {
-                    errors.push(`tool_calls[${i}] must be an object`);
-                } else {
-                    if (typeof tc.name !== 'string' || !tc.name.trim()) {
-                        errors.push(`tool_calls[${i}].name must be a non-empty string`);
-                    }
-                    if (tc.args !== undefined && tc.args !== null && (typeof tc.args !== 'object' || Array.isArray(tc.args))) {
-                        errors.push(`tool_calls[${i}].args must be an object`);
-                    }
-                }
-            }
-        }
-    }
-
-    if (parsed.draft !== undefined && parsed.draft !== null) {
-        if (typeof parsed.draft !== 'object' || Array.isArray(parsed.draft)) {
-            errors.push("'draft' must be an object or null");
-        } else {
-            // BUG-025: partial drafts are legitimate during iterative update_draft —
-            // Emma may emit only the fields she's refining. Validate only PRESENT
-            // fields; empty-string checks still reject obvious garbage.
-            const d = parsed.draft;
-            if (d.title !== undefined && d.title !== null) {
-                if (typeof d.title !== 'string' || !d.title.trim()) {
-                    errors.push('draft.title cannot be empty when provided');
-                }
-            }
-            if (d.type !== undefined && !VALID_ENTRY_TYPES.includes(d.type)) {
-                errors.push(`draft.type must be one of: ${VALID_ENTRY_TYPES.join(', ')}. Got: '${d.type}'`);
-            }
-            if (d.priority !== undefined) {
-                if (typeof d.priority !== 'number' || d.priority < 1 || d.priority > 100) {
-                    errors.push(`draft.priority must be a number between 1 and 100. Got: '${d.priority}'`);
-                }
-            }
-            if (d.keys !== undefined && d.keys !== null) {
-                if (!Array.isArray(d.keys)) {
-                    errors.push('draft.keys must be an array');
-                } else if (d.keys.length > 0) {
-                    // Empty array allowed — Emma may not have proposed keys yet.
-                    const emptyIndices = d.keys.reduce((acc, k, i) => {
-                        if (typeof k !== 'string' || !k.trim()) acc.push(i);
-                        return acc;
-                    }, []);
-                    if (emptyIndices.length > 0) {
-                        errors.push(`draft.keys contains empty strings at indices: ${emptyIndices.join(', ')}`);
-                    }
-                }
-            }
-            if (d.summary !== undefined && typeof d.summary === 'string' && d.summary.length > 600) {
-                errors.push(`draft.summary exceeds 600 character limit (${d.summary.length} chars)`);
-            }
-            if (d.content !== undefined && d.content !== null) {
-                // Short partial content allowed during iteration — reject only non-strings.
-                if (typeof d.content !== 'string') {
-                    errors.push('draft.content must be a string when provided');
-                }
-            }
-        }
-    }
-
-    if (parsed.queue !== undefined && parsed.queue !== null) {
-        if (!Array.isArray(parsed.queue)) {
-            errors.push("'queue' must be an array");
-        } else {
-            for (let i = 0; i < parsed.queue.length; i++) {
-                const item = parsed.queue[i];
-                if (!item.title || (typeof item.title === 'string' && !item.title.trim())) {
-                    errors.push(`queue[${i}].title is required`);
-                }
-                if (!VALID_QUEUE_ACTIONS.includes(item.action)) {
-                    errors.push(`queue[${i}].action must be 'create' or 'update'. Got: '${item.action}'`);
-                }
-                if (!item.reason || (typeof item.reason === 'string' && !item.reason.trim())) {
-                    errors.push(`queue[${i}].reason is required`);
-                }
-                if (item.urgency !== undefined && !VALID_URGENCIES.includes(item.urgency)) {
-                    errors.push(`queue[${i}].urgency must be low, medium, or high. Got: '${item.urgency}'`);
-                }
-            }
-        }
-    }
-
-    if (parsed.options !== undefined && parsed.options !== null) {
-        if (!Array.isArray(parsed.options)) {
-            errors.push("'options' must be an array");
-        } else if (parsed.options.length === 0) {
-            errors.push("'options' must contain at least one option");
-        } else {
-            for (let i = 0; i < parsed.options.length; i++) {
-                const opt = parsed.options[i];
-                if (!opt.label || (typeof opt.label === 'string' && !opt.label.trim())) {
-                    errors.push(`options[${i}].label is required`);
-                }
-                if (!opt.fields || typeof opt.fields !== 'object' || Array.isArray(opt.fields)) {
-                    errors.push(`options[${i}].fields must be an object with draft field values`);
-                }
-            }
-        }
-    }
-
-    return { valid: errors.length === 0, errors };
-}

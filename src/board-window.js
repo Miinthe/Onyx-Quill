@@ -41,7 +41,8 @@ import { ENTRY_TYPES } from './board-entry-pure.js';
 import { callAI } from './ai/ai.js';
 import { meroSettings, meroWhere, meroConnectionName } from './mero.js';
 import { BOARD_MERO_TASKS, buildBoardMeroPrompt, parseBoardMero, meroBoardBlock } from './board-mero-pure.js';
-import { persistGaps } from './librarian/librarian-tools.js';
+import { persistGaps } from './lore-gaps.js';
+import { meroNames } from './mero-names-pure.js';
 
 export { V2_KEY } from './board-store.js';
 export const STATE_KEY = 'deeplore_board_state';
@@ -229,7 +230,7 @@ async function meroAsk(task, input) {
         inp.entries = (Array.isArray(inp.linked) ? inp.linked : []).slice(0, 4).map(t => (vaultIndex || []).find(e => e.title === t)).filter(Boolean).map(e => ({ title: e.title, text: e.content || e.summary || '' }));
     }
     const st = meroSettings();
-    const { system, user } = buildBoardMeroPrompt(task, inp, { persona: st.persona, character: meroWhere().character });
+    const { system, user } = buildBoardMeroPrompt(task, inp, { persona: st.persona, character: meroWhere().character, names: meroNames(st) });
     meroAsking = true;
     try {
         const r = await callAI(system, user, { ...resolveConnectionConfig('mero'), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
@@ -342,7 +343,7 @@ function remove(name) {
 
 function rename(from, to) {
     const s = boardStore();
-    if (s.boards[from]) { s.boards[to] = { board: { ...s.boards[from].board, name: to } }; delete s.boards[from]; }
+    if (s.boards[from]) { s.boards[to] = { ...s.boards[from], board: { ...s.boards[from].board, name: to } }; delete s.boards[from]; }   // Mero's summary moves along
     noteRename(s, from, to);   // other chats using it follow on opening (trackers.js syncBoardOnOpen)
     for (const [k, v] of Object.entries(s.characters)) if (v === from) s.characters[k] = to;
     saveSettingsDebounced();

@@ -47,7 +47,7 @@
 .dle-world .fa, .dle-world .av { flex: none; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--dk-menu); color: var(--dk-ink); font-weight: 700; }
 .dle-world .fa { width: 22px; height: 22px; font-size: 11px; }
 .dle-world .av { width: 36px; height: 36px; font-size: 15px; }
-.dle-world .fa img, .dle-world .av img { width: 100%; height: 100%; object-fit: cover; }
+.dle-world .fa img, .dle-world .av img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }   /* portrait cards: the face */
 .dle-wd-asmenu { position: absolute; z-index: 5; margin: 0 10px; top: 92px; width: min(260px, calc(100% - 20px)); padding: 5px; background: var(--dk-menu); border: 1px solid var(--dk-line); border-radius: 10px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; }
 .dle-wd-asmenu button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 7px; background: transparent; color: var(--dk-ink); text-align: left; font: inherit; cursor: pointer; }
 .dle-wd-asmenu button:hover, .dle-wd-asmenu button.on { background: var(--dk-desk); }

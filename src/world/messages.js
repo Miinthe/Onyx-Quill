@@ -32,6 +32,7 @@ import {
     pacing, removeMessage, markRead, isPass, nextThread, splitParts, swipeTo, repliesDue, replyPrompt, parseReply, extractPrompt, parseExtract, EXTRACT_SCHEMA, learnedChanges, personNow, textOf, arrivalText, replyWait, waitOver, replyStatus,
     meetupChange, mainPlanLine, leakFacts, leakChanges, withHeaders,
 } from './messages-pure.js';
+import { discretionOf, discretionMap } from './feed.js';   // who people never gossip about (Miinthe 2026-10-26)
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -310,7 +311,7 @@ async function startTalk(body, w) {
     const a = whoIs(L, from), b = whoIs(L, to), clock = clockNow(), cid = H.chat();
     if (!a || !b) return;
     try {
-        const p = plannedPrompt({ name: a.p.name, card: a.text, now: a.now, toName: b.p.name, note: about || `start a conversation with ${b.p.name} — about something on your mind that has to do with them: a plan, a worry, something you heard, a favor`, look: w.look, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', quirks: quirksOf(w, from) });
+        const p = plannedPrompt({ discretion: discretionOf(w, from), name: a.p.name, card: a.text, now: a.now, toName: b.p.name, note: about || `start a conversation with ${b.p.name} — about something on your mind that has to do with them: a plan, a worry, something you heard, a favor`, look: w.look, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', quirks: quirksOf(w, from) });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 500), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         const text = parseReply(r?.text, a.p.name)?.reply || '';
         if (H.chat() !== cid || !text) { if (!text) K.notify({ title: 'World', text: `${a.p.name}'s first message came back empty. Try again.`, tone: 'warn' }); return; }
@@ -375,7 +376,7 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
             : who.main ? { here: true, knows: H.store().records.filter(r => r.kind === 'mknow').map(r => ({ fact: r.fact })) } : personNow(L.state, who.cast, who.p);
         const chat = now.here ? (ctx()?.chat || []).filter(x => x && !x.is_system && typeof x.mes === 'string').slice(-STORY_WINDOW).map(x => ({ name: x.name, mes: x.mes })) : [];
         let lines = []; try { lines = storyLinesFor(liveWriterLines()); } catch { /* none */ }
-        const p = replyPrompt({ name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), userName: userName(), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed() });
+        const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), userName: userName(), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed() });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         if (window.__dleWorldDebug) console.log('[DLE] world answer', who.p.name, JSON.stringify({ system: p.system, user: p.user, raw: r?.text }));
         if (!stay()) return;
@@ -652,6 +653,7 @@ export async function maybeTick(w, trigger, moment = null) {
         const muted = new Set(writers.filter(p => w.people?.[p.key]?.muted === true || neverTalk(w, p.key, USER)).map(p => p.name));
         writers.splice(0, writers.length, ...writers.filter(p => !muted.has(p.name)));   // muted people (and those who never talk to her) never write first
         if (!writers.length || !w.sections.msgs) return reason;   // the reason goes on to the feed (world.js)
+        const dm = discretionMap(w); for (const p of writers) p.discretion = dm.get(p.key) || '';   // who they never gossip about (built once)
         for (const p of writers) p.last = threadOf(H.store(), USER, p.key, clock, nowI).filter(m => !m.onWay).slice(-3).map(m => ({ who: nameOf(m.from), text: textOf(m) }));
         const story = (ctx()?.chat || []).filter(x => x && !x.is_system && typeof x.mes === 'string').slice(-4).map(x => ({ name: x.name, mes: x.mes }));
         // a big moment travels: the world is told what happened (the newest message), people away may have heard of it
@@ -719,7 +721,7 @@ export async function firePlans(w) {
             let text = plan.words === 'mine' ? plan.text : '';
             if (plan.words !== 'mine') {
                 if (conn.mode !== 'profile' || !conn.profileId) { K.notify({ title: 'World', text: `A planned message from ${from.p.name} is due, but the world has no AI connection to write it: Settings › AI & connections › World.`, tone: 'warn' }); continue; }
-                const p = plannedPrompt({ name: from.p.name, card: from.text, now: from.now, toName: to.p.name, note: plan.text, look: w.look, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', quirks: quirksOf(w, from.key) || from.voice && voiceOf(from.key)?.quirks || '', kind: plan.kind });
+                const p = plannedPrompt({ discretion: discretionOf(w, from.key), name: from.p.name, card: from.text, now: from.now, toName: to.p.name, note: plan.text, look: w.look, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', quirks: quirksOf(w, from.key) || from.voice && voiceOf(from.key)?.quirks || '', kind: plan.kind });
                 const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
                 text = parseReply(r?.text, from.p.name)?.reply || '';
                 if (H.chat() !== cid) break;
@@ -758,7 +760,7 @@ export async function writeAgain(w, p) {
     const conn = resolveConnectionConfig('world');
     if (conn.mode !== 'profile' || !conn.profileId) { K.notify({ title: 'World', text: 'Writing it again needs the world\'s AI connection: Settings › AI & connections › World.', tone: 'warn' }); return null; }
     const c = clockNow(), news = !!p.news;
-    const pr = plannedPrompt({ name: from.p.name, card: from.text, now: from.now, toName: 'the feed', note: `Write this ${news ? 'news item' : 'post'} again, differently: the same moment, fresh words.\n${p.title ? p.title + '\n' : ''}${p.text}`, look: w.look, when: c ? stampText({ day: c.day, part: c.part }) : '', quirks: quirksOf(w, from.key) || from.voice && voiceOf(from.key)?.quirks || '', kind: news ? 'news' : 'post' });
+    const pr = plannedPrompt({ discretion: discretionOf(w, from.key), name: from.p.name, card: from.text, now: from.now, toName: 'the feed', note: `Write this ${news ? 'news item' : 'post'} again, differently: the same moment, fresh words.\n${p.title ? p.title + '\n' : ''}${p.text}`, look: w.look, when: c ? stampText({ day: c.day, part: c.part }) : '', quirks: quirksOf(w, from.key) || from.voice && voiceOf(from.key)?.quirks || '', kind: news ? 'news' : 'post' });
     const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 700), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.95 });
     const text = parseReply(r?.text, from.p.name)?.reply || '';
     if (!text) return null;

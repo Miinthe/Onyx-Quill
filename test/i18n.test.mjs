@@ -447,7 +447,8 @@ for (const loc of TRANSLATION_LOCALES) {
         // 2675 = 2592 (2574 v2.6 + 18 settings-overhaul shell keys) + 80 unslop-ui i18n + 2 graph touch hints (2026-10-17) + graph Close (2026-10-18)
         // keys (rule-builder labels/tooltips, browse quick-filter pill, full setup-wizard
         // runtime strings routed through tr/trf).
-        assertEqual(keys.length, 2675, `${loc} key count matches canonical (2675)`);
+        // − 313 Librarian / Emma keys removed with the Librarian (2026-10-19) = 2362
+        assertEqual(keys.length, 2362, `${loc} key count matches canonical (2362)`);
     });
 }
 
@@ -490,16 +491,6 @@ section('i18n — AI prompt locale files');
 // ════════════════════════════════════════════════════════════════════════════
 
 const REQUIRED_PROMPT_EXPORTS = [
-    'EMMA_FIRSTRUN_GREETING',
-    'EMMA_ADHOC_GREETING',
-    'EMMA_AUDIT_GREETING',
-    'LIBRARIAN_PRIMER',
-    'LIBRARIAN_FIRSTRUN_QA_SCRIPT',
-    'AGENTIC_ROLE_SECTION',
-    'AGENTIC_TOOLS_INTRO',
-    'AGENTIC_TOOL_SEARCH',
-    'AGENTIC_TOOL_WRITE',
-    'AGENTIC_TOOL_FLAG',
     'AI_SEARCH_SYSTEM_PROMPT',
     'AI_NOTEPAD_PROMPT',
     'SCRIBE_PROMPT',

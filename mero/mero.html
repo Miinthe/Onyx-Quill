@@ -706,13 +706,35 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     // after a delete: back to the list of talks, not into another talk (Miinthe, 2026-10-19)
     card.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { if (b.dataset.dn) { HOST.deleteTalk(cur.id, b.dataset.dn); cur = null; toast('Talk deleted.'); setTimeout(() => openD('d-sess', true), 0); } else card.remove(); });
   }
-  // ⓘ what Mero was told
-  $('#s-told').onclick = () => {
+  // ⓘ what Mero was told — with her summary of the board on top, hers to correct (Miinthe 2026-10-26: one home, quiet)
+  function renderTold(busy = false) {
     const t = cur && HOST.told(cur.id);
-    $('#told-b').innerHTML = !t ? '<p class="mini" title="Mero hasn\'t answered in this talk since SillyTavern was opened">Nothing yet.</p>'
-      : `<div class="mini">Sent to <b>${esc(D.connection || '?')}</b> · nothing of this reaches the story</div>` + t.sections.map(([h, x]) => `<details><summary><span>${esc(h)}</span><span class="mini">~${Math.ceil(String(x || '').length / 4)}</span></summary><pre>${esc(x || '—')}</pre></details>`).join('');
-    $('#told').hidden = false;
-  };
+    let bm = null; try { bm = HOST.boardMap?.() || null; } catch { bm = null; }
+    const m = bm?.map;
+    const how = !bm ? '' : !m ? 'Mero writes it quietly before her next answer.'
+      : m.stale ? 'Your version — the board changed since. Write it again, or keep yours.'
+      : m.edited ? 'Your version: kept until you change it. It counts for every Mero talk on this board.'
+      : 'Mero keeps it up to date by herself when the board changes. Edit it if it\'s wrong — it counts for every Mero talk on this board.';
+    const mapH = !bm ? '' : `<details open class="bmap"><summary><span>🗺 Her summary of the board</span><span class="mini">${esc(bm.name)}</span></summary>
+      <div class="mini" style="margin:6px 0">${esc(how)}</div>
+      <textarea id="bm-text" rows="9" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--dk-line);border-radius:8px;background:var(--dk-desk);color:var(--dk-ink);font:var(--dk-fs-s)/1.45 var(--dk-f-body);resize:vertical" placeholder="Not written yet">${esc(m?.text || '')}</textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <button class="dk-btn" id="bm-keep" disabled>Keep my version</button>
+        <button class="dk-btn" id="bm-again"${busy ? ' disabled' : ''}>${busy ? 'Writing…' : 'Write it again'}</button>
+        ${m?.edited ? '<button class="dk-btn" id="bm-auto">Back to Mero’s</button>' : ''}
+      </div></details>`;
+    $('#told-b').innerHTML = mapH + (!t ? '<p class="mini" title="Mero hasn\'t answered in this talk since SillyTavern was opened">Nothing yet.</p>'
+      : `<div class="mini">Sent to <b>${esc(D.connection || '?')}</b> · nothing of this reaches the story</div>` + t.sections.map(([h, x]) => `<details><summary><span>${esc(h)}</span><span class="mini">~${Math.ceil(String(x || '').length / 4)}</span></summary><pre>${esc(x || '—')}</pre></details>`).join(''));
+    if (bm) {
+      const ta = $('#bm-text'), keep = $('#bm-keep');
+      ta.oninput = () => { keep.disabled = ta.value.trim() === (m?.text || '').trim(); };
+      keep.onclick = async () => { await HOST.setBoardMap(ta.value); renderTold(); };
+      const again = async fn => { renderTold(true); try { await fn(); } catch { /* shows what is stored */ } renderTold(); };
+      $('#bm-again').onclick = () => again(() => HOST.remakeBoardMap());
+      const auto = $('#bm-auto'); if (auto) auto.onclick = () => again(() => HOST.setBoardMap(null));
+    }
+  }
+  $('#s-told').onclick = () => { renderTold(); $('#told').hidden = false; };
   $('#told-x').onclick = () => { $('#told').hidden = true; };
 
   // drawers, story links, pop-out

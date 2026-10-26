@@ -7,6 +7,7 @@
  * someone writes, the members who have something to add answer — as many as the board's pace allows (Quiet 1, Normal
  * 1–2, Lively 1–3) — each in their own time (reply times, messages-pure.js). Off with the Letters look.
  */
+import { GOSSIP_RULE } from './feed-pure.js';   // who people never gossip about (Miinthe 2026-10-26)
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clip = (s, n) => { const t = String(s ?? '').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
@@ -41,8 +42,9 @@ export function groupPrompt({ groupName, people = [], others = [], thread = [], 
     const sys = `You write a group chat called "${groupName}" in a roleplay's world. ${userName} is the player.
 ${alone ? 'The person below may answer the newest messages now — or pass if they have nothing to add.' : `Of the people below, those who have something to add to the newest message answer it — at most ${max}, at least one. Someone with nothing to add stays quiet; a group chat doesn't need everyone.`}
 Each writes ONE short text message in their own voice and quirks, knowing only what they know. Never write for anyone not listed below as able to answer.
+${GOSSIP_RULE}
 Answer with JSON only: {"replies": [{"by": "exact name", "text": "..."}]}${alone ? ' — an empty list to pass' : ''}`;
-    const user = [`WHO CAN ANSWER NOW\n${arr(people).map(p => `- ${p.name}${p.card ? `: ${clip(p.card, 600)}` : ''}${arr(p.knows).length ? `\n  Knows: ${p.knows.slice(-6).map(k => clip(k, 120)).join(' · ')}` : ''}${p.quirks ? `\n  How they write (follow it): ${clip(p.quirks, 200)}` : ''}`).join('\n')}`,
+    const user = [`WHO CAN ANSWER NOW\n${arr(people).map(p => `- ${p.name}${p.card ? `: ${clip(p.card, 600)}` : ''}${arr(p.knows).length ? `\n  Knows: ${p.knows.slice(-6).map(k => clip(k, 120)).join(' · ')}` : ''}${p.quirks ? `\n  How they write (follow it): ${clip(p.quirks, 200)}` : ''}${p.discretion ? `\n  ${p.discretion}` : ''}`).join('\n')}`,
         arr(others).length ? `ALSO IN THE GROUP (not answering now): ${others.join(', ')}` : '',
         `THE GROUP SO FAR (newest last)\n${arr(thread).slice(-14).map(m => `${m.who}: ${clip(m.text, 400)}`).join('\n')}`,
         'Who answers, and what?'].filter(Boolean).join('\n\n');

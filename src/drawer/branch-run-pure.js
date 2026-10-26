@@ -6,7 +6,7 @@
  *
  * When Miinthe branches from an earlier message, the new chat should start as its own run
  * (next instance letter) and carry the run's history up to the branch point: the
- * session notes Scribe wrote, and the lore Auto Lorebook / Emma filed for that run.
+ * session notes Scribe wrote, and the lore Auto Lorebook filed for that run.
  * Everything is COPIED, never moved or edited — the parent run stays intact, and dead
  * runs are kept on purpose (she collects them). Each copy records where it came from.
  *

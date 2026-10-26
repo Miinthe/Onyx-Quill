@@ -1,3 +1,4 @@
+import { GOSSIP_RULE, discretion } from './feed-pure.js';
 /**
  * World layer, stage 5 — rumors and the story, the pure part (Miinthe, 2026-10-18/19; design §2c–2f, mock-up v5).
  *
@@ -87,7 +88,7 @@ export function noticers(post, people, rand = Math.random, max = 2) {
     const cares = p => arr(p.interests).some(i => String(i).toLowerCase().split(/[\s,]+/).some(w => w.length > 3 && text.includes(w)));
     const names = p => text.includes(String(p.name || '').toLowerCase()) ? 0.2 : 0;   // a rumor about you gets back to you
     return arr(people).filter(p => p && p.key && !p.muted && !heard.has(p.key) && post.by !== p.key)
-        .filter(p => rand() < (NOTICE_ODDS[p.g] ?? 0.25) + (cares(p) ? 0.3 : 0) + names(p)).slice(0, max);
+        .filter(p => rand() < (NOTICE_ODDS[Math.max(1, Number(p.g) || 0)] ?? 0.25) + (cares(p) ? 0.3 : 0) + names(p)).slice(0, max);   // "never gossips" still hears
 }
 
 // ── the rumor call (one per tick) ───────────────────────────────────────────
@@ -100,7 +101,7 @@ export const RUMOR_SCHEMA = {
         moves: { type: 'array', items: { type: 'object', properties: { tracker: { type: 'string' }, to: { type: 'string' }, why: { type: 'string' } }, required: ['tracker', 'to'] } },
     } },
 };
-const DIAL = ['', 'low', 'average', 'high'];
+const DIAL = ['never', 'low', 'average', 'high'];   // 0 = never (gossip, posts)
 
 /**
  * o: { userName, accountName, people: [{ name, kind, g, interests, here, knows: [fact] }], scene: [{ name, mes }] (the main
@@ -115,8 +116,9 @@ Rules:
 - ${newOk ? `NEW RUMOR (at most one, often none): if something in the scene is worth gossiping about, someone who was there may start one — true, twisted, or made up (a made-up one serves what they want). "starter": their exact name; "account": true when they'd rather post it anonymously through ${accountName}${letters ? ' (an unsigned note)' : ''}; "text": the rumor as it would be posted, short, in their voice; "kind": "true" | "twisted" | "madeup"; "truth": one sentence, what's really behind it; "heard": who hears it straight away (exact names).` : 'No new rumor now.'}
 - WORD OF MOUTH: people with "gossips: high" pass rumors they heard on to people they know, without posting; "average" sometimes; "low" rarely. A rumor that is POSTED can also be noticed by anyone who reads the feed — then "by" is whoever posted it ("posted by" below). ${userName} is the player: never "by", never in "to" — only the people listed. Who picks a rumor up follows what they care about. Each pass may change it a little (a detail added, a name swapped) — then give "retold": the new version; else null. 0–3 spreads, often 1.
 ${trackers.length ? `- TRACKERS: only if a rumor would really change one of these story trackers, move it to the named step ("moves"); almost always none.` : ''}
+- ${GOSSIP_RULE}
 Answer with JSON only: {"newRumor": null, "spread": [{"rumor": 3, "by": "name", "to": ["name"], "retold": null}]${trackers.length ? ', "moves": []' : ''}}`;
-    const who = arr(people).map(p => `- ${p.name}${p.here ? ' (in the scene)' : ''} — gossips: ${DIAL[p.g] || 'average'}${arr(p.interests).length ? `; cares about: ${p.interests.join(', ')}` : ''}${arr(p.knows).length ? `\n  knows: ${p.knows.slice(-5).join(' · ')}` : ''}`);
+    const who = arr(people).map(p => `- ${p.name}${p.here ? ' (in the scene)' : ''} — gossips: ${DIAL[p.g] || 'average'}${arr(p.interests).length ? `; cares about: ${p.interests.join(', ')}` : ''}${arr(p.knows).length ? `\n  knows: ${p.knows.slice(-5).join(' · ')}` : ''}${discretion(p) ? `\n  ${discretion(p)}` : ''}`);
     const user = [
         arr(scene).length ? `THE SCENE (the main story, newest last)\n${scene.map(m => `${m.name}: ${clip(m.mes, 500)}`).join('\n')}` : 'Nobody listed was in the main scene just now.',
         `THE PEOPLE\n${who.join('\n')}`,
@@ -128,7 +130,14 @@ Answer with JSON only: {"newRumor": null, "spread": [{"rumor": 3, "by": "name", 
 }
 
 /** Read the rumor call against the names, rumor numbers and trackers there are; unknowns dropped. */
-export function parseRumor(text, people, rumorNs = [], trackers = [], posters = []) {
+/** Would `p` gossip this text? Not when they never gossip, nor when it is about someone they never gossip about. */
+export function mayGossip(p, text) {
+    if (!p || p.g === 0) return false;
+    const t = String(text || '').toLowerCase();
+    return !arr(p.hush).some(n => n && t.includes(String(n).toLowerCase()));
+}
+
+export function parseRumor(text, people, rumorNs = [], trackers = [], posters = [], texts = {}) {
     const raw = String(text ?? '').trim(), a = raw.indexOf('{'), b = raw.lastIndexOf('}');
     const byName = new Map(arr(people).map(p => [String(p.name).trim().toLowerCase(), p]));
     // who may pass a rumor on: anyone listed, and whoever posted one (the rumor account) — readers notice the post
@@ -139,9 +148,11 @@ export function parseRumor(text, people, rumorNs = [], trackers = [], posters = 
     for (const t of [raw, a !== -1 && b > a ? raw.slice(a, b + 1) : '']) {
         let v; try { v = JSON.parse(t); } catch { continue; }
         if (!isObj(v)) continue;
-        const r = isObj(v.newRumor) && typeof v.newRumor.text === 'string' && v.newRumor.text.trim() && find(v.newRumor.starter) ? v.newRumor : null;
+        const r = isObj(v.newRumor) && typeof v.newRumor.text === 'string' && v.newRumor.text.trim() && find(v.newRumor.starter) && mayGossip(find(v.newRumor.starter), v.newRumor.text) ? v.newRumor : null;
         const newRumor = r ? { starter: find(r.starter), account: r.account === true, text: clip(r.text, 1200), kind: ['true', 'twisted', 'madeup'].includes(r.kind) ? r.kind : '', truth: clip(r.truth, 500), heard: arr(r.heard).map(find).filter(Boolean) } : null;
-        const spread = arr(v.spread).filter(s => isObj(s) && ns.has(Math.round(Number(s.rumor))) && findBy(s.by)).map(s => ({
+        const spread = arr(v.spread).filter(s => isObj(s) && ns.has(Math.round(Number(s.rumor))) && findBy(s.by)
+            // a person passes it on only if they would (the rumor account itself isn't a person and always may)
+            && (!byName.has(String(findBy(s.by).name).trim().toLowerCase()) || mayGossip(findBy(s.by), texts[Math.round(Number(s.rumor))]))).map(s => ({
             rumor: Math.round(Number(s.rumor)), by: findBy(s.by), to: arr(s.to).map(find).filter(Boolean).filter(x => x.name !== findBy(s.by).name),
             retold: typeof s.retold === 'string' && s.retold.trim() ? clip(s.retold, 400) : null,
         })).filter(s => s.to.length).slice(0, 3);

@@ -45,7 +45,7 @@
 .dle-nt-ed .tools { display: flex; gap: 2px; padding: 3px; margin-bottom: -10px; border: 1px solid var(--dk-line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--dk-menu); }
 .dle-nt-ed .tools .gap { flex: 1; }
 .dle-nt-ed .tools .dk-ib { width: 28px; height: 28px; }
-.dle-nt-ed .bb { min-height: 180px; max-height: 50vh; overflow-y: auto; border-radius: 0 0 8px 8px; line-height: 1.5; background: var(--dk-desk); white-space: pre-wrap; word-break: break-word; cursor: text; }
+.dle-nt-ed .bb { min-height: 180px; max-height: 50vh; overflow-y: auto; border-radius: 0 0 8px 8px; line-height: 1.5; background: var(--dk-desk); white-space: pre-wrap; word-break: break-word; cursor: text; -webkit-user-select: text; user-select: text; caret-color: var(--dk-ink, currentColor); }   /* the caret shows on a phone too (Miinthe, 2026-10-26) */
 .dle-nt-ed .bb:empty::before { content: attr(data-ph); color: var(--dk-muted); pointer-events: none; }
 /* a note open: everything on one page, only the note scrolls (Miinthe, 2026-10-19: "the last row of buttons hang just slightly off
    the screen when the note is long … the only thing I want scrolling is the note field") */

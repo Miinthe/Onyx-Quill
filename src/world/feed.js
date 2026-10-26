@@ -19,7 +19,7 @@ import { addRecord, normWorld, neverTalk } from './world-pure.js';
 import { USER, MAIN, peopleOf, storyClock, stampText, newMessage } from './messages-pure.js';
 import { personNow } from '../cast-pure.js';
 import {
-    posters, postsOf, commentCount, newPost, updatePost, toggleLike, addComment, addPostVersion, showPostVersion, editPost, removePost, editComment, removeComment, likesLine, feedView, runningStories, storiesOf, normStory,
+    posters, postsOf, commentCount, newPost, updatePost, toggleLike, addComment, addPostVersion, showPostVersion, editPost, removePost, mergeTaught, discretion, editComment, removeComment, likesLine, feedView, runningStories, storiesOf, normStory,
     feedPrompt, parseFeed, FEED_SCHEMA, newsPrompt, parseNews, NEWS_SCHEMA, richText, mentionsIn, reactPrompt, parseReact, REACT_SCHEMA, storyPrompt, parseStory, STORY_SCHEMA, storyToTell, tellsStory, relevantOld, pulsePrompt, parsePulse, PULSE_SCHEMA,
 } from './feed-pure.js';
 import { RUMOR, NEWS, normRumor, KIND_WORDS, newsAccount, rumorName, accountCard } from './rumor-pure.js';
@@ -45,9 +45,17 @@ export function everyone(w) {
     const L = live(); if (!L) return [];
     const m = mainInfo();
     const cast = peopleOf(L.board, L.state).map(x => ({ key: x.key, name: x.p.name, about: cardText(x.p) }));
-    const all = posters({ main: m ? { name: m.name, about: charText(m.ch, m.name) } : null, cast, voices: w.voices, people: w.people });
+    const all = posters({ main: m ? { name: m.name, about: charText(m.ch, m.name) } : null, cast, voices: w.voices, people: w.people, userName: nameOf(USER) });
     // no newspaper voice on the board: the story's news account reports (rumor-pure.js newsAccount)
     return all.some(p => p.kind === 'voice') ? all : [...all, newsAccount(w)];
+}
+/** A person's discretion line for a prompt (who they never gossip about, "gossips: never"), '' when none. */
+export function discretionOf(w, key) { try { return discretion(everyone(w).find(p => p.key === key)); } catch { return ''; } }
+/** Everyone's discretion line at once (key → line) — for a round that asks about several people. */
+export function discretionMap(w) {
+    const m = new Map();
+    try { for (const p of everyone(w)) { const d = discretion(p); if (d) m.set(p.key, d); } } catch { /* no board */ }
+    return m;
 }
 // the news and rumor accounts are voices, not story people (Miinthe, E7: "news and story people are the same")
 const kindOf = (w, key) => (key === USER ? 'user' : key === MAIN ? 'main' : String(key).startsWith('v:') || key === RUMOR || key === NEWS ? 'voice' : 'cast');
@@ -133,13 +141,15 @@ export function renderNews(body, w) {
 
 // ── People ──────────────────────────────────────────────────────────────────
 
-const dots = n => '●●●'.slice(0, n) + `<span class="off">${'●●●'.slice(0, 3 - n)}</span>`;
+const dots = n => (n === 0 ? 'never' : '●●●'.slice(0, n) + `<span class="off">${'●●●'.slice(0, 3 - n)}</span>`);
 export function renderPeople(body, w) {
     const ppl = everyone(w);
     const grp = (title, list) => (list.length ? `<div class="dle-wd-lgh">${title}</div>` + list.map(p => `<div class="dle-wd-prow">${avatar(p.key)}<b>${esc(p.name)}${p.muted ? ' <span title="Muted">🔇</span>' : ''}</b>
       <small class="hab"><span>Gossips ${dots(p.g)}</span> · <span>Messages ${dots(p.m)}</span> · <span>Posts ${dots(p.p)}</span></small>
       <small class="ab">${esc([p.interests.join(' · '), p.quirks].filter(Boolean).join(' — ') || p.about || '')}</small></div>`).join('') : '');
-    body.innerHTML = `<div class="dle-wd-ppl">${grp('The story\'s people', ppl.filter(p => p.kind === 'main' || p.kind === 'cast'))}${grp('Story voices', ppl.filter(p => p.kind === 'voice'))}${w.sections.feed ? `<div class="dle-wd-prow">${avatar(RUMOR)}<b>${esc(nameOf(RUMOR))}</b><small class="ab">The story's rumor account: anyone can post or send a tip without a name. Its name is set on the board.</small></div>` : ''}${grp('Regulars', ppl.filter(p => p.kind === 'regular'))}
+    // order (Miinthe, 2026-10-26: "'regulars' are in an awkward place"): the story's people, then the regulars (people of the place),
+    // then the voices and accounts — the rumor account under its own heading, not passing for a story voice
+    body.innerHTML = `<div class="dle-wd-ppl">${grp('The story\'s people', ppl.filter(p => p.kind === 'main' || p.kind === 'cast'))}${grp('Regulars', ppl.filter(p => p.kind === 'regular'))}${grp('Story voices', ppl.filter(p => p.kind === 'voice'))}${w.sections.feed ? `<div class="dle-wd-lgh">Rumor account</div><div class="dle-wd-prow">${avatar(RUMOR)}<b>${esc(nameOf(RUMOR))}</b><small class="ab">The story's rumor account: anyone can post or send a tip without a name. Its name is set on the board.</small></div>` : ''}
       <div class="dle-wd-hint">Passers-by stay nameless: they make the numbers ("and 23 others like this").</div>
       <button type="button" class="dk-btn" data-board-people>Edit people on the board</button></div>`;
 }
@@ -227,7 +237,8 @@ function postMenu(anchor, w) {
             H.save(removePost(H.store(), id)); if (artOpen === id) artOpen = null; H.render();
             // a deleted rumor is unheard again: what people learned from it goes too (back with Undo)
             const heard = rec?.rumor?.undo || null; if (heard) ungive(heard);
-            K.notify({ title: 'World', text: p.news ? 'News item deleted.' : 'Post deleted.', undo: H.here(() => { const back = heard ? { ...rec, rumor: { ...rec.rumor, undo: regive(rec) } } : rec, s = H.store(); H.save({ ...s, records: [...s.records.slice(0, at), back, ...s.records.slice(at)] }); H.render(); }) });
+            if (rec?.taught) ungive(rec.taught);   // quoted people, readers who noticed it: they don't know it any more
+            K.notify({ title: 'World', text: p.news ? 'News item deleted.' : 'Post deleted.', undo: H.here(() => { const base = { ...rec, taught: undefined }, back = heard ? { ...base, rumor: { ...rec.rumor, undo: regive(rec) } } : base, s = H.store(); H.save({ ...s, records: [...s.records.slice(0, at), back, ...s.records.slice(at)] }); H.render(); }) });
         } },
     ]);
 }
@@ -330,7 +341,7 @@ async function writeNews(body, w) {
         if (!a) { K.notify({ title: 'World', text: 'The news came back unreadable. Try again.', tone: 'warn' }); return; }
         const p = newPost({ store: H.store(), by: a.who.key, text: a.text, title: a.title, news: true, stamp: stampNow(), id: newId('p'), crowd: Math.round(6 + Math.random() * 25), auto: true });
         H.save(addRecord(H.store(), p, Math.max(0, lastI())));
-        if (a.quoted?.length) tellQuoted(a.quoted, nameOf(a.who.key), a.title || a.text);   // a story person quoted knows it
+        if (a.quoted?.length) { const u = tellQuoted(a.quoted, nameOf(a.who.key), a.title || a.text); if (u) H.save(updatePost(H.store(), p.id, x => ({ taught: mergeTaught(x.taught, u) }))); }   // a story person quoted knows it (undone when the post goes)
         if (a.askUser) askComment(w, p);   // {{user}} was involved: the reporter texts for a comment
         artOpen = p.id;
     } catch (err) { K.notify({ title: 'World', text: `No news: ${err?.message || err}`, tone: 'warn' }); }
@@ -380,7 +391,7 @@ export async function feedTick(w, reason, { force = false } = {}) {
             const rec = newPost({ store: st, by: p.who.key, text: p.text, title: p.title, news: !!p.title, story, stamp, id: newId('p'), crowd, auto: true });
             rec.likes = p.likes;
             st = addRecord(st, rec, i); made.push(rec);
-            if (rec.news && p.quoted?.length) quoted.push([p.quoted, nameOf(p.who.key), rec.title || rec.text]);
+            if (rec.news && p.quoted?.length) quoted.push([p.quoted, nameOf(p.who.key), rec.title || rec.text, rec.id]);
             if (rec.news && p.askUser) asks.push(rec);
         }
         // the story due this tick, told in a post the AI forgot to tag: that post tells it
@@ -398,7 +409,7 @@ export async function feedTick(w, reason, { force = false } = {}) {
             if (target && talksOk(w, c.who.key, target, c.text)) st = updatePost(st, target.id, p => addComment(p, { id: newId('c'), by: c.who.key, text: c.text, auto: true }));
         }
         H.save(st);
-        for (const [keys, outlet, head] of quoted) tellQuoted(keys, outlet, head);
+        for (const [keys, outlet, head, pid] of quoted) { const u = tellQuoted(keys, outlet, head); if (u) H.save(updatePost(H.store(), pid, x => ({ taught: mergeTaught(x.taught, u) }))); }
         for (const rec of asks.slice(0, 1)) askComment(w, rec);   // after the save: the knowledge is logged on the live state
     } catch (err) { console.warn('[DLE] world: feed failed', err?.message || err); }
     finally {

@@ -1,8 +1,8 @@
 /**
  * DeepLore Enhanced — Secondary-feature audit-fix tests
  *
- * Pure-logic coverage for the Librarian-tools / drawer / graph / cartographer
- * audit fixes (P3-7..P3-11). Only ST-free, node-importable pure helpers are
+ * Pure-logic coverage for the drawer / graph / cartographer
+ * audit fixes (P3-9..P3-11). (P3-7 went with the Librarian, 2026-10-19.) Only ST-free, node-importable pure helpers are
  * exercised here; the ST-importing wiring (navigateToBrowseEntry arg shape,
  * graph.js titleToIdx build, cartographer obsidian handler) is verified by
  * source inspection / manual UAT and mirrors the pure logic tested below.
@@ -11,8 +11,6 @@
  *   P3-9  — nav-key normalization contract (string vs {title, vaultSource}).
  *   P3-10 — Graph cycle detection resolves a bare title to ALL matching nodes
  *           (detectCircular, the same Map<title, idx[]> shape graph.js now uses).
- *   P3-7  — Cross-vault related-link resolution (replicated pure logic, mirrors
- *           resolveLinkedEntries' Map<title, Entry[]> + trackerKey dedup/exclude).
  *
  * Run with: node test/audit-fix-secondary.test.mjs
  */
@@ -137,84 +135,6 @@ test('no cycle when twins are acyclic (no false positives)', () => {
         { title: 'Child', vaultSource: 'V2', cascadeLinks: [] },
     ];
     assertEqual(detectCircular(entries).length, 0, 'acyclic cross-vault tree → no cycles');
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-section('P3-7 — cross-vault related-link resolution (Map<title, Entry[]> + trackerKey dedup)');
-
-// Replicates the resolveLinkedEntries logic from src/librarian/librarian-tools.js
-// (the live fn is non-exported + depends on module-scope vaultIndex). Kept in
-// lockstep with the source: build Map<titleLower, Entry[]>, resolve ALL matches
-// per link title, dedup + exclude by trackerKey.
-function buildTitleMap(vaultIndex) {
-    const m = new Map();
-    for (const e of vaultIndex) {
-        const lk = e.title.toLowerCase();
-        const bucket = m.get(lk);
-        if (bucket) bucket.push(e);
-        else m.set(lk, [e]);
-    }
-    return m;
-}
-function resolveLinked(entry, excludeTitles, max, titleMap) {
-    if (!entry.resolvedLinks?.length) return [];
-    const linked = [];
-    const seen = new Set();
-    for (const linkTitle of entry.resolvedLinks) {
-        if (linked.length >= max) break;
-        const matches = titleMap.get(linkTitle.toLowerCase()) || [];
-        for (const found of matches) {
-            if (linked.length >= max) break;
-            const key = `${found.vaultSource || ''}:${found.title.toLowerCase()}`;
-            if (seen.has(key)) continue;
-            if (excludeTitles.has(key)) continue;
-            seen.add(key);
-            linked.push(found);
-        }
-    }
-    return linked;
-}
-
-const linkVault = [
-    { title: 'Hero', vaultSource: 'A', resolvedLinks: ['Castle'] },
-    { title: 'Castle', vaultSource: 'A' },
-    { title: 'Castle', vaultSource: 'B' },
-    { title: 'Moat', vaultSource: 'B' },
-];
-
-test('a bare related-link surfaces ALL cross-vault same-title entries', () => {
-    const tm = buildTitleMap(linkVault);
-    const linked = resolveLinked(linkVault[0], new Set(), 10, tm);
-    assertEqual(linked.length, 2, 'both Castle@A and Castle@B returned (was 1 under first-wins)');
-    const vaults = linked.map(e => e.vaultSource).sort();
-    assertEqual(vaults, ['A', 'B'], 'both vault sources present');
-});
-
-test('exclude set (trackerKey-shaped) suppresses only the matching vault entry', () => {
-    const tm = buildTitleMap(linkVault);
-    // trackerKey shape: `${vaultSource}:${title.toLowerCase()}` — vaultSource keeps its case.
-    const exclude = new Set(['A:castle']); // Castle@A already shown
-    const linked = resolveLinked(linkVault[0], exclude, 10, tm);
-    assertEqual(linked.length, 1, 'only Castle@B survives');
-    assertEqual(linked[0].vaultSource, 'B', 'the non-excluded vault entry');
-});
-
-test('dedup by trackerKey across repeated link titles', () => {
-    const tm = buildTitleMap(linkVault);
-    const entry = { title: 'Hero', vaultSource: 'A', resolvedLinks: ['Castle', 'Castle'] };
-    const linked = resolveLinked(entry, new Set(), 10, tm);
-    assertEqual(linked.length, 2, 'duplicate link title does not double-count the twins');
-});
-
-test('max cap is honored across the flattened cross-vault matches', () => {
-    const tm = buildTitleMap(linkVault);
-    const linked = resolveLinked(linkVault[0], new Set(), 1, tm);
-    assertEqual(linked.length, 1, 'max=1 stops after the first matched twin');
-});
-
-test('no resolvedLinks → empty (safe)', () => {
-    const tm = buildTitleMap(linkVault);
-    assertEqual(resolveLinked({ title: 'X', vaultSource: 'A' }, new Set(), 10, tm).length, 0, 'no links');
 });
 
 await summary('Audit-Fix Secondary Tests');

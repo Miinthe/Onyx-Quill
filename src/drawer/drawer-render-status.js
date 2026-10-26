@@ -7,7 +7,6 @@ import {
     indexing, indexEverLoaded, computeOverallStatus,
     vaultAvgTokens, claudeAutoEffortBad, claudeAutoEffortDetail,
     pipelinePhase, pipelineLabelFor,
-    suppressNextAgenticLoop,
 } from '../state.js';
 import { getCurrentForChat as getCurrentVerdictForChat } from '../verdict/verdict-store.js';
 import { tr } from '../i18n/i18n.js';
@@ -24,7 +23,6 @@ import { ds, MODE_LABELS, MODE_DESCRIPTIONS, announceToScreenReader, formatToken
 
 let _lastAnnouncedStatus = null;
 let _lastAnnouncedPhase = null;
-let _lastSkipToolsState = null;
 
 // Wave I: the status glyph is a single persistent <goo-spinner> (created once in
 // renderStatusZone). Activity is signalled by its SPEED attribute (faster while the
@@ -93,25 +91,6 @@ export function renderStatusZone() {
     // No aria-live here — the visible label is plain content; status transitions are announced
     // once at polite urgency via #dle-drawer-live above (announceToScreenReader). f106.
     $drawer.find('.dle-pipeline-label').text(pipelineText).attr('aria-label', `Status: ${pipelineText}`);
-
-    const $skipBtn = $drawer.find('.dle-action-btn[data-action="skip-tools"]');
-    $skipBtn.toggleClass('dle-toggle-active', suppressNextAgenticLoop);
-    const $skipLabel = $skipBtn.find('.dle-action-label');
-    if ($skipLabel.length) {
-        $skipLabel.text(suppressNextAgenticLoop ? 'Skipping Next' : 'Skip Librarian');
-    }
-    $skipBtn.attr('title', suppressNextAgenticLoop
-        ? 'Librarian will be skipped on the next reply (click to re-enable)'
-        : 'Skip Librarian tools for next generation');
-    if (_lastSkipToolsState !== null && _lastSkipToolsState !== suppressNextAgenticLoop) {
-        $skipBtn.removeClass('dle-skip-tools-pulse');
-        requestAnimationFrame(() => {
-            $skipBtn.addClass('dle-skip-tools-pulse').off('animationend.skiptoolspulse').one('animationend.skiptoolspulse', function () {
-                $(this).removeClass('dle-skip-tools-pulse');
-            });
-        });
-    }
-    _lastSkipToolsState = suppressNextAgenticLoop;
 
     const $setupBanner = $drawer.find('.dle-setup-banner');
     const hasEnabledVaults = (settings.vaults || []).some(v => v.enabled);

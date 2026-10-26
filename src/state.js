@@ -134,9 +134,9 @@ export function getIndexBuildReport() { return indexBuildReport; }
 
 /**
  * Returns vault entries that are safe to show to the writing AI.
- * Filters out `lorebook-guide` entries (Librarian-only meta/style guides).
+ * Filters out `lorebook-guide` entries (writing/style guides, never story lore).
  *
- * **Use this everywhere except:** Emma's Librarian chat tools, the drawer Browse tab,
+ * **Use this everywhere except:** the drawer Browse tab,
  * the graph, and diagnostics. Anything that produces content the writing AI may see —
  * pipeline matching, AI candidate manifest, dle_search_lore, scribe, auto-suggest —
  * MUST go through this function instead of reading `vaultIndex` directly.
@@ -252,7 +252,7 @@ export function setGenerationLock(v) {
     notifyGenerationLockChanged();
 }
 export function setGenerationLockEpoch(v) { generationLockEpoch = v; }
-/** Update lock timestamp without toggling the lock itself (C9: agentic loop keepalive). */
+/** Update lock timestamp without toggling the lock itself (C9: long-call keepalive). */
 export function setGenerationLockTimestamp(v) { generationLockTimestamp = v; }
 
 /** Pipeline phase for drawer status display.
@@ -405,33 +405,11 @@ export function resetVaultIndexState() {
     notifyIndexUpdated();
 }
 
-// ── Librarian: tool-assisted lore retrieval + gap detection ──
+// ── Lore gaps (Mero's Requests; stored by src/lore-gaps.js) ──
 
-/** Librarian: gap records for current chat (hydrated from chat_metadata.deeplore_lore_gaps) */
+/** Gap records for the current chat (hydrated from chat_metadata.deeplore_lore_gaps). */
 export let loreGaps = [];
 export function setLoreGaps(v) { loreGaps = v; notifyLoreGapsChanged(); }
-
-/** Librarian: per-generation search_lore call counter (reset at generation start) */
-export let loreGapSearchCount = 0;
-export function setLoreGapSearchCount(v) { loreGapSearchCount = v; }
-
-/** Librarian: session-scoped stats (reset on page load, NOT persisted) */
-export let librarianSessionStats = { searchCalls: 0, flagCalls: 0, estimatedExtraTokens: 0 };
-export function setLibrarianSessionStats(v) { librarianSessionStats = v; }
-
-/** Librarian: per-chat stats (reset on CHAT_CHANGED) */
-export let librarianChatStats = { searchCalls: 0, flagCalls: 0, estimatedExtraTokens: 0 };
-export function setLibrarianChatStats(v) { librarianChatStats = v; }
-
-/**
- * Librarian: REAL token I/O of the last agentic turn (from result.usage —
- * measured input/output, not the librarian-tools payload-size proxy
- * `estimatedExtraTokens`). Per-turn snapshot so the footer readout stays
- * coherent with the context bar's "last generation, at rest" semantics.
- * Reset on CHAT_CHANGED. See drawer-render-footer.js (A2) + docs/gotchas.md.
- */
-export let librarianLastUsage = { input: 0, output: 0, total: 0 };
-export function setLibrarianLastUsage(v) { librarianLastUsage = v; }
 
 /** Custom field definitions: loaded from Obsidian YAML or defaults */
 /** @type {import('./fields.js').FieldDefinition[]} */
@@ -452,10 +430,6 @@ export function setMentionWeights(v) { mentionWeights = v; }
 /** Skip the entire DLE pipeline for the next generation (e.g. vault review). */
 export let skipNextPipeline = false;
 export function setSkipNextPipeline(v) { skipNextPipeline = v; }
-
-/** Suppress Librarian agentic loop for the next generation (one-shot toggle). */
-export let suppressNextAgenticLoop = false;
-export function setSuppressNextAgenticLoop(v) { suppressNextAgenticLoop = v; }
 
 // ── AI service circuit breaker ──
 // Prevents repeated full-timeout waits when AI services are down.
@@ -709,7 +683,7 @@ export function notifyPipelineComplete() {
 }
 
 // Fires BEFORE notifyPipelineComplete so the drawer Why? tab populates before
-// the agentic loop / ST generation runs.
+// ST generation runs.
 /** @type {Set<() => void>} */
 const injectionSourcesReadyCallbacks = new Set();
 

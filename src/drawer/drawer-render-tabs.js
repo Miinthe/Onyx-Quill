@@ -602,19 +602,17 @@ export function renderBrowseTab() {
 
     // LOCAL PATCH 2026-08-03 (Miinthe): the inbox jump button. The inbox is where entries are
     // written and where they get moved OUT of, so it earns a one-tap shortcut next to the
-    // folder filter. Resolved from `librarianWriteFolder` (the folder DeepLore itself writes
+    // folder filter. Resolved from `autoSuggestFolder` (the folder DeepLore itself writes
     // to) and only guessed by name as a fallback — so renaming "00 Inbox" doesn't break it,
     // as long as the setting still points at the right place.
     const $inboxBtn = $drawer.find('.dle-browse-inbox-btn');
     if ($inboxBtn.length && ds.cachedFolderSet) {
-        // Follow the AI lorebook's own destination first (`autoSuggestFolder`) — that is the
-        // folder new suggestions land in and therefore the one that actually needs reviewing.
-        // `librarianWriteFolder` is a different setting and often a parent folder, which drags
-        // in siblings like Retired that are finished with. Falls through to the Librarian's
-        // folder, then a name guess, then hides — so a stale or blank setting degrades quietly
-        // instead of pointing the button at the wrong place.
+        // Follow the AI lorebook's own destination (`autoSuggestFolder`) — that is the folder new
+        // suggestions land in and therefore the one that actually needs reviewing. Falls through
+        // to a name guess, then hides — so a stale or blank setting degrades quietly instead of
+        // pointing the button at the wrong place.
         const s = getSettings();
-        const candidates = [s.autoSuggestFolder, s.librarianWriteFolder]
+        const candidates = [s.autoSuggestFolder]
             .map(v => String(v || '').replace(/^\/+|\/+$/g, ''))
             .filter(Boolean);
         let inboxFolder = candidates.find(c => ds.cachedFolderSet.has(c)) || '';
@@ -1236,7 +1234,7 @@ export function renderBrowseWindow() {
         if (e.tokenEstimate) _hoverParts.push(`Tokens: ${e.tokenEstimate}`);
         const _hoverTitle = _hoverParts.length ? ` title="${_hoverParts.join('&#10;&#10;')}"` : '';
         html += `<div class="dle-browse-info" role="button" tabindex="0" aria-expanded="false" aria-label="Expand ${escapeHtml(e.title)} (Enter or click)" aria-describedby="${previewId}"${_hoverTitle}>`;
-        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="Writing guide — read by the Librarian (Emma) only, never sent to the writing AI. Add \'lorebook-guide\' tag to create one."><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Guide</span>' : ''}</span>`;
+        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="Writing guide — never sent to the writing AI as lore. Add \'lorebook-guide\' tag to create one."><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Guide</span>' : ''}</span>`;
         // LOCAL PATCH 2026-08-03: show the entry's origin on the COLLAPSED row.
         // `character` (and `instance`) previously appeared only in the expanded preview, so
         // triaging a folder of unsorted entries meant opening each one to find out where it

@@ -36,11 +36,10 @@ import {
     renderStoryTab,
 } from './drawer-render.js';
 import { onTrackersChanged } from '../trackers.js';   // LOCAL PATCH (Miinthe): story trackers
-import { renderLibrarianTab } from './drawer-render-librarian.js';
 import {
     switchTab,
     wireToolsTab, wireTabExpand, wireStatusActions, wireInjectionTab, wireBrowseTab, wireGatingTab, wireHealthIcons,
-    wireLibrarianTab, wireGlobalShortcuts,
+    wireGlobalShortcuts,
 } from './drawer-events.js';
 import { shouldBailDrawerDismiss } from './drawer-dismiss-pure.js';
 import { pushEvent } from '../diagnostics/interceptors.js';
@@ -67,7 +66,7 @@ export function resetDrawerState() {
     ds.browseQuery = '';
     ds.browseStatusFilter = 'all';
     ds.browseTagFilter = '';
-    // browseSort / librarianSort / browseSort [data-sort] are user UI prefs — accountStorage-persisted, intentionally not reset.
+    // browseSort [data-sort] are user UI prefs — accountStorage-persisted, intentionally not reset.
     ds.browseFilteredEntries = [];
     ds.browseRowModel = [];
     ds.browseLastRangeStart = -1;
@@ -90,9 +89,6 @@ export function resetDrawerState() {
     // BUG-042 will promote them to accountStorage in a later wave.
     ds.contextTokens = 0;
     // ds.stGenerating tracks ST's generation state across chat switches — GENERATION_ENDED clears it.
-    ds.librarianFilter = 'flag';
-    ds.librarianSelected.clear();
-    ds.librarianLastClicked = null;
     if (ds.browseSearchTimeout) { clearTimeout(ds.browseSearchTimeout); ds.browseSearchTimeout = null; }
     const $input = $(`#${DRAWER_ID} .dle-browse-input`);
     if ($input.length) $input.val('');
@@ -102,8 +98,6 @@ export function resetDrawerState() {
     if ($tag.length) $tag.val('');
     const $folder = $(`#${DRAWER_ID} [data-filter="folder"]`);
     if ($folder.length) $folder.val('');
-    // Re-render librarian tab to clear stale gaps from the previous chat.
-    scheduleRender(renderLibrarianTab);
 }
 
 /**
@@ -120,7 +114,6 @@ function flushDrawerRenders() {
     renderBrowseTab();
     renderGatingTab();
     renderStoryTab();
-    renderLibrarianTab();
     renderTimers();
     renderFooter();
     renderStatusZone();
@@ -455,7 +448,6 @@ export async function createDrawerPanel() {
     wireInjectionTab($drawer);
     wireBrowseTab($drawer);
     wireGatingTab($drawer);
-    wireLibrarianTab($drawer);
     wireHealthIcons($drawer);
     wireGlobalShortcuts($drawer);
     initPanelFrame($drawer);   // overhaul 2a (2026-10-15): header, Ready, ⋯, lock, left / right
@@ -527,9 +519,6 @@ export async function createDrawerPanel() {
                 if (!ds.stGenerating) return;
                 ds.stGenerating = false;
                 scheduleRender(renderStatusZone);
-                // A2: the real Librarian usage readout is set after the agentic loop
-                // returns (index.js), just before this event is emitted — refresh the
-                // footer so "Librarian: N tok" reflects the turn that just completed.
                 scheduleRender(renderFooter);
             };
             stCtx2.eventSource.on(stCtx2.eventTypes.GENERATION_ENDED, handleGenerationEnded);
@@ -552,7 +541,7 @@ export async function createDrawerPanel() {
 
     // E10/Q18: switchTab writes 'dle-last-drawer-tab' on every change; restore it here on open.
     // First-time users fall back to 'injection'.
-    const VALID_TABS = new Set(['injection', 'browse', 'gating', 'librarian']);
+    const VALID_TABS = new Set(['injection', 'browse', 'gating']);
     // overhaul 2b (2026-10-15): the newer tabs are remembered too; they set themselves up on a click, so they get one
     // (they used to fall back to Injection, which also overwrote the remembered tab)
     const CLICK_TABS = new Set(['story', 'mero', 'changes', 'cast']);
@@ -569,9 +558,6 @@ export async function createDrawerPanel() {
         const savedWhyFilter = accountStorage.getItem('dle-why-filter');
         if (savedWhyFilter) ds.whyTabFilter = savedWhyFilter;
 
-        const savedLibSort = accountStorage.getItem('dle-librarian-sort');
-        if (savedLibSort) ds.librarianSort = savedLibSort;
-
         const savedBrowseSort = accountStorage.getItem('dle-browse-sort');
         if (savedBrowseSort) ds.browseSort = savedBrowseSort;
     } catch { /* noop */ }
@@ -587,7 +573,6 @@ export async function createDrawerPanel() {
     renderBrowseTab();
     renderGatingTab();
     renderStoryTab();
-    renderLibrarianTab();
     renderTimers();
     renderFooter();
 
@@ -647,7 +632,7 @@ export async function createDrawerPanel() {
     }));
 
     // Early Why? tab population — fires when injection sources are ready, BEFORE the
-    // agentic loop or ST generation starts. Only the injection tab; other tabs update
+    // ST generation starts. Only the injection tab; other tabs update
     // via notifyPipelineComplete.
     drawerListeners.stateObservers.push(onInjectionSourcesReady(() => {
         if (drawerDestroyed) return;
@@ -684,12 +669,6 @@ export async function createDrawerPanel() {
     _lastGapCount = loreGaps.length;
     drawerListeners.stateObservers.push(onLoreGapsChanged(() => {
         if (drawerDestroyed) return;
-        scheduleRender(renderLibrarianTab);
-        // Footer label suffix reflects librarianChatStats.estimatedExtraTokens — re-render on gap change.
-        // ds.contextTokens stays as raw PM tokens; footer adds the extra at display time.
-        if (ds.contextBarAvailable) {
-            scheduleRender(renderFooter);
-        }
         // 500ms debounce smooths bursts during generation.
         const newCount = loreGaps.length;
         if (newCount > _lastGapCount) {

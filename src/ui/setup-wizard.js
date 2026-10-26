@@ -12,7 +12,7 @@ import { parseWorldInfoJson, importEntries } from '../vault/import.js';
 import { applyHtmlI18n, trf, tr } from '../i18n/i18n.js';
 import { EXTENSION_REF } from '../ext-path.js';
 
-const TOTAL_PAGES = 9;
+const TOTAL_PAGES = 8;   // 2026-10-19: one page fewer (the old optional "lookups during replies" page is gone)
 
 const PRESETS = {
     small:  { scanDepth: 4,  maxEntries: 10, budget: 2048 },
@@ -93,7 +93,6 @@ export async function showSetupWizard(startPage = 1) {
             $wizard = $('.dle-wizard');
             if (!$wizard.length) return;
             applyHtmlI18n($wizard[0]); // markup-bearing locale strings (data-i18n-html)
-            librarianToggleWired = false;
             resetWizardState(); // BUG-340: fresh state per open
 
             prefillFromSettings();
@@ -174,18 +173,12 @@ function prefillFromSettings() {
     }
     if (s.aiSearchProxyUrl) $wizard.find('#dle-wiz-ai-proxy-url').val(s.aiSearchProxyUrl);
     if (s.aiSearchModel) $wizard.find('#dle-wiz-ai-model').val(s.aiSearchModel);
-
-    // Page 6: Librarian
-    if (s.librarianEnabled) $wizard.find('#dle-wiz-librarian-enabled').prop('checked', true);
-    if (s.librarianSearchEnabled !== undefined) $wizard.find('#dle-wiz-librarian-search').prop('checked', s.librarianSearchEnabled);
-    if (s.librarianFlagEnabled !== undefined) $wizard.find('#dle-wiz-librarian-flag').prop('checked', s.librarianFlagEnabled);
 }
 
 function wireNavigation() {
     $wizard.find('#dle-wiz-prev').on('click', () => {
         let target = currentPage - 1;
-        // Skip AI (5) and Librarian (6) pages when keywords-only — no tool calling without AI.
-        if (target === 6 && searchMode === 'keywords') target = 5;
+        // Skip the AI page (5) when keywords-only.
         if (target === 5 && searchMode === 'keywords') target = 4;
         if (target >= 1) goToPage(target);
     });
@@ -195,7 +188,6 @@ function wireNavigation() {
         markStepComplete(currentPage);
         let target = currentPage + 1;
         if (target === 5 && searchMode === 'keywords') target = 6;
-        if (target === 6 && searchMode === 'keywords') target = 7;
         if (target <= TOTAL_PAGES) goToPage(target);
     });
 
@@ -240,10 +232,9 @@ function goToPage(page) {
     updateNavButtons();
 
     if (page === 5) loadAiProfiles();
-    if (page === 6) wireLibrarianToggle();
-    if (page === 7) wireVaultStructurePage();
-    if (page === 8) loadImportLorebooks();
-    if (page === 9) buildSummary();
+    if (page === 6) wireVaultStructurePage();
+    if (page === 7) loadImportLorebooks();
+    if (page === 8) buildSummary();
 
     // a11y (FOCUS-ON-ADVANCE): move focus to the newly-active panel so keyboard/SR users
     // land on the step content instead of being stranded on the now-hidden previous page,
@@ -530,11 +521,11 @@ function wireWelcomeFork() {
                 $wizard.find('#dle-wiz-host').trigger('focus');
                 break;
             case 'import':
-                // Import lives on Page 8. Mark the skipped intermediate steps complete so
+                // Import lives on Page 7. Mark the skipped intermediate steps complete so
                 // the step-dots stay navigable and Prev walks back normally; connection is
                 // still re-gated at Finish (#16) so this can't silently enable an unverified vault.
-                for (let i = 2; i < 8; i++) markStepComplete(i);
-                goToPage(8);
+                for (let i = 2; i < 7; i++) markStepComplete(i);
+                goToPage(7);
                 $wizard.find('input[name="dle-wiz-import-method"][value="lorebook"]')
                     .prop('checked', true).trigger('change');
                 break;
@@ -752,22 +743,6 @@ async function loadAiProfiles() {
     }
 }
 
-let librarianToggleWired = false;
-
-function wireLibrarianToggle() {
-    if (librarianToggleWired) return;
-    librarianToggleWired = true;
-
-    const $master = $wizard.find('#dle-wiz-librarian-enabled');
-    const $sub = $wizard.find('#dle-wiz-librarian-sub');
-
-    $master.on('change', function () {
-        $sub.toggle(this.checked);
-    });
-
-    $sub.toggle($master.is(':checked'));
-}
-
 function wireVaultStructure() {
     // Handled on page entry via runVaultStructureCreation
 }
@@ -839,7 +814,7 @@ function wireVaultStructurePage() {
         $skip.data('wired', true);
         $skip.on('click', () => {
             wizardState.vaultHelpers = 'skipped';
-            goToPage(8);
+            goToPage(7);
         });
     }
 }
@@ -1126,8 +1101,8 @@ function wireDoneActions() {
                 case 'settings':
                     import('./settings-ui.js').then(m => m.openSettingsPopup?.()).catch(() => {});
                     break;
-                case 'meet-emma':
-                    // "Meet Mero" (Miinthe, 2026-10-16: the wizard says Mero, not the old Librarian / Emma): open Mero's tab
+                case 'meet-mero':
+                    // "Meet Mero" (Miinthe, 2026-10-16: the wizard says Mero): open Mero's tab
                     try {
                         const pnl = document.getElementById('deeplore-panel');
                         if (pnl && !pnl.classList.contains('openDrawer')) document.querySelector('#deeploreDrawerIcon')?.closest('.drawer-toggle')?.click();
@@ -1193,10 +1168,6 @@ async function applyWizardSettings() {
             settings.aiSearchModel = $wizard.find('#dle-wiz-ai-model').val().trim() || '';
         }
     }
-
-    settings.librarianEnabled = $wizard.find('#dle-wiz-librarian-enabled').is(':checked');
-    settings.librarianSearchEnabled = $wizard.find('#dle-wiz-librarian-search').is(':checked');
-    settings.librarianFlagEnabled = $wizard.find('#dle-wiz-librarian-flag').is(':checked');
 
     // BUG-125: localStorage sentinel guards against saveSettingsDebounced
     // crashing before flush — without it, wizard re-triggers on next load.

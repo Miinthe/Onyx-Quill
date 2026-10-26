@@ -262,7 +262,7 @@ function resolveApiMap(apiType) {
  */
 function connectionSnapshot() {
     try {
-        const toolKeys = ['aiSearch', 'scribe', 'autoSuggest', 'aiNotepad', 'librarian', 'optimizeKeys'];
+        const toolKeys = ['aiSearch', 'scribe', 'autoSuggest', 'aiNotepad', 'optimizeKeys'];
         const tools = {};
         const seenProfileIds = new Set();
         const issues = [];
@@ -513,13 +513,10 @@ export function captureStateSnapshot() {
     } catch (e) { snap.ai = { __error: String(e) }; }
 
     try {
-        snap.librarian = {
-            sessionStats: state.librarianSessionStats,
-            chatStats: state.librarianChatStats,
-            loreGapsCount: Array.isArray(state.loreGaps) ? state.loreGaps.length : 0,
-            loreGapSearchCount: state.loreGapSearchCount,
+        snap.loreGaps = {
+            count: Array.isArray(state.loreGaps) ? state.loreGaps.length : 0,
         };
-    } catch (e) { snap.librarian = { __error: String(e) }; }
+    } catch (e) { snap.loreGaps = { __error: String(e) }; }
 
     try {
         snap.matching = {
@@ -607,12 +604,12 @@ export function captureStateSnapshot() {
     } catch {}
 
     try {
-        if (snap.librarian && typeof snap.librarian === 'object' && !snap.librarian.__error) {
+        if (snap.loreGaps && typeof snap.loreGaps === 'object' && !snap.loreGaps.__error) {
             const cm = globalThis.chat_metadata || {};
             const hidden = cm.deeplore_lore_gaps_hidden;
             const dismissed = cm.deeplore_lore_gaps_dismissed;
-            snap.librarian.gapsHiddenCount = Array.isArray(hidden) ? hidden.length : 0;
-            snap.librarian.gapsDismissedCount = Array.isArray(dismissed) ? dismissed.length : 0;
+            snap.loreGaps.hiddenCount = Array.isArray(hidden) ? hidden.length : 0;
+            snap.loreGaps.dismissedCount = Array.isArray(dismissed) ? dismissed.length : 0;
         }
     } catch {}
 

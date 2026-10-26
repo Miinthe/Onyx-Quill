@@ -128,7 +128,7 @@ export function initPanelFrame($drawer) {
             if (badge) t.append(badge);
             bar.append(t);   // in this order
         }
-        for (const id of ['browse', 'changes', 'librarian', 'tools']) { const t = bar.querySelector(`#dle-tab-${id}`); if (t) t.hidden = true; }
+        for (const id of ['browse', 'changes', 'tools']) { const t = bar.querySelector(`#dle-tab-${id}`); if (t) t.hidden = true; }
         bar.append(more);
         bar.classList.add('dle-tabs5');
     } else ph.insertBefore(more, lock);

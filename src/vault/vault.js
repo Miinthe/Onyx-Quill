@@ -278,28 +278,25 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
         computeEntityDerivedState(entries);
     }
 
-    // P3: BM25 incremental update when fuzzy/librarian search is on AND prev
-    // entries available AND diff is small. The math is delicate — see
-    // vault-incremental.js. Equivalence is pinned by test L4.
-    if (settings.fuzzySearchEnabled || settings.librarianSearchEnabled) {
-        let newBm25 = null;
-        if (sharedDiff && fuzzySearchIndex) {
-            const diff = sharedDiff;
-            const changed = diff.added.length + diff.removed.length + diff.modified.length;
-            if (shouldUseIncremental(changed, entries.length)) {
-                newBm25 = incrementalBM25Update(fuzzySearchIndex, diff);
-                if (newBm25 && settings?.debugMode) {
-                    console.debug(`[DLE] BM25 incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${newBm25.docs.size} docs`);
-                }
+    // P3: BM25 incremental update when prev entries available AND diff is small.
+    // The math is delicate — see vault-incremental.js. Equivalence is pinned by test L4.
+    // Always built (2026-10-19): it used to be built when loose matching OR the old in-reply lore search was on, and
+    // that search defaulted on — so it was always there and turning loose matching on worked at once. Kept so.
+    let newBm25 = null;
+    if (sharedDiff && fuzzySearchIndex) {
+        const diff = sharedDiff;
+        const changed = diff.added.length + diff.removed.length + diff.modified.length;
+        if (shouldUseIncremental(changed, entries.length)) {
+            newBm25 = incrementalBM25Update(fuzzySearchIndex, diff);
+            if (newBm25 && settings?.debugMode) {
+                console.debug(`[DLE] BM25 incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${newBm25.docs.size} docs`);
             }
         }
-        // Fall back to full build when incremental path declined (no prev index,
-        // too many changes, or pre-H-12 index without invertedIndex).
-        if (!newBm25) newBm25 = buildBM25Index(entries);
-        setFuzzySearchIndex(newBm25);
-    } else {
-        setFuzzySearchIndex(null);
     }
+    // Fall back to full build when incremental path declined (no prev index,
+    // too many changes, or pre-H-12 index without invertedIndex).
+    if (!newBm25) newBm25 = buildBM25Index(entries);
+    setFuzzySearchIndex(newBm25);
 
     // Log the invalidation reason so "why did my cache go stale mid-session" is
     // diagnosable post-facto without repro.
@@ -343,7 +340,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
     if (analytics) {
         const activeKeys = new Set(vaultIndex.map(e => trackerKey(e)));
         for (const key of Object.keys(analytics)) {
-            // BUG-AUDIT-DP01: `_`-prefixed keys (e.g. `_librarian`) are sub-objects, not
+            // BUG-AUDIT-DP01: `_`-prefixed keys are sub-objects, not
             // tracker keys — were being silently wiped on every rebuild.
             if (key.startsWith('_')) continue;
             if (!activeKeys.has(key)) delete analytics[key];
@@ -804,9 +801,7 @@ export async function hydrateFromCache() {
         // until a full rebuild completes.
         const hydrateSettings = getSettings();
         computeDerivedIndexFields(cached.entries, hydrateSettings);
-        if (hydrateSettings.fuzzySearchEnabled || hydrateSettings.librarianSearchEnabled) {
-            setFuzzySearchIndex(buildBM25Index(cached.entries));
-        }
+        setFuzzySearchIndex(buildBM25Index(cached.entries));   // always (see the P3 note in buildIndex)
         // indexEverLoaded is set by buildIndex() after a successful Obsidian fetch
         // confirms the vault is reachable — not here.
         notifyIndexUpdated();

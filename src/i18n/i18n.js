@@ -216,7 +216,7 @@ export { t, translate, getCurrentLocale };
  * `src/i18n/prompts/{locale}.js` as ES module exports. Caller does:
  *
  *   const promptModule = await getAiPromptDict();
- *   const sys = promptModule.LIBRARIAN_SYSTEM_PROMPT;
+ *   const sys = promptModule.AI_SEARCH_SYSTEM_PROMPT;
  */
 export function setAiPromptLocale(locale) {
     _aiPromptLocale = locale ? resolveLocale(locale) : null;

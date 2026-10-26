@@ -270,14 +270,6 @@ export function runHealthCheck() {
         issues.push({ type: 'Size', severity: 'warning', entry: '—', detail: `Constants alone total ~${constantTokenTotal} tokens, exceeding budget of ${settings.maxTokensBudget}` });
     }
 
-    try {
-        const unmet = settings.analyticsData?._librarian?.topUnmetQueries || [];
-        const frequentMisses = unmet.filter(u => u.count >= 3);
-        for (const miss of frequentMisses) {
-            issues.push({ type: 'Librarian', severity: 'info', entry: '—', detail: `AI searched for "${miss.query}" ${miss.count} times with no results — consider creating an entry` });
-        }
-    } catch { /* noop */ }
-
     const errors = issues.filter(i => i.severity === 'error').length;
     const warnings = issues.filter(i => i.severity === 'warning').length;
     return { issues, errors, warnings };
@@ -448,7 +440,7 @@ export function diagnoseEntry(entry, chatMsgs) {
     // Guide entries never reach the writing AI through any path.
     if (entry.guide) {
         result.stage = 'guide_entry';
-        result.detail = 'This is a lorebook-guide entry — it is only available to the Librarian, never injected into the writing AI prompt.';
+        result.detail = 'This is a lorebook-guide entry (a writing guide) — it is never injected into the writing AI prompt.';
         result.suggestions.push('Remove the lorebook-guide tag if you want this entry to be injected normally.');
         return result;
     }

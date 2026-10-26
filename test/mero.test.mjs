@@ -6,7 +6,8 @@
  * Run: npm run test:mero
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { asStore, normNote, inForce, hasRunOut, notesHere, authorNotesBlock, splitOoc, buildMeroPrompt, parseMeroAnswer, fallbackTitle, repliesAfter, scopeKey } from '../src/mero-pure.js';
+import { askedForNote, asStore, normNote, inForce, hasRunOut, notesHere, authorNotesBlock, splitOoc, buildMeroPrompt, parseMeroAnswer, fallbackTitle, repliesAfter, scopeKey } from '../src/mero-pure.js';
+import { boardSummary, namedTrackers, trackerDetails, mapHash, mapPrompt, parseMapAbouts, mapText, nowLine } from '../src/mero-board-pure.js';
 import { asLore, newReplies, dueToLook, parseLook, applyChange, undoChange, beforeAfter, splitFile, isNotCanon } from '../src/mero-lore-pure.js';
 import { asGlow, momentsOf, recentMoments, quietThreads, glowNow, momentOpener } from '../src/mero-glow-pure.js';
 import { buildBoardMeroPrompt, parseBoardMero, readJson, boardText, meroBoardBlock } from '../src/board-mero-pure.js';
@@ -78,7 +79,7 @@ test('Mero\'s prompt: who she is, the tag\'s rules, what she knows; the talk as 
 
 test('📚 a vault review: the whole vault goes along, never into the story chat; the talk remembers it is one', () => {
     const v = buildMeroPrompt({ talk: { msgs: [{ who: 'miinthe', t: 'Look it over?' }] }, entries: [{ title: 'Last', content: 'x' }], vault: [{ title: 'Kettle', content: 'Steams when upset.' }, { title: 'Spoon', content: 'Stirs trouble.' }] }).system;
-    assert(v.includes("Miinthe's whole lore vault (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite her entries') && !v.includes('Lore the writer was given'));
+    assert(v.includes("the author's whole lore vault (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite her entries') && !v.includes('Lore the writer was given'));
     assert(!buildMeroPrompt({ talk: { msgs: [] } }).system.includes('whole lore vault'));
     assertEqual(asStore({ chars: { 'k.png': { talks: [{ title: 'R', review: true, msgs: [] }] } } }).chars['k.png'].talks[0].review, true);
 });
@@ -255,7 +256,7 @@ test('board Mero: each job asks for JSON; her persona and the character ride alo
     }
     assert(buildBoardMeroPrompt('draft', {}).system.includes('ONE line'), 'a draft keeps one paragraph on one line');
     assert(buildBoardMeroPrompt('talk', { brief: BRIEF, quick: 'gaps' }).user.includes('Find gaps'));
-    assert(buildBoardMeroPrompt('talk', { brief: BRIEF, message: 'hi', talk: [{ who: 'you', t: 'earlier' }, { who: 'me', t: 'reply' }] }).user.includes('Miinthe: earlier\nMero: reply'));
+    assert(buildBoardMeroPrompt('talk', { brief: BRIEF, message: 'hi', talk: [{ who: 'you', t: 'earlier' }, { who: 'me', t: 'reply' }] }).user.includes('The author: earlier\nMero: reply'));
 });
 
 test('board Mero: tiles — new names only, cleaned, at most 8', () => {
@@ -302,6 +303,79 @@ test('board Mero: she can not help while off duty or without an AI', () => {
     assert(meroBoardBlock({ job: 'off', connected: true }).includes('off duty'));
     assert(meroBoardBlock({ job: 'part', connected: false }).includes('AI & connections'));
     assertEqual(meroBoardBlock({ job: 'freelance', connected: true }), '');
+});
+
+test('Mero never keeps a made-up "Miinthe:" side (a model finishing the pasted script wrote it)', () => {
+    const r = parseMeroAnswer('Mero: I like where your mind is going!\n\nMiinthe: That sounds fun. How are you, Mero?\nMero: Great.');
+    assertEqual(r.text, 'I like where your mind is going!');
+    assertEqual(parseMeroAnswer('Miinthe is a fine name for a heroine.').text, 'Miinthe is a fine name for a heroine.');
+});
+
+test('Mero\'s ground rules come last, after the story replies, and say she is not the writer', () => {
+    const { system } = buildMeroPrompt({ talk: { tag: 'yap', msgs: [] }, replies: [{ i: 1, name: 'Corvin', text: 'He watched the fox.' }] });
+    assert(system.indexOf('Ground rules') > system.indexOf('He watched the fox.'), 'rules after the replies');
+    assert(system.includes('NOT the writer') && system.includes('Never write the author\'s side'), 'the rules');
+});
+
+test('Mero uses the names from her settings — and no name at all when none is set', () => {
+    const talk = { tag: 'yap', msgs: [{ who: 'miinthe', t: 'Miinthe here, hi!' }] };
+    const plain = buildMeroPrompt({ talk, replies: [{ i: 1, name: 'Corvin', text: 'He watched the fox.' }] });
+    assert(!plain.system.includes('Miinthe'), 'no name in her instructions by default');
+    assert(plain.system.includes('Never call the author by a name'), 'told to use no name');
+    assertEqual(plain.messages[0].content, 'Miinthe here, hi!', 'what the author wrote is never changed');
+    const set = buildMeroPrompt({ talk, settings: { callMe: 'Miinthe', meroName: 'Mira' } }).system;
+    assert(set.startsWith('You are Mira ☆, Miinthe\'s co-writer') && set.includes('Call the author "Miinthe".'), 'both names used');
+    assertEqual(asStore({ settings: { callMe: '  Miinthe  ', meroName: '' } }).settings.callMe, 'Miinthe');
+});
+
+const DB = { trackers: [
+    { id: 'rel', kind: 'steps', name: 'Relationship', steps: [{ id: 'a', name: 'Foreign Envoy' }, { id: 'b', name: 'Known Envoy' }] },
+    { id: 'ete', kind: 'steps', name: 'A Stolen Eternity', steps: [
+        { id: 's1', name: 'The Stolen Bond', entries: ['Bond', 'Core'], kinds: {} },
+        { id: 's2', name: 'The Return Offered', entries: ['Return', 'Core', 'Judge x'], kinds: { 'Judge x': 'judge' } }] },
+    { id: 'where', kind: 'places', name: 'Where' },
+] };
+const DS = { trackers: { rel: { at: 'a' }, ete: { at: null } } };
+
+test('Mero\'s board summary: names and where each stands, never the details', () => {
+    assertEqual(boardSummary(DB, DS), ['Relationship: Foreign Envoy ← now → Known Envoy', 'A Stolen Eternity: The Stolen Bond → The Return Offered (not started)']);
+});
+test('a message that names a tracker, a step or a telling word looks that tracker up — nothing else', () => {
+    assertEqual(namedTrackers('aging and eternity is the last interlude, look it up', DB), ['ete']);
+    assertEqual(namedTrackers('what about the Known Envoy step?', DB), ['rel']);
+    assertEqual(namedTrackers('hi! how are you', DB), []);
+});
+test('looked-up details: each step with its own entry (not the shared one, not the judge note)', () => {
+    const d = trackerDetails(DB, 'ete', DS, t => ({ Bond: 'He took the bond.', Return: 'He offers it back.', Core: 'SHARED' }[t] || ''));
+    assert(d.includes('- The Stolen Bond: He took the bond.') && d.includes('- The Return Offered: He offers it back.') && !d.includes('SHARED'), d);
+});
+test('Mero is told she sees names only — and to say so instead of pretending; planning has no pitch cards', () => {
+    const plan = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'miinthe', t: 'x' }] }, boardMap: ['Relationship: Foreign Envoy ← now'] }).system;
+    assert(plan.includes('never pretend you looked it up') && plan.includes('Relationship: Foreign Envoy ← now'));
+    assert(plan.includes('writing partner') && !plan.includes('[[PITCH'), 'planning: a partner, no pitch format');
+    assert(buildMeroPrompt({ talk: { tag: 'yap', msgs: [] } }).system.includes('Offer a note ONLY when'));
+});
+
+test('notes only when asked: "make that a note", "wrap up" or "note" in her message', () => {
+    for (const t of ['make that a note', 'Wrap up: anything agreed?', 'can you note that?', 'note card please']) assert(askedForNote(t), t);
+    for (const t of ['I like a dinner, Rén Lú arranges it', 'Notable idea!', 'what about Ottilie?']) assert(!askedForNote(t), t);
+});
+
+test('Mero\'s stored summary: written from the board, read back, names only when the answer is unreadable', () => {
+    const p = mapPrompt(DB, t => ({ Bond: 'He took the bond.' }[t] || ''));
+    assert(p.user.includes('## A Stolen Eternity (id: ete)') && p.user.includes('The Stolen Bond: He took the bond.') && /JSON only/.test(p.system));
+    const ab = parseMapAbouts('```json\n{"trackers":[{"id":"ete","about":"An old bond taken and offered back."}]}\n```');
+    assertEqual(ab, { ete: 'An old bond taken and offered back.' });
+    assertEqual(parseMapAbouts('sorry, no'), {});
+    assertEqual(mapText(DB, ab), 'Relationship\n  Steps: Foreign Envoy → Known Envoy\nA Stolen Eternity — An old bond taken and offered back.\n  Steps: The Stolen Bond → The Return Offered');
+    assertEqual(nowLine(DB, DS), 'Where each stands in this chat — Relationship: Foreign Envoy · A Stolen Eternity: not started');
+});
+test('the summary is only written again when the trackers really changed', () => {
+    const h = mapHash(DB);
+    assertEqual(mapHash(JSON.parse(JSON.stringify(DB))), h);
+    const moved = JSON.parse(JSON.stringify(DB)); moved.trackers[0].steps.push({ id: 'c', name: 'Liked Envoy' });
+    assert(mapHash(moved) !== h);
+    const noted = JSON.parse(JSON.stringify(DB)); noted.trackers[0].note = 'just a note'; assertEqual(mapHash(noted), h, 'a note alone changes nothing');
 });
 
 summary('mero');

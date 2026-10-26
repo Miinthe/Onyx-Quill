@@ -12,6 +12,7 @@
  *   talk   — her window on the board: an answer, plus suggestions (a new step, a new tracker, an entry for a step).
  */
 
+import { named, nameRule } from './mero-names-pure.js';
 const arr = v => (Array.isArray(v) ? v : []);
 const str = v => (typeof v === 'string' ? v : v == null ? '' : String(v));
 const oneLine = s => str(s).replace(/\s*\n\s*/g, ' ').replace(/[ \t]{2,}/g, ' ').trim();
@@ -45,6 +46,11 @@ const JSON_ONLY = 'Answer with JSON only, no other text.';
  * @returns {{ system: string, user: string }}
  */
 export function buildBoardMeroPrompt(task, input = {}, me = {}) {
+    // the author's and Mero's names from her settings, in the instructions only (mero-names-pure.js)
+    const r = boardPrompt(task, input, me);
+    return { system: `${named(r.system, me?.names)}\n${nameRule(me?.names)}`, user: r.user };
+}
+function boardPrompt(task, input = {}, me = {}) {
     const i = input && typeof input === 'object' ? input : {};
     if (task === 'tiles') {
         const what = LIST_WORD[i.list] || LIST_WORD.states;
@@ -89,7 +95,7 @@ export function buildBoardMeroPrompt(task, input = {}, me = {}) {
             'You may suggest changes; Miinthe accepts or refuses each one. Kinds: {"kind":"step","tracker":"<tracker id>","name":"…","why":"…"} adds a step at the end of a tracker; {"kind":"tracker","name":"…","icon":"<one emoji>","steps":["…"],"why":"…"} a new tracker with 2 to 7 steps; {"kind":"entry","tracker":"<tracker id>","step":<step number>,"title":"…","why":"…"} an entry for a step that has none.',
             'Use only tracker ids and step numbers that are on the board. No suggestions is fine.',
             `${JSON_ONLY} {"text":"your answer","suggestions":[…]}`].join('\n'),
-        user: [boardText(i.brief), arr(i.talk).length ? `\nThis talk so far:\n${arr(i.talk).slice(-8).map(m => `${m.who === 'you' ? 'Miinthe' : 'Mero'}: ${oneLine(m.t)}`).join('\n')}` : '', `\nMiinthe: ${quick || oneLine(i.message)}`].filter(Boolean).join('\n'),
+        user: [boardText(i.brief), arr(i.talk).length ? `\nThis talk so far:\n${arr(i.talk).slice(-8).map(m => `${m.who === 'you' ? (me?.names?.you || 'The author') : (me?.names?.me || 'Mero')}: ${oneLine(m.t)}`).join('\n')}` : '', `\nMiinthe: ${quick || oneLine(i.message)}`].filter(Boolean).join('\n'),
     };
 }
 

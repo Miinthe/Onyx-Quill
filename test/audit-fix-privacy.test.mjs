@@ -104,7 +104,7 @@ section('P1-3 — Prompt-key + promptPresets redaction');
 
 test('Each known prompt-override key collapses to [prompt len=N]', () => {
     const keys = [
-        'aiSearchSystemPrompt', 'librarianCustomSystemPrompt', 'scribePrompt',
+        'aiSearchSystemPrompt', 'scribePrompt',
         'autoSuggestPrompt', 'aiNotepadPrompt', 'aiNotepadExtractPrompt',
         'optimizeKeysPrompt', 'summarySystemPrompt',
     ];
@@ -289,14 +289,6 @@ test('A tags: block with no lorebook- value PASSES', () => {
     assert(!containsRealLorebookTag('tags: [hero, villain]'), 'unrelated inline array passes');
 });
 
-test('Both canonical Librarian prompts pass validatePromptShape (overlay)', () => {
-    for (const key of ['LIBRARIAN_PRIMER', 'LIBRARIAN_FIRSTRUN_QA_SCRIPT']) {
-        const body = PromptsEn[key];
-        const res = validatePromptShape({ frontmatter: { key }, body }, body, key);
-        assert(res.ok, `${key} must pass overlay validation (got: ${res.ok ? '' : res.reason})`);
-    }
-});
-
 test('EVERY canonical prompt body passes overlay + deletion preflight', () => {
     let overlayFails = 0;
     let deleteFails = 0;
@@ -311,7 +303,7 @@ test('EVERY canonical prompt body passes overlay + deletion preflight', () => {
         const del = verifyPromptFileForDeletion(file, key);
         if (!del.ok) { deleteFails++; console.error(`    delete reject: ${key} — ${del.reason}`); }
     }
-    assert(n >= 30, `exercised all canonical keys (got ${n})`);
+    assert(n >= 6, `exercised all canonical keys (got ${n}; 6 since the old writer engine's prompts were removed)`);
     assertEqual(overlayFails, 0, 'zero canonical bodies rejected by overlay validation');
     assertEqual(deleteFails, 0, 'zero canonical bodies rejected by deletion preflight');
 });

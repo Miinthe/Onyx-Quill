@@ -6261,7 +6261,8 @@ function wireWorldMain(el) {
   wirePlans(el);
   // the compact people list: a dial cycles low → avg → high, mute toggles, ✎ opens one person
   const setP = (k, patch) => { const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }), ...patch }; if (patch.muted === false) delete ppl[k].muted; setWorld({ people: ppl }); };
-  el.querySelectorAll('[data-dial]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.dial.split('|'); const v = Number(dialOf(worldDoc().people?.[k], d)); setP(k, { [d]: v % 3 + 1 }); });
+  // a tap cycles low → avg → high (→ never, for Gossips and Posts) → low
+  el.querySelectorAll('[data-dial]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.dial.split('|'); const v = Number(dialOf(worldDoc().people?.[k], d)); setP(k, { [d]: NEVER_OK(d) ? (v + 1) % 4 : v % 3 + 1 }); });
   el.querySelectorAll('[data-wout]').forEach(b => b.onclick = () => { const k = b.dataset.wout, on = !(worldDoc().people?.[k]?.out === true); const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }) }; if (on) ppl[k].out = true; else delete ppl[k].out; setWorld({ people: ppl }); toast(on ? `${wName(k)} is out of the world — still in your scenes. ↩ brings them back.` : `${wName(k)} is back in the world.`); });
   el.querySelectorAll('[data-mute]').forEach(b => b.onclick = () => { const k = b.dataset.mute, on = !(worldDoc().people?.[k]?.muted === true); setP(k, { muted: on }); toast(on ? `${wName(k)} is muted: a break from the world until you unmute them.` : `${wName(k)} is back: what waited for them gets answered.`); });
   el.querySelectorAll('[data-never]').forEach(b => b.onclick = () => {
@@ -6271,6 +6272,11 @@ function wireWorldMain(el) {
     set(a, o, on); if (!on) set(o, a, false);   // off: from both lists
     setWorld({ people: ppl });
     toast(on ? `${wName(a)} and ${wName(o)} never talk to each other.` : `${wName(a)} and ${wName(o)} may talk again.`);
+  });
+  el.querySelectorAll('[data-hush]').forEach(b => b.onclick = () => {
+    const [a, o] = b.dataset.hush.split('|'), ppl = { ...(worldDoc().people || {}) }, cur = (ppl[a]?.hush || []).filter(z => z !== o), on = !(ppl[a]?.hush || []).includes(o);
+    ppl[a] = { ...(ppl[a] || { quirks: '' }), hush: on ? [...cur, o] : cur }; if (!ppl[a].hush.length) delete ppl[a].hush;
+    setWorld({ people: ppl });
   });
   el.querySelectorAll('[data-wp-open]').forEach(b => b.onclick = () => { wPersonOpen = wPersonOpen === b.dataset.wpOpen ? null : b.dataset.wpOpen; render(); });
   const ps = el.querySelector('#w-p-search'); if (ps) ps.oninput = () => { const q = ps.value.trim().toLowerCase(); el.querySelectorAll('[data-wrow]').forEach(r => { r.hidden = !!q && !r.dataset.wrow.includes(q); }); };
@@ -6282,7 +6288,9 @@ function wireWorldMain(el) {
 }
 // people in the world (stage 4, 2026-10-19): dials, interests, quirks, muted — one block per person
 const DIALS = [['g', 'Gossips'], ['m', 'Messages'], ['p', 'Posts']], DIAL_OPTS = [['1', 'low'], ['2', 'avg'], ['3', 'high']];
-const dialOf = (o, d) => String([1, 2, 3].includes(Number(o?.[d])) ? Number(o[d]) : 2);
+// Gossips and Posts may also be never (0) (Miinthe, 2026-10-26: "a cast member just never gossips (or posts) period")
+const NEVER_OK = d => d === 'g' || d === 'p';
+const dialOf = (o, d) => { const raw = o?.[d], n = Number(raw); return String([1, 2, 3].includes(n) || (NEVER_OK(d) && raw !== null && raw !== undefined && raw !== '' && n === 0) ? n : 2); };
 // small pictures for the World tab (cards' own pictures; voices and the test page get a colored initial)
 const wCardOf = k => (k === 'main' ? HD?.mainCard || '' : (doc.trackers.filter(t => t.kind === 'cast').flatMap(t => (t.people || []).map(p => [`${t.id}:${p.id}`, p.card])).find(([kk]) => kk === k) || [])[1] || '');
 function wPic(k, nm, cls = 'wpic') {
@@ -6294,7 +6302,7 @@ function wPic(k, nm, cls = 'wpic') {
 // compact (Miinthe, 2026-10-19: "the people in the world field will look crazy if you have a big cast"): one slim row per person —
 // three dot-dials that cycle on a tap, mute, ✎ opens interests + quirks for one person at a time; a search above 8 people
 let wPersonOpen = null;
-const DIAL_WORD = ['', 'low', 'avg', 'high'];
+const DIAL_WORD = ['never', 'low', 'avg', 'high'];
 // who never talks to whom (Miinthe, 2026-10-19: "don't allow this npc to dm X person … as safety"): either one's list names the other
 const neverOn = (w, a, b) => !!((w.people?.[a]?.never || []).includes(b) || (w.people?.[b]?.never || []).includes(a));
 const neverChoices = k => [['user', wName('user')], ['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name]), ...(worldDoc().voices || []).map(v => ['v:' + v.id, v.name])].filter(([o]) => o !== k);
@@ -6309,13 +6317,14 @@ function personBlock(w, k, nm, n) {
     <button class="wmb" data-wout="${esc(k)}" title="Not in the world: ${esc(nm)} stays in your scenes, but writes, posts and shows up nowhere in the world">✕</button></div>
     ${open ? `<div class="wpx"><input class="s wi" data-wi="${esc(k)}" value="${esc((pp.interests || []).join(', '))}" placeholder="Cares about (comma between): memes, photos of her own life">
     <textarea class="s wq" data-wq="${esc(k)}" rows="2" placeholder="Quirks, e.g. sends several short texts in a row · spells badly · loves emoji · never uses capitals">${esc(pp.quirks || '')}</textarea>
-    <div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>` : ''}`;
+    <div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div>
+    <div class="wnever"><small>Never gossips about <span class="mini">— no rumors, no talk about their private business (only this person; loyalty to a leader or partner is already understood)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = (pp.hush || []).includes(o); return `<button class="wchip${on ? ' on' : ''}" data-hush="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🤐 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>` : ''}`;
 }
 // voices (a newspaper, a shop) and regulars (recurring locals): list, editor, and a suggested mix to approve
 let wVoiceSel = null;
 function voicesCard(w) {
   const vs = w.voices || [];
-  let h = vs.length ? vs.map(v => `<div class="ln${wVoiceSel === v.id ? ' on' : ''}"><span><button class="linkish" data-wv="${esc(v.id)}">${esc(v.name)}${v.muted ? ' 🔇' : ''}</button><small>${v.kind === 'regular' ? 'a regular' : 'a story voice'} · posts ${['', 'low', 'avg', 'high'][v.p || 2]}${v.interests?.length ? ' · ' + esc(v.interests.join(', ')) : ''}</small></span></div>`).join('')
+  let h = vs.length ? vs.map(v => `<div class="ln${wVoiceSel === v.id ? ' on' : ''}"><span><button class="linkish" data-wv="${esc(v.id)}">${esc(v.name)}${v.muted ? ' 🔇' : ''}</button><small>${v.kind === 'regular' ? 'a regular' : 'a story voice'} · posts ${['never', 'low', 'avg', 'high'][v.p === 0 ? 0 : v.p || 2]}${v.interests?.length ? ' · ' + esc(v.interests.join(', ')) : ''}</small></span></div>`).join('')
     : '<div class="ln"><span class="mini">None yet. A voice is an institution or publication that fits the setting (a local paper, a shop, a guild board); a regular is a recurring local with a personality (a gossip, a grump, a conspiracy theorist).</span></div>';
   h += `<div class="btnrow" style="padding:6px 0 8px"><button id="w-v-add">+ Voice</button><button id="w-r-add">+ Regular</button></div>`;
   const v = vs.find(x => x.id === wVoiceSel);
@@ -6324,7 +6333,7 @@ function voicesCard(w) {
     <div class="ln stack"><span>Kind</span>${segH('w-v-kind', [['voice', 'A story voice'], ['regular', 'A regular']], v.kind)}</div>
     <div class="ln stack"><span>Who they are</span><textarea class="s" id="w-v-bio" rows="2" placeholder="e.g. the town's only newspaper, nosy and proud of it">${esc(v.bio || '')}</textarea></div>
     <div class="ln stack"><span>Quirks</span><textarea class="s" id="w-v-quirks" rows="2" placeholder="e.g. ALL CAPS when excited · ends every post with a proverb">${esc(v.quirks || '')}</textarea></div>
-    <div class="wdials">${DIALS.map(([d, l]) => `<span class="wdial"><small>${l}</small>${segH(`w-v-d-${d}`, DIAL_OPTS, dialOf(v, d))}</span>`).join('')}</div>
+    <div class="wdials">${DIALS.map(([d, l]) => `<span class="wdial"><small>${l}</small>${segH(`w-v-d-${d}`, NEVER_OK(d) ? [['0', 'never'], ...DIAL_OPTS] : DIAL_OPTS, dialOf(v, d))}</span>`).join('')}</div>
     <div class="ln stack"><span>Cares about</span><input class="s" id="w-v-int" value="${esc((v.interests || []).join(', '))}" placeholder="comma between"></div>
     <div class="ln"><span>Muted</span>${swH('w-v-mute', v.muted === true)}</div>
     <div class="btnrow" style="padding:6px 0 8px"><button id="w-v-done">Done</button><button id="w-v-del">Delete</button></div></div>`;

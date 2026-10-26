@@ -238,16 +238,11 @@ function buildSummarySection(snapshot, scrubbedGenerations) {
         push('');
     }
 
-    if (snapshot.librarian) {
-        push('### Librarian');
-        push(`- Mode: agentic loop (no ToolManager registration)`);
-        push(`- Lore gaps: ${snapshot.librarian.loreGapsCount} (searches this session: ${snapshot.librarian.loreGapSearchCount})`);
-        if (snapshot.librarian.gapsHiddenCount > 0 || snapshot.librarian.gapsDismissedCount > 0) {
-            push(`  - Hidden: ${snapshot.librarian.gapsHiddenCount} | Permanently dismissed: ${snapshot.librarian.gapsDismissedCount}`);
-        }
-        if (snapshot.librarian.sessionStats) {
-            const ss = snapshot.librarian.sessionStats;
-            push(`- Session stats: ${ss.searchCalls ?? 0} searches, ${ss.flagCalls ?? 0} flags, ~${ss.estimatedExtraTokens ?? 0} extra tokens`);
+    if (snapshot.loreGaps && !snapshot.loreGaps.__error) {
+        push('### Lore gaps (Mero\'s Requests)');
+        push(`- Saved in this chat: ${snapshot.loreGaps.count}`);
+        if (snapshot.loreGaps.hiddenCount > 0 || snapshot.loreGaps.dismissedCount > 0) {
+            push(`  - Hidden: ${snapshot.loreGaps.hiddenCount} | Permanently dismissed: ${snapshot.loreGaps.dismissedCount}`);
         }
         push('');
     }
@@ -474,13 +469,13 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 
 \`snapshot.setupState\` — Wizard completion, migration sentinels, vault config summary. \`possiblyIncomplete\` flags wizard-done-but-no-vaults-enabled. \`vaultSummary[]\` shows per-vault enabled/host/apiKey status. \`settingsVersion\` tracks migration schema level.
 
-\`snapshot.connections\` — Per-tool resolved connection config. \`tools.*\` shows effectiveMode, profileId, profileExists, profileModel, proxyUrl for each DLE tool (aiSearch, scribe, librarian, etc.). \`profiles.*\` has full ST profile objects. \`stActiveConnection\` shows ST's own active API/model/proxy. \`issues[]\` flags missing profiles and broken inherit chains.
+\`snapshot.connections\` — Per-tool resolved connection config. \`tools.*\` shows effectiveMode, profileId, profileExists, profileModel, proxyUrl for each DLE tool (aiSearch, scribe, autoSuggest, etc.). \`profiles.*\` has full ST profile objects. \`stActiveConnection\` shows ST's own active API/model/proxy. \`issues[]\` flags missing profiles and broken inherit chains.
 
 \`snapshot.chatContext\` — Chat state at snapshot time: characterId, characterName, groupId, isGroupChat, chatLength, lastMessageRole, lastMessageHasContent.
 
 \`snapshot.obsidianCircuitBreakers\` — Per-vault (keyed by host:port) circuit breaker state: state (closed/open/half-open), failures, backoffRemaining. Null if no vaults have been contacted.
 
-\`snapshot.librarian\` — Librarian subsystem state: lore gap count, session/chat stats. The agentic loop manages its own API calls (no ToolManager registration). \`gapsHiddenCount\`/\`gapsDismissedCount\` show suppressed lore gaps.
+\`snapshot.loreGaps\` — Lore gaps saved in this chat (shown in Mero's Requests). \`hiddenCount\`/\`dismissedCount\` show suppressed gaps.
 
 \`snapshot.staleness.generationLockZombie\` — true if generation lock has been held >60s, indicating a stuck pipeline.
 
@@ -502,11 +497,10 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 - **Wrong model for tool** -> \`profileModel\` in connections table doesn't match what user expects. Common when profile was edited after DLE was configured.
 - **Proxy with no CORS** -> tool mode is 'proxy' but calls fail. Check if \`enableCorsProxy\` is true in ST config (visible in network log 403 errors).
 - **Obsidian vault circuit breaker open** -> \`obsidianCircuitBreakers["host:port"].state === "open"\`. One vault being down can make all entries from that vault invisible. Check which vault is affected and whether Obsidian REST API plugin is running.
-- **Agentic loop active** -> Librarian uses its own API calls via \`callWithTools()\`. No ToolManager registration needed. If generation fails, check the active connection profile supports tool calling (most OpenAI-compatible APIs do).
 - **Zombie generation lock** -> \`staleness.generationLockZombie === true\`. Pipeline hung and lock wasn't released. Subsequent generations are blocked.
 - **Group chat entity confusion** -> \`chatContext.isGroupChat === true\` and entity matching shows unexpected character names. Group chats have multiple characters; entity regex may be matching the wrong character's lore.
 - **AI cache stale after regex rebuild** -> \`ai.cacheRegexVersionMatch === false\`. Cache was written before entity regexes were rebuilt (e.g. after vault re-index). Next generation will use stale entity matching data.
-- **Dismissed lore gaps** -> \`librarian.gapsDismissedCount\` > 0. User may have permanently dismissed valid gaps that should be re-examined.
+- **Dismissed lore gaps** -> \`loreGaps.dismissedCount\` > 0. User may have permanently dismissed valid gaps that should be re-examined.
 - **Wizard skipped or incomplete** -> \`setupState.possiblyIncomplete === true\`. User marked wizard complete but no vaults are enabled. DLE has nothing to work with. Guide them through vault setup.
 - **Vault missing host or API key** -> \`setupState.vaultSummary[].hasHost === false\` or \`hasApiKey === false\`. Vault configured but can't connect. Often caused by partial wizard completion.
 - **Settings version mismatch** -> \`setupState.settingsVersion\` is null or lower than expected (currently 2). Old settings may lack required fields and migrations may not have run.

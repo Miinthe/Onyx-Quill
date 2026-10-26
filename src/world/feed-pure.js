@@ -14,13 +14,15 @@ const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clip = (s, n) => { const t = String(s ?? '').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
 const dial = v => { const n = Math.round(Number(v)); return n >= 1 && n <= 3 ? n : 2; };
+// gossip and posts may also be NEVER (0) (Miinthe, 2026-10-26: "a cast member just never gossips (or posts) period")
+const dial0 = v => { if (v === null || v === undefined || v === '') return 2; const n = Math.round(Number(v)); return n >= 0 && n <= 3 ? n : 2; };
 
 // ── who is in the world ─────────────────────────────────────────────────────
 
 /** Someone's habits: { g (gossips), m (sends messages), p (posts), interests: [≤3] }. */
 export function normHabits(h) {
     const x = isObj(h) ? h : {};
-    return { g: dial(x.g), m: dial(x.m), p: dial(x.p), interests: arr(x.interests).map(s => clip(s, 60)).filter(Boolean).slice(0, 3) };
+    return { g: dial0(x.g), m: dial(x.m), p: dial0(x.p), interests: arr(x.interests).map(s => clip(s, 60)).filter(Boolean).slice(0, 3) };
 }
 /** A story voice or a regular, repaired (null when unusable). */
 export function normVoice(v) {
@@ -38,14 +40,21 @@ export const voiceKey = v => `v:${v.id}`;
  * Everyone who can post, with what the world needs: [{ key, name, kind ('cast'|'main'|'voice'|'regular'), about, quirks,
  * g, m, p, interests, muted }]. `people` = world.people (Cast + main habits/quirks/muted); `cast` = [{ key, name, about }].
  */
-export function posters({ main = null, cast = [], voices = [], people = {} }) {
+export function posters({ main = null, cast = [], voices = [], people = {}, userName = 'the player' }) {
     const habitsOf = k => normHabits(people?.[k]);
     const base = (key, name, kind, about) => ({ key, name, kind, about: clip(about, 600), quirks: clip(people?.[key]?.quirks, 600), ...habitsOf(key), muted: people?.[key]?.muted === true });
-    return [
+    const list = [
         ...(main ? [base('main', main.name, 'main', main.about)] : []),
         ...arr(cast).map(c => base(c.key, c.name, 'cast', c.about)),
         ...normVoices(voices).map(v => ({ key: voiceKey(v), name: v.name, kind: v.kind, about: v.bio, quirks: v.quirks, g: v.g, m: v.m, p: v.p, interests: v.interests, muted: v.muted === true })),
     ];
+    // who they never gossip about (Miinthe, 2026-10-26), as names — keys the list doesn't know are dropped
+    const nameOfKey = new Map(list.map(p => [p.key, p.name]));
+    for (const p of list) {
+        const hush = arr(people?.[p.key]?.hush).map(k => (k === 'user' ? userName : nameOfKey.get(k))).filter(Boolean);
+        if (hush.length) p.hush = hush;
+    }
+    return list;
 }
 
 // ── posts in the store ──────────────────────────────────────────────────────
@@ -74,6 +83,14 @@ export const addPostVersion = (p, v) => { const alts = [...versions(p), { title:
 export const showPostVersion = (p, by) => { const alts = versions(p), s = Math.max(0, Math.min(alts.length - 1, (Number(p.s) || 0) + by)); return { s, title: alts[s].title || p.title, text: alts[s].text }; };
 /** ✎ on a post: the shown version changes. */
 export const editPost = (p, { title, text }) => { const alts = versions(p).map((a, k) => (k === (Number(p.s) || 0) ? { title: title ?? a.title, text } : a)); return { ...(arr(p.alts).length ? { alts } : {}), text: clip(text, 3000), ...(title != null ? { title: clip(title, 160) } : {}) }; };
+/**
+ * What a post taught people (Miinthe, 2026-10-26: "removing a post … should also delete the knowledge about it"): the undo ids
+ * of every knowledge step that came from it — a quoted story person, readers noticing a rumor — merged, so deleting it undoes them.
+ */
+export const mergeTaught = (a, b) => ({
+    logIds: [...new Set([...arr(a?.logIds), ...arr(b?.logIds)])],
+    mknowIds: [...new Set([...arr(a?.mknowIds), ...arr(b?.mknowIds)])],
+});
 export const removePost = (store, id) => ({ ...store, records: arr(store?.records).filter(r => !(r.kind === 'post' && r.id === id)) });
 export const editComment = (p, cid, text) => ({ comments: arr(p.comments).map(c => (c.id === cid ? { ...c, text: clip(text, 1200) } : c)) });
 export const removeComment = (p, cid) => ({ comments: arr(p.comments).filter(c => c.id !== cid) });
@@ -140,13 +157,28 @@ export const FEED_SCHEMA = {
     }, required: ['posts'] },
 };
 
-const DIAL = ['', 'low', 'average', 'high'];
+const DIAL = ['never', 'low', 'average', 'high'];   // 0 = never (gossip, posts)
 
 /**
  * Who news may quote (Miinthe, 2026-10-19: "it can involve the kettle as a witness statement … but I think it should tend to just
  * random people, because if the news is about Spain while the story in Poland …"): mostly passers-by; someone from the story
  * only where the news happens where they are, or concerns them — and they then know they gave that statement.
  */
+/**
+ * Who people never gossip about (Miinthe, 2026-10-26: "Ottilie wouldn't gossip about Lucan like that … or Seraphine about
+ * Corvin"): loyalty first — read from who they are — then the board's own "never gossips about" and "gossips: never".
+ */
+export const GOSSIP_RULE = 'Loyalty: people never gossip about, mock or leak the private business of those they serve, love or are loyal to — their commander or lord, their partner, their family, their own people. Read who that is from each person\'s description and the story (a loyal second never gossips about her commander). Where a person is marked "never gossips", they never pass on rumors or talk about others\' private business at all.';
+/** One line on a person's discretion for a prompt ('' when nothing is set). */
+export function discretion(p) {
+    if (!p) return '';
+    if (typeof p.discretion === 'string') return p.discretion;
+    const bits = [];
+    if (p.g === 0) bits.push(`${p.name} never gossips — never passes on rumors or talks about others' private business`);
+    if (arr(p.hush).length) bits.push(`${p.name} never gossips about ${p.hush.join(', ')}`);
+    return bits.length ? bits.join('; ') + '.' : '';
+}
+
 export const QUOTE_RULE = 'Quotes in news: like a reporter asking around — mostly unnamed passers-by or locals you make up (a name and what they do). First decide "where": "here" (it happens where the story is) or "elsewhere". When it is "here" and about something that really happened in the story, the people of the story who were involved may give their opinion or a comment; otherwise quote them only when it happens right where they are, and rarely. "elsewhere": NO quotes from the people of the story at all — not even a "local angle". Never quote the player — unless the author\'s idea gives their words; then use exactly those. List anyone of the story you quoted in "quoted" (exact names). "askUser": true only when it is "here" and the player was involved — the reporter will then message them for a comment (not when the author\'s idea already gives their words).';
 
 /**
@@ -164,10 +196,11 @@ Write what the people below post now — the world going on by itself, mostly NO
 - Each in their own voice, following their quirks; about what they care about (their interests). Never more than they could know — nobody here saw the main scene.
 - Likes: name a few of the listed people who'd like it (by exact name), and a crowd number for everyone else (0–60; a popular voice gets more).
 - ${QUOTE_RULE.replaceAll('the player', userName)}
+- ${GOSSIP_RULE}
 - Comments: someone may answer one of the recent posts below ("post": its #number) or one of the new posts ("post": 0 = the first new post, -1 the second, -2 the third). People argue, joke, agree — and answer each other's comments (start with @Name), so a little discussion grows.
 - World stories: if one of the running stories should move on now, write its next phase as a post or news item ("story": its id) and list it as {"id", "told": true}. ${newStoryOk ? 'You may start ONE new small world story (something that happens in town and plays out over a few days) — give it a title and 3–5 short phases; tell the first phase now.' : 'No new world story now.'}
 Answer with JSON only: {"posts": [{"by": "exact name", "text": "...", "title": null, "where": null, "story": null, "quoted": [], "askUser": false, "likes": ["name"], "crowd": 12}], "comments": [{"post": 3, "by": "name", "text": "..."}], "stories": [{"id": "...", "told": true}], "newStory": null} — at most ${max} posts, often 1–2; comments 0–3.`;
-    const who = arr(people).map(p => `- ${p.name} (${p.kind === 'main' ? 'the main character' : p.kind === 'cast' ? 'one of the people of the story' : p.kind === 'regular' ? 'a regular in the feed' : 'a voice: an institution or publication'}) — posts: ${DIAL[p.p] || 'average'}, gossips: ${DIAL[p.g] || 'average'}${p.interests?.length ? `; cares about: ${p.interests.join(', ')}` : ''}${p.about ? `\n  ${clip(p.about, 300)}` : ''}${p.quirks ? `\n  How they write (follow it): ${clip(p.quirks, 300)}` : ''}`);
+    const who = arr(people).filter(p => p.p !== 0).map(p => `- ${p.name} (${p.kind === 'main' ? 'the main character' : p.kind === 'cast' ? 'one of the people of the story' : p.kind === 'regular' ? 'a regular in the feed' : 'a voice: an institution or publication'}) — posts: ${DIAL[p.p] || 'average'}, gossips: ${DIAL[p.g] || 'average'}${p.interests?.length ? `; cares about: ${p.interests.join(', ')}` : ''}${p.about ? `\n  ${clip(p.about, 300)}` : ''}${p.quirks ? `\n  How they write (follow it): ${clip(p.quirks, 300)}` : ''}${discretion(p) ? `\n  ${discretion(p)}` : ''}`);
     const user = [when ? `IN THE STORY IT IS NOW ${when}.` : '',
         `THE PEOPLE WHO CAN POST\n${who.join('\n')}`,
         arr(stories).length ? `THE WORLD STORY TO MOVE ON NOW (tell its next phase in ONE post or news item, with "story": its id, and list it in "stories" as told)\n${stories.map(s => `- id ${s.id}: "${s.title}" — told so far: ${s.phases.slice(0, s.at).join(' / ') || '(nothing yet)'}; next: ${s.phases[s.at]}`).join('\n')}` : '',
@@ -213,8 +246,9 @@ export function pulsePrompt({ userName, people = [], recent = [], old = [], text
 Make ${min === max ? max : `${min} to ${max}`} small moves now — ${min === 0 ? 'sometimes none when nothing fits, ' : ''}a different number each time. Kinds: ${kinds.join('; ')}.
 - Mostly NOT about ${userName}, never written by ${userName}. Each person in their own voice and quirks, knowing only what they could know (nobody here saw the main scene unless it says so).
 - Short and everyday: a reply in an argument, a joke, a worry, a follow-up. Don't repeat what's already there.
+- ${GOSSIP_RULE}
 Answer with JSON only: {"moves": [{"kind": "${feed ? 'comment' : 'text'}", "by": "exact name", ${feed ? '"post": 12' : '"to": "exact name"'}, "text": "..."}]}`;
-    const who = arr(people).map(p => `- ${p.name}${p.kind === 'main' ? ' (the main character)' : p.kind === 'voice' ? ' (a voice: an institution)' : p.kind === 'regular' ? ' (a regular)' : ''}${p.quirks ? ` — writes: ${clip(p.quirks, 160)}` : ''}${p.interests?.length ? `; cares about: ${p.interests.join(', ')}` : ''}`);
+    const who = arr(people).filter(p => p.p !== 0).map(p => `- ${p.name}${p.kind === 'main' ? ' (the main character)' : p.kind === 'voice' ? ' (a voice: an institution)' : p.kind === 'regular' ? ' (a regular)' : ''}${p.quirks ? ` — writes: ${clip(p.quirks, 160)}` : ''}${p.interests?.length ? `; cares about: ${p.interests.join(', ')}` : ''}${discretion(p) ? ` — ${discretion(p)}` : ''}`);
     const tx = arr(texters).map(t => `- ${t.name}${t.wants ? ` — wants: ${clip(t.wants, 120)}` : ''}${arr(t.plans).length ? `; set on: ${t.plans.slice(-2).map(x => clip(x, 100)).join(' · ')}` : ''}${arr(t.knows).length ? `; knows: ${t.knows.slice(-4).map(x => clip(x, 110)).join(' · ')}` : ''}`);
     const user = [when ? `IN THE STORY IT IS NOW ${when}.` : '',
         arr(story).length ? `THE STORY JUST NOW (the main scene; only those there know it)\n${story.map(x => clip(x, 400)).join('\n')}` : '',
@@ -249,7 +283,7 @@ export function parsePulse(text, people, texters = [], max = 4, groups = []) {
                 texted = true; out.push({ kind: 'text', from, to, text: clip(m.text, 1200) });
             } else {
                 const who = byName.get(key(m.by));
-                if (!who || who.muted) continue;
+                if (!who || who.muted || who.p === 0) continue;   // "posts: never" posts and comments nothing
                 if (m.kind === 'comment' && Number.isFinite(Number(m.post))) out.push({ kind: 'comment', who, post: Math.round(Number(m.post)), text: clip(m.text, 1200) });
                 else if (m.kind === 'post') out.push({ kind: 'post', who, text: clip(m.text, 3000) });
             }
@@ -268,11 +302,11 @@ export function parseFeed(text, people, max = 3) {
         let v; try { v = JSON.parse(t); } catch { continue; }
         if (!isObj(v)) continue;
         const posts = arr(v.posts).filter(p => isObj(p) && typeof p.text === 'string' && p.text.trim()).map(p => ({ who: find(p.by), text: clip(p.text, 3000), title: typeof p.title === 'string' && p.title.trim() ? clip(p.title, 160) : '', story: typeof p.story === 'string' && p.story ? p.story : null, quoted: p.where === 'elsewhere' ? [] : arr(p.quoted).map(find).filter(x => x && (x.kind === 'cast' || x.kind === 'main')).map(x => x.key), askUser: p.where === 'here' && p.askUser === true && !!p.title, likes: arr(p.likes).map(find).filter(Boolean).map(x => x.key), crowd: Math.max(0, Math.min(500, Math.round(Number(p.crowd) || 0))) }))
-            .filter(p => p.who && !p.who.muted).slice(0, max)
+            .filter(p => p.who && !p.who.muted && p.who.p !== 0).slice(0, max)
             // a headline from someone who isn't a voice: the news is the newspaper's (or it stays a plain post)
             .map(p => (p.title && p.who.kind !== 'voice' ? (newsWriter(people) ? { ...p, who: newsWriter(people) } : { ...p, title: '' }) : p));
         const comments = arr(v.comments).filter(c => isObj(c) && typeof c.text === 'string' && c.text.trim() && Number.isFinite(Number(c.post))).map(c => ({ post: Math.round(Number(c.post)), who: find(c.by), text: clip(c.text, 1200) }))
-            .filter(c => c.who && !c.who.muted).slice(0, 4);
+            .filter(c => c.who && !c.who.muted && c.who.p !== 0).slice(0, 4);
         const told = arr(v.stories).filter(s => isObj(s) && s.told === true && typeof s.id === 'string').map(s => s.id);
         const ns = isObj(v.newStory) && typeof v.newStory.title === 'string' && arr(v.newStory.phases).length >= 2 ? { title: clip(v.newStory.title, 100), phases: arr(v.newStory.phases).map(x => clip(x, 300)).filter(Boolean).slice(0, STORY_PHASES_MAX) } : null;
         return { posts, comments, told, newStory: ns };
@@ -302,8 +336,8 @@ export function reactPrompt({ authorName, post, comment = '', people, look = 'ph
     const letters = look === 'letters';
     return {
         system: `You run the ${letters ? 'town board (notes pinned up, answers scribbled underneath)' : 'local social feed'} of a roleplay's world. ${authorName} just ${comment ? 'commented on a post' : 'posted'}. Who of the people below reacts — in their own voice, following their quirks, only if it fits who they are? ${count == null ? 'Usually one or two comment' : count === 0 ? 'This time nobody comments (unless someone was tagged)' : (count === 1 ? 'This time one person comments' : `This time ${count} comments — from different people, or a short back-and-forth`)}, some like it, and a crowd number for everyone else (0–40). Nobody saw the main scene; never more than they could know.${arr(tagged).length ? ` ${tagged.join(' and ')} ${tagged.length === 1 ? 'was' : 'were'} tagged — they answer.` : ''}
-Answer with JSON only: {"comments": [{"by": "exact name", "text": "..."}], "likes": ["name"], "crowd": 5}`,
-        user: `THE POST${post.title ? ` (news: ${post.title})` : ''}, by ${post.byName}:\n${clip(post.text, 1500)}${arr(post.comments).length ? `\n\nCOMMENTS SO FAR:\n${post.comments.map(c => `${c.byName}: ${clip(c.text, 300)}`).join('\n')}` : ''}${comment ? `\n\n${authorName.toUpperCase()}'S NEW COMMENT:\n${clip(comment, 800)}` : ''}\n\nTHE PEOPLE\n${arr(people).map(p => `- ${p.name}${p.quirks ? ` (writes: ${clip(p.quirks, 160)})` : ''}${p.interests?.length ? ` — cares about ${p.interests.join(', ')}` : ''}`).join('\n')}`,
+${GOSSIP_RULE}\nAnswer with JSON only: {"comments": [{"by": "exact name", "text": "..."}], "likes": ["name"], "crowd": 5}`,
+        user: `THE POST${post.title ? ` (news: ${post.title})` : ''}, by ${post.byName}:\n${clip(post.text, 1500)}${arr(post.comments).length ? `\n\nCOMMENTS SO FAR:\n${post.comments.map(c => `${c.byName}: ${clip(c.text, 300)}`).join('\n')}` : ''}${comment ? `\n\n${authorName.toUpperCase()}'S NEW COMMENT:\n${clip(comment, 800)}` : ''}\n\nTHE PEOPLE\n${arr(people).filter(p => p.p !== 0).map(p => `- ${p.name}${p.quirks ? ` (writes: ${clip(p.quirks, 160)})` : ''}${p.interests?.length ? ` — cares about ${p.interests.join(', ')}` : ''}`).join('\n')}`,
     };
 }
 export function parseReact(text, people) {
@@ -314,7 +348,7 @@ export function parseReact(text, people) {
         let v; try { v = JSON.parse(t); } catch { continue; }
         if (!isObj(v)) continue;
         return {
-            comments: arr(v.comments).filter(c => isObj(c) && typeof c.text === 'string' && c.text.trim()).map(c => ({ who: find(c.by), text: clip(c.text, 1200) })).filter(c => c.who && !c.who.muted).slice(0, 4),   // up to 4 (it was capped at 2: "only come in a double pack")
+            comments: arr(v.comments).filter(c => isObj(c) && typeof c.text === 'string' && c.text.trim()).map(c => ({ who: find(c.by), text: clip(c.text, 1200) })).filter(c => c.who && !c.who.muted && c.who.p !== 0).slice(0, 4),   // up to 4 (it was capped at 2: "only come in a double pack")
             likes: arr(v.likes).map(find).filter(x => x && !x.muted).map(x => x.key),
             crowd: Math.max(0, Math.min(200, Math.round(Number(v.crowd) || 0))),
         };

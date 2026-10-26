@@ -21,6 +21,7 @@ import { splitOoc } from './mero-pure.js';
 import { addRequest, onAnswer, requestsHere, updateRequest } from './requests.js';
 import { resultText } from './requests-pure.js';
 import { LORE_KEY, asLore, newReplies, dueToLook, buildLookPrompt, parseLook, applyChange, undoChange, beforeAfter } from './mero-lore-pure.js';
+import { meroNames } from './mero-names-pure.js';
 
 const MAX_REPLIES = 6, MAX_ENTRIES = 6;
 const lore = () => asLore(chat_metadata?.[LORE_KEY]);
@@ -85,7 +86,7 @@ export async function lookAtLore({ force = false } = {}) {
     setLooking(true);
     try {
         const replies = idx.map(k => ({ i: k, name: chat[k].name, text: splitOoc(chat[k].mes).clean.slice(0, 2500) }));
-        const { system, user } = buildLookPrompt({ entries, replies, persona: st.persona });
+        const { system, user } = buildLookPrompt({ entries, replies, persona: st.persona, names: meroNames(st) });
         const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
         if (getContext()?.getCurrentChatId?.() !== chatId) return { ok: false, error: 'the chat changed while Mero was looking' };
         const waiting = requestsHere().waiting.filter(x => x.kind === 'entry');

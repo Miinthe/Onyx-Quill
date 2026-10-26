@@ -12,7 +12,7 @@ import { SlashCommandArgument, ARGUMENT_TYPE } from '../../../../../slash-comman
 import { SlashCommandEnumValue } from '../../../../../slash-commands/SlashCommandEnumValue.js';
 import { classifyError, NO_ENTRIES_MSG, yamlEscape } from '../../core/utils.js';
 import { getSettings, getPrimaryVault, resolveConnectionConfig } from '../../settings.js';
-import { vaultIndex, scribeInProgress, setIndexTimestamp, loreGaps, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
+import { vaultIndex, scribeInProgress, setIndexTimestamp, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
 import { buildIndex, ensureIndexFresh } from '../vault/vault.js';
 import { runScribe } from '../ai/scribe.js';
 import { runAutoSuggest, showSuggestionPopup } from '../ai/auto-suggest.js';
@@ -125,7 +125,7 @@ export function registerAiCommands() {
             try {
             await ensureIndexFresh();
 
-            // BUG-AUDIT Fix 21: lorebook-guide entries are Librarian-only and must
+            // BUG-AUDIT Fix 21: lorebook-guide entries are writing guides and must
             // never reach the writing AI. /dle-review previously dumped raw vaultIndex,
             // leaking guide content as a persistent user message. Mirrors writer-visible
             // contract from getWriterVisibleEntries() / matchTextForExternal.
@@ -207,57 +207,6 @@ export function registerAiCommands() {
             return '';
         },
         helpString: 'Generate AI search summaries for entries that are missing them. Each summary is presented for review before writing.',
-        returns: ARGUMENT_TYPE.STRING,
-    }));
-
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-librarian',
-        callback: async (_args, subcommand) => {
-            if (!getSettings().librarianEnabled) {
-                toastr.warning(tr('dle_cmd_librarian_disabled_toast'), 'DeepLore');
-                return '';
-            }
-            const { openLibrarianPopup } = await import('../librarian/librarian-review.js');
-            const { loreGaps } = await import('../state.js');
-            const sub = (subcommand || '').trim();
-
-            if (sub.startsWith('gap ')) {
-                const gapId = sub.slice(4).trim();
-                const gap = loreGaps.find(g => g.id === gapId);
-                if (!gap) {
-                    toastr.warning(`Gap "${gapId}" not found.`, 'DeepLore');
-                    return '';
-                }
-                await openLibrarianPopup('gap', { gap });
-            } else if (sub === 'review') {
-                await openLibrarianPopup('review');
-            } else if (sub === 'audit') {
-                await openLibrarianPopup('audit');
-            } else {
-                await openLibrarianPopup('new');
-            }
-            return '';
-        },
-        unnamedArgumentList: [SlashCommandArgument.fromProps({
-            description: 'subcommand: review | audit | gap <id>',
-            typeList: [ARGUMENT_TYPE.STRING],
-            isRequired: false,
-            // Dynamic enum: static subcommands + gap-by-id for any open gaps.
-            // MUST be sync — ST's SlashCommandAutoCompleteNameResult calls
-            // enumProvider without awaiting and reads `.length` immediately, so
-            // returning a Promise produces silent autocomplete failure.
-            enumProvider: () => {
-                const base = [
-                    new SlashCommandEnumValue('review', 'open the review browser'),
-                    new SlashCommandEnumValue('audit', 'audit existing entries'),
-                ];
-                const gaps = (Array.isArray(loreGaps) ? loreGaps : []).map(g =>
-                    new SlashCommandEnumValue(`gap ${g.id}`, g.summary || g.title || g.id),
-                );
-                return [...base, ...gaps];
-            },
-        })],
-        helpString: 'Open the Librarian AI session. Usage: /dle-librarian [gap &lt;id&gt; | review | audit]',
         returns: ARGUMENT_TYPE.STRING,
     }));
 

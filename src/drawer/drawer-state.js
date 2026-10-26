@@ -15,7 +15,6 @@ export const TAB_LABELS = {
     injection: 'Injection',
     browse: 'Browse',
     gating: 'Filters',
-    librarian: 'Librarian',
     tools: 'Tools',
 };
 
@@ -155,17 +154,6 @@ export const ds = {
     /** 'both' | 'injected' | 'filtered' */
     whyTabFilter: 'injected',
 
-    /** 'flag' | 'activity' */
-    librarianFilter: 'flag',
-    /** 'newest' | 'frequency' | 'urgency' */
-    librarianSort: 'newest',
-    /** Selected gap IDs for bulk operations. */
-    librarianSelected: new Set(),
-    /** Anchor for shift+click range selection. */
-    librarianLastClicked: null,
-    /** Per-sub-tab last-viewed timestamps drive the "new since last view" badge. */
-    librarianLastViewed: { flag: 0, activity: 0 },
-
     /** P13: session-local — cleared on reload. */
     reasoningWarningDismissed: false,
 };
@@ -249,8 +237,8 @@ export function invalidateTemperatureCache() {
  * (verdict / counts / prompt-ready ticks) doesn't filter+sort the whole vault or
  * repaint the footer into a hidden drawer. Renders deferred while closed are
  * replayed on open (see drawer.js toggle handler + flushDrawerRenders). Gating is
- * **drawer-visible only, NOT active-tab** — the tab-bar badges (`.dle-librarian-badge`
- * in renderLibrarianTab, the browse count via `ds.browseFilteredEntries`) stay live
+ * **drawer-visible only, NOT active-tab** — the tab-bar badges (the browse count via
+ * `ds.browseFilteredEntries`) stay live
  * for every tab whenever the drawer is open. See docs/gotchas.md (Wave F).
  *
  * @returns {boolean}

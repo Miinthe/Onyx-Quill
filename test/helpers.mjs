@@ -346,8 +346,6 @@ export function makeSettings(overrides = {}) {
         vaults: [{ name: 'Test', port: 27123, apiKey: 'test', enabled: true }],
         contextualGatingTolerance: 'strict',
         multiVaultConflictResolution: 'all',
-        librarianConnectionMode: 'profile',
-        librarianSessionMaxTokens: 4096,
         autoSuggestSkipReview: false,
         connectionManager: overrides.connectionManager || { selectedProfile: 'test-profile' },
         ...overrides,
@@ -355,7 +353,7 @@ export function makeSettings(overrides = {}) {
 }
 
 // ============================================================================
-// Extended Factories — Multi-Vault, Librarian, Diagnostics
+// Extended Factories — Multi-Vault, Diagnostics
 // ============================================================================
 
 /**
@@ -372,35 +370,11 @@ export function makeChatMetadata(overrides = {}) {
         deeplore_injection_log: [],
         deeplore_chat_counts: {},
         deeplore_lore_gaps: [],
-        deeplore_librarian_session: null,
         deeplore_notebook: '',
         deeplore_ai_notepad: '',
         deeplore_folder_filter: null,
         deeplore_swipe_injected_keys: {},
         ...overrides,
-    };
-}
-
-/**
- * Build a Librarian session stub for sendMessage/regenerate tests.
- * @param {object} [opts]
- * @param {Array} [opts.messages] - Pre-existing message history
- * @param {object} [opts.draftState]
- * @returns {object}
- */
-export function makeLibrarianSession(opts = {}) {
-    return {
-        messages: opts.messages || [],
-        draftState: opts.draftState ?? null,
-        entryPoint: opts.entryPoint || 'manual',
-        gapRecord: opts.gapRecord || null,
-        manifest: opts.manifest || '',
-        chatContext: opts.chatContext || '',
-        relatedEntries: opts.relatedEntries || [],
-        workQueue: opts.workQueue || [],
-        lastOptions: opts.lastOptions || null,
-        mode: opts.mode || null,
-        guideBootstrap: opts.guideBootstrap || '',
     };
 }
 

@@ -7,6 +7,7 @@
  * anyone, writes to {{user}} now (from their wants, plans, what they know, whether they're away) and what they write.
  * Each tick is a world record of its own; what it makes is marked `auto`, so a swipe of that reply replaces it.
  */
+import { GOSSIP_RULE } from './feed-pure.js';   // who people never gossip about (Miinthe 2026-10-26)
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clip = (s, n) => { const t = String(s ?? '').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
@@ -100,12 +101,14 @@ export function tickPrompt({ userName, people, reason, look = 'phone', when = ''
 - People in the scene with ${userName} right now don't ${letters ? 'write letters' : 'text'}; they'd just talk.
 - Each message in that person's own voice${letters ? ', a short letter (no "Dear…" line, no signature — those are added)' : ', the way they would text (short; some use emoji, some write properly)'}. Never more than they know. Never write for ${userName}.
 Someone who sends several messages in a row: put a line with only --- between them inside their text.
+${GOSSIP_RULE}
 Answer with JSON only: {"messages": [{"from": "exact name", "text": "...", "why": "a few words"}]} — at most ${max}, often [].`;
     const blocks = arr(people).map(p => [
         `## ${p.name}${p.here ? ' (in the scene now)' : ' (away)'}`,
         p.card ? clip(p.card, 900) : '',
         p.wants ? `Wants: ${p.wants}` : '',
         p.quirks ? `How they write (follow it): ${clip(p.quirks, 400)}` : '',
+        p.discretion || '',
         arr(p.plans).length ? `Plans: ${p.plans.join(' · ')}` : '',
         arr(p.knows).length ? `Knows: ${p.knows.slice(-6).join('; ')}` : '',
         arr(p.last).length ? `Last messages with ${userName}:\n${p.last.map(m => `  ${m.who}: ${clip(m.text, 200)}`).join('\n')}` : `No messages with ${userName} yet.`,

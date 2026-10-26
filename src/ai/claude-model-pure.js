@@ -1,6 +1,6 @@
 /**
- * Pure model-classification helpers extracted from agentic-api.js so the
- * regex contracts are unit-testable without standing up ST mocks.
+ * Pure model-classification helper (moved here from src/librarian/agentic-api-pure.js when that folder was
+ * removed, 2026-10-19) so the regex contract is unit-testable without standing up ST mocks.
  *
  * No imports from ST modules. Keep it that way.
  */
@@ -11,9 +11,7 @@
  * request mitigations (thinking-vs-tool_choice 400 sidestep, `json_schema`
  * skip on Claude routes).
  *
- * Pure form: takes an explicit model string, returns boolean. The wrapper in
- * agentic-api.js falls back to `getResolvedModel()` when the caller passes
- * nothing; that fallback is the only part that needs ST context.
+ * Pure form: takes an explicit model string, returns boolean (no model → false).
  *
  * @param {string|null|undefined} model
  * @returns {boolean}

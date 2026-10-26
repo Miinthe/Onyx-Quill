@@ -62,7 +62,7 @@ export function setMenu(patch) { const s = store(); save({ ...s, menu: normMenu(
 // ── what Mero is told ────────────────────────────────────────────────────────
 
 function pitchContext(fromMsg) {
-    const { pkg, who, where, user } = meroKnows();
+    const { pkg, who, where, user, names } = meroKnows();
     const L = live();
     const chat = chatNow();
     const notes = meroNotes();
@@ -78,7 +78,7 @@ function pitchContext(fromMsg) {
     const cast = castForPitches(castAll().map(({ p, now }) => ({ name: p.name, here: now.here, wants: now.wants, plans: now.plans.map(x => x.text), thoughts: now.thoughts?.text, knows: now.knows.map(k => k.fact), hidden: p.hidden })), { immersion });
     const s = store();
     return {
-        persona: who, character: where.character, user,
+        persona: who, character: where.character, user, names,
         taste: notes.filter(n => n.taste && n.on && !n.ended).map(n => n.text),
         donts: notes.filter(n => n.inForce && n.kind === 'dont' && !n.hidden).map(n => n.text),
         notes: notes.filter(n => n.inForce && n.kind !== 'dont' && !n.hidden).map(n => n.text),

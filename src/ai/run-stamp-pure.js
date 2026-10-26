@@ -4,7 +4,7 @@
  * Pure; no SillyTavern. Play-born lore is tagged with its run at birth (her rule 14):
  * `character` and `instance` from the chat's gating context, plus `date` — when it was
  * written. The date is what lets a later branch tell which entries existed before the
- * branch point (session notes already carry one from Scribe; Auto Lorebook and Emma's
+ * branch point (session notes already carry one from Scribe; Auto Lorebook's
  * entries did not).
  *
  * @param {object|null} ctx - chat_metadata.deeplore_context

@@ -21,11 +21,6 @@ import {
     messageFormatting,
     saveMetadata,
     saveChatConditional,
-    updateViewMessageIds,
-    saveReply,
-    setSendButtonState,
-    activateSendButtons,
-    deactivateSendButtons,
     getCurrentChatId,
     stopGeneration,
 } from '../../../../script.js';
@@ -61,10 +56,9 @@ import {
     notifyChatInjectionCountsUpdated,
     fieldDefinitions,
     folderList,
-    setLoreGaps, setLoreGapSearchCount, setLibrarianChatStats, setLibrarianLastUsage,
+    setLoreGaps,
     setPipelinePhase, pipelineLabelFor,
     skipNextPipeline, setSkipNextPipeline,
-    suppressNextAgenticLoop, setSuppressNextAgenticLoop,
     buildPromise,
     onDebugModeChanged,
 } from './src/state.js';
@@ -103,13 +97,7 @@ import { dedupError, dedupWarning } from './src/toast-dedup.js';
 import { createDrawerPanel, resetDrawerState, destroyDrawerPanel } from './src/drawer/drawer.js';
 import { pushActivity } from './src/drawer/drawer-state.js';
 import { extractAiNotes, normalizeLoreGap, normalizeNotepadLine, normalizePinBlock as _dlePinNorm, matchesNormalizedPinBlock as _dlePinMatch } from './src/helpers.js';   // LOCAL PATCH: pin helpers for the step filter
-import { clearSessionActivityLog, persistGaps } from './src/librarian/librarian-tools.js';
-import { injectLibrarianDropdown, removeLibrarianDropdown } from './src/librarian/librarian-ui.js';
-import { clearSessionState as clearLibrarianSessionState } from './src/librarian/librarian-session.js';
-import { runAgenticLoop } from './src/librarian/agentic-loop.js';
-const REPLY_TAKEOVER = false;   // Miinthe 2026-10-05: the Librarian's reply takeover is off (see the agentic dispatch below)
-import { isToolCallingSupported, getActiveMaxTokens, isReasoningOnlyModel, getResolvedModel, isUnderlyingClaude } from './src/librarian/agentic-api.js';
-import { buildChatMessages } from './src/librarian/agentic-messages.js';
+import { isUnderlyingClaudeModel as isUnderlyingClaude } from './src/ai/claude-model-pure.js';
 import {
     buildVerdict,
     writeVerdict,
@@ -155,9 +143,8 @@ let _analyticsPendingSave = false;
 
 // Stepped Thinking coexistence guard. The ST extension `cierru/st-stepped-thinking`
 // fires `Generate('normal', { force_chid })` for each thought-chain step. Without
-// this gate, DLE re-runs the full pipeline (vault search, AI scoring, Librarian
-// dispatch) for every thinking pass — N× cost, vault traffic, cooldown pollution,
-// and Librarian eats the thinking output. Stepped Thinking emits literal-string
+// this gate, DLE re-runs the full pipeline (vault search, AI scoring) for every
+// thinking pass — N× cost, vault traffic, cooldown pollution. Stepped Thinking emits literal-string
 // events `'GENERATION_MUTEX_CAPTURED'` with payload `{extension_name: 'stepped-thinking'}`
 // (verified upstream `interconnection.js`, 2026-04-24) and `'GENERATION_MUTEX_RELEASED'`
 // (no payload). 10s safety timeout clears the flag if RELEASED never fires.
@@ -540,9 +527,8 @@ let _pipelineElapsedPhase = '';          // phase key the elapsed run is trackin
 
 // Phases where the toast is indeterminate and an elapsed counter + cancel are useful.
 // 'choosing'/'prefilter' are typically sub-second (keyword + pre-filter); the long waits
-// are the AI round-trips: 'consulting' (retrieval), 'generating'/'writing'/'searching'/
-// 'flagging' (Librarian). Showing the heartbeat only here keeps fast runs uncluttered.
-const _PIPELINE_ELAPSED_PHASES = new Set(['consulting', 'generating', 'searching', 'writing', 'flagging']);
+// are the AI round-trips: 'consulting' (retrieval), 'generating'. Showing the heartbeat only here keeps fast runs uncluttered.
+const _PIPELINE_ELAPSED_PHASES = new Set(['consulting', 'generating']);
 function _isElapsedPhase(phaseKey) { return !!phaseKey && _PIPELINE_ELAPSED_PHASES.has(phaseKey); }
 
 /**
@@ -555,8 +541,7 @@ function _isElapsedPhase(phaseKey) { return !!phaseKey && _PIPELINE_ELAPSED_PHAS
  * abortController, then (b) emits GENERATION_STOPPED, which reaches BOTH onGenerate's `onStop`
  * listener → `abortWith(pipelineAbort, 'pipeline:generation_stopped')` (aborts DLE's live AI
  * request) AND the init-block GENERATION_STOPPED handler (bumps generationLockEpoch, releases
- * the lock, clears stale prompts, sets phase idle, removes the toast). The agentic dispatch's
- * AbortError then unwinds through its try/finally, restoring the send button. Because this is
+ * the lock, clears stale prompts, sets phase idle, removes the toast). Because this is
  * literally the Stop-button path, send-button + lock + epoch teardown all match the established,
  * battle-tested behavior — nothing bespoke to keep in sync. See gotcha #74 / #38.
  */
@@ -758,7 +743,6 @@ function _removePipelineStatus() {
 const PROXY_MIG_FEATURE_LABEL_I18N = {
     aiSearchConnectionMode: 'dle_label_ai_search',
     scribeConnectionMode: 'dle_feature_session_scribe_h4',
-    librarianConnectionMode: 'dle_analytics_section_librarian',
     aiNotepadConnectionMode: 'dle_feature_ai_notepad_h4',
     autoSuggestConnectionMode: 'dle_feature_auto_lorebook_h4',
     optimizeKeysConnectionMode: 'dle_tool_optimize_keys',
@@ -768,7 +752,6 @@ const PROXY_MIG_FEATURE_LABEL_I18N = {
 const PROXY_MIG_TOOL_KEY = {
     aiSearchConnectionMode: 'aiSearch',
     scribeConnectionMode: 'scribe',
-    librarianConnectionMode: 'librarian',
     aiNotepadConnectionMode: 'aiNotepad',
     autoSuggestConnectionMode: 'autoSuggest',
     optimizeKeysConnectionMode: 'optimizeKeys',
@@ -887,7 +870,7 @@ async function _maybeShowProxyDeprecationNotice() {
  * that don't reach the in-flow registration (REG-B1).
  *
  * Uses a dle_-prefixed id (NOT deeplore_) so the various clearPrompts()
- * calls — including the Librarian agentic-loop clear — don't sweep it
+ * calls don't sweep it
  * away as if it were lore prompt state (REG-B3).
  */
 const PREFILL_ID = 'dle_response_prefill';
@@ -1032,10 +1015,9 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     // emit a writing-AI call that benefits from prefill).
     applyResponsePrefill(settings);
 
-    // Stepped Thinking coexistence: skip pipeline + Librarian dispatch while a
-    // stepped-thinking generation pass is in flight. See `inSteppedThinking`
-    // declaration for the rationale (would otherwise re-enter pipeline N× per
-    // user turn and corrupt thinking output via Librarian).
+    // Stepped Thinking coexistence: skip the pipeline while a stepped-thinking
+    // generation pass is in flight. See `inSteppedThinking` declaration for the
+    // rationale (would otherwise re-enter pipeline N× per user turn).
     if (inSteppedThinking) {
         if (settings.debugMode) console.debug('[DLE] Pipeline skipped — Stepped Thinking active');
         try { generationBuffer.push({ t: Date.now(), skipped: true, reason: 'stepped_thinking' }); } catch { /* noop */ }
@@ -1087,15 +1069,6 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     setGenerationLock(true);
     setPipelinePhase('choosing');
     _updatePipelineStatus(pipelineLabelFor('choosing'), 'choosing');
-
-    // Reset librarian per-generation search counter
-    setLoreGapSearchCount(0);
-
-    // Per-message activity: clear gap records at generation start so only the latest
-    // generation's gaps survive. New gaps are created by searchLoreAction/flagLoreAction.
-    if (settings.librarianPerMessageActivity && settings.librarianEnabled) {
-        persistGaps([]);
-    }
 
     // Capture chat epoch to detect stale writes if CHAT_CHANGED fires mid-generation
     const epoch = chatEpoch;
@@ -1217,7 +1190,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         }
 
         // Snapshot vaultIndex at pipeline start to avoid races with background rebuilds.
-        // getWriterVisibleEntries filters out lorebook-guide — those are Librarian-only and
+        // getWriterVisibleEntries filters out lorebook-guide — those are writing guides and
         // must never reach the writing AI through any path.
         let vaultSnapshot = getWriterVisibleEntries();   // LOCAL PATCH (Miinthe): let — narrowed by tracker steps below
 
@@ -1248,7 +1221,12 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // snapshot key with both Stage 9's per-swipe write below and the
             // MESSAGE_SWIPED rebuild, which keys assistants by global index.
             const { idx: earlyIdx, swipeId: earlySwipeId, key: earlySwipeKey } = swipeTargetFor(chat, verdictMsgIdx);
-            _snapMatch = !!(lastGenerationTrackerSnapshot && lastGenerationTrackerSnapshot.swipeKey === earlySwipeKey);
+            // LOCAL PATCH (Miinthe, 2026-10-26: "for a lot of swipes the injected entries get smaller and smaller"): SillyTavern
+            // gives a NEW swipe its new swipe_id before this runs, so the `${idx}|${swipe_id}` key never matched on a swipe —
+            // every swipe counted as a new turn (cooldowns, decay and history moved on, entries dropped out one by one).
+            // A swipe or regenerate of the same reply slot is the same turn: it starts again from the state before it.
+            _snapMatch = !!(lastGenerationTrackerSnapshot && (lastGenerationTrackerSnapshot.swipeKey === earlySwipeKey
+                || ((type === 'swipe' || type === 'regenerate') && lastGenerationTrackerSnapshot.idx === earlyIdx)));
             if (settings.debugMode) {
                 console.debug('[DLE][DIAG] swipe-check', {
                     earlyIdx, earlySwipeId, earlySwipeKey,
@@ -1281,6 +1259,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // Snapshot tagged with the CURRENT swipe key for next regen's rollback.
             setLastGenerationTrackerSnapshot({
                 swipeKey: earlySwipeKey,
+                idx: earlyIdx,   // the reply slot: a later swipe of it is recognized whatever its swipe number
                 cooldown: new Map(cooldownTracker),
                 decay: new Map(decayTracker),
                 consecutive: new Map(consecutiveInjections),
@@ -1667,7 +1646,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     lockEpoch,
                 })).catch(err => console.warn('[DLE] Verdict write failed:', err?.message));
             } catch (err) { console.warn('[DLE] Verdict build failed:', err?.message); }
-            // Notify drawer early so Why? tab populates BEFORE agentic loop / ST generation starts.
+            // Notify drawer early so Why? tab populates BEFORE ST generation starts.
             notifyInjectionSourcesReady();
         } else {
             // No lore groups → still clear stale prompts from the previous generation.
@@ -1937,350 +1916,8 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         setPipelinePhase('generating');
         _updatePipelineStatus(pipelineLabelFor('generating'), 'generating');
 
-        // === Agentic Loop Dispatch ===
-        // When Librarian is enabled and the active API supports tool calling, DLE runs its
-        // own agentic loop instead of letting ST generate. This produces a single clean message
-        // with no intermediate tool_invocation system messages.
-        // Agentic loop produces complete responses — fall through to ST for continue/append.
-        // One-shot suppression: reset flag regardless of whether we enter the agentic branch
-        if (suppressNextAgenticLoop) {
-            setSuppressNextAgenticLoop(false);
-            if (settings.debugMode) console.debug('[DLE] Agentic loop suppressed for this generation (one-shot)');
-        // LOCAL PATCH (Miinthe, 2026-10-05, built 2026-10-19): "Librarian: the reply takeover off now, its code deleted later".
-        // The agentic loop wrote the reply itself with search/write tools; LM Studio's Gemma template for MeroMero v2 can't
-        // render tools, so every reply on her account failed ("Error rendering prompt with jinja template"). SillyTavern
-        // writes the reply; the rest of the Librarian is untouched.
-        } else if (REPLY_TAKEOVER && settings.librarianEnabled && isToolCallingSupported()
-            && type !== 'continue' && type !== 'append' && type !== 'appendFinal') {
-            // BUG-AUDIT (Fix 30): pass `true` so ST's runGenerationInterceptors breaks
-            // the chain immediately. Plain abort() flags aborted=true but lets every
-            // later interceptor run against the chat DLE has already replaced.
-            abort(true); // Prevent ST from generating; stop further interceptors
-
-            // C1: Re-entrancy guard — abort() re-enables send via unblockGeneration(), lock it again
-            setSendButtonState(true);
-            deactivateSendButtons();
-
-            // C6: Reset search counter for this generation (searchLoreAction reads it internally)
-            setLoreGapSearchCount(0);
-
-            // HIGH-LIB-4 (2026-05-22): snapshot extension_prompts + aux + PM
-            // content BEFORE clearing so the catch can restore them if the
-            // agentic loop throws synchronously (no profile selected, Gemini
-            // safety block on first call, etc.) without ever producing prose.
-            // Per gotcha #2 ("NEVER clearPrompts without verified replacement"),
-            // the bare clear-then-return path leaves any same-turn observer
-            // seeing no lore. Self-heals next turn, but the window is real.
-            // Restore policy: only if catch fires AND no prose was produced.
-            // See gotchas.md #67.
-            const _promptsSnapshot = {
-                extPrompts: {},
-                pmContents: {},
-            };
-            for (const key of Object.keys(extension_prompts)) {
-                if (key.startsWith(PROMPT_TAG_PREFIX) || key === 'deeplore_notebook' || key === 'deeplore_ai_notepad' || key === 'deeplore_story_trackers' || key === 'deeplore_author_notes') {
-                    _promptsSnapshot.extPrompts[key] = extension_prompts[key];
-                }
-            }
-            if (promptManager) {
-                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
-                    const pmEntry = promptManager.getPromptById(id);
-                    if (pmEntry) _promptsSnapshot.pmContents[id] = pmEntry.content;
-                }
-            }
-
-            // H6: Clear extension prompts — lore is embedded in the agentic system prompt,
-            // so extension_prompts would duplicate it when CMRS.sendRequest builds the payload.
-            clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
-            if (settings.injectionMode === 'prompt_list' && promptManager) {
-                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`]) {
-                    const pmEntry = promptManager.getPromptById(id);
-                    if (pmEntry) pmEntry.content = '';
-                }
-            }
-            // Also clear aux prompts (notebook, notepad) — they're in the agentic system prompt too
-            for (const auxId of ['deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
-                if (extension_prompts[auxId]) delete extension_prompts[auxId];
-                if (promptManager) {
-                    const pmEntry = promptManager.getPromptById(auxId);
-                    if (pmEntry) pmEntry.content = '';
-                }
-            }
-
-            // H7: Declared outside try so catch can access it for save-on-error
-            let proseMsg = null;
-
-            try {
-                const pipelineContext = groups.map(g => g.text).join('\n\n');
-                const injTitles = new Set((acceptedEntries || []).map(e => (e.title || '').toLowerCase()));
-
-                const agenticMessages = buildChatMessages(chatMessages, pipelineContext, injTitles, settings);
-
-                const onProse = async (proseText) => {
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                    // saveReply operates on the global chat[] (NOT the shadowed chatMessages
-                    // parameter). It does: message creation, chat.push, swipe_info setup,
-                    // awaited MESSAGE_RECEIVED, addOneMessage, awaited CHARACTER_MESSAGE_RENDERED.
-                    //
-                    // The CHARACTER_MESSAGE_RENDERED handler (L1315) then:
-                    //   - attaches deeplore_sources from the current verdict (matched by msgIdx)
-                    //   - injects the sources button
-                    //   - extracts AI notes (mutates message.mes → cleaned text)
-                    //
-                    // Net result: swipes[0] = cleaned mes; swipe_info[0].extra holds
-                    // deeplore_sources + deeplore_ai_notes.
-                    await saveReply({ type, getMessage: proseText });
-
-                    // Re-check after every await — chat switch during MESSAGE_RECEIVED /
-                    // CHARACTER_MESSAGE_RENDERED handlers would attach proseMsg to the wrong
-                    // chat and saveChatConditional would persist into the new active chat.
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                    // Captured for post-loop tool_calls attachment.
-                    proseMsg = chat[chat.length - 1];
-
-                    _removePipelineStatus();
-                    updateViewMessageIds();
-
-                    // saveReply does NOT persist to disk. ST's Generate() normally does that,
-                    // but we called abort() so it returned early. Save now.
-                    await saveChatConditional();
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
-                        proseMsg = null;
-                        return;
-                    }
-                };
-
-                setPipelinePhase('writing');
-                _updatePipelineStatus(pipelineLabelFor('writing'), 'writing');
-                const onAgenticStatus = (status) => {
-                    // f025: the loop passes a structured { phase, progress } object — NEVER infer
-                    // the phase by string-matching display text (gotcha #74). Set the phase
-                    // deterministically; compose the localized label + (n/m) progress for the toast.
-                    const phase = status?.phase || 'writing';
-                    setPipelinePhase(phase);
-                    const label = pipelineLabelFor(phase);
-                    const p = status?.progress;
-                    const text = (p && Number.isFinite(p.current) && Number.isFinite(p.total))
-                        ? trf('dle_status_progress', label, p.current, p.total)
-                        : label;
-                    _updatePipelineStatus(text, phase);
-                };
-                const result = await runAgenticLoop({
-                    messages: agenticMessages,
-                    maxSearches: settings.librarianMaxSearches || 2,
-                    searchEnabled: settings.librarianSearchEnabled !== false,
-                    flagEnabled: settings.librarianFlagEnabled !== false,
-                    maxTokens: getActiveMaxTokens(),
-                    signal: pipelineAbort.signal,
-                    epoch,
-                    lockEpoch,
-                    onStatus: onAgenticStatus,
-                    onProse,
-                    injectedTitles: injTitles,
-                    settings,
-                });
-
-                // Re-check after the loop completes — chat may have changed during it.
-                if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                // A2: surface the REAL Librarian I/O measured inside the agentic loop
-                // (result.usage = { totalInput, totalOutput }). The footer used to display
-                // librarianChatStats.estimatedExtraTokens — a payload-size proxy that
-                // accumulates per chat and never matched actual API spend. Store the true
-                // per-turn cost; the footer renders it as a separate "Librarian: N tok"
-                // readout. The drawer footer re-renders on GENERATION_ENDED (emitted below
-                // in finally), so this lands before the readout is drawn.
-                if (result?.usage) {
-                    const _in = result.usage.totalInput || 0;
-                    const _out = result.usage.totalOutput || 0;
-                    setLibrarianLastUsage({ input: _in, output: _out, total: _in + _out });
-                }
-
-                if (proseMsg) {
-                    // Lifecycle events already fired in onProse — just attach tool data and re-save.
-                    // proseMsg holds a direct reference captured in onProse against the correct
-                    // old chat, so the `extra.deeplore_tool_calls` write lands on that exact
-                    // message even on stale epoch. The danger is the post-save dropdown injection,
-                    // which uses chat.length - 1 (would target the NEW active chat).
-                    // HIGH-LIB-5 (2026-05-22): ST normally initializes message.extra to {} in
-                    // saveReply, but third-party extensions can interpose on MESSAGE_RECEIVED
-                    // and strip it. Defensive `||=` keeps a TypeError from propagating into
-                    // the outer catch (which would then fire 'Generation failed' AFTER the
-                    // prose was saved, silently losing the dropdown). Mirrors the F3 fallback
-                    // branch's `msg.extra = msg.extra || {}` (gotcha #67).
-                    proseMsg.extra = proseMsg.extra || {};
-                    proseMsg.extra.deeplore_tool_calls = result.toolActivity;
-                    await saveChatConditional();
-                    // gotcha #43: every post-await branch needs the epoch guard, mirroring the
-                    // F3 fallback fix below. Without this, injectLibrarianDropdown would target
-                    // chat.length - 1 on the NEW active chat and inject a stale dropdown into
-                    // the user's wrong chat DOM.
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                    if (settings.librarianShowToolCalls && result.toolActivity.length > 0) {
-                        injectLibrarianDropdown(chat.length - 1, result.toolActivity);
-                    }
-
-                    // Issue-1: background the FLAG (gap-finder) turn. runAgenticLoop
-                    // now returns a detached `pendingFlag` thunk instead of blocking
-                    // the loop on a full flag API round-trip. Fire it WITHOUT await so
-                    // the generation lock + send button release immediately (outer
-                    // finally below) — the user is no longer held while gaps are found.
-                    // When the flag turn lands, append its activity to the already-saved
-                    // prose message and refresh the dropdown.
-                    //   - proseMsg is a stable OBJECT ref (captured in onProse), so the
-                    //     extra.deeplore_tool_calls write lands on the right message.
-                    //   - epoch + lockEpoch must BOTH still match: same chat (chatEpoch)
-                    //     AND not superseded by a newer generation (lockEpoch bumps on
-                    //     the next setGenerationLock(true) — see state.js). A new gen
-                    //     therefore auto-cancels this stale background flag.
-                    //   - swipe_id must ALSO still match. Swipe navigation does NOT bump
-                    //     either epoch, yet ST swaps `message.extra` per swipe (structuredClone
-                    //     in syncSwipeToMes) and the MESSAGE_SWIPED handler deletes the
-                    //     swapped-in `deeplore_tool_calls`. Without this guard a flag turn in
-                    //     flight while the user swipes to a DIFFERENT alternate would write its
-                    //     activity onto (and inject a dropdown over) the wrong swipe, then
-                    //     persist it. So we capture the prose swipe_id and bail if it changed.
-                    //     (Navigating away and BACK to the same swipe is fine — swipe_id matches
-                    //     and ST restored that swipe's extra incl. the search tool_calls.) The
-                    //     gap itself is still recorded in loreGaps by flagLoreAction regardless;
-                    //     only the per-message dropdown activity is dropped, which is acceptable.
-                    //   - dropdown re-inject is idempotent (librarian-ui removes any
-                    //     existing .dle-librarian-details first), so the second inject
-                    //     replaces the search-only dropdown with search+flags.
-                    if (result.pendingFlag) {
-                        const _bgProseMsg = proseMsg;
-                        const _bgEpoch = epoch;
-                        const _bgLockEpoch = lockEpoch;
-                        const _bgSwipeId = _bgProseMsg.swipe_id ?? 0;
-                        // True if the chat switched, a newer generation superseded us, or the
-                        // user navigated to a different swipe of the prose message.
-                        const _bgStale = () =>
-                            _bgEpoch !== chatEpoch
-                            || _bgLockEpoch !== generationLockEpoch
-                            || (_bgProseMsg.swipe_id ?? 0) !== _bgSwipeId;
-                        // Detached on purpose — do NOT await.
-                        (async () => {
-                            const flagRes = await result.pendingFlag();
-                            if (!flagRes || !flagRes.flagActivity?.length) return;
-                            if (_bgStale()) return;
-                            _bgProseMsg.extra = _bgProseMsg.extra || {};
-                            const prior = Array.isArray(_bgProseMsg.extra.deeplore_tool_calls)
-                                ? _bgProseMsg.extra.deeplore_tool_calls
-                                : [];
-                            _bgProseMsg.extra.deeplore_tool_calls = prior.concat(flagRes.flagActivity);
-                            try {
-                                await saveChatConditional();
-                            } catch (saveErr) {
-                                console.warn('[DLE] Background flag save failed:', saveErr?.message || saveErr);
-                                return;
-                            }
-                            if (_bgStale()) return;
-                            if (settings.librarianShowToolCalls) {
-                                // Re-resolve the live index from the object ref — robust
-                                // to in-chat message shifts the epoch guards don't catch.
-                                const liveIdx = chat.indexOf(_bgProseMsg);
-                                if (liveIdx >= 0) injectLibrarianDropdown(liveIdx, _bgProseMsg.extra.deeplore_tool_calls);
-                            }
-                        })().catch(bgErr => {
-                            console.warn('[DLE] Background flag dispatch error:', bgErr?.message || bgErr);
-                        });
-                    }
-                } else if (result.prose) {
-                    // Fallback path: onProse never fired (text-only response, no write() tool call).
-                    // saveReply gives us the proper message lifecycle (global chat, events, swipe_info).
-                    // F3 fix: this branch awaits twice (saveReply + saveChatConditional) but
-                    // bypasses onProse's in-loop guards (gotcha #43). Without these rechecks,
-                    // a CHAT_CHANGED during either await would have us read chat[chat.length-1]
-                    // off the NEW chat and persist tool_calls + a Librarian dropdown into it.
-                    await saveReply({ type, getMessage: result.prose });
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                    const msg = chat[chat.length - 1];
-                    if (!msg) return;
-                    msg.extra = msg.extra || {};
-                    msg.extra.deeplore_tool_calls = result.toolActivity;
-                    updateViewMessageIds();
-                    await saveChatConditional();
-                    if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
-
-                    if (settings.librarianShowToolCalls && result.toolActivity.length > 0) {
-                        injectLibrarianDropdown(chat.length - 1, result.toolActivity);
-                    }
-                } else {
-                    dedupError('AI did not produce a response. Try again.', 'agentic_no_prose');
-                }
-            } catch (err) {
-                if (err?.name !== 'AbortError' && !pipelineAbort.signal.aborted) {
-                    console.error('[DLE] Agentic loop error:', err);
-                    pushEvent('librarian', { action: 'error', error: err?.message?.slice(0, 200) });
-                    // proseMsg already set → error is from FLAG phase, save what we have.
-                    if (proseMsg) {
-                        await saveChatConditional();
-                    } else if (err?.name === 'SafetyBlockError') {
-                        // Gemini safety block / RECITATION / empty candidate \u2014 distinct user guidance
-                        // so the user can act (relax safety in preset, rephrase, or change model)
-                        // instead of seeing the generic "Generation failed" toast.
-                        dedupError('Gemini blocked or returned an empty response. Try rephrasing, relaxing safety in your profile preset, or using a different model.', 'agentic_safety_block', { hint: err.message?.slice(0, 200) });
-                    } else {
-                        dedupError('Generation failed \u2014 try again or disable Librarian.', 'agentic_error');
-                    }
-                }
-                // HIGH-LIB-4 (2026-05-22): when the agentic loop threw without producing
-                // prose, restore the extension_prompts + PM contents we cleared above.
-                // Gotcha #2: clearing without verified replacement leaves same-turn
-                // observers seeing no lore. Only restore on the no-prose path \u2014
-                // if prose was produced the cleared state is intentional (the agentic
-                // message already replaced the pipeline's role).
-                if (!proseMsg && (epoch === chatEpoch && lockEpoch === generationLockEpoch)) {
-                    try {
-                        for (const [key, value] of Object.entries(_promptsSnapshot.extPrompts)) {
-                            extension_prompts[key] = value;
-                        }
-                        if (promptManager) {
-                            for (const [id, content] of Object.entries(_promptsSnapshot.pmContents)) {
-                                const pmEntry = promptManager.getPromptById(id);
-                                if (pmEntry) pmEntry.content = content;
-                            }
-                        }
-                        if (settings.debugMode) console.debug('[DLE] HIGH-LIB-4: restored extension_prompts after agentic loop error');
-                    } catch (restoreErr) {
-                        console.warn('[DLE] HIGH-LIB-4: failed to restore prompts snapshot:', restoreErr);
-                    }
-                }
-            } finally {
-                // C1: restore send-button state captured at dispatch.
-                // L-38: each cleanup step is individually guarded so a throw in one
-                // (e.g. setSendButtonState) can't skip the others OR the
-                // GENERATION_ENDED emit below — which would strand the send button
-                // disabled and starve ecosystem listeners on a successful gen.
-                try { setSendButtonState(false); } catch (e) { console.warn('[DLE] setSendButtonState failed:', e?.message); }
-                try { activateSendButtons(); } catch (e) { console.warn('[DLE] activateSendButtons failed:', e?.message); }
-                try { _removePipelineStatus(); } catch { /* noop */ }
-                // Errors here must not propagate to the outer catch — that would show a misleading
-                // "Couldn't load your lore" toast on a successful generation.
-                // 2nd arg mirrors ST's own emit (chat.length, getGenerationPromptCache()) so
-                // ecosystem listeners that destructure arg 2 don't get undefined on Librarian turns.
-                // DLE can't access ST's private prompt cache, so pass an empty shape.
-                try { await eventSource.emit(event_types.GENERATION_ENDED, chat.length, {}); } catch { /* noop */ }
-            }
-            return; // Don't fall through to ST's generation.
-        }
-
-        // Librarian-on but no tool support: surface a distinct warning. Reasoning-only models
-        // (deepseek-reasoner, o-series, *-r1) physically cannot tool-call — that's a model-class
-        // problem, distinct from "provider/source doesn't support tools".
-        if (settings.librarianEnabled && !isToolCallingSupported() && !suppressNextAgenticLoop) {
-            const modelForWarning = getResolvedModel();
-            if (modelForWarning && isReasoningOnlyModel(modelForWarning)) {
-                dedupWarning(`Librarian skipped: ${modelForWarning} is a reasoning-only model and can't use function calling. Pick a tool-capable model.`, 'librarian_no_tools_reasoner');
-                try { generationBuffer.push({ t: Date.now(), event: 'librarian-skip', reason: 'no_tools_model', model: modelForWarning }); } catch { /* noop */ }
-            } else {
-                dedupWarning('Librarian is on but your connection doesn\'t support function calling — falling back to normal generation. Check DLE Settings → Connection.', 'librarian_no_tools');
-            }
-        }
+        // (The Librarian's reply takeover — DeepLore writing the reply itself in a tool loop — was removed with the
+        // Librarian, 2026-10-19. SillyTavern always writes the reply.)
 
     } catch (err) {
         _removePipelineStatus();
@@ -2441,13 +2078,6 @@ async function _doInit() {
             startFlightRecorder();
         } catch (err) {
             console.warn('[DLE] Flight recorder failed to start:', err?.message);
-        }
-
-        try {
-            const { applyLibrarianVisibility } = await import('./src/librarian/visibility.js');
-            applyLibrarianVisibility(!!getSettings().librarianEnabled);
-        } catch (err) {
-            console.warn('[DLE] Librarian visibility init failed:', err.message);
         }
 
         // Claude adaptive-thinking warning is REACTIVE-ONLY (gotcha #82). The proactive
@@ -2862,17 +2492,6 @@ async function _doInit() {
             // BUG-FIX-2: defensive — pipeline status from a prior in-flight generation must not linger.
             _removePipelineStatus();
 
-            // perMessageActivity ON: keep dropdown data (replaced on next gen). OFF: clear it.
-            if (!getSettings().librarianPerMessageActivity) {
-                if (message.extra?.deeplore_tool_calls) {
-                    delete message.extra.deeplore_tool_calls;
-                    saveMetadataDebounced();
-                }
-            }
-            // Dropdown DOM always cleared on swipe — the new swipe may not have tool calls.
-            // (Data preservation, when applicable, is handled by the perMessageActivity branch above.)
-            removeLibrarianDropdown(messageId);
-
             // BUG-290: anchored last-occurrence removal. Anchor `'\n' + notes` matches the
             // CHARACTER_MESSAGE_RENDERED append pattern; falling back to bare-string lastIndexOf
             // handles edge cases. Old String.replace() took the FIRST match and broke on
@@ -2893,8 +2512,14 @@ async function _doInit() {
                 delete message.extra.deeplore_ai_notes;
             }
 
-            if (message.extra?.deeplore_sources) {
+            // LOCAL PATCH (Miinthe, 2026-10-26: "swipes seem to just remove injected entries"): SillyTavern keeps each
+            // swipe's own extra (with its injected-entries list) and puts it back on swipe navigation. Only a NEW swipe
+            // about to be generated drops the list (the render handler attaches the new one); an existing swipe keeps its own.
+            const isExistingSwipe = Array.isArray(message.swipes) && typeof message.swipes[message.swipe_id] === 'string'
+                && !!message.swipe_info?.[message.swipe_id];
+            if (!isExistingSwipe && message.extra?.deeplore_sources) {
                 delete message.extra.deeplore_sources;
+                delete message.extra._deeplore_sources_tag;
                 saveMetadataDebounced();
             }
 
@@ -2921,17 +2546,12 @@ async function _doInit() {
         });
 
         // BUG-037: message-lifecycle events were previously ignored. Without these handlers,
-        // per-message extras (deeplore_sources, deeplore_ai_notes, deeplore_tool_calls) and
+        // per-message extras (deeplore_sources, deeplore_ai_notes) and
         // the AI Notepad accumulator drift permanently on delete/edit/swipe-dismiss.
         const _cleanupMessageExtras = (messageId, { alsoAiNotes = true } = {}) => {
             const message = chat?.[messageId];
             if (!message) return;
             let dirty = false;
-            if (message.extra?.deeplore_tool_calls) {
-                delete message.extra.deeplore_tool_calls;
-                dirty = true;
-            }
-            removeLibrarianDropdown(messageId);
             if (alsoAiNotes && message.extra?.deeplore_ai_notes) {
                 const notes = message.extra.deeplore_ai_notes;
                 const acc = chat_metadata?.deeplore_ai_notepad || '';
@@ -3010,13 +2630,7 @@ async function _doInit() {
             } catch (err) { console.warn('[DLE] MESSAGE_SWIPE_DELETED reindex failed:', err?.message); }
         });
 
-        // BUG-038: ST wipes chat_metadata itself on delete, so the chat_metadata-stored
-        // Librarian session draft (BUG-043) goes with it. This handler stays in place
-        // mainly to evict any leftover legacy localStorage draft from pre-BUG-043 installs
-        // and to no-op the chat_metadata cleanup defensively in case ST's wipe order
-        // changes upstream.
         const _onChatDeleted = (name) => {
-            try { clearLibrarianSessionState(); } catch (err) { console.warn('[DLE] CHAT_DELETED cleanup failed:', err.message); }
             // L3: ST wipes chat_metadata on delete, but verdict IDB is a separate store
             // and would leak the deleted chat's rows forever. Both CHAT_DELETED and
             // GROUP_CHAT_DELETED hand the deleted chat's id (same form getCurrentChatId
@@ -3028,12 +2642,12 @@ async function _doInit() {
         _registerEs(event_types.GROUP_CHAT_DELETED, _onChatDeleted);
 
         // BUG-039: profile lifecycle. If a profile wired into one of DLE's six profile fields
-        // (aiSearch / scribe / autoSuggest / aiNotepad / librarian / optimizeKeys) is deleted
+        // (aiSearch / scribe / autoSuggest / aiNotepad / optimizeKeys) is deleted
         // or renamed, the stored profileId becomes a dangling reference. On delete: null any
         // profileId that no longer resolves and toast the user so they know to rebind.
         const _profileIdFields = [
             'aiSearchProfileId', 'scribeProfileId', 'autoSuggestProfileId',
-            'aiNotepadProfileId', 'librarianProfileId', 'optimizeKeysProfileId',
+            'aiNotepadProfileId', 'optimizeKeysProfileId',
         ];
         const _onProfileDeleted = async (deleted) => {
             try {
@@ -3231,16 +2845,10 @@ async function _doInit() {
                 }
             }
 
-            // Librarian: hydrate gaps + reset counters. normalizeLoreGap collapses legacy v1
+            // Lore gaps (Mero's Requests): hydrate. normalizeLoreGap collapses legacy v1
             // statuses (acknowledged / in_progress / rejected) → v2 set (pending ↔ written).
             const savedGaps = chat_metadata?.deeplore_lore_gaps;
             setLoreGaps(savedGaps ? savedGaps.map(normalizeLoreGap) : []);
-            setLoreGapSearchCount(0);
-            setLibrarianChatStats({ searchCalls: 0, flagCalls: 0, estimatedExtraTokens: 0 });
-            // A2: per-turn real Librarian usage is chat-scoped — clear so a new chat's
-            // footer doesn't show the prior chat's last-turn cost until it generates.
-            setLibrarianLastUsage({ input: 0, output: 0, total: 0 });
-            clearSessionActivityLog();
 
             resetDrawerState();
             notifyPipelineComplete();
@@ -3255,7 +2863,6 @@ async function _doInit() {
             // Chat load: migrate stale data → inject UI, in that order.
             // Migration MUST precede Cartographer button injection — old chats may have
             // deeplore_sources stuck on empty intermediate messages (predates the guard).
-            // tool_invocations also need migrating to deeplore_tool_calls on the correct reply.
             // BUG-287: tag the retry chain with current chatEpoch so a second CHAT_CHANGED
             // (rapid switching) cancels a pending retry instead of injecting into the wrong chat.
             const injectEpoch = chatEpoch;
@@ -3267,57 +2874,13 @@ async function _doInit() {
                     return;
                 }
                 requestAnimationFrame(async () => { if (injectEpoch !== chatEpoch) return; try {
-                    const settings = getSettings();
                     const start = Math.max(0, chat.length - 50);
                     let needsSave = false;
 
                     // BUG-126: deeplore_migration_v2 sentinel skips re-running migrations on every chat load.
                     const migrationDone = chat_metadata?.deeplore_migration_v2;
 
-                    // ── Pass 1: tool_invocations → deeplore_tool_calls ──
-                    if (settings.librarianEnabled && !migrationDone) {
-                        const pendingMigration = [];
-                        for (let i = start; i < chat.length; i++) {
-                            const m = chat[i];
-                            if (m?.extra?.tool_invocations) {
-                                for (const inv of m.extra.tool_invocations) {
-                                    if (inv.name === 'dle_search_lore' || inv.name === 'dle_flag_lore') {
-                                        try {
-                                            const params = JSON.parse(inv.parameters || '{}');
-                                            const isSearch = inv.name === 'dle_search_lore';
-                                            let resultTitles = [];
-                                            let resultCount = 0;
-                                            if (isSearch && inv.result && !inv.result.startsWith('No entries')) {
-                                                const titleMatches = inv.result.match(/^## (.+)$/gm);
-                                                resultTitles = titleMatches ? titleMatches.map(t => t.replace('## ', '')) : [];
-                                                resultCount = resultTitles.length;
-                                            }
-                                            pendingMigration.push({
-                                                type: isSearch ? 'search' : 'flag',
-                                                query: isSearch ? params.query : params.title,
-                                                resultCount,
-                                                resultTitles,
-                                                urgency: params.urgency || 'medium',
-                                                tokens: 0,
-                                                timestamp: 0,
-                                            });
-                                        } catch { /* skip malformed */ }
-                                    }
-                                }
-                                continue;
-                            }
-                            if (pendingMigration.length > 0 && !m.is_user && !m.is_system && m.mes?.trim()) {
-                                if (!m.extra?.deeplore_tool_calls?.length) {
-                                    m.extra = m.extra || {};
-                                    m.extra.deeplore_tool_calls = [...pendingMigration];
-                                    needsSave = true;
-                                }
-                                pendingMigration.length = 0;
-                            }
-                        }
-                    }
-
-                    // ── Pass 2: move deeplore_sources from empty intermediate messages → correct reply ──
+                    // ── Move deeplore_sources from empty intermediate messages → correct reply ──
                     for (let i = migrationDone ? chat.length : start; i < chat.length; i++) {
                         const m = chat[i];
                         if (!m.is_user && !m.is_system && !m.mes?.trim() && m.extra?.deeplore_sources) {
@@ -3338,22 +2901,14 @@ async function _doInit() {
 
                     // overhaul 2a (2026-10-15): the Why? button became an item in the reply's ⋯ (src/reply-menu.js)
 
-                    if (settings.librarianEnabled && settings.librarianShowToolCalls) {
-                        for (let i = start; i < chat.length; i++) {
-                            if (chat[i]?.extra?.deeplore_tool_calls?.length) {
-                                injectLibrarianDropdown(i, chat[i].extra.deeplore_tool_calls);
-                            }
-                        }
-                    }
-
-                    // BUG-126: stamp completion sentinel so future CHAT_CHANGED skips both passes.
+                    // BUG-126: stamp completion sentinel so future CHAT_CHANGED skips this pass.
                     if (needsSave && !migrationDone) {
                         chat_metadata.deeplore_migration_v2 = true;
                     }
                     if (needsSave) {
                         // Persist message extras + sentinel atomically. saveMetadataDebounced
                         // is debounced (~1s) — a chat switch before the timer fires drops the
-                        // save AND the sentinel, so we'd lose tool_calls migration on every
+                        // save AND the sentinel, so we'd redo the migration on every
                         // reload until a non-debounced save happens. saveChatConditional is
                         // immediate; a re-check of injectEpoch guards against stale writes.
                         if (injectEpoch !== chatEpoch) return;

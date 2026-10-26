@@ -662,7 +662,7 @@ export function recordAnalytics(matchedEntries, injectedEntries, analyticsData) 
     }
 
     // Cap at 500, evict oldest by lastTriggered. `_`-prefixed meta buckets
-    // (e.g. `_librarian`) are exempt — no lastTriggered, would sort first.
+    // are exempt — no lastTriggered, would sort first.
     const ANALYTICS_MAX = 500;
     const keys = Object.keys(analyticsData).filter(k => !k.startsWith('_'));
     let capEvicted = 0;

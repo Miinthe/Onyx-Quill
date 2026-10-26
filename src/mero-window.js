@@ -9,12 +9,13 @@ import { getSettings } from '../settings.js';
 import { stIsDark, openBoardWindow } from './board-window.js';
 // overhaul (2026-10-17): the old helper's lore gaps live in her Requests now (their one home)
 import { loreGaps, onLoreGapsChanged, vaultIndex } from './state.js';
-import { hideGap, dismissGap, getHiddenGapIds, getDismissedGapIds, persistGaps } from './librarian/librarian-tools.js';
+import { hideGap, dismissGap, getHiddenGapIds, getDismissedGapIds, persistGaps } from './lore-gaps.js';
 import { resolveEntryVault, openObsidianUri } from './helpers.js';
 import { getTrackers } from './trackers.js';
 import { live } from './board-live.js';
 import {
     onMeroChanged, meroWhere, meroTalks, meroNotes, meroSettings, meroBusy, meroTold, newTalk, updateTalk, deleteTalk,
+    boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
     meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
 } from './mero.js';
@@ -172,6 +173,10 @@ window.__dleMeroHost = {
     updateNote: (id, patch) => updateNote(id, patch),
     removeNote: id => removeNote(id),
     told: id => clone(meroTold(id)),
+    // her summary of the board, in the ⓘ view (Miinthe 2026-10-26: one home, editable where you talk to her)
+    boardMap: () => clone(boardMapHere()),
+    setBoardMap: async text => clone(await setBoardMapHere(text)),
+    remakeBoardMap: async () => clone(await remakeBoardMapHere()),
     settings: patch => meroSettings(patch),
     openStory, popToggle,
     // your notebooks in her Notes (v13): the same tools as the side panel's ⋯ → Notebooks

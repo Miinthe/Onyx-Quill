@@ -12,6 +12,7 @@
  * Whether a change needs Miinthe's yes is a separate switch (sign-off), never part of the job.
  */
 import { parseHelperAnswer } from './autotrack-pure.js';
+import { named, nameRule } from './mero-names-pure.js';
 
 const arr = v => (Array.isArray(v) ? v : []);
 const str = v => (typeof v === 'string' ? v : '');
@@ -46,14 +47,14 @@ const sameQ = (a, b) => low(a).replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, '
 export const isNotCanon = (lore, title, q) => lore.notCanon.some(x => low(x.title) === low(title) && sameQ(x.q, q));
 
 /** Mero's look: the instructions and what she reads. `entries` [{ title, content }], `replies` [{ i, name, text }]. */
-export function buildLookPrompt({ entries = [], replies = [], persona = '' } = {}) {
+export function buildLookPrompt({ entries = [], replies = [], persona = '', names = {} } = {}) {
     const system = [
         `You are Mero ☆, Miinthe's co-writer and story bestie.${persona ? ` ${persona}` : ''} Right now you are checking Miinthe's lore entries against the latest replies of her roleplay.`,
         'Find facts that the replies clearly show and that an entry is MISSING or CONTRADICTS — about that entry\'s own subject only. Example: the entry "Apple" says apples are red and green; in a reply someone eats a yellow apple → add that apples can also be yellow.',
         'Never invent anything. Never rephrase or restate what the entry already says. Ignore passing mood, dialogue and one-off actions — only lasting facts about the subject. If nothing is missing, return an empty list; that is the usual answer.',
         'Each change is either ADD (one short paragraph added at the end of the entry, in the entry\'s own style and tense) or REWRITE (`find` = an exact passage copied from the entry, `replace` = what it becomes). Write the new text as plain prose on one line.',
         'Answer with JSON only: {"changes":[{"entry":"exact entry title","msg":<reply number>,"quote":"the exact words from the reply that show it (at most 25 words)","add":"text to add" or null,"find":"exact passage" or null,"replace":"new passage" or null,"why":"a few words, in your voice"}]} — at most 3 changes.',
-    ].join('\n');
+    ].map(t => named(t, names)).concat(nameRule(names)).join('\n');   // the chosen names (mero-names-pure.js)
     const user = [
         '## The entries',
         entries.map(e => `### ${e.title}\n${str(e.content).slice(0, 2500)}`).join('\n\n') || '(none)',

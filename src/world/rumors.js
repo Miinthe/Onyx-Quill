@@ -16,7 +16,7 @@ import { undoCollections } from '../autotrack.js';
 import { getTrackers, moveTracker } from '../trackers.js';
 import * as K from '../kit/kit.js';
 import { addRecord } from './world-pure.js';
-import { newPost, updatePost, postsOf } from './feed-pure.js';
+import { newPost, updatePost, postsOf, mergeTaught } from './feed-pure.js';
 import { USER, MAIN, personByKey, storyClock, stampText } from './messages-pure.js';
 import { RUMOR, rumorName, seedRumorPrompt, parseSeed, SEED_SCHEMA, KIND_WORDS, noticers, runningRumors, withHeard, withDrift, heardFact, rumorChanges, rumorPrompt, parseRumor, RUMOR_SCHEMA, tipPrompt, parseTip, TIP_SCHEMA, normRumor, namesTipper } from './rumor-pure.js';
 import { nameOfKey as nameOf } from './messages.js';
@@ -105,7 +105,8 @@ export async function rumorTick(w, { scene = false } = {}) {
         H.save(updatePost(H.store(), p.id, x => withHeard(x, seen.map(s => s.key))));
         const facts = new Map();
         for (const s of seen) push(facts, s.key, clip(`Saw it posted by ${nameOf(p.by)}: "${clip(p.text, 110)}"`, 160));
-        give(facts);
+        const taught = give(facts);   // linked to the post, so deleting it undoes what they saw
+        H.save(updatePost(H.store(), p.id, x => ({ taught: mergeTaught(x.taught, taught) })));
     }
     const rumors = runningRumors(H.store());
     const here = ppl.some(p => p.here && p.key !== MAIN);
@@ -119,7 +120,7 @@ export async function rumorTick(w, { scene = false } = {}) {
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 900), caller: 'world', skipThrottle: true, jsonSchema: RUMOR_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         if (window.__dleWorldDebug) console.log('[DLE] world rumors', r?.text, '\n---\n', pr.user);
         if (H.chat() !== cid) return;
-        const a = parseRumor(r?.text, ppl, rumors.map(p => p.n), trackers, [{ key: RUMOR, name: rumorName(w) }]);
+        const a = parseRumor(r?.text, ppl, rumors.map(p => p.n), trackers, [{ key: RUMOR, name: rumorName(w) }], Object.fromEntries(rumors.map(p => [p.n, p.text])));
         if (a.newRumor) startRumor(w, a.newRumor);
         // only someone in the know passes it on (or whoever posted it — readers notice the post)
         for (const s of a.spread) { const p = postsOf(H.store()).find(x => x.n === s.rumor); if (p && (s.by.key === p.by || normRumor(p.rumor).heard.includes(s.by.key))) passOn(s); }

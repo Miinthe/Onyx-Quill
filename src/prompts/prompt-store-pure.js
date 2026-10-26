@@ -71,7 +71,7 @@ export function parsePromptFile(raw) {
  * Extract the set of placeholders from a prompt string.
  *
  * Returns a Set mixing two placeholder syntaxes:
- *   - `${N}` indexed markers (e.g. `"${0}"`, `"${1}"`) used by the AGENTIC_*
+ *   - `${N}` indexed markers (e.g. `"${0}"`, `"${1}"`) used by the fence
  *     interpolation runtime.
  *   - `{{name}}` mustache markers (e.g. `"{{maxEntries}}"`) used by prompts like
  *     AI_SEARCH_SYSTEM_PROMPT that get token-substituted at dispatch.

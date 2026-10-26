@@ -9,11 +9,9 @@ import {
     generationLock, indexing,
     notifyGatingChanged, notifyPinBlockChanged,
     fieldDefinitions, folderList,
-    loreGaps,
     resetAiSearchCache,
     aiSearchCache, lastGenerationTrackerSnapshot,
     generationCount, chatEpoch,
-    suppressNextAgenticLoop, setSuppressNextAgenticLoop,
     getWriterVisibleEntries,
     scribeInProgress,   // LOCAL PATCH 2026-08-04 (Miinthe): real signal for the scribe watchdog
 } from '../state.js';
@@ -35,12 +33,10 @@ import {
     scheduleRender, announceToScreenReader,
 } from './drawer-state.js';
 import { renderInjectionTab, renderBrowseTab, renderBrowseWindow, renderStatusZone, renderGatingTab } from './drawer-render.js';
-import { renderLibrarianTab } from './drawer-render-librarian.js';
 import { resolveNavTarget, listTopFolders } from './drawer-browse-pure.js';
 import { nextInstanceLetter, swapInstanceFolders } from './new-run-pure.js';
 import { getTrackers, setTracker, moveTracker, removeTracker, setTrackerAside, saveTrackers, parseStepsText, describeNewRunReset, startTrackersForNewRun, currentBoardName } from '../trackers.js';
 import { autoTrackEnabled, setAutoTrackEnabled, undoAutoMove } from '../autotrack.js';   // LOCAL PATCH (Miinthe): story trackers
-import { hideGap, dismissGap, getHiddenGapIds, persistGaps } from '../librarian/librarian-tools.js';
 import { dedupError, dedupWarning, notify } from '../toast-dedup.js';
 import { tr, trf, trPlural } from '../i18n/i18n.js';
 
@@ -134,12 +130,6 @@ export function switchTab($drawer, tabName) {
     if (ds.browseScrollRAF) {
         cancelAnimationFrame(ds.browseScrollRAF);
         ds.browseScrollRAF = null;
-    }
-
-    // Librarian sub-tab selection is intentionally not preserved across visits.
-    if (tabName === 'librarian') {
-        ds.librarianFilter = 'flag';
-        scheduleRender(renderLibrarianTab);
     }
 
     if (tabName === 'browse') {
@@ -394,7 +384,6 @@ export function wireStatusActions($drawer) {
                 break;
             }
             case 'newlore': executeCommand('/dle-newlore'); break;
-            case 'librarian-chat': executeCommand('/dle-librarian'); break;
             case 'graph': executeCommand('/dle-graph'); break;
             case 'clear-picks': {
                 if (generationLock) {
@@ -444,13 +433,6 @@ export function wireStatusActions($drawer) {
                 }
                 announceToScreenReader('Search cache cleared — next generation will re-select lore.');
                 toastr.info(tr('dle_toast_cache_cleared'), 'DeepLore');
-                break;
-            }
-            case 'skip-tools': {
-                const newVal = !suppressNextAgenticLoop;
-                setSuppressNextAgenticLoop(newVal);
-                $(this).toggleClass('dle-toggle-active', newVal);
-                toastr.info(newVal ? tr('dle_toast_tools_skipped') : tr('dle_toast_tools_reenabled'), 'DeepLore');
                 break;
             }
         }
@@ -506,7 +488,7 @@ export function wireInjectionTab($drawer) {
         scheduleRender(renderInjectionTab);
     });
 
-    // BUG-AUDIT-C11: roving tabindex for Why? filter radiogroup — mirrors Librarian sub-tabs.
+    // BUG-AUDIT-C11: roving tabindex for Why? filter radiogroup.
     // Wave G: full ARIA radiogroup keys — Up/Left = prev, Down/Right = next (Enter/Space
     // select natively via the <button>). Enter is also handled explicitly (legacy; idempotent
     // for a radio).
@@ -1348,7 +1330,7 @@ export function wireBrowseTab($drawer) {
 
     // ─── #13 — folder header expand/collapse ───
     // Audit M5: scope delegation to .dle-browse-list so future .dle-browse-folder-header
-    // CSS uses elsewhere in the drawer (gating tab, librarian, etc.) can't trigger Browse
+    // CSS uses elsewhere in the drawer (gating tab, etc.) can't trigger Browse
     // expand/collapse and corrupt browseExpandedFolders.
     $drawer.find('.dle-browse-list').on('click', '.dle-browse-folder-header', function (e) {
         // Don't toggle when the user is interacting with the select-all checkbox.
@@ -2006,269 +1988,6 @@ export function wireHealthIcons($drawer) {
             e.preventDefault();
             $(this).trigger('click');
         }
-    });
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Librarian Tab
-// ════════════════════════════════════════════════════════════════════════════
-let removeArmedAt = 0;
-// L-24: track the arming click's reset timer + label-restore thunk so the confirming click can
-// clear the "Click again to confirm" label immediately instead of leaving it up to ~3s.
-let removeResetTimer = null;
-let removeRestoreLabel = null;
-
-export function wireLibrarianTab($drawer) {
-    // Sub-tab selection (Flags/Activity) is intentionally not persisted across tab entries.
-    $drawer.on('click', '.dle-librarian-sub-tab', function () {
-        ds.librarianFilter = $(this).data('filter') || 'flag';
-        $drawer.find('.dle-librarian-sub-tab').attr('tabindex', '-1').attr('aria-checked', 'false');
-        $(this).attr('tabindex', '0').attr('aria-checked', 'true');
-        // Sub-tab change displays a different list — clear selection.
-        ds.librarianSelected.clear();
-        ds.librarianLastClicked = null;
-        scheduleRender(renderLibrarianTab);
-    });
-
-    // Wave G: full ARIA radiogroup keys — Up/Left = prev, Down/Right = next (Enter/Space
-    // select natively via the <button>).
-    $drawer.on('keydown', '.dle-librarian-sub-tab', function (e) {
-        const fwd = e.key === 'ArrowRight' || e.key === 'ArrowDown';
-        const back = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
-        if (!fwd && !back) return;
-        e.preventDefault();
-        const $tabs = $drawer.find('.dle-librarian-sub-tab');
-        const idx = $tabs.index(this);
-        const next = fwd ? (idx + 1) % $tabs.length : (idx - 1 + $tabs.length) % $tabs.length;
-        $tabs.eq(next).trigger('click').focus();
-    });
-
-    $drawer.on('change', '.dle-librarian-sort', function () {
-        ds.librarianSort = $(this).val() || 'newest';
-        try { accountStorage.setItem('dle-librarian-sort', ds.librarianSort); } catch { /* noop */ }
-        scheduleRender(renderLibrarianTab);
-    });
-
-    $drawer.on('click', '.dle-librarian-clear-btn', function () {
-        ds.librarianSelected.clear();
-        ds.librarianLastClicked = null;
-        scheduleRender(renderLibrarianTab);
-        announceToScreenReader('Selection cleared');
-    });
-
-    // Click a gap row → toggle expand (ignore clicks on the checkbox itself).
-    $drawer.on('click', '.dle-librarian-entry', function (e) {
-        if ($(e.target).closest('.dle-gap-check').length) return;
-
-        const $entry = $(this);
-        const $existing = $entry.find('.dle-gap-detail');
-        if ($existing.length) {
-            $existing.remove();
-            $entry.removeClass('dle-gap-expanded').attr('aria-expanded', 'false');
-            return;
-        }
-        $drawer.find('.dle-gap-detail').remove();
-        $drawer.find('.dle-librarian-entry').removeClass('dle-gap-expanded').attr('aria-expanded', 'false');
-
-        const gapId = $entry.data('gap-id');
-        const gap = loreGaps.find(g => g.id === gapId);
-        if (!gap) return;
-
-        const metaParts = [];
-        if ((gap.frequency || 1) > 1) metaParts.push(`Flagged ${gap.frequency}×`);
-        metaParts.push(`Urgency: ${gap.urgency || 'medium'}`);
-        metaParts.push(`Status: ${gap.status === 'written' ? 'Written' : 'Pending'}`);
-
-        let detailHtml = '<div class="dle-gap-detail">'
-            + `<div class="dle-gap-detail-reason">${escapeHtml(gap.reason || 'No reason provided')}</div>`
-            + `<div class="dle-gap-detail-meta">${metaParts.join(' &middot; ')}</div>`
-            + '</div>';
-        $entry.append(detailHtml);
-        $entry.addClass('dle-gap-expanded').attr('aria-expanded', 'true');
-    });
-
-    $drawer.on('keydown', '.dle-librarian-entry', function (e) {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const $next = $(this).next('.dle-librarian-entry');
-            const $target = $next.length ? $next : $drawer.find('.dle-librarian-entry').first();
-            if ($target.length) $target[0].focus();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const $prev = $(this).prev('.dle-librarian-entry');
-            const $target = $prev.length ? $prev : $drawer.find('.dle-librarian-entry').last();
-            if ($target.length) $target[0].focus();
-        } else if (e.key === ' ') {
-            // Space toggles expand; the checkbox handles its own activation.
-            e.preventDefault();
-            $(this).trigger('click');
-        } else if (e.key === 'd' && _isSafeShortcutTarget(document.activeElement)) {
-            if (ds.librarianSelected.size > 0) {
-                e.preventDefault();
-                // f041: scope to the visible bulk bar — the legacy hidden action row also
-                // carries .dle-librarian-action, and triggering both double-fires the handler.
-                $drawer.find('.dle-librarian-bulk-actions .dle-librarian-action[data-librarian-action="done"]').first().trigger('click');
-            }
-        } else if ((e.key === 'Delete' || e.key === 'Backspace') && _isSafeShortcutTarget(document.activeElement)) {
-            if (ds.librarianSelected.size > 0) {
-                e.preventDefault();
-                // f041: scope to the visible bulk bar (two-click confirm breaks if both the
-                // bulk button and the hidden legacy button fire).
-                $drawer.find('.dle-librarian-bulk-actions .dle-librarian-action[data-librarian-action="remove"]').first().trigger('click');
-            }
-        }
-    });
-
-    $drawer.on('click', '.dle-librarian-new-entry-btn', function () {
-        executeCommand('/dle-librarian');
-    });
-    $drawer.on('click', '.dle-librarian-vault-review-btn', function () {
-        executeCommand('/dle-review');
-    });
-
-    // ─── Activity row: results meta link → context popup ─────────────────────
-    $drawer.on('click', '.dle-activity-results-link', async function (e) {
-        e.stopPropagation();
-        const query = $(this).attr('data-query') || '';
-        let titles = [];
-        try { titles = JSON.parse($(this).attr('data-results') || '[]'); } catch { titles = []; }
-        const { callGenericPopup, POPUP_TYPE } = await import('../../../../../popup.js');
-        const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const list = titles.length
-            ? '<ul style="margin:6px 0 0 18px;padding:0;">' + titles.map(t => `<li>${esc(t)}</li>`).join('') + '</ul>'
-            : '<em>No entries returned.</em>';
-        const html = `<div><strong>Query:</strong> ${esc(query)}</div>`
-            + `<div style="margin-top:8px;"><strong>Context returned to writing AI (${esc(trPlural('dle_popup_entry_count', titles.length))}):</strong></div>`
-            + list;
-        await callGenericPopup(html, POPUP_TYPE.TEXT, '', { wide: false, allowVerticalScrolling: true });
-    });
-
-    // ─── Selection ───────────────────────────────────────────────────────────
-
-    $drawer.on('click', '.dle-gap-check', function (e) {
-        e.stopPropagation();
-        const $entry = $(this).closest('.dle-librarian-entry');
-        const gapId = $entry.data('gap-id');
-        if (!gapId) return;
-
-        if (e.shiftKey && ds.librarianLastClicked) {
-            const $entries = $drawer.find('.dle-librarian-entry');
-            const ids = $entries.map(function () { return $(this).data('gap-id'); }).get();
-            const startIdx = ids.indexOf(ds.librarianLastClicked);
-            const endIdx = ids.indexOf(gapId);
-            if (startIdx >= 0 && endIdx >= 0) {
-                const [lo, hi] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-                for (let i = lo; i <= hi; i++) ds.librarianSelected.add(ids[i]);
-            }
-        } else if (ds.librarianSelected.has(gapId)) {
-            ds.librarianSelected.delete(gapId);
-        } else {
-            ds.librarianSelected.add(gapId);
-        }
-        ds.librarianLastClicked = gapId;
-        const total = $drawer.find('.dle-librarian-list .dle-librarian-entry').length;
-        const selected = ds.librarianSelected.size;
-        $drawer.find('.dle-librarian-select-all').prop('indeterminate', selected > 0 && selected < total);
-        scheduleRender(renderLibrarianTab);
-    });
-
-    $drawer.on('click', '.dle-librarian-select-all', function () {
-        const checked = $(this).prop('checked');
-        const $entries = $drawer.find('.dle-librarian-list .dle-librarian-entry');
-        if (checked) {
-            $entries.each(function () { ds.librarianSelected.add($(this).data('gap-id')); });
-        } else {
-            $entries.each(function () { ds.librarianSelected.delete($(this).data('gap-id')); });
-            ds.librarianLastClicked = null;
-        }
-        $(this).prop('indeterminate', false);
-        scheduleRender(renderLibrarianTab);
-    });
-
-    // ─── Footer action row (Open / Mark Done / Remove) ──────────────────────
-
-    $drawer.on('click', '.dle-librarian-action', function (e) {
-        e.stopPropagation();
-        if ($(this).prop('disabled')) return;
-        const action = $(this).data('librarian-action');
-        const ids = [...ds.librarianSelected];
-        if (ids.length === 0) return;
-
-        if (action === 'open') {
-            if (ids.length !== 1) return;
-            executeCommand(`/dle-librarian gap ${ids[0]}`);
-            return;
-        }
-
-        if (action === 'done') {
-            for (const id of ids) {
-                const gap = loreGaps.find(g => g.id === id);
-                if (gap) gap.status = 'written';
-            }
-            persistGaps([...loreGaps]);
-            ds.librarianSelected.clear();
-            ds.librarianLastClicked = null;
-            const doneN = ids.length;
-            toastr.success(trf('dle_toast_marked_written', doneN), 'DeepLore', { timeOut: 2000 });
-            announceToScreenReader(trPlural('dle_announce_marked_written', doneN));
-            scheduleRender(renderLibrarianTab);
-            requestAnimationFrame(() => {
-                const $first = $drawer.find('.dle-librarian-list .dle-librarian-entry').first();
-                if ($first.length) $first[0].focus();
-            });
-            return;
-        }
-
-        if (action === 'remove') {
-            const $btn = $(this);
-            const now = Date.now();
-            // Two-click confirm pattern: first click arms for 3s, second click within window executes.
-            if (now - removeArmedAt > 3000) {
-                removeArmedAt = now;
-                const origHtml = $btn.html();
-                $btn.html('<i class="fa-solid fa-trash" aria-hidden="true"></i> Click again to confirm');
-                // L-24: stash the restore thunk + timer id so the confirming click can clear the
-                // "Click again to confirm" label immediately (otherwise it lingered up to 3s).
-                removeRestoreLabel = () => { $btn.html(origHtml); };
-                removeResetTimer = setTimeout(() => {
-                    if (Date.now() - removeArmedAt >= 3000) $btn.html(origHtml);
-                    removeResetTimer = null;
-                    removeRestoreLabel = null;
-                }, 3000);
-                return;
-            }
-            // L-24: confirming click — restore the button label and cancel the pending reset timer now.
-            removeArmedAt = 0;
-            if (removeResetTimer) { clearTimeout(removeResetTimer); removeResetTimer = null; }
-            if (removeRestoreLabel) { removeRestoreLabel(); removeRestoreLabel = null; }
-            const hidden = getHiddenGapIds();
-            let hideN = 0, dismissN = 0;
-            for (const id of ids) {
-                if (hidden.has(id)) {
-                    dismissGap(id);
-                    dismissN++;
-                } else {
-                    hideGap(id);
-                    hideN++;
-                }
-            }
-            ds.librarianSelected.clear();
-            ds.librarianLastClicked = null;
-            const parts = [];
-            if (hideN) parts.push(`${hideN} hidden (re-flag resurfaces)`);
-            if (dismissN) parts.push(`${dismissN} dismissed`);
-            announceToScreenReader(parts.join(', '));
-            scheduleRender(renderLibrarianTab);
-        }
-    });
-
-    $drawer.on('click keydown', '.dle-librarian-invert-btn', function (e) {
-        if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
-        if (e.type === 'keydown') e.preventDefault();
-        const allIds = $drawer.find('.dle-librarian-list .dle-librarian-entry').map(function () { return $(this).data('gap-id'); }).get();
-        const inverted = allIds.filter(id => !ds.librarianSelected.has(id));
-        ds.librarianSelected = new Set(inverted);
-        scheduleRender(renderLibrarianTab);
     });
 }
 

@@ -12,6 +12,7 @@ import { chat_metadata, saveSettingsDebounced, name1 } from '../../../../../scri
 import { getContext, extension_settings, saveMetadataDebounced } from '../../../../extensions.js';
 import { resolveConnectionConfig, getSettings } from '../settings.js';
 import { callAI } from './ai/ai.js';
+import { meroNames } from './mero-names-pure.js';
 import { vaultIndex } from './state.js';
 import { currentCharacter } from './characters.js';
 import { runOf } from './characters-pure.js';
@@ -26,9 +27,12 @@ import { GLOW_KEY, asGlow, glowNow, recentMoments, momentOpener } from './mero-g
 import { getCurrentForChat } from './verdict/verdict-store.js';
 import {
     MERO_KEY, CHAT_NOTES_KEY, asStore, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
-    splitOoc, buildMeroPrompt, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
+    splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
 } from './mero-pure.js';
 import { takePitchCards } from './pitches-pure.js';
+import { boardSummary, namedTrackers, trackerDetails, nowLine } from './mero-board-pure.js';
+import { getMeroMap } from './board-store.js';
+import { refreshMeroMap, editMeroMap } from './mero-map.js';
 
 const listeners = new Set();
 /** The tab redraws when something changes (a talk, a note, Mero's answer). */
@@ -182,7 +186,11 @@ function contextPackage() {
         replies.unshift({ i: k, name: m.is_user ? (name1 || 'Miinthe') : m.name, text: splitOoc(m.mes).clean.slice(0, 2500) });
     }
     let board = [];
-    try { board = [writerBlock(readActiveTrackers(), liveWriterLines()), liveStepJudgeSection()].filter(Boolean).join('\n').split('\n'); } catch { /* no board */ }
+    let summarized = false; try { summarized = !!getMeroMap(live()?.board?.name)?.text; } catch { /* no board */ }
+    try {
+        const list = readActiveTrackers().filter(t => !summarized || !Array.isArray(t.steps) || t.ended?.branch || (t.took && Object.keys(t.took).length));
+        board = [writerBlock(list, liveWriterLines()), liveStepJudgeSection()].filter(Boolean).join('\n').split('\n');
+    } catch { /* no board */ }
     const verdict = getCurrentForChat(ctx?.getCurrentChatId?.());
     const titles = (verdict?.injectedSources || []).map(x => x.title).filter(Boolean).slice(0, 8);
     const entries = titles.map(t => { const e = (vaultIndex || []).find(x => x.title === t); return e ? { title: e.title, content: e.content || e.summary || '' } : null; }).filter(Boolean);
@@ -193,7 +201,14 @@ function contextPackage() {
     let moments = [];
     try { const L = live(); if (L) moments = recentMoments(L.board, L.state, chat.length - 1).map(m => `${m.text} (#${m.i})`); } catch { /* no board */ }
     let world = ''; try { world = worldSink?.digest?.() || ''; } catch { /* no world here */ }
-    return { replies, board, entries, cards, persona, moments, world, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
+    // the storyboard at a glance — names only, cheap (mero-board-pure.js); details only when a message names a tracker
+    // the stored summary (made quietly when the board is saved, mero-map.js) + where each stands in this chat; names only until then
+    let boardMap = [];
+    try {
+        const L = live();
+        if (L) { const m = getMeroMap(L.board?.name); boardMap = m?.text ? [...m.text.split('\n'), nowLine(L.board, L.state)].filter(Boolean) : boardSummary(L.board, L.state); }
+    } catch { /* no board */ }
+    return { boardMap, replies, board, entries, cards, persona, moments, world, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
 }
 
 // the world layer registers itself (world.js — no import loop): its summary, and the things the 📎 picker offers
@@ -282,13 +297,14 @@ export function pickContext() {
 }
 
 /** What Mero knows, for her other jobs (💡 pitches): the talk package, who she is, where, Miinthe's name. */
-export function meroKnows() { return { pkg: contextPackage(), who: store().settings.persona, where: meroWhere(), user: name1 || 'Miinthe' }; }
+export function meroKnows() { return { pkg: contextPackage(), who: store().settings.persona, where: meroWhere(), user: name1 || 'Miinthe', names: meroNames(store().settings) }; }
 
 // 💡 pitch cards Mero offers in a talk go to the pitches (pitches.js registers itself — no import loop)
 let pitchSink = null;
 export function setPitchSink(fn) { pitchSink = fn; }
 
-const flatten = messages => messages.map(m => `${m.role === 'user' ? 'Miinthe' : 'Mero'}: ${m.content}`).join('\n\n') + '\n\nMero:';
+/** The talk as one readable text — for the ⓘ view only (it is sent as real turns). */
+const flatten = messages => messages.map(m => `${m.role === 'user' ? 'Miinthe' : 'Mero'}: ${m.content}`).join('\n\n');
 
 /**
  * Miinthe says something in a talk; Mero answers. Returns { ok, talk } or { ok: false, error } — the talk keeps
@@ -305,13 +321,27 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
     t.updated = new Date().toISOString(); saveStore();
     const conn = resolveConnectionConfig('mero');
     if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    // her summary of the board, written now if the board changed since (quiet, one call; mero-map.js)
+    // — at most 20 seconds: a slow call must not hold her answer up; it finishes in the background for the next one
+    try { const n = live()?.board?.name; if (n) await Promise.race([refreshMeroMap(n).catch(() => null), new Promise(r => setTimeout(r, 20000))]); } catch { /* names only this time */ }
     const w = meroWhere(), pkg = contextPackage();
     const vault = t.review ? reviewEntries() : null;
     const built = buildMeroPrompt({ settings: store().settings, talk: t, character: w.character, ...pkg, vault, firstAnswer: first && !t.mine });
     const { system } = built, messages = opener ? [...built.messages, { role: 'user', content: said }] : built.messages;
+    // looked up on the board (Miinthe 2026-10-26): the trackers her message names, their details for THIS message only —
+    // never stored in the talk, so later messages don't carry them again
+    let lookedUp = [];
+    if (!opener) {
+        try {
+            const L = live();
+            if (L) lookedUp = namedTrackers(said, L.board).map(id => trackerDetails(L.board, id, L.state, title => String((vaultIndex || []).find(e => e.title === title)?.content || ''))).filter(Boolean);
+        } catch { /* no board */ }
+        const last = messages[messages.length - 1];
+        if (lookedUp.length && last?.role === 'user') messages[messages.length - 1] = { ...last, content: `${last.content}\n\n[Looked up on the board]\n${lookedUp.join('\n\n')}` };
+    }
     lastTold.set(t.id, { model: conn.profileId, sections: [
         ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
-        ['🗺 The board — plans included', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
+        ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
         ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
     ] });
@@ -320,12 +350,15 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
         // a vault review: the answer length from Settings (Answer length for /dle-review), and time to read it all
         const rt = getSettings().reviewResponseTokens;
         const callConn = vault ? { ...conn, ...(rt > 0 ? { maxTokens: rt } : {}), timeout: Math.max(conn.timeout || 0, 300000) } : conn;
-        const r = await callAI(system, flatten(messages), { ...callConn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
+        // the talk as real turns: her last message, the ones before as history (a pasted script let a model write Miinthe's lines)
+        const r = await callAI(system, messages[messages.length - 1].content, { ...callConn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, history: messages.slice(0, -1) });
         const raw = r?.text ?? '';
         const told = lastTold.get(t.id); if (told) told.raw = raw;
         if (!raw.trim()) console.warn('[DLE] Mero: the model sent back an empty answer', r);
         const pc = takePitchCards(raw, pitchSink?.castNames?.() || []);
         const a = parseMeroAnswer(pc.text);
+        // notes only when asked (Miinthe 2026-10-26) — Feedback talks may offer one once the fix is agreed
+        if (a.cards.length && t.tag !== 'fb' && !opener && !askedForNote(said)) a.cards = [];
         const t2 = findTalk(talkId) || t;
         let pitchNos = [];
         if (pc.pitches.length && pitchSink) { try { pitchNos = pitchSink.add(pc.pitches) || []; } catch (err) { console.warn('[DLE] Mero: pitch cards skipped:', err?.message || err); } }
@@ -429,7 +462,7 @@ export async function talkAboutMoments(keys) {
     const t = newTalk('yap'); if (!t) return { ok: false, error: 'Open a character chat first.' };
     t.title = moments[0].quiet ? `Quiet: ${moments[0].tracker}` : `Big moment: ${moments[0].text}`.slice(0, 80); t.mine = true;
     setMomentsAside(keys);
-    return sendToMero(t.id, momentOpener(moments), { opener: true });
+    return sendToMero(t.id, momentOpener(moments, meroNames(store().settings)), { opener: true });
 }
 
 /** What a vault review shows her: every entry the writer may see (guides never — they are not story lore). */
@@ -459,3 +492,12 @@ export async function redoWithNote(talkId, k, c, fields = {}) {
     else await ctx.swipe?.right?.();
     return { ok: true };
 }
+
+/** Her summary of this chat's board, for the ⓘ view: { name, map } or null (no board here). */
+export function boardMapHere() {
+    const n = live()?.board?.name;
+    return n ? { name: n, map: getMeroMap(n) } : null;
+}
+/** Keep Miinthe's version (text), go back to Mero's (null), or write it again (force). */
+export async function setBoardMapHere(text) { const n = live()?.board?.name; if (n) await editMeroMap(n, text); return boardMapHere(); }
+export async function remakeBoardMapHere() { const n = live()?.board?.name; if (n) await refreshMeroMap(n, { force: true }); return boardMapHere(); }

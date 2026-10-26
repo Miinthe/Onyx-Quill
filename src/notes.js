@@ -374,7 +374,7 @@ export async function openNotes() {
     head.append(
         K.iconButton({ icon: 'plus', title: 'New note', onClick: () => { if (readOk) newNote(); } }),
         K.moreButton(moreItems),
-        lockB,
+        ...(phone() ? [] : [lockB]),
         K.iconButton({ icon: 'close', title: 'Close', onClick: () => close() }),
     );
     win.addEventListener('click', onClick);
@@ -403,7 +403,7 @@ export async function openNotes() {
 // SillyTavern's panels (they open over it), a reload — until the bar button or ✕ closes it. The bar button always
 // opens and closes it, locked or not.
 
-const locked = () => getSettings().notesLocked === true;
+const locked = () => !phone() && getSettings().notesLocked === true;   // no lock on a phone (Miinthe, 2026-10-26: "doesn't need a lock feature")
 function setLocked(on) {
     getSettings().notesLocked = on;
     keepOpen(!!win);

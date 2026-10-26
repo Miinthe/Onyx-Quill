@@ -225,7 +225,6 @@ export const HEALTH_QUOTED_DETAIL_RULES = [
     { re: /^(Keyword ")(.*)(" is \d+ char\(s\) — may cause false matches)$/ },
     { re: /^(Title ")(.*)(" appears in \d+ vaults — disambiguated by vault source\.)$/ },
     { re: /^(Keyword ")(.*)(" shared by \d+ entries)$/ },
-    { re: /^(AI searched for ")(.*)(" \d+ times with no results — consider creating an entry)$/ },
 ];
 
 /** Mint a quoted user value; aliases / whitelisted statics pass through. */
@@ -257,7 +256,7 @@ function pseudonymizeHealthEntry(ctx, entry) {
 
 /**
  * Health issue `detail` field: free text that quotes titles, keywords, vault
- * names, and librarian queries — all private lore.
+ * names, and search queries — all private lore.
  *
  * Parsing contract (gotchas.md #96 point 2): format-anchored rules first
  * (greedy capture through embedded quotes), then known-alias replacement,
@@ -307,7 +306,7 @@ function pseudonymizeHealthDetail(ctx, detail) {
 /**
  * Pseudonymize a `runHealthCheck()` result for the shareable diagnostic
  * export (#13a). Issues carry raw entry titles (`entry`) and free-text
- * `detail` strings quoting titles, keywords, vault names, and librarian
+ * `detail` strings quoting titles, keywords, vault names, and search
  * queries. Uses the SAME per-snapshot context as `pseudonymizeTrace()`, so an
  * entry flagged by the health check maps to the same `<title-N>` it has in
  * the trace section. Functional — input is not mutated; counts and shape are

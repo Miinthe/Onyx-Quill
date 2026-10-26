@@ -52,7 +52,6 @@ export const DLE_COMMANDS = [
     { cmd: '/dle-optimize-keys', desc: 'AI keyword suggestions for an entry', i18nKey: 'dle_cmd_desc_optimize_keys' },
     { cmd: '/dle-summarize', desc: 'AI-generate summary fields for all entries missing one', i18nKey: 'dle_cmd_desc_summarize' },
     { cmd: '/dle-review', desc: 'Mero reviews your entire vault in a new talk', i18nKey: 'dle_cmd_desc_review' },
-    { cmd: '/dle-librarian', desc: 'Open Librarian AI session (new entry, gap review, or vault review)', i18nKey: 'dle_cmd_desc_librarian' },
     { cmd: '/dle-import', desc: 'Import SillyTavern World Info into Obsidian vault', i18nKey: 'dle_cmd_desc_import' },
     { cmd: '/dle-setup', desc: 'Run guided setup wizard', i18nKey: 'dle_cmd_desc_setup' },
     { sep: true, label: 'Per-Chat Overrides', i18nKey: 'dle_cmd_section_overrides' },
@@ -272,7 +271,7 @@ export function registerAdminCommands() {
         callback: async () => {
             const settings = getSettings();
             const analytics = settings.analyticsData || {};
-            // Audit DIAG-03: `_librarian` (and any future `_`-prefixed meta bucket)
+            // Audit DIAG-03: `_`-prefixed meta buckets
             // is internal state, not an entry — skip it in the user-facing table.
             const titles = Object.keys(analytics)
                 .filter(k => !k.startsWith('_'))
@@ -322,20 +321,6 @@ export function registerAdminCommands() {
 
             if (titles.length === 0 && neverInjected.length === 0) {
                 html = '<p>No analytics data yet. Generate some messages first.</p>';
-            }
-
-            const libStats = analytics._librarian;
-            if (libStats) {
-                html += '<hr><h4>Librarian</h4>';
-                html += `<p>Searches: ${libStats.totalGapSearches || 0} | Flags: ${libStats.totalGapFlags || 0} | Entries Written: ${libStats.totalEntriesWritten || 0} | Updated: ${libStats.totalEntriesUpdated || 0}</p>`;
-                const unmet = libStats.topUnmetQueries || [];
-                if (unmet.length > 0) {
-                    html += '<h5>Top Unmet Queries</h5><ul>';
-                    for (const u of unmet.slice(0, 10)) {
-                        html += `<li>${escapeHtml(u.query)} (${u.count}x)</li>`;
-                    }
-                    html += '</ul>';
-                }
             }
 
             html += '</div>';

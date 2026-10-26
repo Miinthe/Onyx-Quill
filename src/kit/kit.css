@@ -61,6 +61,8 @@
 }
 .dk-btn:hover { background: var(--dk-menu); border-color: var(--dk-line-strong); }
 .dk-btn .dk-i { width: 14px; height: 14px; }
+/* SillyTavern's text shadow smudges button text, worst on the light primary button (Miinthe 2026-10-26: "Go looks blurry") */
+.dk-btn { text-shadow: none; }
 .dk-btn.dk-primary { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
 .dk-btn.dk-primary:hover { background: color-mix(in oklab, var(--dk-accent) 88%, var(--dk-ink)); }
 .dk-btn.dk-mero { background: var(--dk-mero); border-color: var(--dk-mero); color: var(--dk-on-mero); font-weight: 700; }

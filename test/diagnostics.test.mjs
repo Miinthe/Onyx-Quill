@@ -1375,7 +1375,7 @@ test('I2: quoted user values in detail are minted (requires targets, keywords)',
         issues: [
             { type: 'Gating', severity: 'error', entry: 'EntryA', detail: 'Requires "Lost Amulet of Zess" which doesn\'t exist in the vault' },
             { type: 'Keywords', severity: 'info', entry: 'EntryA', detail: 'Keyword "aelarion" is 8 char(s) — may cause false matches' },
-            { type: 'Librarian', severity: 'info', entry: '—', detail: 'AI searched for "dragon cult hierarchy" 3 times with no results — consider creating an entry' },
+            { type: 'Size', severity: 'warning', entry: '—', detail: 'Constants alone total ~900 tokens, exceeding budget of 800' },
         ],
         errors: 1, warnings: 0,
     };
@@ -1383,7 +1383,6 @@ test('I2: quoted user values in detail are minted (requires targets, keywords)',
     const json = JSON.stringify(out);
     assert(!json.includes('Lost Amulet of Zess'), 'raw requires target must not survive');
     assert(!json.includes('aelarion'), 'raw keyword must not survive');
-    assert(!json.includes('dragon cult hierarchy'), 'raw librarian query must not survive');
     assertMatch(out.issues[0].detail, /^Requires "<title-\d+>" which doesn't exist/, 'requires message keeps shape, target aliased');
     assertMatch(out.issues[1].detail, /^Keyword "<title-\d+>" is 8 char\(s\)/, 'keyword aliased in place');
     assertEqual(out.issues[2].entry, '—', 'em-dash placeholder entry preserved');
@@ -1495,19 +1494,6 @@ test('I9: embedded quote in a quoted value — no raw fragment leaks (format-anc
     assert(!detail.includes('gon'), 'no raw "gon" fragment survives');
     assertMatch(detail, /^Keyword "<title-\d+>" is 7 char\(s\) — may cause false matches$/,
         'whole embedded-quote value minted as ONE alias, format text intact');
-});
-
-test('I10: librarian query with embedded quotes — whole query minted as one alias', () => {
-    const ctx = createPseudonymContext();
-    const out = pseudonymizeHealth({
-        issues: [{ type: 'Librarian', severity: 'info', entry: '—', detail: 'AI searched for "the "crimson pact" ritual" 4 times with no results — consider creating an entry' }],
-        errors: 0, warnings: 0,
-    }, ctx);
-    const detail = out.issues[0].detail;
-    assert(!detail.includes('crimson'), 'no raw query fragment survives');
-    assert(!detail.includes('ritual'), 'no raw query fragment survives');
-    assertMatch(detail, /^AI searched for "<title-\d+>" 4 times with no results — consider creating an entry$/,
-        'LLM-generated query with embedded quotes minted whole');
 });
 
 test('I11: short quoted mint no longer garbles later details (the v<title-N>ault case)', () => {

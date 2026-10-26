@@ -27,6 +27,7 @@
  *   - A deleted or swiped message takes its tick back (rewindPlan).
  */
 import { findQuoteMatch } from './quote-match-pure.js';
+import { named, nameRule } from './mero-names-pure.js';
 
 export const PITCHES_KEY = 'deeplore_mero_pitches';   // chat_metadata: { list, next, menu, dropped }
 
@@ -195,12 +196,12 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
     const list = x => arr(x).filter(Boolean).map(t => `- ${t}`).join('\n');
     const system = [
-        `You are Mero ☆, ${ctx.user || 'Miinthe'}'s co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
+        `You are Mero ☆, Miinthe's co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
         multi
-            ? (hidden ? `${ctx.user || 'Miinthe'} asked for ONE HIDDEN plan — a surprise for her too: she will not read it; the writer is led through it beat by beat.` : `${ctx.user || 'Miinthe'} asked for ${n} plan${n > 1 ? 's' : ''}: multistep ideas for where her story could go. She picks.`)
+            ? (hidden ? `Miinthe asked for ONE HIDDEN plan — a surprise for her too: she will not read it; the writer is led through it beat by beat.` : `Miinthe asked for ${n} plan${n > 1 ? 's' : ''}: multistep ideas for where her story could go. She picks.`)
             : hidden
-                ? `${ctx.user || 'Miinthe'} asked for ONE HIDDEN pitch — a surprise for her too: she will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Mara is alone with the stranger") — never a count of messages.${m.moment ? ' Miinthe named the moment herself — use hers.' : ''}`
-                : `${ctx.user || 'Miinthe'} asked for ${n} pitch${n > 1 ? 'es' : ''}: short ideas for where her story could go next. She picks.`,
+                ? `Miinthe asked for ONE HIDDEN pitch — a surprise for her too: she will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Mara is alone with the stranger") — never a count of messages.${m.moment ? ' Miinthe named the moment herself — use hers.' : ''}`
+                : `Miinthe asked for ${n} pitch${n > 1 ? 'es' : ''}: short ideas for where her story could go next. She picks.`,
         PITCH_RULES,
         multi ? PLAN_RULES : '',
         multi
@@ -209,19 +210,20 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
                 ? `Answer with JSON only: {"pitch": ${ITEM}, "moment": "the moment it waits for"}`
                 : `Answer with JSON only: {"pitches": [${ITEM}, …]} — exactly ${n}.`,
     ].filter(Boolean).join('\n\n');
+    const N = t => named(t, ctx.names);   // the author's and Mero's names from her settings (mero-names-pure.js)
     const want = [
         `How many: ${n}${multi ? ` plan${n > 1 ? 's' : ''}` : ''}${hidden ? ' (hidden)' : ''}`,
         `Strength wanted: ${m.str}`,
         `Tone: ${m.tone === 'nsfw' ? 'NSFW is allowed where it fits the story' : 'SFW — nothing sexual'}`,
         m.focus ? `Focus on: ${m.focus}` : 'Focus: anything — surprise her',
-        hidden && !multi && m.moment ? `The moment (Miinthe's words): ${m.moment}` : '',
-        comment.trim() ? `Miinthe's wish: ${comment.trim()}` : '',
+        hidden && !multi && m.moment ? `${N("The moment (Miinthe's words)")}: ${m.moment}` : '',
+        comment.trim() ? `${N("Miinthe's wish")}: ${comment.trim()}` : '',
         arr(like).length ? `More like these (same spirit, new ideas — don't repeat them):\n${list(like)}` : '',
     ].filter(Boolean).join('\n');
     const user = [
-        sec('What Miinthe wants now', want),
+        sec(N('What Miinthe wants now'), want),
         ctx.fromMsg ? sec(`Pitch from this message (#${ctx.fromMsg.i}, ${ctx.fromMsg.name})`, clip(ctx.fromMsg.text, 2000)) : '',
-        sec('Miinthe\'s taste (from earlier pitches)', list(ctx.taste)),
+        sec(N('Miinthe\'s taste (from earlier pitches)'), list(ctx.taste)),
         sec('DON\'T — never pitch against these', list(ctx.donts)),
         sec('Other notes the writer follows', list(ctx.notes)),
         sec('The board — where the story stands', arr(ctx.board).join('\n')),
@@ -233,7 +235,7 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
         sec('The latest messages', arr(ctx.replies).map(r => `#${r.i} ${r.name}: ${r.text}`).join('\n\n')),
         sec('Already pitched in this chat — don\'t repeat', list(arr(ctx.already).slice(0, 12))),
     ].filter(Boolean).join('\n').trim();
-    return { system, user };
+    return { system: `${named(system, ctx.names)}\n\n${nameRule(ctx.names)}`, user };
 }
 
 function jsonOf(text) {
@@ -475,7 +477,7 @@ const REWRITE = {
 export function rewritePrompt(p, mode, ctx = {}) {
     const pl = p.plan;
     const system = [
-        `You are Mero ☆, ${ctx.user || 'Miinthe'}'s co-writer. ${ctx.persona || ''}`.trim(),
+        `You are Mero ☆, Miinthe's co-writer. ${ctx.persona || ''}`.trim(),
         REWRITE[mode] || REWRITE.redirect,
         PLAN_RULES.replace('3 to 5 beats', '2 to 4 beats'),
         'Miinthe plays her own character — never decide what her character does, says or feels.',
@@ -488,7 +490,7 @@ export function rewritePrompt(p, mode, ctx = {}) {
         ctx.board?.length ? `## The board\n${ctx.board.join('\n')}` : '',
         `## The latest messages\n${arr(ctx.replies).map(r => `#${r.i} ${r.name}: ${r.text}`).join('\n\n')}`,
     ].filter(Boolean).join('\n\n');
-    return { system, user };
+    return { system: `${named(system, ctx.names)}\n\n${nameRule(ctx.names)}`, user };
 }
 export function parseRewrite(text, mode) {
     const v = jsonOf(text);

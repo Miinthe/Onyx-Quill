@@ -79,7 +79,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
     // overhaul (2026-10-17): `budget` = this chat's budget keys (its own / its character's), laid over Everywhere's
     const settings = { ...getSettings(), ...(budget || {}) };
     // External snapshots are assumed already-filtered (caller used getWriterVisibleEntries()).
-    // Otherwise filter out lorebook-guide here — Librarian-only, must never reach the writing AI.
+    // Otherwise filter out lorebook-guide here — writing guides must never reach the writing AI.
     const fullSnapshot = externalSnapshot || getWriterVisibleEntries();
     const bootstrapActive = chat.length <= settings.newChatThreshold;
 

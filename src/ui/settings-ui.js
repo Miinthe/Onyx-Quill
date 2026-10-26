@@ -20,7 +20,6 @@ import {
     computeOverallStatus,
     setVaultIndex, setIndexTimestamp, setLastHealthResult,
     onIndexUpdated, onAiStatsUpdated, onCircuitStateChanged,
-    librarianSessionStats, librarianChatStats,
     claudeAutoEffortBad, claudeAutoEffortDetail, onClaudeAutoEffortChanged,
     notifyDebugModeChanged,
     resetAiCircuitBreaker,
@@ -444,7 +443,6 @@ const PROMPT_PRESET_TOOLS = {
     scribe:       { settingsKey: 'scribePrompt', textareaId: 'dle-sp-scribe-prompt' },
     autoSuggest:  { settingsKey: 'autoSuggestPrompt', textareaId: 'dle-sp-autosuggest-prompt' },
     optimizeKeys: { settingsKey: 'optimizeKeysPrompt', textareaId: 'dle-sp-optimize-keys-prompt' },
-    librarian:    { settingsKey: 'librarianCustomSystemPrompt', textareaId: 'dle-sp-librarian-custom-prompt' },
     aiNotepad:    { settingsKey: 'aiNotepadPrompt', textareaId: 'dle-sp-ai-notepad-prompt' },
     // BUG-128: Extract mode supports save/reuse of named presets.
     aiNotepadExtract: { settingsKey: 'aiNotepadExtractPrompt', textareaId: 'dle-sp-ai-notepad-extract-prompt' },
@@ -601,13 +599,6 @@ const TOOL_CONNECTION_CONFIGS = {
         modeKey: 'aiNotepadConnectionMode', profileIdKey: 'aiNotepadProfileId',
         proxyUrlKey: 'aiNotepadProxyUrl', modelKey: 'aiNotepadModel',
         maxTokensKey: 'aiNotepadMaxTokens', timeoutKey: 'aiNotepadTimeout',
-    },
-    librarian: {
-        label: 'Librarian', icon: 'book-bookmark',
-        supportedModes: ['inherit', 'profile', 'proxy'],
-        modeKey: 'librarianConnectionMode', profileIdKey: 'librarianProfileId',
-        proxyUrlKey: 'librarianProxyUrl', modelKey: 'librarianModel',
-        maxTokensKey: 'librarianSessionMaxTokens', timeoutKey: 'librarianSessionTimeout',
     },
     // LOCAL PATCH (Miinthe, 2026-10-03): the helper that moves story trackers. Profile
     // only — never 'inherit' (an inherited connection is how prose once ended up on
@@ -1028,7 +1019,7 @@ export async function openOldSettingsPopup(navigateTo = null) {
     // external deep links (openSettingsPopup navigateTo, data-goto-tab) may
     // still carry pre-overhaul tokens; alias them permanently (cheap, load-bearing).
     // Old SUBTAB tokens are the new tab tokens 1:1 (obsidian, ai-connections,
-    // author-notebook, ai-notebook, session-scribe, auto-lorebook, graph, librarian).
+    // author-notebook, ai-notebook, session-scribe, auto-lorebook, graph).
     const TAB_ALIAS = {
         matching: 'search',
         ai: 'search',
@@ -1388,7 +1379,7 @@ function loadPopupSettings($container) {
     $c('#dle-sp-never-insert-tag').val(settings.neverInsertTag);
     $c('#dle-sp-seed-tag').val(settings.seedTag);
     $c('#dle-sp-bootstrap-tag').val(settings.bootstrapTag);
-    $c('#dle-sp-librarian-guide-tag').val(settings.librarianGuideTag);
+    $c('#dle-sp-guide-tag').val(settings.librarianGuideTag);
     $c('#dle-sp-new-chat-threshold').val(settings.newChatThreshold);
 
     // ── Matching ──
@@ -1483,52 +1474,6 @@ function loadPopupSettings($container) {
     $c('#dle-sp-graph-damping').val(settings.graphDamping);
     $c('#dle-sp-graph-hover-falloff').val(settings.graphHoverFalloff);
     $c('#dle-sp-graph-edge-filter-alpha').val(settings.graphEdgeFilterAlpha);
-
-    // ── Features — Librarian ──
-    $c('#dle-sp-librarian-enabled').prop('checked', settings.librarianEnabled);
-    $c('#dle-sp-librarian-search').prop('checked', settings.librarianSearchEnabled);
-    $c('#dle-sp-librarian-flag').prop('checked', settings.librarianFlagEnabled);
-    $c('#dle-sp-librarian-show-tool-calls').prop('checked', settings.librarianShowToolCalls !== false);
-    $c('#dle-sp-librarian-per-message').prop('checked', settings.librarianPerMessageActivity !== false);
-    $c('#dle-sp-librarian-max-searches').val(settings.librarianMaxSearches);
-    $c('#dle-sp-librarian-max-results').val(settings.librarianMaxResults);
-    $c('#dle-sp-librarian-token-budget').val(settings.librarianResultTokenBudget);
-    $c('#dle-sp-librarian-write-folder').val(settings.librarianWriteFolder || '');
-    populateWriteVaultSelect($c('#dle-sp-librarian-write-vault'), settings, settings.librarianWriteVaultId || '');
-    $c('#dle-sp-librarian-auto-send').prop('checked', settings.librarianAutoSendOnGap !== false);
-    $c('#dle-sp-librarian-sub').toggle(settings.librarianEnabled);
-    $c('#dle-sp-librarian-manifest-max').val(settings.librarianManifestMaxChars || 8000);
-    $c('#dle-sp-librarian-related-max').val(settings.librarianRelatedEntriesMaxChars || 4000);
-    $c('#dle-sp-librarian-chat-context-max').val(settings.librarianChatContextMaxChars || 4000);
-    $c('#dle-sp-librarian-draft-max').val(settings.librarianDraftMaxChars || 4000);
-    $c('#dle-sp-librarian-max-tool-calls-per-turn').val(settings.librarianMaxToolCallsPerTurn ?? 10);
-    $c('#dle-sp-librarian-max-validation-retries').val(settings.librarianMaxValidationRetries ?? 3);
-    $c('#dle-sp-librarian-session-history').val(settings.librarianSessionHistoryMessages ?? 10);
-    $c('#dle-sp-librarian-agentic-history').val(settings.librarianAgenticHistoryMessages ?? 40);
-    $c('#dle-sp-librarian-session-tool-cap').val(settings.librarianSessionToolCallCap ?? '');
-    $c(`input[name="dle-sp-librarian-prompt-mode"][value="${settings.librarianSystemPromptMode || 'default'}"]`).prop('checked', true);
-    $c('#dle-sp-librarian-custom-prompt').val(settings.librarianCustomSystemPrompt || '');
-    $c('#dle-sp-librarian-custom-prompt').toggle((settings.librarianSystemPromptMode || 'default') !== 'default');
-
-    $c('#dle-sp-lib-chat-searches').text(librarianChatStats.searchCalls);
-    $c('#dle-sp-lib-chat-flags').text(librarianChatStats.flagCalls);
-    $c('#dle-sp-lib-chat-tokens').text(librarianChatStats.estimatedExtraTokens);
-    $c('#dle-sp-lib-session-searches').text(librarianSessionStats.searchCalls);
-    $c('#dle-sp-lib-session-flags').text(librarianSessionStats.flagCalls);
-    $c('#dle-sp-lib-session-tokens').text(librarianSessionStats.estimatedExtraTokens);
-    const allTime = settings.analyticsData?._librarian || {};
-    $c('#dle-sp-lib-all-searches').text(allTime.totalGapSearches || 0);
-    $c('#dle-sp-lib-all-flags').text(allTime.totalGapFlags || 0);
-    $c('#dle-sp-lib-entries-written').text(`Entries written: ${allTime.totalEntriesWritten || 0}`);
-    const unmet = allTime.topUnmetQueries || [];
-    if (unmet.length > 0) {
-        let unmetHtml = '<h5 class="dle-settings-subsection-label">Top Unmet Queries</h5><div class="dle-text-xs" style="opacity: 0.7;">';
-        for (const u of unmet.slice(0, 10)) {
-            unmetHtml += `<div>${escapeHtml(u.query)} (${u.count}×)</div>`;
-        }
-        unmetHtml += '</div>';
-        $c('#dle-sp-lib-unmet-queries').html(unmetHtml);
-    }
 
     // ── Features — Notebook ──
     $c('#dle-sp-notebook-enabled').prop('checked', settings.notebookEnabled);
@@ -1764,10 +1709,6 @@ export async function resetAllSettingsFlow() {
         autoSuggestProfileId: settings.autoSuggestProfileId,
         autoSuggestProxyUrl: settings.autoSuggestProxyUrl,
         autoSuggestModel: settings.autoSuggestModel,
-        librarianConnectionMode: settings.librarianConnectionMode,
-        librarianProfileId: settings.librarianProfileId,
-        librarianProxyUrl: settings.librarianProxyUrl,
-        librarianModel: settings.librarianModel,
         aiNotepadConnectionMode: settings.aiNotepadConnectionMode,
         aiNotepadProfileId: settings.aiNotepadProfileId,
         aiNotepadProxyUrl: settings.aiNotepadProxyUrl,
@@ -2055,7 +1996,7 @@ function bindPopupEvents($container) {
         const companions = [
             { file: 'Kara-Emily-Gren-STChar.png', name: 'Kara Emily Gren', desc: 'Forensic researcher. Was. The boundary between study and practice became more a matter of preference.' },
             { file: 'Nott-STChar.png', name: 'Nott', desc: 'Norse goddess of night. Pale, tattooed, wrapped in black that drinks light rather than catching it.' },
-            { file: 'Emma-STChar.png', name: 'Emma', desc: 'Your Librarian. Copper-red hair, hazel-green eyes, assessing whether what you just said is worth writing down.' },
+            { file: 'Emma-STChar.png', name: 'Emma', desc: 'Copper-red hair, hazel-green eyes, assessing whether what you just said is worth writing down.' },
         ];
         const rows = companions.map(c =>
             `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--SmartThemeBorderColor);">
@@ -2117,7 +2058,7 @@ function bindPopupEvents($container) {
     $c('#dle-sp-never-insert-tag').on('input', function () { settings.neverInsertTag = String($(this).val()).trim() || 'lorebook-never'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-seed-tag').on('input', function () { settings.seedTag = String($(this).val()).trim() || 'lorebook-seed'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-bootstrap-tag').on('input', function () { settings.bootstrapTag = String($(this).val()).trim() || 'lorebook-bootstrap'; saveSettingsDebounced(); debouncedRebuild(); });
-    $c('#dle-sp-librarian-guide-tag').on('input', function () { settings.librarianGuideTag = String($(this).val()).trim() || 'lorebook-guide'; saveSettingsDebounced(); debouncedRebuild(); });
+    $c('#dle-sp-guide-tag').on('input', function () { settings.librarianGuideTag = String($(this).val()).trim() || 'lorebook-guide'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-new-chat-threshold').on('input', function () { settings.newChatThreshold = numVal($(this).val(), 3); saveSettingsDebounced(); });
 
     // ── Matching ──
@@ -2263,122 +2204,6 @@ function bindPopupEvents($container) {
     // Audit S1-04: previous fallback 0.9 exceeded the constraint max 0.85 — use the actual default.
     $c('#dle-sp-graph-hover-falloff').on('input', function () { const v = parseFloat($(this).val()); settings.graphHoverFalloff = isNaN(v) ? 0.55 : v; saveSettingsDebounced(); });
     $c('#dle-sp-graph-edge-filter-alpha').on('input', function () { settings.graphEdgeFilterAlpha = parseFloat($(this).val()) || 0.05; saveSettingsDebounced(); });
-
-    // ── Librarian settings ──
-    $c('#dle-sp-librarian-tour').on('click', function () {
-        import('../librarian/librarian-review.js')
-            .then(m => m.openLibrarianPopup(null, { mode: 'guide-adhoc' }))
-            .catch(err => console.warn('[DLE] Library Tour open failed:', err));
-    });
-    $c('#dle-sp-librarian-enabled').on('change', function () {
-        const enabled = $(this).prop('checked');
-        settings.librarianEnabled = enabled;
-        $c('#dle-sp-librarian-sub').toggle(enabled);
-        saveSettingsDebounced();
-        if (enabled) {
-            const config = resolveConnectionConfig('librarian');
-            if (config.mode === 'profile' && !config.profileId) {
-                toastr.warning('Librarian needs an AI connection profile. Opening settings...', 'DeepLore', { timeOut: 6000 });
-                requestAnimationFrame(() => {
-                    const nav = $container.data('dleNav');
-                    const $tab = $container.find('.dle-settings-tab[data-settings-tab="ai-connections"]');
-                    if ($tab.length && nav) nav.switchSettingsTab($tab);
-                    requestAnimationFrame(() => {
-                        const el = $container.find('[data-tool-key="librarian"]')[0];
-                        if (el) {
-                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            el.classList.add('dle-pulse');
-                            setTimeout(() => el.classList.remove('dle-pulse'), 2000);
-                        }
-                    });
-                });
-            }
-            toastr.info('Librarian requires "Enable function calling" in SillyTavern\'s AI Response Configuration.', 'DeepLore', { timeOut: 8000 });
-        }
-        // One-time: unregister stale ToolManager tools left by pre-agentic-loop versions.
-        if (!enabled) {
-            import('../../../../../../scripts/tool-calling.js')
-                .then(({ ToolManager }) => {
-                    if (ToolManager?.unregisterFunctionTool) {
-                        ToolManager.unregisterFunctionTool('dle_search_lore');
-                        ToolManager.unregisterFunctionTool('dle_flag_lore');
-                    }
-                })
-                .catch(() => { /* tools may not exist — safe to ignore */ });
-        }
-        import('../librarian/visibility.js').then(m => m.applyLibrarianVisibility(enabled)).catch(err => console.warn('[DLE] Librarian visibility error:', err));
-    });
-    $c('#dle-sp-librarian-search').on('change', async function () {
-        const wasEnabled = !!settings.librarianSearchEnabled;
-        const nowEnabled = $(this).prop('checked');
-        settings.librarianSearchEnabled = nowEnabled;
-        saveSettingsDebounced();
-        // BUG-373: rebuild BM25 on false→true flip (was cleared to null when disabled).
-        if (!wasEnabled && nowEnabled) {
-            try {
-                const state = await import('../state.js');
-                const { buildBM25Index } = await import('../vault/bm25.js');
-                if (state.vaultIndex && state.vaultIndex.length) {
-                    state.setFuzzySearchIndex(buildBM25Index(state.vaultIndex));
-                }
-            } catch (err) {
-                console.warn('[DLE] BM25 rebuild on enable failed:', err);
-                // The toggle lied — Librarian search is enabled but fuzzy index is null.
-                // Surface so the user knows they must refresh.
-                try {
-                    toastr.warning(
-                        `Librarian search enabled, but fuzzy-index rebuild failed: ${err?.message || 'unknown error'}. Run /dle-refresh.`,
-                        'DeepLore',
-                        { timeOut: 10000 },
-                    );
-                } catch { /* toastr unavailable */ }
-            }
-        }
-    });
-    $c('#dle-sp-librarian-flag').on('change', function () { settings.librarianFlagEnabled = $(this).prop('checked'); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-show-tool-calls').on('change', function () { settings.librarianShowToolCalls = $(this).prop('checked'); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-per-message').on('change', function () { settings.librarianPerMessageActivity = $(this).prop('checked'); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-max-searches').on('input', function () { settings.librarianMaxSearches = numVal($(this).val(), 2); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-max-results').on('input', function () { settings.librarianMaxResults = numVal($(this).val(), 5); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-token-budget').on('input', function () { settings.librarianResultTokenBudget = numVal($(this).val(), 1500); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-write-folder').on('input', function () { settings.librarianWriteFolder = $(this).val().trim(); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-write-vault').on('change', function () { settings.librarianWriteVaultId = String($(this).val() || ''); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-auto-send').on('change', function () { settings.librarianAutoSendOnGap = $(this).prop('checked'); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-manifest-max').on('input', function () { settings.librarianManifestMaxChars = numVal($(this).val(), 8000); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-related-max').on('input', function () { settings.librarianRelatedEntriesMaxChars = numVal($(this).val(), 4000); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-chat-context-max').on('input', function () { settings.librarianChatContextMaxChars = numVal($(this).val(), 4000); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-draft-max').on('input', function () { settings.librarianDraftMaxChars = numVal($(this).val(), 4000); saveSettingsDebounced(); });
-    $c('#dle-sp-librarian-max-tool-calls-per-turn').on('input', function () {
-        settings.librarianMaxToolCallsPerTurn = Math.max(1, Math.min(50, numVal($(this).val(), 10)));
-        saveSettingsDebounced();
-    });
-    $c('#dle-sp-librarian-max-validation-retries').on('input', function () {
-        settings.librarianMaxValidationRetries = Math.max(0, Math.min(10, numVal($(this).val(), 3)));
-        saveSettingsDebounced();
-    });
-    $c('#dle-sp-librarian-session-history').on('input', function () {
-        settings.librarianSessionHistoryMessages = Math.max(5, Math.min(100, numVal($(this).val(), 10)));
-        saveSettingsDebounced();
-    });
-    $c('#dle-sp-librarian-agentic-history').on('input', function () {
-        settings.librarianAgenticHistoryMessages = Math.max(10, Math.min(200, numVal($(this).val(), 40)));
-        saveSettingsDebounced();
-    });
-    $c('#dle-sp-librarian-session-tool-cap').on('input', function () {
-        const raw = String($(this).val()).trim();
-        if (raw === '') { settings.librarianSessionToolCallCap = null; }
-        else {
-            const n = Math.max(0, Math.min(1000, Number(raw)));
-            settings.librarianSessionToolCallCap = Number.isFinite(n) ? n : null;
-        }
-        saveSettingsDebounced();
-    });
-    $c('input[name="dle-sp-librarian-prompt-mode"]').on('change', function () {
-        settings.librarianSystemPromptMode = $(this).val();
-        $c('#dle-sp-librarian-custom-prompt').toggle(settings.librarianSystemPromptMode !== 'default');
-        saveSettingsDebounced();
-    });
-    $c('#dle-sp-librarian-custom-prompt').on('input', function () { settings.librarianCustomSystemPrompt = $(this).val(); saveSettingsDebounced(); });
 
     // M6 (2026-05-22): per-popup AbortController for the Test Connection button.
     // Second click while a probe is in flight CANCELS instead of being ignored.

@@ -52,6 +52,7 @@ export const getCurrentLocale = () => 'en';
 export const translate = s => s;
 export const t = (strings, ...vals) => (Array.isArray(strings) ? strings.reduce((a, s, i) => a + s + (i < vals.length ? vals[i] : ''), '') : String(strings));`,
     'tokenizers.js': 'export const getTokenCountAsync = async s => Math.ceil(String(s ?? "").length / 4);',
+    'personas.js': 'export const user_avatar = "";',   // board-live.js asks whose persona plays (2026-10-27: the suite had stopped running)
 };
 const EMPTY = 'export default {};';
 

@@ -24,7 +24,6 @@
 export const PROXY_DEPRECATION_MODE_KEYS = [
     'aiSearchConnectionMode',
     'scribeConnectionMode',
-    'librarianConnectionMode',
     'aiNotepadConnectionMode',
     'autoSuggestConnectionMode',
     'optimizeKeysConnectionMode',
@@ -45,23 +44,7 @@ export function runMigrations(settings, fromVersion, _toVersion) {
         // 0 → 1: initial versioned settings (no-op).
         if (settings.debugMode) console.log('[DLE] Migrating settings to version 1');
     }
-    if (fromVersion < 2) {
-        // 1 → 2: AI Connections consolidation. Rename librarianSessionModel → librarianModel.
-        // Other tools' connectionMode is intentionally NOT touched — existing users keep their explicit settings.
-        if (settings.debugMode) console.log('[DLE] Migrating settings to version 2 (AI Connections consolidation)');
-        if (settings.librarianSessionModel) {
-            settings.librarianModel = settings.librarianSessionModel;
-        }
-        delete settings.librarianSessionModel;
-    }
-    if (fromVersion < 3) {
-        // 2 → 3: only unconfigured Librarian (profile mode, no profileId) flips to 'inherit'.
-        // Users who explicitly chose a profile keep that selection.
-        if (settings.debugMode) console.log('[DLE] Migrating settings to version 3 (Librarian inherit default)');
-        if (settings.librarianConnectionMode === 'profile' && !settings.librarianProfileId) {
-            settings.librarianConnectionMode = 'inherit';
-        }
-    }
+    // 1 → 2 and 2 → 3 only touched the retired Librarian's keys; step 6 drops those keys, so both are no-ops now.
     if (fromVersion < 4) {
         // 3 → 4: Custom Proxy connection mode removed in v2.5. Any per-feature mode
         // currently set to 'proxy' flips to 'profile'. We do NOT touch *ProxyUrl keys
@@ -91,6 +74,18 @@ export function runMigrations(settings, fromVersion, _toVersion) {
         // doesn't merge missing-then-default keys for non-numeric fields).
         if (settings.wiImportEmHandling == null) {
             settings.wiImportEmHandling = 'append';
+        }
+    }
+    if (fromVersion < 6) {
+        // 5 → 6 (Miinthe's fork, 2026-10-19): the Librarian is removed (Mero ☆ replaced it). Drop its saved settings
+        // quietly. The writing-guide tag keeps its old key name (librarianGuideTag) — it is a vault setting.
+        for (const key of Object.keys(settings)) {
+            if (key.startsWith('librarian') && key !== 'librarianGuideTag') delete settings[key];
+        }
+        if (settings.analyticsData && typeof settings.analyticsData === 'object') delete settings.analyticsData._librarian;
+        if (Array.isArray(settings._proxyMigrationV2_5_notice)) {
+            const left = settings._proxyMigrationV2_5_notice.filter(k => !String(k).startsWith('librarian'));
+            if (left.length) settings._proxyMigrationV2_5_notice = left; else delete settings._proxyMigrationV2_5_notice;
         }
     }
 }

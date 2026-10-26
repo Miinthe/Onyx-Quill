@@ -6,7 +6,7 @@
  * Run: npm run test:world
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { normHabits, normVoice, normVoices, voiceKey, posters, postsOf, newPost, updatePost, toggleLike, addComment, likesLine, feedView, normStory, runningStories, feedPrompt, parseFeed, reactPrompt, parseReact, mixPrompt, parseMix, storyPrompt, parseStory, newsPrompt, parseNews, photosIn, mentionsIn, richText, tagQuery, tagMatches, commentCount, addPostVersion, showPostVersion, editPost, removePost, editComment, removeComment, storyToTell, tellsStory, relevantOld, pulsePrompt, parsePulse } from '../src/world/feed-pure.js';
+import { normHabits, normVoice, normVoices, voiceKey, posters, postsOf, newPost, updatePost, toggleLike, addComment, likesLine, feedView, normStory, runningStories, feedPrompt, parseFeed, reactPrompt, parseReact, mixPrompt, parseMix, storyPrompt, parseStory, newsPrompt, parseNews, photosIn, mentionsIn, richText, tagQuery, tagMatches, commentCount, addPostVersion, showPostVersion, editPost, removePost, editComment, removeComment, storyToTell, tellsStory, relevantOld, pulsePrompt, parsePulse, mergeTaught } from '../src/world/feed-pure.js';
 import { emptyStore, addRecord, normWorld } from '../src/world/world-pure.js';
 import { normalizeBoard, BOARD_VERSION } from '../src/board-model-pure.js';
 
@@ -184,6 +184,13 @@ test('small moves after a reply: old posts that fit, at most 4 moves, one text b
     assert(pulsePrompt({ userName: 'Miinthe', people: ppl, min: 1, max: 6 }).system.includes('1 to 6'));
     assert(pulsePrompt({ userName: 'Miinthe', people: ppl, texters: tx, recent: [{ n: 1, by: 'Kettle', text: 'x', comments: [{ by: 'Spoon', text: 'no' }] }] }).user.includes('↳ Spoon: no'));
     assert(!pulsePrompt({ userName: 'Miinthe', people: ppl, texters: tx, msgs: false }).system.includes('private text'), 'no texting with Messages off');
+});
+
+test('a post remembers what it taught, merged, so deleting it can undo all of it', () => {
+    const a = mergeTaught(null, { logIds: ['l1'], mknowIds: [] });
+    const b = mergeTaught(a, { logIds: ['l1', 'l2'], mknowIds: ['k1'] });
+    assertEqual(b, { logIds: ['l1', 'l2'], mknowIds: ['k1'] });
+    assertEqual(mergeTaught(undefined, undefined), { logIds: [], mknowIds: [] });
 });
 
 summary();

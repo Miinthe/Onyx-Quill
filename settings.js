@@ -21,8 +21,7 @@ export const PROMPT_TAG_PREFIX = 'deeplore_';
 
 // AI Notepad instruction prompt moved to src/i18n/prompts/en.js as
 // AI_NOTEPAD_PROMPT and resolved at call time via getPrompt('AI_NOTEPAD_PROMPT').
-// See src/librarian/agentic-messages.js and index.js (notepad extraction)
-// for the new contract.
+// See index.js (notepad extraction) for the new contract.
 
 export const defaultSettings = {
     enabled: false,
@@ -33,6 +32,8 @@ export const defaultSettings = {
     neverInsertTag: 'lorebook-never',
     seedTag: 'lorebook-seed',
     bootstrapTag: 'lorebook-bootstrap',
+    // The writing-guide tag (Settings › Vault › "Writing-guide tag"): entries with it are style guides, never story lore.
+    // The key keeps its old name so saved settings carry over (the Librarian that once read them is gone, 2026-10-19).
     librarianGuideTag: 'lorebook-guide',
     newChatThreshold: 3,
     scanDepth: 4,
@@ -243,47 +244,8 @@ export const defaultSettings = {
     decayEnabled: false,
     decayBoostThreshold: 5,    // generations without injection before freshness boost
     decayPenaltyThreshold: 2,  // consecutive injections before frequency penalty
-    // Librarian — defaults to OFF. Tools register at boot (registration happens before
-    // extension_settings finishes loading), but shouldRegister() gates each generation
-    // request on this flag. Users opt in via Settings → Features → Librarian.
-    librarianEnabled: false,
-    librarianSearchEnabled: true,       // search_lore tool (gated by librarianEnabled)
-    librarianFlagEnabled: true,         // flag_lore tool (gated by librarianEnabled)
-    librarianMaxSearches: 2,
-    librarianMaxResults: 5,
-    librarianResultTokenBudget: 1500,
-    librarianAutoSendOnGap: true,
-    librarianWriteFolder: '',
-    // Default vault (by name) the Librarian writes new entries to. '' = primary.
-    // Librarian popup also exposes a per-write override dropdown when multiple
-    // vaults are configured.
-    librarianWriteVaultId: '',
-    librarianConnectionMode: 'inherit', // intentionally separate from aiSearchConnectionMode — see CLAUDE.md
-    librarianProfileId: '',
-    librarianProxyUrl: 'http://127.0.0.1:42069',
-    librarianModel: '',                  // blank = inherit from AI Search.
-    librarianSessionMaxTokens: 4096,
-    librarianSessionTimeout: 120000,    // 120s headroom — opus-4-6 forced-final-response with thinking can exceed 60s.
-    // Hard caps on the Emma agentic loop, surfaced for users who hit them.
-    librarianMaxToolCallsPerTurn: 10,
-    librarianMaxValidationRetries: 3,
-    librarianSessionHistoryMessages: 10,    // Emma's own session memory window
-    librarianAgenticHistoryMessages: 40,    // writing-AI grounding window (buildChatMessages)
-    librarianSessionToolCallCap: null,      // null = unlimited; otherwise total search+flag calls allowed per session
-    librarianManifestMaxChars: 8000,
-    librarianRelatedEntriesMaxChars: 4000,
-    librarianDraftMaxChars: 4000,
-    librarianChatContextMaxChars: 4000,
-    librarianSystemPromptMode: 'default', // 'default' | 'append' | 'override' | 'strict-override'
-    librarianCustomSystemPrompt: '',
-    librarianShowToolCalls: true,
-    // librarianPerMessageActivity: ON ties gap/flag records to messages (clear on new gen, keep on swipe, delete with msg).
-    // OFF = legacy behavior (gaps accumulate, dropdowns ephemeral). See CLAUDE.md "non-obvious settings semantics".
-    // Default flipped false→true in v2.5 Wave E — the OFF default showed new users stale accumulating
-    // gaps + vanishing tool history. Existing users who persisted `false` keep it (their stored value wins).
-    librarianPerMessageActivity: true,
     // #16: global priority-order toggle. false = lower priority number wins (Obsidian/WI convention).
-    // true = higher wins. Affects pipeline budget allocation, Librarian view, Cartographer display.
+    // true = higher wins. Affects pipeline budget allocation, Cartographer display.
     // Browse popup's explicit priority_asc/desc dropdown bypasses this — user-typed sort always wins literal.
     priorityReversed: false,
     // #18: when true, importEntries / upsertConvertedEntry caveman-compress each entry's body
@@ -321,7 +283,7 @@ export const defaultSettings = {
     analyticsData: {},
     _wizardCompleted: false,
     // Increment to trigger migrations in runMigrations().
-    settingsVersion: 5,
+    settingsVersion: 6,
 };
 
 /** Per-tool settings-key map for resolveConnectionConfig(). */
@@ -330,7 +292,6 @@ const TOOL_SETTINGS_KEYS = {
     scribe:     { mode: 'scribeConnectionMode', profileId: 'scribeProfileId', proxyUrl: 'scribeProxyUrl', model: 'scribeModel', maxTokens: 'scribeMaxTokens', timeout: 'scribeTimeout' },
     autoSuggest: { mode: 'autoSuggestConnectionMode', profileId: 'autoSuggestProfileId', proxyUrl: 'autoSuggestProxyUrl', model: 'autoSuggestModel', maxTokens: 'autoSuggestMaxTokens', timeout: 'autoSuggestTimeout' },
     aiNotepad:  { mode: 'aiNotepadConnectionMode', profileId: 'aiNotepadProfileId', proxyUrl: 'aiNotepadProxyUrl', model: 'aiNotepadModel', maxTokens: 'aiNotepadMaxTokens', timeout: 'aiNotepadTimeout' },
-    librarian:  { mode: 'librarianConnectionMode', profileId: 'librarianProfileId', proxyUrl: 'librarianProxyUrl', model: 'librarianModel', maxTokens: 'librarianSessionMaxTokens', timeout: 'librarianSessionTimeout' },
     optimizeKeys: { mode: 'optimizeKeysConnectionMode', profileId: 'optimizeKeysProfileId', proxyUrl: 'optimizeKeysProxyUrl', model: 'optimizeKeysModel', maxTokens: 'optimizeKeysMaxTokens', timeout: 'optimizeKeysTimeout' },
     storyTracker: { mode: 'storyTrackerConnectionMode', profileId: 'storyTrackerProfileId', proxyUrl: 'storyTrackerProxyUrl', model: 'storyTrackerModel', maxTokens: 'storyTrackerMaxTokens', timeout: 'storyTrackerTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-03)
     mero: { mode: 'meroConnectionMode', profileId: 'meroProfileId', proxyUrl: 'meroProxyUrl', model: 'meroModel', maxTokens: 'meroMaxTokens', timeout: 'meroTimeout' },   // LOCAL PATCH (Miinthe, 2026-10-05)
@@ -342,7 +303,7 @@ const TOOL_SETTINGS_KEYS = {
  * cascades model/proxyUrl (tool's own value wins if set, else aiSearch's). maxTokens/timeout
  * are always the tool's own — those tune the per-feature behavior, not the shared connection.
  *
- * @param {string} toolKey  'aiSearch' | 'scribe' | 'autoSuggest' | 'aiNotepad' | 'librarian' | 'optimizeKeys'
+ * @param {string} toolKey  'aiSearch' | 'scribe' | 'autoSuggest' | 'aiNotepad' | 'optimizeKeys' | 'storyTracker' | 'mero' | 'world'
  * @returns {{ mode: string, profileId: string, proxyUrl: string, model: string, maxTokens: number, timeout: number }}
  */
 export function resolveConnectionConfig(toolKey) {
@@ -405,11 +366,6 @@ export const settingsConstraints = {
     aiNotepadTimeout: { min: 5000, max: 999999 },
     aiNotepadMaxEntries: { min: 0, max: 1000 },
     aiNotepadFuzzyDedupThreshold: { min: 0.1, max: 1 },
-    librarianMaxToolCallsPerTurn: { min: 1, max: 50 },
-    librarianMaxValidationRetries: { min: 0, max: 10 },
-    librarianSessionHistoryMessages: { min: 5, max: 100 },
-    librarianAgenticHistoryMessages: { min: 10, max: 200 },
-    librarianSessionToolCallCap: { min: 0, max: 1000 },
     aiSearchMaxTokens: { min: 64, max: 4096 },
     aiSearchTimeout: { min: 1000, max: 999999 },
     aiSearchScanDepth: { min: 1, max: 100 },
@@ -443,16 +399,6 @@ export const settingsConstraints = {
     graphEdgeFilterAlpha: { min: 0.01, max: 0.5 },
     decayBoostThreshold: { min: 2, max: 20 },
     decayPenaltyThreshold: { min: 2, max: 10 },
-    librarianMaxSearches: { min: 1, max: 10 },
-    librarianMaxResults: { min: 1, max: 20 },
-    librarianResultTokenBudget: { min: 500, max: 5000 },
-    librarianSessionMaxTokens: { min: 1024, max: 16384 },
-    librarianSessionTimeout: { min: 10000, max: 999999 },
-    // BUG-335: librarian *MaxChars previously had no constraints; "4000" string coerced to NaN.
-    librarianManifestMaxChars: { min: 0, max: 200000 },
-    librarianRelatedEntriesMaxChars: { min: 0, max: 200000 },
-    librarianDraftMaxChars: { min: 0, max: 200000 },
-    librarianChatContextMaxChars: { min: 0, max: 200000 },
     fuzzySearchMinScore: { min: 0.1, max: 2.0 },
     hierarchicalAggressiveness: { min: 0.0, max: 0.8 },
     indexRebuildGenerationInterval: { min: 1, max: 100 },
@@ -473,8 +419,6 @@ export const settingsConstraints = {
     newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
     meroConnectionMode: { enum: ['profile'] },
     worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
-    librarianConnectionMode: { enum: ['inherit', 'profile', 'proxy'] },
-    librarianSystemPromptMode: { enum: ['default', 'append', 'override', 'strict-override'] },
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an
     // unrecognized value, which deduplicateMultiVault then silently treated like 'first'
     // (drop duplicates instead of preserving). Safe default 'all' restored on mismatch.
@@ -505,7 +449,7 @@ export function getSettings() {
 
     // BUG-071: coerce string-typed numbers (e.g. JSON imports) or reset to default if non-numeric.
     // Skip null — used as a sentinel meaning "unset / unlimited" for some keys
-    // (e.g. librarianSessionToolCallCap). Without this skip, Number(null) === 0
+    // (a stored null means "unlimited"). Without this skip, Number(null) === 0
     // would silently persist 0, which downstream code may treat as a hard cap.
     for (const key of Object.keys(settingsConstraints)) {
         // Enum keys are validated by validateSettings() below.
@@ -526,7 +470,7 @@ export function getSettings() {
     // `=== undefined` gate, and a null `analyticsData` then threw in
     // `Object.hasOwn(null, …)` at commit — surfacing a misleading "Couldn't load
     // your lore" toast even though lore was injected. Numeric/string/boolean
-    // null-sentinels (e.g. librarianSessionToolCallCap) are left untouched.
+    // null-sentinels are left untouched.
     for (const [key, value] of Object.entries(defaultSettings)) {
         const defaultIsObject = (typeof value === 'object' && value !== null);
         if (s[key] === undefined || (defaultIsObject && s[key] === null)) {
@@ -617,7 +561,6 @@ export function getVaultByName(settings, vaultName) {
 }
 
 const WRITE_VAULT_KEYS = {
-    librarian: 'librarianWriteVaultId',
     scribe: 'scribeWriteVaultId',
     autoSuggest: 'autoSuggestWriteVaultId',
 };
@@ -630,9 +573,9 @@ const WRITE_VAULT_KEYS = {
  * to the next on miss/disabled — never throws so writes can't fail because
  * config drifted from the vault list.
  *
- * @param {'librarian'|'scribe'|'autoSuggest'} toolKey
+ * @param {'scribe'|'autoSuggest'} toolKey
  * @param {typeof defaultSettings} [settings]
- * @param {string} [overrideName]  Per-call override (e.g. Librarian popup picker)
+ * @param {string} [overrideName]  Per-call override (a per-write picker)
  * @returns {{ name: string, host: string, port: number, apiKey: string, https: boolean, enabled: boolean }}
  */
 export function resolveWriteVault(toolKey, settings, overrideName) {

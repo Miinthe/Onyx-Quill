@@ -54,8 +54,7 @@
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      ZONE 1b: Quick Actions — D4 (v2.5 Wave 3): lifted OUT of the role="status"
-     aria-live region above, so button label changes (e.g. "Skip Librarian" →
-     "Skipping Next") are NOT announced as status. The status zone stays a passive
+     aria-live region above, so button label changes are NOT announced as status. The status zone stays a passive
      readout. Handlers delegate from the $drawer root (wireStatusActions), so the
      relocation is transparent to event wiring. See docs/gotchas.md #75.
      ═══════════════════════════════════════════════════════════════════════════ -->
@@ -70,9 +69,6 @@
         </button>
         <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="newlore" title="Create new lore entry" aria-label="Create new lore entry" data-i18n="[title]dle_newlore_tooltip;[aria-label]dle_newlore_tooltip">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="librarian-chat" title="Open Librarian chat" aria-label="Open Librarian chat" data-i18n="[title]dle_librarian_chat_tooltip;[aria-label]dle_librarian_chat_tooltip">
-            <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
         </button>
         <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="graph" title="Open relationship graph" aria-label="Open relationship graph" data-i18n="[title]dle_graph_tooltip;[aria-label]dle_graph_tooltip">
             <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
@@ -89,10 +85,6 @@
         <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="new-run" title="Start a new run — new chat, next instance letter, same folders" aria-label="Start a new run">
             <i class="fa-solid fa-forward-step" aria-hidden="true"></i>
             <span class="dle-action-label">New Run</span>
-        </button>
-        <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="skip-tools" title="Skip Librarian tools for next generation" aria-label="Skip Librarian tools for next generation" data-i18n="[title]dle_skip_librarian_tooltip;[aria-label]dle_skip_librarian_tooltip">
-            <i class="fa-solid fa-ban" aria-hidden="true"></i>
-            <span class="dle-action-label" data-i18n="dle_skip_librarian_button">Skip Librarian</span>
         </button>
     </div>
 </div>
@@ -150,12 +142,6 @@
                 aria-selected="false" aria-controls="dle-panel-cast" aria-label="Cast — the people in the story and who speaks next" tabindex="-1">
             <i class="fa-solid fa-masks-theater" aria-hidden="true"></i>
             <span class="dle-tab-text">Cast</span>
-        </button>
-        <button type="button" class="dle-tab" id="dle-tab-librarian" data-tab="librarian" role="tab"
-                aria-selected="false" aria-controls="dle-panel-librarian" aria-label="Librarian — lore gap inbox and draft review" tabindex="-1">
-            <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
-            <span class="dle-tab-text" data-i18n="dle_analytics_section_librarian">Librarian</span>
-            <span class="dle-tab-badge dle-librarian-badge" data-badge="librarian" aria-hidden="true"></span>
         </button>
         <button type="button" class="dle-tab" id="dle-tab-tools" data-tab="tools" role="tab"
                 aria-selected="false" aria-controls="dle-panel-tools" aria-label="Tools — diagnostics, AI tools, and data management" tabindex="-1">
@@ -427,70 +413,6 @@
         <div class="dle-story-hint dle-text-xs dle-muted">Trackers follow where the story stands — a relationship, a plot. They move by themselves when the story plainly says so (with the line that did it, and Undo), or by hand with ◀ ▶. The current step is told to the writer and to the lore judge. They never hide or filter anything.</div>
     </div>
 
-    <!-- ─── Tab: Librarian (lore gap inbox) ─── -->
-    <div class="dle-tab-panel" id="dle-panel-librarian" data-tab="librarian"
-         role="tabpanel" aria-labelledby="dle-tab-librarian">
-        <div class="dle-panel-toolbar">
-            <div class="dle-librarian-sub-tabs" role="radiogroup" aria-label="Librarian view" data-i18n="[aria-label]dle_librarian_view_aria">
-                <button type="button" class="dle-librarian-sub-tab active" data-filter="flag" role="radio" aria-checked="true"><span data-i18n="dle_librarian_flags_tab">Flags</span> <span class="dle-sub-tab-count"></span></button>
-                <button type="button" class="dle-librarian-sub-tab" data-filter="activity" role="radio" aria-checked="false"><span data-i18n="dle_librarian_activity_tab">Activity</span> <span class="dle-sub-tab-count"></span></button>
-            </div>
-            <div class="dle-librarian-toolbar-right">
-                <select class="text_pole dle-librarian-sort" data-sort aria-label="Sort by" data-i18n="[aria-label]dle_librarian_sort_aria">
-                    <option value="newest" data-i18n="dle_sort_newest">Newest</option>
-                    <option value="frequency" data-i18n="dle_graph_color_mode_frequency">Frequency</option>
-                    <option value="urgency" data-i18n="dle_sort_urgency">Urgency</option>
-                </select>
-            </div>
-        </div>
-        <!-- f041: contextual bulk-action bar. Select-all + count are always shown; the action
-             cluster reveals only when rows are picked (.dle-has-selection toggled in render).
-             Action buttons (Open/Done/Remove) + Clear/Invert are delegated in drawer-events.js,
-             so they work identically here as in the retired standalone action row below. -->
-        <div class="dle-librarian-select-all-bar" role="group" aria-label="Bulk selection" data-i18n="[aria-label]dle_bulk_selection_aria">
-            <label class="dle-librarian-select-all-label">
-                <input type="checkbox" class="dle-librarian-select-all" aria-label="Toggle select all" data-i18n="[aria-label]dle_select_all_aria">
-                <span data-i18n="dle_select_all_aria">Toggle select all</span>
-            </label>
-            <span class="dle-librarian-select-count dle-text-xs dle-muted" aria-live="polite"></span>
-            <div class="dle-librarian-bulk-actions" role="group" aria-label="Selection actions" data-i18n="[aria-label]dle_librarian_bulk_actions_aria">
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-action" data-librarian-action="open" title="Open the selected gap in the editor" aria-label="Open selected gap" disabled data-i18n="[title]dle_librarian_open_tooltip;[aria-label]dle_librarian_open_label">
-                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> <span data-i18n="dle_librarian_open_label">Open</span>
-                </button>
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-action" data-librarian-action="done" title="Mark selected as written" aria-label="Mark selected as written" disabled data-i18n="[title]dle_librarian_done_tooltip;[aria-label]dle_librarian_mark_done_label">
-                    <i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="dle_librarian_mark_done_label">Mark Done</span>
-                </button>
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-action dle-librarian-bulk-btn-danger" data-librarian-action="remove" title="Remove (hide on first click, dismiss forever on second)" aria-label="Remove selected" disabled data-i18n="[title]dle_librarian_remove_tooltip;[aria-label]dle_librarian_remove_label">
-                    <i class="fa-solid fa-trash" aria-hidden="true"></i> <span data-i18n="dle_librarian_remove_label">Remove</span>
-                </button>
-                <span class="dle-librarian-bulk-sep" aria-hidden="true"></span>
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-bulk-btn-ghost dle-librarian-invert-btn" title="Invert selection" aria-label="Invert selection" data-i18n="[title]dle_librarian_invert_tooltip;[aria-label]dle_librarian_invert_label"><span data-i18n="dle_librarian_invert_label">Invert</span></button>
-                <button type="button" class="dle-librarian-bulk-btn dle-librarian-bulk-btn-ghost dle-librarian-clear-btn" title="Clear selection" aria-label="Clear selection" data-i18n="[title]dle_clear_selection_tooltip;[aria-label]dle_clear_selection_tooltip"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-            </div>
-        </div>
-        <div class="dle-librarian-list" role="list" aria-label="Librarian activity" data-i18n="[aria-label]dle_librarian_list_aria"></div>
-        <div class="dle-empty-state dle-visible" id="dle-librarian-empty">
-            <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
-            <p class="dle-librarian-empty-text" data-i18n="dle_librarian_empty">No lore gaps recorded yet.</p>
-            <div class="dle-librarian-empty-actions">
-                <button type="button" id="dle-librarian-new-entry-btn-empty" class="menu_button dle-tool-btn dle-librarian-new-entry-btn" data-action="librarian-new" title="Create a new vault entry from scratch" data-i18n="[title]dle_new_entry_empty_tooltip">
-                    <i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="dle_librarian_new_entry_label">New Entry</span>
-                </button>
-                <button type="button" class="menu_button dle-tool-btn dle-librarian-vault-review-btn" data-action="librarian-review" title="AI-guided review of your vault" data-i18n="[title]dle_vault_review_tooltip">
-                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> <span data-i18n="dle_librarian_vault_review_label">Vault Review</span>
-                </button>
-            </div>
-        </div>
-        <div class="dle-librarian-toolbar-bottom">
-            <button type="button" id="dle-librarian-new-entry-btn-toolbar" class="menu_button dle-tool-btn dle-librarian-new-entry-btn" data-action="librarian-new" title="Create a new vault entry from scratch" data-i18n="[title]dle_new_entry_empty_tooltip">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i> <span data-i18n="dle_librarian_new_entry_label">New Entry</span>
-            </button>
-            <button type="button" class="menu_button dle-tool-btn dle-librarian-vault-review-btn" data-action="librarian-review" title="AI-guided review of your vault" data-i18n="[title]dle_vault_review_tooltip">
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> <span data-i18n="dle_librarian_vault_review_label">Vault Review</span>
-            </button>
-        </div>
-    </div>
-
     <!-- ─── Tab: Tools ─── -->
     <div class="dle-tab-panel" id="dle-panel-tools" data-tab="tools"
          role="tabpanel" aria-labelledby="dle-tab-tools">
@@ -590,10 +512,6 @@
             <span class="dle-context-bar-label" data-i18n="dle_context_unavailable">Context data unavailable — waiting for first generation</span>
         </div>
     </div>
-
-    <!-- A2: real Librarian token I/O of the last agentic turn — a separate API call, NOT part
-         of the settled prompt window above. Hidden until a Librarian turn runs this chat. -->
-    <div class="dle-librarian-usage dle-hidden"></div>
 
     <!-- Activity feed (recent pipeline runs) -->
     <details class="dle-activity-feed-wrap">

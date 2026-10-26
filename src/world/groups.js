@@ -15,6 +15,7 @@ import { addRecord, neverTalk } from './world-pure.js';
 import { USER, MAIN, peopleOf, personByKey, personNow, storyClock, newMessage, textOf, stampText, replyWait, waitOver, replyStatus } from './messages-pure.js';
 import { groupConv, groupsOf, groupMsgs, newGroup, groupMax, GROUP_SCHEMA, groupPrompt, parseGroup } from './groups-pure.js';
 import { avatarOf as avatar, nameOfKey as nameOf, mainInfo, cardText, charText, threadHtmlFor, currentMe, pinBtn } from './messages.js';
+import { discretionMap } from './feed.js';   // who people never gossip about (Miinthe 2026-10-26)
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -197,10 +198,11 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
     if (!can.length || busy.has(g.id)) return;
     busy.add(g.id); H.render();
     try {
+        const dm = discretionMap(w);   // who they never gossip about (built once)
         const people = can.map(k => {
-            if (k === MAIN) { const mi = mainInfo(); return { key: k, name: nameOf(k), card: mi ? charText(mi.ch, mi.name) : '', knows: H.store().records.filter(r => r.kind === 'mknow').map(r => r.fact), quirks: w.people?.[k]?.quirks || '' }; }
+            if (k === MAIN) { const mi = mainInfo(); return { key: k, name: nameOf(k), card: mi ? charText(mi.ch, mi.name) : '', knows: H.store().records.filter(r => r.kind === 'mknow').map(r => r.fact), quirks: w.people?.[k]?.quirks || '', discretion: dm.get(k) || '' }; }
             const x = personByKey(L.board, k); const now = x ? personNow(L.state, x.cast, x.p) : null;
-            return { key: k, name: nameOf(k), card: x ? cardText(x.p) : '', knows: now ? now.knows.map(f => f.fact) : [], quirks: w.people?.[k]?.quirks || '' };
+            return { key: k, name: nameOf(k), card: x ? cardText(x.p) : '', knows: now ? now.knows.map(f => f.fact) : [], quirks: w.people?.[k]?.quirks || '', discretion: dm.get(k) || '' };
         });
         const thread = groupMsgs(H.store(), g.id).map(x => ({ who: nameOf(x.from), text: textOf(x) }));
         const pr = groupPrompt({ groupName: g.name, people, others: g.members.filter(k => !can.includes(k)).map(nameOf), thread, max: only ? 1 : groupMax(w.alive.pace), userName: nameOf(USER), alone: !!only });

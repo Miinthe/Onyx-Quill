@@ -1,6 +1,6 @@
 /**
  * @deprecated v2.5 — Custom Proxy connection mode removed. Use Connection Profile instead.
- * This file kept for rollback safety. Dispatch is gated; callers throw via callAI / agentic-api.
+ * This file kept for rollback safety. Dispatch is gated; callers throw via callAI.
  * Do NOT add new consumers. Do NOT call from new code paths.
  */
 /**
@@ -126,7 +126,7 @@ export async function callProxyViaCorsBridge(proxyUrl, model, systemPrompt, user
             // starts in the last ~15 chars of the 150-char window, slicing first
             // cuts the token below the regex's {10,} minimum so it never matches
             // — and a partial token leaks into Error.message. Mirror the
-            // scrub-then-slice pattern from agentic-api.js. See gotchas.md #56.
+            // scrub-then-slice pattern (gotchas.md #56).
             const safeText = text
                 .replace(/sk-proj-[a-zA-Z0-9_-]{10,}/g, 'sk-proj-***') // OpenAI (matched first; superset of sk-)
                 .replace(/sk-[a-zA-Z0-9_-]{10,}/g, 'sk-***')          // Anthropic

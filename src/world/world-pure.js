@@ -43,9 +43,11 @@ export function normWorld(raw) {
                 ...(v.out === true ? { out: true } : {}),
                 // who they never talk to (Miinthe, 2026-10-19: "don't allow this npc to dm X person" — as safety); both ways, see neverTalk
                 ...(Array.isArray(v.never) && v.never.some(x => typeof x === 'string' && x && x !== k) ? { never: [...new Set(v.never.filter(x => typeof x === 'string' && x && x !== k))].slice(0, 40) } : {}),
+                // who they never gossip about (Miinthe, 2026-10-26: "Ottilie wouldn't gossip about Lucan"); one way
+                ...(Array.isArray(v.hush) && v.hush.some(x => typeof x === 'string' && x && x !== k) ? { hush: [...new Set(v.hush.filter(x => typeof x === 'string' && x && x !== k))].slice(0, 40) } : {}),
                 // stage 4: their dials and interests (feed-pure.js normHabits), kept once set
                 ...(['g', 'm', 'p'].some(d => v[d] != null) || (Array.isArray(v.interests) && v.interests.length) ? (({ g, m, p, interests }) => ({ g, m, p, interests }))(normHabits(v)) : {}) }])
-            .filter(([, v]) => v.quirks.trim() || v.muted || v.out || v.g != null || v.never)),
+            .filter(([, v]) => v.quirks.trim() || v.muted || v.out || v.g != null || v.never || v.hush)),
         // stage 4: the story's own voices (a newspaper, a shop) and regulars (recurring locals)
         voices: normVoices(w.voices),
         // stage 5: the story's one rumor account, named per board (Miinthe: "the rumor chat name per story board sounds right")

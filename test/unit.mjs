@@ -27,7 +27,7 @@ import { parseVaultFile, clearPrompts } from '../core/pipeline.js';
 import { takeIndexSnapshot, detectChanges } from '../core/sync.js';
 
 // Enhanced-only pure functions (imported from production code, not reimplemented)
-import { extractAiResponseClient, clusterEntries, buildCategoryManifest, buildObsidianURI, convertWiEntry, stripObsidianSyntax, normalizeResults as normalizeResultsProd, checkHealthPure, parseMatchReason, computeSourcesDiff, categorizeRejections, resolveEntryVault, tokenBarColor, formatRelativeTime, isForceInjected, normalizePinBlock, matchesPinBlock, normalizeLoreGap, fuzzyTitleMatch, extractAiNotes, validateSessionResponse, parseSessionResponse, sanitizeFilename, cmrsResultToText } from '../src/helpers.js';
+import { extractAiResponseClient, clusterEntries, buildCategoryManifest, buildObsidianURI, convertWiEntry, stripObsidianSyntax, normalizeResults as normalizeResultsProd, checkHealthPure, parseMatchReason, computeSourcesDiff, categorizeRejections, resolveEntryVault, tokenBarColor, formatRelativeTime, isForceInjected, normalizePinBlock, matchesPinBlock, normalizeLoreGap, fuzzyTitleMatch, extractAiNotes, sanitizeFilename, cmrsResultToText } from '../src/helpers.js';
 import { encodeVaultPath, validateVaultPath, pruneCircuitBreakers } from '../src/vault/obsidian-api.js';
 
 // BM25 functions (extracted to bm25.js for testability)
@@ -2919,11 +2919,11 @@ test('entryKeysInFolder: collects keyFn results only for matching folder', () =>
     assert(keys.includes('V:A1') && keys.includes('V:A2'), 'A entries collected');
 });
 
-// --- Wave 6.5 backfill: isUnderlyingClaudeModel (src/librarian/agentic-api-pure.js) ---
+// --- Wave 6.5 backfill: isUnderlyingClaudeModel (src/ai/claude-model-pure.js) ---
 // BUG-AUDIT (REG-B2) regression guard: anthropic/claude-* routes via OpenRouter must
 // trigger the same Claude-specific request mitigations as bare claude-* names.
 
-import { isUnderlyingClaudeModel } from '../src/librarian/agentic-api-pure.js';
+import { isUnderlyingClaudeModel } from '../src/ai/claude-model-pure.js';
 
 test('isUnderlyingClaudeModel: matches bare claude-* names', () => {
     assert(isUnderlyingClaudeModel('claude-sonnet-4-5'), 'sonnet-4-5');
@@ -5774,229 +5774,7 @@ test('extractAiNotes: collapses excess newlines after stripping', () => {
 });
 
 // ============================================================================
-// Librarian: validateSessionResponse
-// ============================================================================
-
-test('validateSessionResponse: valid minimal response', () => {
-    const r = validateSessionResponse({ message: 'Hello' });
-    assert(r.valid, 'should be valid');
-    assertEqual(r.errors.length, 0, 'no errors');
-});
-
-test('validateSessionResponse: valid response with draft', () => {
-    const r = validateSessionResponse({
-        message: 'Here is a draft',
-        draft: {
-            title: 'Trade Routes',
-            type: 'lore',
-            priority: 50,
-            keys: ['trade', 'routes', 'commerce'],
-            summary: 'When to select this entry.',
-            content: 'This is a longer piece of content that meets the 50 character minimum for validation.',
-        },
-        action: 'update_draft',
-    });
-    assert(r.valid, 'should be valid');
-    assertEqual(r.errors.length, 0, 'no errors');
-});
-
-test('validateSessionResponse: rejects non-object', () => {
-    const r = validateSessionResponse('not an object');
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors[0].includes('JSON object'), 'error mentions JSON object');
-});
-
-test('validateSessionResponse: rejects array', () => {
-    const r = validateSessionResponse([1, 2, 3]);
-    assert(!r.valid, 'should be invalid');
-});
-
-test('validateSessionResponse: rejects null', () => {
-    const r = validateSessionResponse(null);
-    assert(!r.valid, 'should be invalid');
-});
-
-test('validateSessionResponse: rejects missing message', () => {
-    const r = validateSessionResponse({ draft: null });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('message')), 'error about message');
-});
-
-test('validateSessionResponse: rejects invalid action', () => {
-    const r = validateSessionResponse({ message: 'Hi', action: 'invalid_action' });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('action')), 'error about action');
-});
-
-test('validateSessionResponse: rejects draft with empty title', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: '', keys: ['a'], content: 'x'.repeat(50) },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('title')), 'error about title');
-});
-
-test('validateSessionResponse: rejects draft with invalid type', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', type: 'invalid_type', keys: ['a'], content: 'x'.repeat(50) },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('type')), 'error about type');
-});
-
-test('validateSessionResponse: rejects draft with out-of-range priority', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', priority: 200, keys: ['a'], content: 'x'.repeat(50) },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('priority')), 'error about priority');
-});
-
-test('validateSessionResponse: allows partial draft with empty keys array (BUG-025)', () => {
-    // BUG-025: partial drafts are legitimate during iterative update_draft turns;
-    // empty keys array is allowed — Emma may not have proposed keys yet.
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', keys: [], content: 'x'.repeat(50) },
-    });
-    assert(r.valid, 'empty keys array should be valid in partial draft');
-});
-
-test('validateSessionResponse: rejects draft with empty string in keys', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', keys: ['good', '', 'also good'], content: 'x'.repeat(50) },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('empty strings')), 'error about empty key strings');
-});
-
-test('validateSessionResponse: allows partial draft with short content (BUG-025)', () => {
-    // BUG-025: short content is allowed during iterative drafting; only non-string
-    // types are rejected. Emma may refine content across multiple turns.
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', keys: ['a'], content: 'too short' },
-    });
-    assert(r.valid, 'short content should be valid in partial draft');
-});
-
-test('validateSessionResponse: rejects draft with long summary', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: 'Test', keys: ['a'], summary: 'x'.repeat(601), content: 'x'.repeat(50) },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('summary')), 'error about summary');
-});
-
-test('validateSessionResponse: valid work queue', () => {
-    const r = validateSessionResponse({
-        message: 'Here is the queue',
-        queue: [
-            { title: 'Entry 1', action: 'create', reason: 'Needed for story', urgency: 'high' },
-            { title: 'Entry 2', action: 'update', reason: 'Out of date' },
-        ],
-        action: 'propose_queue',
-    });
-    assert(r.valid, 'should be valid');
-});
-
-test('validateSessionResponse: rejects queue with invalid action', () => {
-    const r = validateSessionResponse({
-        message: 'Queue',
-        queue: [{ title: 'Test', action: 'delete', reason: 'reason' }],
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('queue[0].action')), 'error about queue action');
-});
-
-test('validateSessionResponse: rejects queue with missing title', () => {
-    const r = validateSessionResponse({
-        message: 'Queue',
-        queue: [{ action: 'create', reason: 'reason' }],
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.some(e => e.includes('queue[0].title')), 'error about queue title');
-});
-
-test('validateSessionResponse: allows null draft and action', () => {
-    const r = validateSessionResponse({ message: 'Just chatting', draft: null, action: null });
-    assert(r.valid, 'should be valid');
-    assertEqual(r.errors.length, 0, 'no errors');
-});
-
-test('validateSessionResponse: collects multiple errors', () => {
-    const r = validateSessionResponse({
-        message: 'Draft',
-        draft: { title: '', type: 'invalid', priority: -5, keys: 'not an array', content: 'short' },
-    });
-    assert(!r.valid, 'should be invalid');
-    assert(r.errors.length >= 4, `should have many errors, got ${r.errors.length}`);
-});
-
-test('validateSessionResponse: rejects empty string message', () => {
-    const r = validateSessionResponse({ message: '' });
-    assert(!r.valid, 'empty string message should be invalid');
-    assert(r.errors.some(e => e.includes('message')), 'error about message');
-});
-
-test('validateSessionResponse: rejects numeric message', () => {
-    const r = validateSessionResponse({ message: 42 });
-    assert(!r.valid, 'numeric message should be invalid');
-});
-
-// ============================================================================
-// Librarian: parseSessionResponse
-// ============================================================================
-
-test('parseSessionResponse: parses raw JSON', () => {
-    const result = parseSessionResponse('{"message": "hello", "draft": null}');
-    assert(result !== null, 'should parse');
-    assertEqual(result.message, 'hello', 'message field');
-});
-
-test('parseSessionResponse: parses code-fenced JSON', () => {
-    const result = parseSessionResponse('Here is my response:\n```json\n{"message": "hi"}\n```');
-    assert(result !== null, 'should parse');
-    assertEqual(result.message, 'hi', 'message field');
-});
-
-test('parseSessionResponse: parses bracket-balanced JSON with preamble', () => {
-    const result = parseSessionResponse('I will help you. {"message": "ok", "draft": null}');
-    assert(result !== null, 'should parse');
-    assertEqual(result.message, 'ok', 'message field');
-});
-
-test('parseSessionResponse: handles braces inside strings', () => {
-    const result = parseSessionResponse('{"message": "a { b } c", "draft": null}');
-    assert(result !== null, 'should parse');
-    assertEqual(result.message, 'a { b } c', 'message with braces');
-});
-
-test('parseSessionResponse: returns null for non-string input', () => {
-    assertEqual(parseSessionResponse(null), null, 'null');
-    assertEqual(parseSessionResponse(undefined), null, 'undefined');
-    assertEqual(parseSessionResponse(42), null, 'number');
-    assertEqual(parseSessionResponse(''), null, 'empty string');
-});
-
-test('parseSessionResponse: returns null for unparseable text', () => {
-    assertEqual(parseSessionResponse('just some random text'), null, 'no JSON');
-    assertEqual(parseSessionResponse('{broken json'), null, 'broken JSON');
-});
-
-test('parseSessionResponse: handles escaped quotes in bracket balancer', () => {
-    const result = parseSessionResponse('prefix {"message": "say \\"hello\\""}');
-    assert(result !== null, 'should parse');
-    assertEqual(result.message, 'say "hello"', 'escaped quotes');
-});
-
-// ============================================================================
-// Librarian: sanitizeFilename
+// sanitizeFilename
 // ============================================================================
 
 test('sanitizeFilename: normal title passes through', () => {
@@ -7489,16 +7267,6 @@ test('FEN-5: #20 — neutralizeClosingTag preserves the original tag casing', ()
     assert(out.includes('</​Entry>'), 'mixed-case closer keeps its case');
     assert(out.includes('</​entry>'), 'lowercase closer keeps its case');
     assertEqual((out.match(/​/g) || []).length, 3, 'all three closers ZWSP-defused');
-});
-
-test('FEN-4: #20 source-pin — librarian formatLinkedManifest shares the helpers.js sanitizer', () => {
-    // librarian-tools.js imports ST modules and can't be import()'d here; pin the
-    // shared-sanitizer contract at source level (same pattern as P2-8d).
-    const src = readFileSync(join(EXT_DIR, 'src/librarian/librarian-tools.js'), 'utf8');
-    assert(/import\s*\{[^}]*\bneutralizeClosingTag\b[^}]*\}\s*from\s*'\.\.\/helpers\.js'/.test(src),
-        'librarian-tools imports neutralizeClosingTag from helpers.js (shared, not duplicated)');
-    const fnBody = src.slice(src.indexOf('function formatLinkedManifest'), src.indexOf('function resolveLinkedEntries'));
-    assert(fnBody.includes('neutralizeClosingTag('), 'formatLinkedManifest calls the shared sanitizer');
 });
 
 // ============================================================================

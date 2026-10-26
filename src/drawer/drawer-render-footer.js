@@ -1,7 +1,7 @@
 import { amount_gen, getCurrentChatId } from '../../../../../../script.js';
 import { getSettings } from '../../settings.js';
 import {
-    vaultIndex, librarianLastUsage,
+    vaultIndex,
     aiSearchStats, isAiCircuitOpen, aiCircuitOpenedAt,
     indexEverLoaded, indexTimestamp, lastHealthResult,
 } from '../state.js';
@@ -65,7 +65,6 @@ function _footerCache($footer) {
         barContext: $footer.find('.dle-context-bar-context'),
         barResponse: $footer.find('.dle-context-bar-response'),
         barLabel: $footer.find('.dle-context-bar-label'),
-        libUsage: $footer.find('.dle-librarian-usage'),
         activityFeed: $footer.find('.dle-activity-feed'),
         vault: $footer.find('[data-health="vault"]'),
         conn: $footer.find('[data-health="connection"]'),
@@ -106,9 +105,6 @@ export function renderFooter() {
     const maxContext = ctx?.chatCompletionSettings?.openai_max_context || ctx?.maxContext || 0;
     const responseTokens = ctx?.chatCompletionSettings?.openai_max_tokens || amount_gen || 0;
     // A1: the bar represents the ONE real settled prompt — promptManager.tokenUsage only.
-    // The old `+lib` add folded librarianChatStats.estimatedExtraTokens (a payload-size
-    // proxy that accumulates per chat) into a window it was never part of. Librarian I/O
-    // is a separate API call; it's surfaced as its own readout below, not in this bar.
     const contextUsed = ds.contextTokens || 0;
 
     if (maxContext > 0) {
@@ -153,23 +149,6 @@ export function renderFooter() {
         $barContainer.removeClass('dle-context-high dle-context-critical');
         $barContainer.attr('aria-valuenow', 0).attr('aria-valuemax', 0).removeAttr('aria-valuetext');
         $barContainer.attr('title', 'Context data unavailable \u2014 waiting for first generation');
-    }
-
-    // A2: real Librarian token I/O of the last agentic turn (state.librarianLastUsage,
-    // set from result.usage). A distinct readout \u2014 Librarian runs its own API call via
-    // CMRS, so its cost is NOT part of ST's settled prompt window above. Hidden until a
-    // Librarian turn has run this chat.
-    const $libUsage = fc.libUsage;
-    if ($libUsage.length) {
-        const lib = librarianLastUsage || { input: 0, output: 0, total: 0 };
-        if (lib.total > 0) {
-            $libUsage
-                .text(`Librarian: ${formatTokensCompact(lib.total)} tok`)
-                .attr('title', `Last Librarian turn \u2014 ${formatTokensCompact(lib.input)} in \u00b7 ${formatTokensCompact(lib.output)} out`)
-                .removeClass('dle-hidden');
-        } else {
-            $libUsage.text('').addClass('dle-hidden');
-        }
     }
 
     // ── Activity feed ──

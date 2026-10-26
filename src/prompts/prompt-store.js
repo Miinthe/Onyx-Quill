@@ -8,7 +8,7 @@
  *      when vault file missing or invalid).
  *
  * `getPrompt(key)` is **synchronous** by design: it must be callable inside
- * tight loops (agentic loop, fence builders) without await overhead. The
+ * tight loops (fence builders) without await overhead. The
  * cache is preloaded at boot, so every lookup is a Map hit.
  *
  * Vault override overlay is live: `loadPrompts()` fetches override files from

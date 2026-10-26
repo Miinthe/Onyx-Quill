@@ -43,11 +43,9 @@ export function mountReadyView(panel) {
         const notes = [q('.dle-token-bar-note'), q('.dle-entries-bar-note')].filter(n => n && !n.classList.contains('dle-hidden') && n.textContent.trim()).map(n => n.textContent.trim());
         const mode = (q('.dle-stat[data-stat="mode"]')?.textContent || '').trim();
         const filters = (q('.dle-active-filters')?.textContent || '').replace(/\s+/g, ' ').trim();
-        const lib = q('.dle-librarian-usage');
         meters.innerHTML = meter('Lore budget', q('.dle-token-bar-container'), ' tokens') + meter('Entries', q('.dle-entries-bar-container'), '') + meter('Context', q('.dle-context-bar-container'), ' tokens', 0.85)
             + (notes.length ? `<p class="dk-hint">${notes.map(n => n.replace(/[<>&]/g, '')).join(' · ')}</p>` : '')
-            + `<p class="dk-hint">${mode && mode !== '—' ? `Mode: ${mode.replace(/[<>&]/g, '')}` : 'Mode: not known yet'}${filters ? ` · ${filters.replace(/[<>&]/g, '')}` : ''}</p>`
-            + (lib && !lib.classList.contains('dle-hidden') && lib.textContent.trim() ? `<p class="dk-hint">${lib.textContent.trim().replace(/[<>&]/g, '')}</p>` : '');
+            + `<p class="dk-hint">${mode && mode !== '—' ? `Mode: ${mode.replace(/[<>&]/g, '')}` : 'Mode: not known yet'}${filters ? ` · ${filters.replace(/[<>&]/g, '')}` : ''}</p>`;
         health.textContent = '';
         for (const [key, name, what] of HEALTH) {
             const icon = q(`.dle-health-icon[data-health="${key}"]`);

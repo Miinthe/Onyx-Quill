@@ -53,7 +53,9 @@ export function getBoard(name) {
 
 /** Store a board (v2). */
 export function putBoard(name, board) {
-    boardStore().boards[name] = { board };
+    // the record keeps what lives beside the board (Mero's summary, mero-map.js) — the board itself is replaced
+    const old = boardStore().boards[name];
+    boardStore().boards[name] = { ...(old && typeof old === 'object' ? old : {}), board };
     try { saveSettingsDebounced(); } catch { /* noop */ }
 }
 
@@ -77,4 +79,19 @@ export function saveDefs(name, defs) {
     if (!board) return false;
     putBoard(name, mergeDefs(board, defs, name));
     return true;
+}
+
+/**
+ * Mero's summary of a board (mero-map.js): { text, hash, at, edited, stale } beside the board, never inside it — the
+ * board window's saves replace the board and cannot drop it.
+ */
+export function getMeroMap(name) {
+    const m = name ? boardStore().boards[name]?.meroMap : null;
+    return m && typeof m === 'object' && typeof m.text === 'string' ? m : null;
+}
+export function setMeroMap(name, map) {
+    const rec = name ? boardStore().boards[name] : null;
+    if (!rec) return;
+    if (map) rec.meroMap = map; else delete rec.meroMap;
+    try { saveSettingsDebounced(); } catch { /* noop */ }
 }

@@ -9,7 +9,7 @@ import { simpleHash, buildAiChatContext } from '../../core/utils.js';
 import { getSettings } from '../../settings.js';
 import { resolvePromptOrOverride } from '../prompts/prompt-store.js';
 import { callProxyViaCorsBridge } from './proxy-api.js';
-import { isUnderlyingClaude } from '../librarian/agentic-api.js';
+import { isUnderlyingClaudeModel as isUnderlyingClaude } from './claude-model-pure.js';
 import {
     vaultIndex, aiSearchCache, aiSearchStats, lastScribeSummary,
     setAiSearchCache, entityNameSet, entityShortNameRegexes,
@@ -40,7 +40,7 @@ export function resetAiThrottle() { _lastAiCallTimestamp = 0; }
  *
  * STATE-R1-01 / SYNC-AI-1: this is wired as a circuit-state observer rather than
  * a per-caller hook so ANY of the 7 paths that close the breaker (scribe,
- * summarize, auto-suggest, librarian-session, commands-ai, aiSearch, …) announce
+ * summarize, auto-suggest, commands-ai, aiSearch, …) announce
  * recovery exactly once. recordAiSuccess() forwards the consumed `announce` flag
  * through the observer detail; the manual-reset path deliberately omits it (it
  * shows its own toast), so this only fires on organic recovery.
@@ -114,7 +114,7 @@ export function getProfileModelHint() {
  * @param {string} [modelOverride] - defaults to settings.aiSearchModel
  * @returns {Promise<{text: string, usage: {input_tokens: number, output_tokens: number}}>}
  */
-export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, modelOverride, externalSignal, jsonSchema, disableThinkingOnClaude = false, noReasoning = false, temperature = null) {
+export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, modelOverride, externalSignal, jsonSchema, disableThinkingOnClaude = false, noReasoning = false, temperature = null, history = null) {
     const settings = getSettings();
     const resolvedProfileId = profileId || settings.aiSearchProfileId;
     const resolvedModel = modelOverride !== undefined ? modelOverride : settings.aiSearchModel;
@@ -140,10 +140,14 @@ export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeo
     // aiForceUserRole merges system into user message for providers that reject the
     // system role entirely (e.g. some Z.AI GLM versions); otherwise CMRS handles
     // the system-prompt-as-separate-field mapping per-provider.
+    // LOCAL PATCH (Miinthe, 2026-10-20): `history` = earlier turns as real messages (Mero's talks), so the model
+    // answers the last message instead of finishing a pasted "Miinthe: … Mero: …" script (it wrote Miinthe's lines).
+    const turns = Array.isArray(history) ? history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string') : [];
     const messages = settings.aiForceUserRole
-        ? [{ role: 'user', content: `[Instructions]\n${systemPrompt}\n\n---\n\n${userMessage}` }]
+        ? [{ role: 'user', content: `[Instructions]\n${systemPrompt}\n\n---\n\n${turns.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n\n')}${turns.length ? '\n\n' : ''}${userMessage}` }]
         : [
             { role: 'system', content: systemPrompt },
+            ...turns,
             { role: 'user', content: userMessage },
         ];
 
@@ -361,7 +365,7 @@ export async function callAI(systemPrompt, userMessage, connectionConfig) {
         }
     }
 
-    const { mode, profileId, proxyUrl, model, maxTokens, timeout, cacheHints, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature } = connectionConfig;
+    const { mode, profileId, proxyUrl, model, maxTokens, timeout, cacheHints, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature, history } = connectionConfig;
 
     if (signal?.aborted) {
         const preReason = signal.reason?.message || 'pre_call_abort';
@@ -397,7 +401,7 @@ export async function callAI(systemPrompt, userMessage, connectionConfig) {
         // through to the proxy branch with an empty proxyUrl (would trip the
         // breaker on the second call). See docs/ai-subsystem.md §1.
         if (mode === 'profile') {
-            result = await callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, model, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature);
+            result = await callViaProfile(systemPrompt, userMessage, maxTokens, timeout, profileId, model, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature, history);
         } else if (mode === 'proxy') {
             // v2.5 dead-head: Custom Proxy mode removed. proxy-api.js is retained for
             // rollback safety, but every dispatch site refuses with a clear error.
@@ -1019,7 +1023,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
             // thinking ON when reasoning_effort resolves to undefined (preset 'auto'
             // → client drops it → server Math.max(0,1024)). Thinking eats the JSON
             // budget / leaks reasoning → parse fail → circuit breaker → keyword
-            // fallback. Mirror the Librarian: force reasoning_effort='auto' on Claude
+            // fallback. Force reasoning_effort='auto' on Claude
             // so ST's calculateClaudeBudgetTokens returns null and omits thinking.
             // Claude-only (zero non-Claude regression); fires for any Claude model.
             disableThinkingOnClaude: true,

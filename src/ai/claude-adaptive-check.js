@@ -93,7 +93,7 @@ export function buildClaudeAdaptiveMessage(detail, surface = 'toast') {
 /**
  * Resolve a feature's effective AI connection mode, following `inherit` back
  * to AI Search.
- * @param {'aiSearch'|'scribe'|'autoSuggest'|'aiNotepad'|'librarian'|'optimizeKeys'} feature
+ * @param {'aiSearch'|'scribe'|'autoSuggest'|'aiNotepad'|'optimizeKeys'} feature
  */
 export function resolveFeatureConnectionMode(settings, feature) {
     if (!settings) return 'profile';
@@ -102,7 +102,6 @@ export function resolveFeatureConnectionMode(settings, feature) {
         scribe: 'scribeConnectionMode',
         autoSuggest: 'autoSuggestConnectionMode',
         aiNotepad: 'aiNotepadConnectionMode',
-        librarian: 'librarianConnectionMode',
         optimizeKeys: 'optimizeKeysConnectionMode',
     };
     const key = map[feature];

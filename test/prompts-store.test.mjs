@@ -68,10 +68,11 @@ assertEqual([...extractPlaceholders(null)], [], 'extract: null input safe');
 assertEqual([...extractPlaceholders(undefined)], [], 'extract: undefined input safe');
 assertEqual([...extractPlaceholders(42)], [], 'extract: non-string safe');
 
-// AGENTIC_TOOLS_INTRO from real EN dict
+// An interpolated prompt (fixture: the shape of the retired AGENTIC_TOOLS_INTRO, 2026-10-19 — no shipped prompt uses ${N} now)
+const TOOLS_INTRO_FIXTURE = 'You have ${0} tool${1} available:';
 {
-    const set = extractPlaceholders(PromptsEn.AGENTIC_TOOLS_INTRO);
-    assert(set.has('${0}') && set.has('${1}'), 'extract: real AGENTIC_TOOLS_INTRO has both markers');
+    const set = extractPlaceholders(TOOLS_INTRO_FIXTURE);
+    assert(set.has('${0}') && set.has('${1}'), 'extract: interpolated fixture has both markers');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -257,7 +258,7 @@ assertEqual(
     const content = buildPromptFileContent({
         key: 'AGENTIC_TOOLS_INTRO',
         locale: 'en',
-        value: PromptsEn.AGENTIC_TOOLS_INTRO,
+        value: TOOLS_INTRO_FIXTURE,
         placeholderDocs: { '${0}': 'tool count', '${1}': 'plural suffix' },
     });
     assert(content.includes('placeholders: |'), 'build: emits placeholders block for interpolated prompt');
@@ -300,12 +301,12 @@ assertEqual(
     const content = buildPromptFileContent({
         key: 'AGENTIC_TOOLS_INTRO',
         locale: 'en',
-        value: PromptsEn.AGENTIC_TOOLS_INTRO,
+        value: TOOLS_INTRO_FIXTURE,
     });
     const parsed = parsePromptFile(content);
     assert(parsed.ok === true, 'full round-trip: parse OK');
     if (parsed.ok) {
-        const validation = validatePromptShape(parsed, PromptsEn.AGENTIC_TOOLS_INTRO, 'AGENTIC_TOOLS_INTRO');
+        const validation = validatePromptShape(parsed, TOOLS_INTRO_FIXTURE, 'AGENTIC_TOOLS_INTRO');
         assert(validation.ok === true, 'full round-trip: validation OK against canonical');
     }
 }
@@ -519,7 +520,8 @@ locale: en
 
 You have tools available:`; // missing ${0} and ${1}
     const overrides = new Map([[key, fileContent]]);
-    const result = buildPromptOverlay(PromptsEn, overrides, KNOWN_PROMPT_KEYS, PromptsEn);
+    const canon = { ...PromptsEn, [key]: TOOLS_INTRO_FIXTURE };   // fixture: no shipped prompt has ${N} markers now
+    const result = buildPromptOverlay(canon, overrides, new Set([...KNOWN_PROMPT_KEYS, key]), canon);
     const meta = result.meta.get(key);
     assertEqual(meta.source, 'compiled-in', 'overlay: placeholder mismatch falls back');
     assert(/placeholder/.test(meta.error || ''), 'overlay: placeholder error recorded');

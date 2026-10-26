@@ -72,7 +72,7 @@
 button.dle-cv-face { cursor: pointer; }
 button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: 2px; }
 .dle-cv-pic { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--dk-accent-soft); color: var(--dk-accent); font: 700 18px/1 var(--dk-f-body); }
-.dle-cv-pic img { width: 100%; height: 100%; object-fit: cover; }
+.dle-cv-pic img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }   /* portrait cards: keep the face, not the chest (Miinthe 2026-10-26: cut off at the top) */
 .dle-cv-tn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--dk-fs-s); }
 .dle-cv-ts { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
 .dle-cv-tfoot { display: flex; align-items: center; justify-content: center; gap: 2px; }

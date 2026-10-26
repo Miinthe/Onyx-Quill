@@ -167,6 +167,8 @@ export const SECTIONS = [
     { id: 'mero', name: 'Mero', icon: 'mero', grp: 'AI', lead: 'Your co-writer: who she is and how she helps. Her AI is picked in AI & connections.', cards: [
         { t: 'Who she is', sum: 'who Mero is, in your words', rows: [
             { id: 'm-persona', label: 'In your words', type: 'btn', btn: 'Edit', act: 'meroPersona', old: 'Persona / who Mero is' },
+            { id: 'm-callme', label: 'She calls you', tip: 'The name Mero uses for you. Empty: no name at all', type: 'text', src: 'mero', key: 'callMe', old: 'Your name / what Mero calls me' },
+            { id: 'm-name', label: 'You call her', tip: 'Her name in her instructions. Empty: Mero', type: 'text', src: 'mero', key: 'meroName', old: 'Mero\'s name / what I call her' },
             { id: 'm-reset', label: 'Who she is: first draft', type: 'btn', btn: 'Reset', act: 'meroResetPersona', old: 'Reset who she is' },
         ] },
         { t: 'Her job', rows: [
@@ -383,7 +385,7 @@ export function clampNumber(row, raw, constraints = {}) {
 const TAB_TO_SECTION = {
     about: 'adv', obsidian: 'vault', connection: 'vault', 'ai-connections': 'ai', search: 'select', matching: 'select', ai: 'select',
     injection: 'inject', prompts: 'prompts', 'author-notebook': 'story', 'ai-notebook': 'story', 'session-scribe': 'story',
-    'auto-lorebook': 'story', features: 'story', graph: 'iface', librarian: 'ai', system: 'adv', reference: 'adv', filters: 'filters', mero: 'mero',
+    'auto-lorebook': 'story', features: 'story', graph: 'iface', system: 'adv', reference: 'adv', filters: 'filters', mero: 'mero',
 };
 export function sectionForNav(nav) {
     if (!nav) return null;
@@ -393,7 +395,7 @@ export function sectionForNav(nav) {
     return TAB_TO_SECTION[nav.subtab] || TAB_TO_SECTION[nav.tab] || null;
 }
 
-/** AI & connections: one row per job (the settings keys are settings.js TOOL_SETTINGS_KEYS'). The Librarian is not listed. */
+/** AI & connections: one row per job (the settings keys are settings.js TOOL_SETTINGS_KEYS'). */
 export const JOBS = [
     { tool: 'aiSearch', job: 'Judge', what: 'picks the lore for a reply', modes: ['profile', 'proxy'], root: true },
     { tool: 'storyTracker', job: 'Story helper', what: 'moves trackers; the Cast’s director', modes: ['profile'] },
