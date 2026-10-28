@@ -33,6 +33,7 @@ import { takePitchCards } from './pitches-pure.js';
 import { boardSummary, namedTrackers, trackerDetails, nowLine } from './mero-board-pure.js';
 import { getMeroMap } from './board-store.js';
 import { refreshMeroMap, editMeroMap } from './mero-map.js';
+import { newGame as freshWordle, guess as playGuess, linePrompt, safeLine, stockLine } from './games/wordle-pure.js';
 
 const listeners = new Set();
 /** The tab redraws when something changes (a talk, a note, Mero's answer). */
@@ -501,3 +502,61 @@ export function boardMapHere() {
 /** Keep Miinthe's version (text), go back to Mero's (null), or write it again (force). */
 export async function setBoardMapHere(text) { const n = live()?.board?.name; if (n) await editMeroMap(n, text); return boardMapHere(); }
 export async function remakeBoardMapHere() { const n = live()?.board?.name; if (n) await refreshMeroMap(n, { force: true }); return boardMapHere(); }
+
+// ── 🎲 games (Miinthe, 2026-10-27: "mini games with Mero … just for funnies") ─────────────────────────────────────────
+// The game picks the word and colors the letters (games/wordle-pure.js); Mero only talks — one short call per line,
+// with nothing of the story in it. No AI picked, or the call fails: a ready-made line, and the game goes on.
+
+const lineAsked = new Map();   // talk id → the newest line asked for; an older answer that arrives late is dropped
+
+async function gameLine(t, what, extra = {}) {
+    const ask = (lineAsked.get(t.id) || 0) + 1; lineAsked.set(t.id, ask);
+    const game = t.game, conn = resolveConnectionConfig('mero');
+    let line = '';
+    if (conn.profileId) {
+        busy++; changed();
+        try {
+            const st = store().settings;
+            const before = t.msgs.filter(m => m.who === 'mero').map(m => m.t);
+            const { system, user } = linePrompt(game, what, { persona: st.persona, names: meroNames(st), before, ...extra });
+            const r = await callAI(system, user, { ...conn, maxTokens: Math.min(Number(conn.maxTokens) || 300, 300), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
+            line = safeLine(r?.text, game, what);
+        } catch (err) { console.warn('[DLE] Mero (games): no line, a ready-made one instead:', err?.message || err); }
+        finally { busy--; }
+    }
+    // a guess made meanwhile asked for a newer line: this one is old news (the end of a game always speaks)
+    if (lineAsked.get(t.id) !== ask && !['won', 'lost'].includes(what)) { changed(); return; }
+    const t2 = findTalk(t.id); if (!t2) { changed(); return; }
+    t2.msgs.push({ who: 'mero', t: line || stockLine(game, what), at: new Date().toISOString() });
+    t2.updated = new Date().toISOString(); saveStore();
+}
+
+/** Start a game in a talk (or a new one after the last): a fresh word, the board cleared, Mero says hi. */
+export function startGame(talkId, kind = 'wordle') {
+    const t = findTalk(talkId); if (!t || kind !== 'wordle') return { ok: false, error: 'no such game' };
+    t.tag = 'game'; t.game = freshWordle(t.game);
+    t.msgs = [];   // a round is a throwaway: the talk keeps only this round's lines
+    if (!t.mine) { t.title = 'Wordle with Mero'; t.mine = true; }
+    if (t.state !== 'open') t.state = 'open';
+    t.updated = new Date().toISOString(); saveStore();
+    gameLine(t, 'start');
+    return { ok: true };
+}
+
+/** Play a guess. → { ok } or { ok: false, why: 'short' | 'word' | 'over' } (not a word: it doesn't count, Mero teases). */
+export function gameGuess(talkId, word) {
+    const t = findTalk(talkId); if (!t?.game) return { ok: false, why: 'over' };
+    const r = playGuess(t.game, word);
+    if (!r.ok) { if (r.why === 'word') gameLine(t, 'notword', { word }); return r; }
+    t.game = r.game; t.updated = new Date().toISOString(); saveStore();
+    gameLine(t, r.game.over || 'guess');
+    return { ok: true, over: r.game.over };
+}
+
+/** A hint from Mero (she is told the word for this one line only). */
+export function gameHint(talkId) {
+    const t = findTalk(talkId); if (!t?.game || t.game.over) return { ok: false };
+    t.game.hints += 1; saveStore();
+    gameLine(t, 'hint');
+    return { ok: true };
+}

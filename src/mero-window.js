@@ -18,6 +18,7 @@ import {
     boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
     meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
+    startGame, gameGuess, gameHint,
 } from './mero.js';
 import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequests } from './requests.js';   // 📬 (step 3)
 import { lookAtLore, undoEntry, meroLooking, onLookChanged, initMeroLore } from './mero-lore.js';   // ☆ entry ideas
@@ -164,6 +165,7 @@ window.__dleMeroHost = {
     pickContext: async () => { const v = await pickContext(); const tab = document.getElementById('dle-tab-mero'); if (v && tab && !tab.classList.contains('active')) tab.click(); return v ? clone(v) : null; },
     where: id => whereAreWe(id),
     newTalk: tag => clone(newTalk(tag)),
+    gameStart: (id, kind) => startGame(id, kind), gameGuess: (id, word) => gameGuess(id, word), gameHint: id => gameHint(id),   // 🎲 (2026-10-27)
     updateTalk: (id, patch) => updateTalk(id, patch),
     deleteTalk: (id, what) => deleteTalk(id, what),
     keepCard: (id, k, c, f) => keepCard(id, k, c, f),

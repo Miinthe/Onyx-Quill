@@ -6686,3 +6686,20 @@ body.dle-board-open { overflow: hidden; }
 #dle-panel-cast .dle-cast-sugg { display: flex; flex-wrap: wrap; gap: 4px; }
 #dle-panel-cast .dle-cast-sugg .menu_button { margin: 0; font-size: .85em; }
 #dle-panel-cast .dle-cast-lastoff { font-size: .82em; opacity: .8; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--SmartThemeBorderColor); }
+
+/* --- Cleaning up a run (Miinthe, 2026-10-27; src/run-cleanup.js) — inside a kit window, so the --dk-* colors --- */
+.dle-rc { display: flex; flex-direction: column; gap: 8px; }
+.dle-rc p { margin: 0; }
+.dle-rc-mini { font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-rc-grp, .dle-rc-kept { border: 1px solid var(--dk-line); border-radius: 9px; background: var(--dk-menu); }
+.dle-rc-kept { border-style: dashed; background: transparent; }
+.dle-rc-grp > summary, .dle-rc-kept > summary { display: flex; gap: 8px; align-items: center; padding: 7px 9px; cursor: pointer; font-size: var(--dk-fs); }
+.dle-rc-grp > summary b { flex: 1; min-width: 0; }
+.dle-rc-kept > summary { color: var(--dk-muted); }
+.dle-rc ul { list-style: none; margin: 0; padding: 0 9px 8px 30px; display: flex; flex-direction: column; gap: 3px; font-size: var(--dk-fs-s); }
+.dle-rc li label { display: flex; gap: 6px; align-items: baseline; overflow-wrap: anywhere; cursor: pointer; }
+.dle-rc input[type="checkbox"] { accent-color: var(--dk-accent); margin: 0; flex: none; }
+.dle-rc-also { font-size: var(--dk-fs-s); padding: 7px 9px; border-radius: 9px; background: var(--dk-accent-soft); }
+.dle-rc-run { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; text-align: left; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 9px; background: var(--dk-menu); color: var(--dk-ink); }
+.dle-rc-run:hover { border-color: var(--dk-accent); }
+.dle-rc-run .dle-rc-mini { margin-left: auto; }

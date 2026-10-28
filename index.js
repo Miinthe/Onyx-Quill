@@ -113,6 +113,7 @@ import { initLegacySkin } from './src/kit/legacy-skin.js';
 import { configureKit } from './src/kit/kit.js';   // overhaul step 4: the shared parts read "Ask before removing" from settings
 import { initNotes } from './src/notes.js';                // My notes (Miinthe, 2026-10-18)
 import { initWorld, worldWriterLines } from './src/world/world.js';          // the world layer (Miinthe, 2026-10-19)
+import { initRunCleanup } from './src/run-cleanup.js';                       // cleaning up a run (Miinthe, 2026-10-27)
 import { initRegenWatch, keepForDelete } from './src/regen.js';   // regenerate keeps hand + world changes (2026-10-19)
 import { initBar } from './src/bar/bar.js';               // overhaul 2a: the DeepLore bar above the message box
 import { initReplyMenu } from './src/reply-menu.js';      // overhaul 2a: one DeepLore ⋯ on each reply
@@ -2045,6 +2046,7 @@ async function _doInit() {
         try { initNotes(); } catch (err) { console.warn('[DLE] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
         try { initRegenWatch(); } catch (err) { console.warn('[DLE] regenerate watch skipped:', err?.message || err); }
         try { initWorld(); } catch (err) { console.warn('[DLE] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)
+        try { initRunCleanup(); } catch (err) { console.warn('[DLE] Run cleanup skipped:', err?.message || err); }   // cleaning up a run (2026-10-27)
         try { initReplyMenu(); } catch (err) { console.warn('[DLE] reply menu skipped:', err?.message || err); }   // overhaul 2a
         try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
         // LOCAL PATCH (Miinthe, 2026-10-04): Re-evaluate + swipe (WIP command; its real home is the DeepLore bar)

@@ -464,7 +464,7 @@ export async function buildIndex() {
         setLastVaultAttemptCount(enabledVaults.length);
         for (const vault of enabledVaults) {
             try {
-                const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https);
+                const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https, { skipFolder: settings.runTrashFolder || 'zz Deleted runs' });
                 if (!data.files || !Array.isArray(data.files)) {
                     console.warn(`[DLE] Vault "${vault.name}" returned invalid data`);
                     continue;
@@ -980,7 +980,7 @@ export async function buildIndexWithReuse() {
             try {
                 // Fetch all contents — savings come from skipping re-parse/tokenize for
                 // unchanged files (detected via hash), not from skipping the network call.
-                const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https);
+                const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https, { skipFolder: settings.runTrashFolder || 'zz Deleted runs' });
                 if (isZombie()) { _reuseResult = false; return; }
                 if (!data.files || !Array.isArray(data.files)) {
                     console.warn(`[DLE] Reuse sync: vault "${vault.name}" returned invalid data — carrying forward existing entries`);

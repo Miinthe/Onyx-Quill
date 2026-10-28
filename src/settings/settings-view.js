@@ -933,6 +933,7 @@ async function act(name, btn) {
             redraw();
         });
         case 'previewJudge': return previewJudgePrompt();
+        case 'cleanupRun': { W?.close(); const { pickRunToClean } = await import('../run-cleanup.js'); return pickRunToClean(); }
         case 'scopeChat': ui.scope = 'chat'; return redraw();
         case 'openBoard': { W?.close(); const { openBoardWindow } = await import('../board-window.js'); return openBoardWindow(); }
         case 'diagnostics': {

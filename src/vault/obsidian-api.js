@@ -610,15 +610,18 @@ export function buildConnectionGuidanceHtml(result) {
  * Fetch all .md files from the vault with their contents (batch parallel).
  * @param {number} port
  * @param {string} apiKey
+ * @param {{skipFolder?: string}} [opts] - a folder never read (the run-cleanup trash)
  * @returns {Promise<{files: Array<{filename: string, content: string}>, total: number, failed: number}>}
  */
-export async function fetchAllMdFiles(host, port, apiKey, useHttps = false) {
+export async function fetchAllMdFiles(host, port, apiKey, useHttps = false, { skipFolder = '' } = {}) {
     // BUG-366: pass `partial` flag through so caller preserves the previous index
     // instead of committing a truncated one.
     const listing = await listAllFiles(host, port, apiKey, '', 0, useHttps);
     const allFiles = listing.files;
     const listingPartial = !!listing.partial;
-    const mdFiles = allFiles.filter(f => f.endsWith('.md'));
+    // LOCAL PATCH (Miinthe, 2026-10-27): the run-cleanup trash folder is never read — trashed lore must not come back
+    const skip = String(skipFolder || '').trim().replace(/^\/+|\/+$/g, '');
+    const mdFiles = allFiles.filter(f => f.endsWith('.md') && !(skip && (f === skip || f.startsWith(skip + '/'))));
 
     const BATCH_SIZE = OBSIDIAN_BATCH_SIZE;
     const results = [];

@@ -71,7 +71,9 @@
     "test:bar": "node test/bar.test.mjs",
     "test:filters-view": "node test/filters-view.test.mjs",
     "test:mero-view": "node test/mero-view.test.mjs",
-    "test:world-discretion": "node test/world-discretion.test.mjs"
+    "test:world-discretion": "node test/world-discretion.test.mjs",
+    "test:games": "node test/games.test.mjs",
+    "test:run-cleanup": "node test/run-cleanup.test.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.4"

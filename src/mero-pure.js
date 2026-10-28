@@ -5,8 +5,8 @@
  * THE ONE RULE: what's said in a talk stays in the talk. Only NOTES Miinthe keeps reach the story.
  *
  * TALKS live with the character (Miinthe, 2026-10-05): every chat and run of a character sees them.
- *   { id, title, mine (Miinthe renamed it), tag: 'yap'|'plan'|'fb', state: 'open'|'resolved'|'archived',
- *     created, updated, summary, msgs: [{ who: 'miinthe'|'mero', t, at }] }
+ *   { id, title, mine (Miinthe renamed it), tag: 'yap'|'plan'|'fb'|'game', state: 'open'|'resolved'|'archived',
+ *     created, updated, summary, msgs: [{ who: 'miinthe'|'mero', t, at }], game? (a 🎲 Games talk: games/wordle-pure.js) }
  * NOTES — one list, each:
  *   { id, kind: 'dont'|'steer'|'idea'|'fact', text, story (true: the writer gets it; false: only Mero),
  *     last: 'flash'|'sticky'|'pinned', until: { replies?: n }, scope: 'chat'|'run'|'char'|'board',
@@ -21,13 +21,14 @@
 export const MERO_KEY = 'deeplore_mero';              // extension_settings: { v, chars: { [avatar]: { talks } }, notes: { char, run, board }, settings }
 export const CHAT_NOTES_KEY = 'deeplore_mero_notes';  // chat_metadata: [notes] for this chat
 
-export const TAGS = { yap: '💭 Yapping', plan: '🗺 Planning', fb: '✋ Feedback' };
+export const TAGS = { yap: '💭 Yapping', plan: '🗺 Planning', fb: '✋ Feedback', game: '🎲 Games' };
 export const KINDS = { dont: '🚫', steer: '🧭', idea: '💡', fact: '📄' };
 export const LASTS = ['flash', 'sticky', 'pinned'];
 export const SCOPES = ['chat', 'run', 'char', 'board'];
 
 import { PITCH_FORMAT } from './pitches-pure.js';
 import { meroNames, named, nameRule } from './mero-names-pure.js';
+import { normGame } from './games/wordle-pure.js';
 
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
@@ -45,6 +46,7 @@ export function normTalk(t) {
         tag: TAGS[t.tag] ? t.tag : 'yap', state: ['open', 'resolved', 'archived'].includes(t.state) ? t.state : 'open',
         created: str(t.created) || new Date().toISOString(), updated: str(t.updated) || str(t.created) || new Date().toISOString(),
         summary: str(t.summary),
+        ...(normGame(t.game) ? { game: normGame(t.game) } : {}),   // 🎲 Games (Miinthe, 2026-10-27)
         msgs: arr(t.msgs).filter(m => isObj(m) && (m.who === 'miinthe' || m.who === 'mero') && typeof m.t === 'string').slice(-MAX_TALK_MSGS).map(m => ({ who: m.who, t: m.t, ...(m.at ? { at: String(m.at) } : {}),
             // the note cards Mero offered with this message, and what Miinthe did with each (kept / no)
             ...(arr(m.pitchNos).length ? { pitchNos: arr(m.pitchNos).map(Number).filter(Number.isFinite).slice(0, 10) } : {}),   // 💡 pitches Mero made in this message

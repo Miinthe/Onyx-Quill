@@ -79,6 +79,12 @@ export const SECTIONS = [
             { id: 'v-fields', label: 'Field definitions file', hint: 'in your vault', type: 'text', key: 'fieldDefinitionsPath', old: 'Field definitions path' },
             { id: 'v-prompts', label: 'Prompts folder', hint: 'in your vault', type: 'text', key: 'promptsFolderPath', old: 'Prompts folder path' },
         ] },
+        // Miinthe, 2026-10-27: deleting a run's last chat asks to clean the run up in Obsidian; this is where its files go
+        { t: 'Cleaning up a run', rows: [
+            { id: 'v-rcmode', label: 'A cleaned-up run’s files', tip: 'When you delete the last chat of a run, DeepLore asks whether to clean the run up in Obsidian. Nothing goes without your yes.', type: 'seg', key: 'runCleanupMode', opts: [['trash', 'move to the trash folder'], ['delete', 'delete for good']], old: 'Delete instance / run files' },
+            { id: 'v-rctrash', label: 'Trash folder', hint: 'in your vault · DeepLore never reads it', tip: 'Each cleanup gets its own folder in here. Drag a file back out to undo; empty it in Obsidian.', type: 'text', key: 'runTrashFolder', fx: 'rebuild', old: 'Deleted runs folder' },
+            { id: 'v-rcnow', label: 'Clean up a run', tip: 'Any run your vault has stamps for — also ones whose chats were deleted earlier', type: 'btn', btn: 'Clean up a run…', act: 'cleanupRun', old: 'Delete an instance' },
+        ] },
     ] },
     { id: 'filters', name: 'Filters', icon: 'filter', grp: 'Lore', custom: 'hub' },
     { id: 'select', name: 'Lore selection', icon: 'lore', grp: 'Lore', lead: 'How DeepLore finds the lore for a reply.', cards: [

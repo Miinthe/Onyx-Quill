@@ -221,7 +221,10 @@ export const defaultSettings = {
     // overhaul (built 2026-10-17): where Auto Lorebook's new entries go — 'about': about the run → the run's folder,
     // otherwise the character's base folder (none: the Target folder) · 'target': always the Target folder (autoSuggestFolder)
     newEntryPlacement: 'about',
-    newEntryMark: true,                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
+    newEntryMark: true,
+    // cleaning up a run (Miinthe, 2026-10-27): its files go to the trash folder (never read) or are deleted for good
+    runCleanupMode: 'trash',
+    runTrashFolder: 'zz Deleted runs',                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
     ownPrompts: [],                        // her own prompt pieces: [{ id, name, text, position, depth, role }] (src/own-prompts-pure.js)
     // where the story / tracker block goes (was fixed: in the chat, depth 4, as system)
     storyBlockPosition: 1,
@@ -417,6 +420,7 @@ export const settingsConstraints = {
     storyTrackerConnectionMode: { enum: ['profile'] },   // LOCAL PATCH (Miinthe, 2026-10-03)
     noticeStyle: { enum: ['summary', 'each'] },   // LOCAL PATCH (Miinthe, 2026-10-13)
     newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
+    runCleanupMode: { enum: ['trash', 'delete'] },       // run cleanup (2026-10-27)
     meroConnectionMode: { enum: ['profile'] },
     worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an

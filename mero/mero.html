@@ -40,6 +40,7 @@ button { cursor: pointer; }
 .kindsel.yap { background: var(--dk-mero-soft); color: var(--dk-mero); }
 .kindsel.plan { background: var(--dk-good-soft); color: var(--dk-good); }
 .kindsel.fb { background: var(--dk-bad-soft); color: var(--dk-bad); }
+.kindsel.game { background: var(--dk-wait-soft); color: var(--dk-wait); }
 .kindsel option { background: var(--dk-page); color: var(--dk-ink); }
 .ib { width: 28px; height: 28px; flex: none; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dk-muted); }
 .ib:hover, .ib[aria-expanded="true"] { color: var(--dk-ink); background: var(--dk-menu); border-color: var(--dk-line); }
@@ -299,6 +300,30 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
 .givemenu button { border: 0; background: none; text-align: left; padding: 4px 8px; border-radius: 6px; font-size: var(--dk-fs); color: var(--dk-ink); }
 .givemenu button:hover { background: var(--dk-mero-soft); }
 
+/* 🎲 games (2026-10-27; mock-up https://claude.ai/artifact/138w9AchcDdmyuijzsLpoC) — the board stays put, her lines scroll under it */
+.msgs.wd-on { overflow: hidden; }
+.wd-pick { display: flex; flex-direction: column; gap: 8px; }
+.wd-game { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 2px 10px; align-items: center; text-align: left; padding: 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-page); color: var(--dk-ink); }
+.wd-game:hover { border-color: var(--dk-mero); }
+.wd-game .wd-ic { grid-row: 1 / 3; width: 44px; height: 44px; border-radius: 9px; background: var(--dk-good); color: var(--dk-on-mero); display: grid; place-items: center; font: 700 18px var(--dk-f-display); }
+.wd-board { flex: none; align-self: center; width: 100%; max-width: 200px; display: grid; gap: 4px; }
+.wd-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.wd-row.wd-shake { animation: wd-shake .3s; }
+@keyframes wd-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .wd-row.wd-shake { animation: none; } }
+.wd-t { aspect-ratio: 1; border: 2px solid var(--dk-line); border-radius: 6px; display: grid; place-items: center; font: 700 17px/1 var(--dk-f-display); text-transform: uppercase; }
+.wd-t.f { border-color: var(--dk-line-strong); }
+.wd-t.hit, .wd-k.hit { background: var(--dk-good); border-color: var(--dk-good); color: var(--dk-on-mero); }
+.wd-t.near, .wd-k.near { background: var(--dk-wait); border-color: var(--dk-wait); color: var(--dk-on-mero); }
+.wd-t.miss, .wd-k.miss { background: color-mix(in oklab, var(--dk-muted) 30%, var(--dk-page)); border-color: transparent; color: var(--dk-muted); }
+.wd-says { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
+.wd-says > * { flex-shrink: 0; }
+.wd-foot { border-top: 1px solid var(--dk-line); padding: 8px 6px; display: flex; flex-direction: column; gap: 5px; }
+.wd-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; padding: 0 4px; }
+.wd-kr { display: flex; gap: 4px; justify-content: center; }
+.wd-k { flex: 1 1 0; min-width: 0; max-width: 32px; height: 38px; border: 0; border-radius: 6px; padding: 0; background: var(--dk-line-strong); color: var(--dk-ink); font: 700 calc(12.5px * var(--fontScale, 1)) var(--dk-f-body); }
+.wd-k.wide { flex: 1.6 1 0; max-width: 52px; font-size: var(--dk-fs-xs); }
+
 /* "What Mero was told" */
 .told { position: absolute; right: 12px; top: 12px; width: min(440px, calc(100% - 24px)); max-height: calc(100% - 24px); background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 12px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; z-index: 30; overflow: hidden; resize: both; }
 .mwh { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 12px; background: var(--dk-menu); border-bottom: 1px solid var(--dk-line); }
@@ -314,13 +339,17 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
   <div class="mero" id="mero">
     <div class="talk">
       <div class="thead">
-        <div class="t1"><h2 id="s-title"></h2><select class="kindsel" id="s-tag" aria-label="Kind of talk" title="Kind of talk"><option value="yap">💭 Yapping</option><option value="plan">🗺 Planning</option><option value="fb">✋ Feedback</option></select><button class="ib" id="s-told" title="What Mero was told for her last answer" aria-label="What Mero was told"></button><button class="ib" id="s-more" aria-haspopup="menu" aria-expanded="false" title="Check the lore, wrap up, resolve, archive, delete" aria-label="More for this talk"></button></div>
+        <div class="t1"><h2 id="s-title"></h2><select class="kindsel" id="s-tag" aria-label="Kind of talk" title="Kind of talk"><option value="yap">💭 Yapping</option><option value="plan">🗺 Planning</option><option value="fb">✋ Feedback</option><option value="game">🎲 Games</option></select><button class="ib" id="s-told" title="What Mero was told for her last answer" aria-label="What Mero was told"></button><button class="ib" id="s-more" aria-haspopup="menu" aria-expanded="false" title="Check the lore, wrap up, resolve, archive, delete" aria-label="More for this talk"></button></div>
         <div class="t2 mini" id="s-line"></div>
       </div>
       <div class="msgs" id="msgs" aria-live="polite"></div>
       <div class="busy" id="busy" hidden>☆ Mero is writing…</div>
       <div class="err" id="err" hidden></div>
-      <div class="comp">
+      <div class="wd-foot" id="wd-foot" hidden>
+        <div class="wd-tools"><button class="btn ghost" id="wd-hint">💡 Hint</button><span class="mini" id="wd-left"></span><button class="btn ghost" id="wd-new">↻ New word</button></div>
+        <div id="wd-kb"></div>
+      </div>
+      <div class="comp" id="comp">
         <div class="ctxchips" id="ctxchips" hidden></div>
         <div class="atmenu" id="atmenu" role="listbox" aria-label="Mention" hidden></div>
         <textarea id="c-in" class="grow" rows="2" placeholder="Talk to Mero… (@ to mention a tracker, someone, a reply, a post)" aria-label="Message to Mero"></textarea>
@@ -339,7 +368,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
       <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
       <div class="db">
         <input class="srch" id="sess-q" type="search" placeholder="Search talks" aria-label="Search talks">
-        <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="💭 Yapping">Yapping</button><button data-v="plan" aria-pressed="false" title="🗺 Planning">Planning</button><button data-v="fb" aria-pressed="false" title="✋ Feedback">Feedback</button></div>
+        <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="💭 Yapping">Yapping</button><button data-v="plan" aria-pressed="false" title="🗺 Planning">Planning</button><button data-v="fb" aria-pressed="false" title="✋ Feedback">Feedback</button><button data-v="game" aria-pressed="false" title="🎲 Games">Games</button></div>
         <div id="sess-moments" class="stack"></div>
         <div id="sess-list" class="stack"></div>
       </div>
@@ -443,7 +472,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   lbl($('#pick-again'), 'refresh', 'New batch'); $('[data-b="clear"]').innerHTML = I('close'); $('[data-b="no"]').innerHTML = I('thumb');
   lbl($('[data-b="draft"]'), 'line', 'My line'); lbl($('[data-b="givemenu"]'), 'give', 'Give to…'); lbl($('[data-b="keep"]'), 'keep', 'Keep');
 
-  const TAG = { yap: ['💭 Yapping', 'yap'], plan: ['🗺 Planning', 'plan'], fb: ['✋ Feedback', 'fb'] };
+  const TAG = { yap: ['💭 Yapping', 'yap'], plan: ['🗺 Planning', 'plan'], fb: ['✋ Feedback', 'fb'], game: ['🎲 Games', 'game'] };
   const KIND = { dont: ['🚫', 'Don\'t', 'var(--dk-bad)'], steer: ['🧭', 'Steer', 'var(--dk-l5)'], idea: ['💡', 'Idea', 'var(--dk-l1)'], fact: ['📄', 'Fact', 'var(--dk-good)'] };
   const LAST = { flash: '⚡ the next reply', sticky: '📌 for a few replies', pinned: '📍 until removed' };
   const SCOPE = { chat: 'this chat', run: 'this run', char: 'the character — every chat', board: 'the board' };
@@ -484,8 +513,11 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       <div class="row"><button class="btn p" data-keep="${k}:${j}">${I('keep')}Keep</button><button class="btn ghost" data-no="${k}:${j}">No</button>${cur.tag === 'fb' && (c.kind === 'dont' || c.kind === 'steer') ? `<button class="btn m2" data-redo="${k}:${j}" title="Keep it and swipe the last reply with it in force. The board's rolls and moves stay">${I('refresh')}Redo the last reply with this note</button>` : ''}</div>`}</div>`;
   function drawTalk() {
     pickTalk(); drawHead();
+    const game = cur?.tag === 'game';
+    $('#comp').hidden = game; $('#wd-foot').hidden = !game || !cur.game; $('#msgs').classList.toggle('wd-on', game && !!cur.game);
+    if (game) { drawGame(); drawNotesline(); return; }
     if (!cur) { $('#msgs').innerHTML = `<div class="m sys">${D.where.charKey ? 'Write below to start a talk.' : 'Open a character chat to talk with Mero.'}</div>`; drawNotesline(); return; }
-    $('#msgs').innerHTML = (cur.msgs.length ? '' : `<div class="card" style="--kc:var(--dk-mero)"><div class="ch">What kind of talk? <small>you can change it any time from the tag above</small></div><div class="row"><button class="btn" data-tagpick="yap">💭 Yapping</button><button class="btn" data-tagpick="plan">🗺 Planning</button><button class="btn" data-tagpick="fb">✋ Feedback</button></div></div>`)
+    $('#msgs').innerHTML = (cur.msgs.length ? '' : `<div class="card" style="--kc:var(--dk-mero)"><div class="ch">What kind of talk? <small>you can change it any time from the tag above</small></div><div class="row"><button class="btn" data-tagpick="yap">💭 Yapping</button><button class="btn" data-tagpick="plan">🗺 Planning</button><button class="btn" data-tagpick="fb">✋ Feedback</button><button class="btn" data-tagpick="game">🎲 Games</button></div></div>`)
       + cur.msgs.map((m, k) => `<div class="m ${m.who === 'mero' ? 'mer' : 'miinthe'}">${m.who === 'mero' ? linkTrackers(nl2br(esc(m.t))) : nl2br(esc(m.t))}${(m.ctx || []).length ? `<span class="ctxs">${m.ctx.map(c => `<span title="${esc(String(c.text || '').slice(0, 300))}">📎 ${esc(c.label)}</span>`).join('')}</span>` : ''}${(m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>` : ''}</div>` + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('')).join('');
     $('#msgs').scrollTop = 1e6; wireTalk(); drawNotesline();
   }
@@ -497,6 +529,63 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $$('[data-tagpick]').forEach(b => b.onclick = () => HOST.updateTalk(cur.id, { tag: b.dataset.tagpick }));
     $$('[data-topitch]').forEach(b => b.onclick = () => { pView = 'pick'; openD('d-pitch', true); });
   }
+  // 🎲 games (2026-10-27): the host keeps the game and checks the letters (games/wordle-pure.js); this draws it
+  const wdIn = {};   // talk id → the letters typed into the current row
+  const WD_KEYS = ['qwertyuiop', 'asdfghjkl', '⏎zxcvbnm⌫'];
+  function wdScore(g, a) {
+    const res = Array(5).fill('miss'), left = {};
+    for (let i = 0; i < 5; i++) { if (g[i] === a[i]) res[i] = 'hit'; else left[a[i]] = (left[a[i]] || 0) + 1; }
+    for (let i = 0; i < 5; i++) if (res[i] !== 'hit' && left[g[i]]) { res[i] = 'near'; left[g[i]]--; }
+    return res;
+  }
+  function drawGame(shake = false) {
+    const g = cur.game;
+    if (!g) {
+      $('#msgs').innerHTML = `<div class="wd-pick"><div class="mini">Pick a game</div><button class="wd-game" data-wdgo="wordle"><span class="wd-ic">W</span><b>Wordle</b><span class="mini">Guess the word in six tries. Mero watches.</span></button></div>`;
+      $$('[data-wdgo]').forEach(b => b.onclick = () => { wdIn[cur.id] = ''; HOST.gameStart(cur.id, b.dataset.wdgo); });
+      return;
+    }
+    const typed = wdIn[cur.id] || '', rank = { miss: 0, near: 1, hit: 2 }, keys = {};
+    let rows = '';
+    for (let r = 0; r < 6; r++) {
+      const w = g.guesses[r], s = w ? wdScore(w, g.answer) : null, show = w || (r === g.guesses.length && !g.over ? typed : '');
+      if (s) s.forEach((x, i) => { if (!keys[w[i]] || rank[x] > rank[keys[w[i]]]) keys[w[i]] = x; });
+      rows += `<div class="wd-row${shake && r === g.guesses.length ? ' wd-shake' : ''}">${[0, 1, 2, 3, 4].map(i => `<div class="wd-t${s ? ' ' + s[i] : show[i] ? ' f' : ''}">${esc(show[i] || '')}</div>`).join('')}</div>`;
+    }
+    $('#msgs').innerHTML = `<div class="wd-board" role="img" aria-label="Wordle board: ${g.guesses.length} of 6 tries used">${rows}</div><div class="wd-says" id="wd-says">${cur.msgs.filter(m => m.who === 'mero').map(m => `<div class="m mer">${esc(m.t)}</div>`).join('')}</div>`;
+    const says = $('#wd-says'); says.scrollTop = says.scrollHeight;
+    $('#wd-kb').innerHTML = WD_KEYS.map(r => `<div class="wd-kr">${[...r].map(k => `<button class="wd-k${k === '⏎' || k === '⌫' ? ' wide' : ''}${keys[k] ? ' ' + keys[k] : ''}" tabindex="-1" data-wdk="${k}" aria-label="${k === '⏎' ? 'Enter' : k === '⌫' ? 'Delete a letter' : k}">${k === '⏎' ? 'Enter' : k === '⌫' ? '⌫' : k.toUpperCase()}</button>`).join('')}</div>`).join('');
+    $$('[data-wdk]').forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => wdPress(b.dataset.wdk); });   // the keys never take the focus
+    const left = 6 - g.guesses.length;
+    $('#wd-left').textContent = g.over === 'won' ? 'Got it!' : g.over === 'lost' ? `It was ${g.answer.toUpperCase()}` : `${left} ${left === 1 ? 'try' : 'tries'} left`;
+    $('#wd-hint').disabled = !!g.over;
+    $('#wd-new').classList.toggle('m2', !!g.over); $('#wd-new').classList.toggle('ghost', !g.over);   // over: "another one?" in pink
+  }
+  function wdPress(k) {
+    const g = cur?.game; if (!g || g.over) return;
+    let t = wdIn[cur.id] || '';
+    if (k === '⌫') t = t.slice(0, -1);
+    else if (/^[a-z]$/.test(k)) { if (t.length < 5) t += k; }
+    else if (k === '⏎') {
+      if (t.length < 5) { drawGame(true); return; }
+      const r = HOST.gameGuess(cur.id, t);
+      if (!r.ok) { drawGame(true); return; }   // not a word: it doesn't count (Mero says so)
+      wdIn[cur.id] = ''; return;               // the host's change redraws
+    }
+    wdIn[cur.id] = t; drawGame();
+  }
+  $('#wd-hint').onclick = () => { if (cur?.game && !cur.game.over) HOST.gameHint(cur.id); };
+  $('#wd-new').onclick = () => { if (!cur?.game) return; wdIn[cur.id] = ''; HOST.gameStart(cur.id, 'wordle'); };
+  document.addEventListener('keydown', e => {
+    if (cur?.tag !== 'game' || !cur.game || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('button')) return;   // a focused button (Hint, New word) handles its own Enter
+    if ($$('.drawer').some(d => !d.hidden) && !document.body.classList.contains('wide')) return;
+    if (e.key === 'Enter') { e.preventDefault(); wdPress('⏎'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); wdPress('⌫'); }
+    else if (/^[a-zA-Z]$/.test(e.key)) wdPress(e.key.toLowerCase());
+  });
+
   function renameTalk() {
     const h = $('#s-title'); h.innerHTML = `<span class="ttl"><input id="s-ttl-in" value="${esc(cur.title)}" aria-label="Talk title"></span>`;
     const inp = $('#s-ttl-in'); inp.focus(); inp.select(); let fin = false;
