@@ -2,9 +2,9 @@
 
 Code-level reference for the DLE AI subsystem. For pipeline flow see `CLAUDE.md`; for generation ordering see `docs/generation-pipeline.md`.
 
-> **DEPRECATED v2.5 — Custom Proxy connection mode**: Proxy mode (`mode === 'proxy'`, direct Anthropic Messages API via ST's CORS bridge to claude-code-proxy) was dead-headed in v2.5. `callAI()` dispatch throws `"Custom Proxy mode was removed in v2.5..."` when invoked with `'proxy'`. Code paths in this doc (proxy-api.js, `callProxyViaCorsBridge`, proxy branches in the agentic API, proxy-related cache key fields, etc.) are preserved for rollback safety and remain documented below. The UI is hidden. Users with `*ConnectionMode === 'proxy'` are migrated to `'profile'` on boot (settingsVersion 3→4) and shown a one-shot popup. **Connection Profile (CMRS) is the only supported path.** See `docs/gotchas.md` #68 for migration semantics, rollback path, and test coverage.
+> **DEPRECATED v2.5 — Custom Proxy connection mode**: Proxy mode (`mode === 'proxy'`, direct Anthropic Messages API via ST's CORS bridge to claude-code-proxy) was dead-headed in v2.5. `callAI()` dispatch throws `"Custom Proxy mode was removed in v2.5..."` when invoked with `'proxy'`. Code paths in this doc (proxy-api.js, `callProxyViaCorsBridge`, proxy-related cache key fields, etc.) are preserved for rollback safety and remain documented below. The UI is hidden. Users with `*ConnectionMode === 'proxy'` are migrated to `'profile'` on boot (settingsVersion 3→4) and shown a one-shot popup. **Connection Profile (CMRS) is the only supported path.** See `docs/gotchas.md` #68 for migration semantics, rollback path, and test coverage.
 
-Source files: `src/ai/ai.js`, `src/ai/manifest.js`, `src/ai/proxy-api.js` (`@deprecated v2.5` — kept for rollback), `src/ai/claude-adaptive-check.js`, `settings.js` (`resolveConnectionConfig()` + `TOOL_SETTINGS_KEYS`), `src/state.js` (circuit breaker state + `recordAiFailure`/`recordAiSuccess`/`isAiCircuitOpen`/`tryAcquireHalfOpenProbe`/`releaseHalfOpenProbe`), `src/helpers.js` (`extractAiResponseClient`/`normalizeResults`/`clusterEntries`/`buildCategoryManifest`), `src/librarian/agentic-api.js` (agentic loop API layer).
+Source files: `src/ai/ai.js`, `src/ai/manifest.js`, `src/ai/proxy-api.js` (`@deprecated v2.5` — kept for rollback), `src/ai/claude-adaptive-check.js`, `settings.js` (`resolveConnectionConfig()` + `TOOL_SETTINGS_KEYS`), `src/state.js` (circuit breaker state + `recordAiFailure`/`recordAiSuccess`/`isAiCircuitOpen`/`tryAcquireHalfOpenProbe`/`releaseHalfOpenProbe`), `src/helpers.js` (`extractAiResponseClient`/`normalizeResults`/`clusterEntries`/`buildCategoryManifest`), `src/ai/claude-model-pure.js` (`isUnderlyingClaudeModel`; moved here when `src/librarian/` was removed).
 
 ---
 
@@ -21,7 +21,6 @@ const TOOL_SETTINGS_KEYS = {
     scribe:       { ... },
     autoSuggest:  { ... },
     aiNotepad:    { ... },
-    librarian:    { ... },   // note: maxTokens key is 'librarianSessionMaxTokens'
     optimizeKeys: { ... },
 };
 
@@ -33,21 +32,13 @@ resolveConnectionConfig(toolKey) -> config
 
 **Gotchas:**
 - AI Search itself cannot inherit (it IS the root). If `aiSearchConnectionMode === 'inherit'`, that value flows through unchanged -- callers treat it as the literal mode string.
-- `librarianConnectionMode` must NOT share with retrieval (per user feedback). Don't collapse them. The `librarian` connection config is used by the agentic loop (in proxy mode — DEPRECATED v2.5, see gotcha #68) and by Emma's chat session (the review popup).
 - **DEPRECATED v2.5:** When `mode === 'inherit'` resolves to `'proxy'`, the proxyUrl falls back to `toolProxyUrl || aiSearch.proxyUrl` -- but when mode is NOT inherit, proxyUrl falls back to `toolProxyUrl || defaultSettings[keys.proxyUrl]` (in `resolveConnectionConfig()`). These are different fallback chains. (Both paths now unreachable in production code because proxy mode is dead-headed; preserved for rollback.)
 
-### Agentic Loop Connection -- agentic-api.js
+### Agentic Loop Connection (removed)
 
-> **DEPRECATED v2.5**: Custom Proxy mode dead-headed. Dispatch throws `"Custom Proxy mode was removed in v2.5..."`. Code paths preserved for rollback. UI hidden. Users with `librarianConnectionMode: 'proxy'` are migrated to `'profile'` on boot (settingsVersion 3→4) and shown a one-shot popup. See gotcha #68.
+The Librarian's agentic loop and its separate API path (`callWithTools()` in `agentic-api.js`) were removed with the Librarian (2026-10-27).
 
-The Librarian's agentic generation loop uses a **separate API path** from `callAI()`. `callWithTools()` in `agentic-api.js` dispatches based on the resolved Librarian connection mode:
-
-- ~~**Proxy mode** (`resolveConnectionConfig('librarian').mode === 'proxy'`): calls `callWithToolsViaProxy()`, which sends directly to an Anthropic-compatible proxy via ST's CORS bridge (`/proxy/` endpoint). Tools are converted from OpenAI to Anthropic format. System messages are extracted into the `system` field. `isToolCallingSupported()` returns true, `getProviderFormat()` returns `'claude'`, and `getActiveMaxTokens()` uses the Librarian's configured maxTokens.~~ **DEPRECATED v2.5** — dispatch throws. The four call sites in `agentic-api.js` still exist (rollback-safe) but are unreachable in production.
-- **Profile mode** (default and only supported path as of v2.5): calls `ConnectionManagerRequestService.sendRequest()` using the Librarian's own configured profile (`connConfig.profileId`, resolved from `librarianProfileId` or — if mode is `inherit` — the aiSearch profile). NOT the globally-active main-chat profile. Unset profile throws hard error rather than silently inheriting active (#27 sym 2).
-
-The Librarian profile setting (`librarianConnectionMode`, `librarianProfileId`, etc.) is also used by Emma's conversation loop in `librarian-session.js` (the review popup).
-
-**Underlying-Claude detection vs format detection.** `getProviderFormat()` keys off `oai_settings.chat_completion_source` only — for OpenRouter it returns `'openai'` even when the routed model is `anthropic/claude-3.5-sonnet`. This is correct for response parsing (OR returns OpenAI-shape responses regardless of upstream provider). But Claude-specific REQUEST mitigations (the `reasoning_effort: 'auto'` override that disables thinking-vs-tool_choice 400; the `json_schema` skip in `ai.js`) must fire for OR-Claude too. Use `isUnderlyingClaude(model?)` for any decision that depends on what the model actually IS rather than how the response will be SHAPED. The two helpers are intentionally split: `getProviderFormat()` answers "how do I parse" and `isUnderlyingClaude()` answers "what backend will eventually run this".
+**Underlying-Claude detection.** The chat-completion source alone misses Claude behind OpenRouter (`anthropic/claude-*`) and Custom-source `claude-*` models. Claude-specific REQUEST mitigations (the thinking-vs-forced-`tool_choice` handling and the `json_schema` skip in `ai.js`, the `anthropic-only` response prefill in `index.js`) must fire for those too. Use `isUnderlyingClaude(model)` (`isUnderlyingClaudeModel` in `src/ai/claude-model-pure.js`) for any decision that depends on what the model actually IS.
 
 ### AI Call Throttle -- ai.js module-top constants
 
@@ -387,10 +378,7 @@ All AI-calling functions use the same circuit breaker probe pattern and the same
 | Scribe (`scribe`) | `inherit` | `inherit`/`st`/`profile` | Yes — `st` = `generateQuietPrompt` (`scribe.js:67-76`) |
 | Auto-Suggest / Auto-Lorebook (`autoSuggest`) | `inherit` | `inherit`/`st`/`profile` | Yes — `st` = `generateQuietPrompt` (`auto-suggest.js:34-44`) |
 | AI Notepad (`aiNotepad`) | `inherit` | `inherit`/`profile` | No |
-| Librarian (`librarian`) | `inherit` | `inherit`/`profile` | No |
 | Optimize Keys (`optimizeKeys`) | `inherit` | `inherit`/`profile` | No |
-
-`librarianConnectionMode`'s validation enum still lists `'proxy'` (`settings.js:391`) as a legacy stored value the migration handles; it is not a reachable runtime path.
 
 | Function | File | Live modes | Notes |
 |---|---|---|---|
@@ -499,7 +487,7 @@ The target URL is `encodeURIComponent`-encoded to prevent Express from collapsin
 - External signal wired to internal controller
 - On abort, distinguishes user abort (`externalSignal.aborted` -> `err.userAborted = true`) from timeout (`err.timedOut = true`). Both set `err.name = 'AbortError'`.
 
-**Error response scrubbing** (in `callProxyViaCorsBridge()` non-ok branch): **Redacts first, then truncates to 150 chars** (AI-M5, 2026-05-22). Pre-fix the truncate-then-redact order let any token starting in the last ~15 chars of the 150-char window slip through truncated mid-key (below the `{10,}` regex minimum). Patterns cover Anthropic (`sk-`), OpenAI (`sk-proj-` matched first as the superset), Google (`AIza`), Groq (`gsk_`), and generic Bearer tokens. Same pattern as `agentic-api.js` (HIGH-LIB-2). When extending the scrubber, never reorder these two operations.
+**Error response scrubbing** (in `callProxyViaCorsBridge()` non-ok branch): **Redacts first, then truncates to 150 chars** (AI-M5, 2026-05-22). Pre-fix the truncate-then-redact order let any token starting in the last ~15 chars of the 150-char window slip through truncated mid-key (below the `{10,}` regex minimum). Patterns cover Anthropic (`sk-`), OpenAI (`sk-proj-` matched first as the superset), Google (`AIza`), Groq (`gsk_`), and generic Bearer tokens. When extending the scrubber, never reorder these two operations.
 
 **JSON parse safety** (in `callProxyViaCorsBridge()` — BUG-041): Separate `response.text()` and `JSON.parse()` calls for distinct error messages.
 

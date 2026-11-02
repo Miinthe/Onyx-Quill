@@ -5609,7 +5609,7 @@ test('PRX-MIG-4: idempotent — running v4 migration twice on already-migrated s
 test('PRX-MIG-5: defaultSettings.settingsVersion is 6 (boot triggers migration for v5 users)', async () => {
     const src = await import('node:fs').then(fs =>
         fs.promises.readFile('settings.js', 'utf8'));
-    assertMatch(src, /settingsVersion:\s*6\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 6 (bumped when the Librarian was removed)');
+    assertMatch(src, /settingsVersion:\s*7\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 7 (6: the Librarian removed; 7: its guide-tag key renamed)');
 });
 
 test('LIB-GONE-1: v5 → v6 drops the old Librarian settings quietly, keeps the writing-guide tag', async () => {
@@ -5623,8 +5623,8 @@ test('LIB-GONE-1: v5 → v6 drops the old Librarian settings quietly, keeps the 
     };
     runMigrations(settings, 5, 6);
     const left = Object.keys(settings).filter(k => k.startsWith('librarian'));
-    assertEqual(left, ['librarianGuideTag'], 'only the writing-guide tag stays');
-    assertEqual(settings.librarianGuideTag, 'my-guide', 'her guide tag is kept as it was');
+    assertEqual(left, [], 'no Librarian key is left (v7 renames the guide tag)');
+    assertEqual(settings.guideTag, 'my-guide', 'her guide tag is kept as it was, under its new name');
     assertEqual(settings.aiSearchConnectionMode, 'profile', 'other settings untouched');
     assertEqual(settings.meroProfileId, 'm1', 'Mero settings untouched');
     assert(settings.analyticsData['v:Alice'] && !settings.analyticsData._librarian, 'entry analytics kept, Librarian stats dropped');

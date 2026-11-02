@@ -14,20 +14,37 @@ The big area is your talk. Type in **Talk to Mero…** and press **Send**.
 
 - **Pitch** opens the Pitches drawer.
 - **Where are we?** asks her for a recap of where the story stands.
-- At the top: the talk's name (click it to rename), the kind of talk (💭 **Yapping**, 🗺 **Planning** or ✋ **Feedback**), **ⓘ** (what Mero was told for her last answer), and **⋯**: **Check the lore**, **Wrap up** (she offers what you agreed as notes), **Resolve for now**, **Archive** and **Delete**.
+- At the top: the talk's name (click it to rename), the kind of talk (💭 **Yapping**, 🗺 **Planning**, ✋ **Feedback** or 🎲 **Games**), **ⓘ** (what Mero was told for her last answer), and **⋯**: **Check the lore**, **Wrap up** (she offers what you agreed as notes), **Resolve for now**, **Archive** and **Delete**.
 
 Talks live with the character, so every chat and run of that character sees them.
+
+### 🎲 Games
+
+A break from the story: start a talk and pick **🎲 Games** (or set a talk's kind to Games). It opens a game picker; today there is **Wordle**. Guess the five-letter word in six tries, with the on-screen keys or your keyboard. Green means the right letter in the right spot, yellow means it's in the word but elsewhere. The game checks the letters itself, so the colors are always right, and a made-up word doesn't cost a try. Mero reacts after every guess (one short AI call each; without her AI she uses ready-made lines). **Hint** asks her for a clue that doesn't give the word away, and **New word** starts another round, as often as you like.
 
 ## Her rail
 
 The row of icons on the outer edge opens her drawers:
 
-- **Talks**: all your talks, with search and a filter by kind. **New** starts one.
-- **Requests**: things waiting for your answer, grouped by who asks: 🤖 the board's helper (when it is not sure about a move), 🪜 your plans, and ☆ Mero (her own ideas about your lore). **📚 Lore gaps** lists things the story needed that no entry had (found while replies were written), with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** and **No**. Each other card has its own buttons, like **Accept**, **Deny**, **Add it**, **Keep it** or **Leave it**. **Check the lore** asks her to read the latest replies next to the entries sent with them and say what an entry is missing.
-- **Notes**: notes for the writer or just for your talks. **Note** adds one. Each note has a kind (🚫 Don't, 🧭 Steer, 💡 Idea, 📄 Fact), how long it lasts (the next reply, a few replies, or until removed) and where it applies (this chat, this run, the character, or the board). Your notebooks are here too: **Notebook**, **AI notepad** and **Scribe**.
+- **Talks**: all your talks, with search and a filter by kind (**All**, then 💭 🗺 ✋ 🎲 as icons; hover for the name). **New** starts one.
+- **Requests**: things waiting for your answer, grouped by who asks: 🤖 the board's helper (when it is not sure about a move), 🪜 your plans, and ☆ Mero (her own ideas about your lore, and the slop guard's question when the writer keeps reusing a phrase: **Ban it**, **Use it less** or **It's fine**; see below). **📚 Lore gaps** lists things the story needed that no entry had (saved in older chats; new ones aren't found any more since the Librarian was removed), with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** and **No**. Each other card has its own buttons, like **Accept**, **Deny**, **Add it**, **Keep it** or **Leave it**. **Check the lore** asks her to read the latest replies next to the entries sent with them and say what an entry is missing.
+- **Notes**: notes for the writer or just for your talks. **Note** adds one. Each note has a kind (🚫 Don't, 🧭 Steer, 💡 Idea, 📄 Fact), how long it lasts (the next reply, a few replies, or until removed) and where it applies (this chat, this run, the character, or the board). Your notebooks are here too: **Notebook**, **AI notepad** and **Scribe**. Below the notes: **🚫 Phrases to avoid** (see below).
 - **Pitches and plans**: see below.
 - **Pop out**: Mero in her own window.
 - **Mero's settings**: opens **Settings › Mero**.
+
+---
+
+## 🚫 Phrases to avoid (the slop guard)
+
+Phrases the writer leans on too much ("her breath hitched", "a testament to"). Find the list in Mero's **Notes**, under **🚫 Phrases to avoid**.
+
+- **Add a phrase** by typing it, and choose where it applies: **Everywhere**, **This story** (the board) or **This character**.
+- Each phrase is **banned** (red: don't use it) or **use less** (yellow: allowed, but only where it really fits). Tap the tag to switch.
+- **Learned** phrases: after each reply DeepLore counts, without any AI, which phrases the writer keeps reusing (in 4 of the last 15 replies). When one passes that, Mero asks in her requests: **Ban it**, **Use it less**, or **It's fine** (never asked again, good for a character's catchphrase). "It's fine" phrases are listed at the bottom; ✕ lets her ask again.
+- **What the writer gets**: one or two 🚫 lines with the author's notes, with only the phrases it actually used lately, never the whole list. The box under the list shows exactly what goes out now.
+- **In the chat**, a phrase from your list gets a wavy underline: a banned one wherever it shows up, a "use less" one only when it came back within 5 replies. Tap it for **Rewrite this line** (just that sentence) or **It's fine here** (no underline in that reply).
+- **Rewrite anything**: select some text in a message and a **✎ Rewrite** button appears: **Polish**, **Shorten**, **Longer** or **Your own…** (an instruction like "colder, fewer words"). It is one small call with Mero's AI, and you see before and after (still editable) before you **Keep** it. Only the selected words change; if nothing comes back, nothing changes.
 
 ---
 

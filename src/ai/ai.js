@@ -8,7 +8,6 @@ import { readActiveTrackers } from '../trackers.js';   // LOCAL PATCH (Miinthe, 
 import { simpleHash, buildAiChatContext } from '../../core/utils.js';
 import { getSettings } from '../../settings.js';
 import { resolvePromptOrOverride } from '../prompts/prompt-store.js';
-import { callProxyViaCorsBridge } from './proxy-api.js';
 import { isUnderlyingClaudeModel as isUnderlyingClaude } from './claude-model-pure.js';
 import {
     vaultIndex, aiSearchCache, aiSearchStats, lastScribeSummary,

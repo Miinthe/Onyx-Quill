@@ -61,12 +61,12 @@ Add these alongside `#lorebook` to change how an entry behaves:
 | `#lorebook-never` | **Excluded.** Never injected, even if keywords match. |
 | `#lorebook-seed` | **Seed.** Content is sent to the AI search model as story context on new chats. Not injected into the writing AI. |
 | `#lorebook-bootstrap` | **Bootstrap.** Force-injected when the chat is short (at or below the new chat threshold, default 3 messages), then becomes a regular keyword entry. |
-| `#lorebook-guide` | **Guide.** Librarian-only writing/style reference. Emma fetches via `get_writing_guide`. Never reaches the writing AI through any path. |
+| `#lorebook-guide` | **Guide.** Writing/style reference, not story lore. Never reaches the writing AI through any path. |
 
 These behaviors are tag-driven (there is no `seed:` / `bootstrap:` / `guide:` frontmatter boolean — only `constant:` has a frontmatter equivalent). Tag names are configurable in [[Settings Reference]]; the defaults above assume you haven't changed them.
 
 > [!IMPORTANT]
-> If an entry has both `#lorebook-guide` and any of `#lorebook-seed` / `#lorebook-bootstrap` / `#lorebook`, the `guide` flag wins at runtime: the entry stays Librarian-only.
+> If an entry has both `#lorebook-guide` and any of `#lorebook-seed` / `#lorebook-bootstrap` / `#lorebook`, the `guide` flag wins at runtime: the entry stays a guide and never reaches the writing AI.
 
 ## Content structure
 

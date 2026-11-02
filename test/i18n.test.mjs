@@ -448,7 +448,8 @@ for (const loc of TRANSLATION_LOCALES) {
         // keys (rule-builder labels/tooltips, browse quick-filter pill, full setup-wizard
         // runtime strings routed through tr/trf).
         // − 313 Librarian / Emma keys removed with the Librarian (2026-10-19) = 2362
-        assertEqual(keys.length, 2362, `${loc} key count matches canonical (2362)`);
+        // − 1 unused (dle_librarian_activity_tab, 2026-11-02; the Emma-named keys were renamed, not removed) = 2361
+        assertEqual(keys.length, 2361, `${loc} key count matches canonical (2361)`);
     });
 }
 

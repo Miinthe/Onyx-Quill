@@ -7,9 +7,9 @@ The under-the-hood systems that make DeepLore fast, reliable, and provider-agnos
 ## Connection channels
 
 > [!NOTE]
-> **In this fork** the channels are set in **Settings › AI & connections**, one row per job: Judge (AI Search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad and Optimize keywords. Each row's **Fine print** fold holds the model, answer length, time limit and **Test**. The Librarian is not listed there; its `librarian*` settings still exist in the code.
+> **In this fork** the channels are set in **Settings › AI & connections**, one row per job: Judge (AI Search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad and Optimize keywords. Each row's **Fine print** fold holds the model, answer length, time limit and **Test**. The Librarian was removed on 2026-10-27; its old `librarian*` settings are dropped on load; the writing-guide tag is now saved as `guideTag`.
 
-DeepLore has several independent AI connection channels. Each feature picks its own profile, model, and timeout. The channels are kept separate on purpose so you can route a tool-calling Claude or GPT-4o to Emma while AI search runs on a cheap model, or split Scribe to a long-context model and keep retrieval on Haiku.
+DeepLore has several independent AI connection channels. Each feature picks its own profile, model, and timeout. The channels are kept separate on purpose so you can route a stronger model to Mero ☆ while AI search runs on a cheap model, or split Scribe to a long-context model and keep retrieval on Haiku.
 
 | Channel | Settings prefix | Default mode | What it does |
 |---|---|---|---|
@@ -17,17 +17,11 @@ DeepLore has several independent AI connection channels. Each feature picks its 
 | **Session Scribe** | `scribe*` | `inherit` | Auto-summaries written back to the vault every N messages. |
 | **Auto Lorebook** | `autoSuggest*` | `inherit` | AI-suggested new entries from chat content. |
 | **AI Notepad** | `aiNotepad*` | `inherit` | Extract-mode session notes (the post-generation extraction call). Tag mode uses no AI channel of its own. |
-| **Librarian** | `librarian*` | `inherit` (since v3) | Emma's chat sessions and the writing-AI tool calls (`search`, `flag`). Requires a tool-calling-capable connection; falls back to plain generation if unsupported. |
 | **Optimize Keys** | `optimizeKeys*` | `inherit` | The `/dle-optimize-keys` AI keyword refiner. |
 | **Story helper** | `storyTracker*` | `profile` | Moves the [[Storyboards|storyboard]] trackers; also the [[Cast]]'s director. |
 | **Mero ☆** | `mero*` | `profile` | [[Mero]]'s talks, pitches and entry ideas. |
 
 `inherit` mode reuses the AI Search connection's profile and model. The feature still keeps its own `maxTokens` and `timeout`. Set the channel to `profile` and pick its own profile to override.
-
-The Librarian channel is the most commonly broken out separately. The reason: function calling is required for Emma and the writing-AI tools, and not every AI Search profile points at a tool-calling model. Per-feature override means you can leave AI Search on a non-tool model and route Librarian to Claude / GPT-4o / OpenRouter Haiku.
-
-> [!IMPORTANT]
-> The Librarian channel is intentionally separate from retrieval. Don't collapse them. If you want Emma cheap, point her at Haiku via her own profile and leave AI Search on whatever you like.
 
 ---
 
@@ -174,7 +168,7 @@ When the AI breaker is open, AI search falls back to keyword results for the coo
 
 Two race-condition guards run during generation:
 
-- **`generationLock`** with `generationLockTimestamp` and `generationLockEpoch`. Prevents concurrent generations from clobbering each other. Stale-lock detector force-releases after 30s timeout. The Librarian agentic loop refreshes the timestamp before every API call and tool processing to prevent the stale-lock detector from firing mid-loop.
+- **`generationLock`** with `generationLockTimestamp` and `generationLockEpoch`. Prevents concurrent generations from clobbering each other. Stale-lock detector force-releases after 30s timeout.
 - **`chatEpoch`** increments on `CHAT_CHANGED`. Epoch-sensitive operations re-check the value after every `await` to bail out if the user switched chats mid-flight. Each turn's decision (which entries injected, the full trace, and the epoch/message-index/chat-id stamp) is written as a single record to the Verdict store, which replaced the older racing globals that used to track this.
 
 `buildEpoch` increments on force-release of a stuck indexing flag. In-progress index builds capture the epoch at start and bail out if the value changes mid-build (zombie guard).
@@ -237,10 +231,9 @@ DeepLore stores state in three places:
 - `deeplore_pins` / `deeplore_blocks`: per-chat `{title, vaultSource}` arrays
 - `deeplore_context`: contextual gating state (era, location, scene type, character present, custom fields)
 - `deeplore_chat_counts`: per-chat injection counts keyed by `trackerKey`
-- `deeplore_lore_gaps`: Librarian gap records
+- `deeplore_lore_gaps`: lore gap records (shown in Mero ☆'s Requests; `src/lore-gaps.js`)
 - `deeplore_lore_gaps_hidden`: first-tier soft-removed gap IDs (re-flag resurfaces)
 - `deeplore_lore_gaps_dismissed`: second-tier permanently dismissed gap IDs
-- `deeplore_librarian_session`: persisted Librarian session draft
 - `deeplore_folder_filter`: folder-path filter array
 - `deeplore_swipe_injected_keys`: per-swipe injected `trackerKey`s for accurate rollback across reloads
 
@@ -248,8 +241,6 @@ DeepLore stores state in three places:
 
 - Parsed vault index (entries plus BM25 inverted index)
 - Used for instant hydration on page load before background validation against Obsidian
-
-Per-message tool call records are stored on `message.extra.deeplore_tool_calls` (not chat_metadata).
 
 ---
 
@@ -262,20 +253,19 @@ Profile mode works with any provider SillyTavern's Connection Manager supports:
 
 Forced JSON output works on every provider listed above (see the matrix earlier on this page). For providers without strict schema support, DeepLore's JSON extractor handles typical responses without help.
 
-**Function calling (Librarian):** requires a tool-calling provider. Claude 3+/4.x, GPT-4o, GPT-5, Gemini Pro, OpenRouter for any of those models. Local models that route through llama.cpp's tool-calling spec also work. The Librarian feature auto-enables function calling on the active connection when you turn it on.
-
 **Local-model latency:** local backends typically need 60-120s for AI search on long chats. Cloud APIs respond in 5-15s. Set the per-channel timeout accordingly. The default AI Search timeout is 20s; increase to 60000-120000ms for local.
 
 ---
 
 ## Settings migrations
 
-Settings versions are tracked in `settingsVersion` (current: 5). Migrations run on load when the stored version is behind:
+Settings versions are tracked in `settingsVersion` (current: 7). Migrations run on load when the stored version is behind:
 
 - **v0 → v1:** initial versioned settings (no behavior change).
-- **v1 → v2:** Librarian connection consolidation. `librarianSessionModel` got renamed to `librarianModel`. Existing per-tool connection modes are preserved; only Librarian's model field migrates.
-- **v2 → v3:** Librarian default connection mode changed from `profile` to `inherit` for unconfigured users (those with `librarianConnectionMode: 'profile'` and an empty `librarianProfileId`). Users who explicitly chose a profile and set a profileId are left alone.
-- **v3 → v4:** Custom Proxy mode removed. Any per-feature connection mode still set to `proxy` (AI Search, Scribe, Librarian, AI Notepad, Auto Lorebook, Optimize Keys) flips to `profile`. `*ProxyUrl` keys and `profileId`s are left untouched, and a one-time popup asks affected users to pick a profile.
+- **v1 → v2, v2 → v3:** these only touched the Librarian's keys; they are no-ops now that v6 drops those keys.
+- **v3 → v4:** Custom Proxy mode removed. Any per-feature connection mode still set to `proxy` (AI Search, Scribe, AI Notepad, Auto Lorebook, Optimize Keys) flips to `profile`. `*ProxyUrl` keys and `profileId`s are left untouched, and a one-time popup asks affected users to pick a profile.
 - **v4 → v5:** adds the `wiImportEmHandling` setting (Example Messages import mode), defaulted to `append`.
+- **v5 → v6 (this fork):** the Librarian is removed. Its saved `librarian*` settings are dropped quietly, except `librarianGuideTag` (the writing-guide tag).
+- **v6 → v7 (this fork):** `librarianGuideTag` is renamed `guideTag` (the value is kept).
 
 Migrations run idempotently and persist immediately. The `settingsVersion` value is what gates re-runs.

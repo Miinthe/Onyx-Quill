@@ -413,7 +413,6 @@ function populateProfileDropdownIn($container, selectId, settingsKey) {
 
 function updatePopupModeVisibility($container, settings) {
     const aiEnabled = settings.aiSearchEnabled;
-    const isProxy = settings.aiSearchConnectionMode === 'proxy';
     const isAiOnly = aiEnabled && settings.aiSearchMode === 'ai-only';
     $container.find('#dle-sp-scan-depth').closest('.flex-container').toggle(!isAiOnly);
     $container.find('#dle-sp-optimize-keys-mode').closest('.flex-container').toggleClass('dle-disabled', isAiOnly);
@@ -1379,7 +1378,7 @@ function loadPopupSettings($container) {
     $c('#dle-sp-never-insert-tag').val(settings.neverInsertTag);
     $c('#dle-sp-seed-tag').val(settings.seedTag);
     $c('#dle-sp-bootstrap-tag').val(settings.bootstrapTag);
-    $c('#dle-sp-guide-tag').val(settings.librarianGuideTag);
+    $c('#dle-sp-guide-tag').val(settings.guideTag);
     $c('#dle-sp-new-chat-threshold').val(settings.newChatThreshold);
 
     // ── Matching ──
@@ -1996,7 +1995,6 @@ function bindPopupEvents($container) {
         const companions = [
             { file: 'Kara-Emily-Gren-STChar.png', name: 'Kara Emily Gren', desc: 'Forensic researcher. Was. The boundary between study and practice became more a matter of preference.' },
             { file: 'Nott-STChar.png', name: 'Nott', desc: 'Norse goddess of night. Pale, tattooed, wrapped in black that drinks light rather than catching it.' },
-            { file: 'Emma-STChar.png', name: 'Emma', desc: 'Copper-red hair, hazel-green eyes, assessing whether what you just said is worth writing down.' },
         ];
         const rows = companions.map(c =>
             `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--SmartThemeBorderColor);">
@@ -2058,7 +2056,7 @@ function bindPopupEvents($container) {
     $c('#dle-sp-never-insert-tag').on('input', function () { settings.neverInsertTag = String($(this).val()).trim() || 'lorebook-never'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-seed-tag').on('input', function () { settings.seedTag = String($(this).val()).trim() || 'lorebook-seed'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-bootstrap-tag').on('input', function () { settings.bootstrapTag = String($(this).val()).trim() || 'lorebook-bootstrap'; saveSettingsDebounced(); debouncedRebuild(); });
-    $c('#dle-sp-guide-tag').on('input', function () { settings.librarianGuideTag = String($(this).val()).trim() || 'lorebook-guide'; saveSettingsDebounced(); debouncedRebuild(); });
+    $c('#dle-sp-guide-tag').on('input', function () { settings.guideTag = String($(this).val()).trim() || 'lorebook-guide'; saveSettingsDebounced(); debouncedRebuild(); });
     $c('#dle-sp-new-chat-threshold').on('input', function () { settings.newChatThreshold = numVal($(this).val(), 3); saveSettingsDebounced(); });
 
     // ── Matching ──

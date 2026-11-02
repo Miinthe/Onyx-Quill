@@ -72,7 +72,7 @@ export const SECTIONS = [
             { id: 'v-never', label: 'Never-send tag', type: 'text', key: 'neverInsertTag', more: true, fx: 'rebuild', old: 'Never insert tag' },
             { id: 'v-seed', label: 'Seed tag', tip: 'Sent quietly in the background while a chat is new', type: 'text', key: 'seedTag', more: true, fx: 'rebuild', old: 'Seed tag' },
             { id: 'v-boot', label: 'Starter tag', tip: 'Sent openly while a chat is new', type: 'text', key: 'bootstrapTag', more: true, fx: 'rebuild', old: 'Bootstrap tag' },
-            { id: 'v-guide', label: 'Writing-guide tag', tip: 'Entries with this tag are writing guides, not lore', type: 'text', key: 'librarianGuideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
+            { id: 'v-guide', label: 'Writing-guide tag', tip: 'Entries with this tag are writing guides, not lore', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
             { id: 'v-newchat', label: 'A chat counts as new for', hint: 'messages', type: 'num', key: 'newChatThreshold', more: true, old: 'New chat threshold' },
         ] },
         { t: 'Files', rows: [

@@ -243,6 +243,6 @@ Ensures that when budget is limited, the most relevant entries are always includ
 - [[Pipeline]]: where AI search fits in the full generation flow
 - [[Settings Reference]]: every AI search setting documented
 - [[Writing Vault Entries]]: how to write entries and summaries that work well with AI search
-- [[AI Powered Tools]]: Session Scribe, Auto Lorebook, the Librarian, and other AI features
+- [[AI Powered Tools]]: Session Scribe, Auto Lorebook, and other AI features
 - [[Features]]: overview of all DeepLore features
 - [[Installation]]: how to set up AI search connections

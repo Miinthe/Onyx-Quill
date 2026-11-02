@@ -12,7 +12,7 @@ Get DeepLore injecting lore in five minutes. This page covers the shortest path:
 ![Setup wizard welcome screen explaining what DeepLore does, how the two-stage pipeline works, and a Next button to begin configuration](images/dle-setup-wizard.png)
 
 > [!TIP]
-> Run `/dle-setup` to launch the guided wizard shown above. It walks vault connection, tags, matching, AI search, the Librarian, vault structure, and lorebook import in nine pages. See [[Setup Wizard]].
+> Run `/dle-setup` to launch the guided wizard shown above. It walks vault connection, tags, matching, AI search, vault structure, and lorebook import in eight pages. See [[Setup Wizard]].
 
 To configure manually instead:
 

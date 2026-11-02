@@ -51,7 +51,7 @@ Each vault is a card with its **Name** (must match your Obsidian vault's name ex
 | **Never-send tag** (More) | lorebook-never | `neverInsertTag` |
 | **Seed tag** (More) | lorebook-seed | Sent quietly in the background while a chat is new. `seedTag` |
 | **Starter tag** (More) | lorebook-bootstrap | Sent openly while a chat is new. `bootstrapTag` |
-| **Writing-guide tag** (More) | lorebook-guide | Entries with this tag are writing guides, not lore. `librarianGuideTag` |
+| **Writing-guide tag** (More) | lorebook-guide | Entries with this tag are writing guides, not lore. `guideTag` |
 | **A chat counts as new for** (More) | 3 | Messages. `newChatThreshold` |
 
 ### Files
@@ -60,6 +60,16 @@ Each vault is a card with its **Name** (must match your Obsidian vault's name ex
 |---|---|---|
 | **Field definitions file** | DeepLore/field-definitions.yaml | In your vault. `fieldDefinitionsPath` |
 | **Prompts folder** | DeepLore/prompts/ | In your vault. `promptsFolderPath` |
+
+### Cleaning up a run
+
+When you delete the **last chat of a run** (a story plus its instance letter), DeepLore asks once: clean up that run in Obsidian too? **Keep the files** ends it. **Show me what would go…** lists the run's own files, in groups (session notes, entries from this run, branch copies, made by Mero), all ticked; untick any. Files are found one by one by their own stamp (`character` + `instance`), never "everything in a folder", and a file another run also uses is kept and shown with the reason. DeepLore also forgets the run's folders (Filters). Nothing is touched without that last button. If other chats still use the run, nothing is asked.
+
+| Setting | Default | What it does |
+|---|---|---|
+| **A cleaned-up run’s files** | move to the trash folder | Choices: move to the trash folder · delete for good (no undo). `runCleanupMode` |
+| **Trash folder** | zz Deleted runs | In your vault. Each cleanup gets its own folder in here (“<story> B (date)”), keeping the files' own folders, so dragging one back out undoes it. DeepLore never reads this folder. `runTrashFolder` |
+| **Clean up a run** | — | Button: **Clean up a run…** — any run your vault has stamps for, also ones whose chats were deleted earlier. |
 
 ## Filters
 
@@ -288,7 +298,10 @@ Colors, the bar, notices, removing things, and the graph. About the bar: [[DeepL
 | Setting | Default | What it does |
 |---|---|---|
 | **Show the DeepLore bar** | on | Above the message box. `barShow` |
+| **My notes** | on | A notes button on the bar: your own notes, never sent to the AI. `notesEnabled` |
 | **Hide SillyTavern’s Quick Reply row** | on | While you have Quick Replies starred on the bar. `barHideStQr` |
+| **Floating icon drawer** | off | Other extensions’ floating icons wait in a small tab on top of the bar instead of over your chat. Choices: off · phone only · always. `iconDrawer` |
+| **Icons in the drawer** | — | Button: **Choose…** — each floating icon on this screen, with a switch (off: it floats where it was before). `iconDrawerOff` |
 
 ### Notices
 

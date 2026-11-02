@@ -29,7 +29,7 @@ An entry tagged with `lorebook-seed`. Force-injected into the writing AI prompt,
 An entry tagged with `lorebook-bootstrap` that force-injects when the chat is short (below `newChatThreshold`, default 3), then becomes a regular triggered entry once the chat grows.
 
 **Guide entry**
-An entry tagged with `lorebook-guide`. A Librarian-only writing or style reference. Indexed but never reaches the writing AI through any injection path. The Librarian (Emma) fetches it via the `get_writing_guide` tool. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins at runtime.
+An entry tagged with `lorebook-guide`. A writing or style reference, not story lore. Indexed but never reaches the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins at runtime.
 
 **`lorebook-never` tag**
 Excludes an entry from the vault index entirely. Notes with this tag are skipped during parsing and never appear in matching, AI search, or any pipeline stage.
@@ -150,16 +150,8 @@ The choice of how a DLE feature reaches its AI. As of v2.5 the modes are: `profi
 **Connection channel**
 A per-feature connection. Settings › AI & connections lists one row per job: Judge (AI search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad, and Optimize keywords. They do not share settings — each can override mode, profile, model, max tokens, and timeout.
 
-**Librarian**
-Two linked systems sharing the name:
-1. **Generation tools.** The writing AI gets `search` and `flag` tools during generation. `search` queries the vault for entries the pipeline missed; `flag` records gaps when the writing AI reaches for lore that is not in your vault. (Each is independently gated by its own setting under the master Librarian toggle.)
-2. **Emma.** A separate chat agent (opened via `/dle-librarian`) that helps you author or update vault entries from flagged gaps. Her toolset is roughly a dozen tools: `search_vault`, `get_entry`, `get_links`, `get_backlinks`, `get_full_content`, `find_similar`, `list_flags`, `list_entries`, `get_recent_chat`, `flag_entry_update`, `compare_entry_to_chat`, plus `get_writing_guide` (only when guide entries exist). Both halves require a tool-calling provider on their connection. Emma uses her own connection channel, separate from AI search.
-
-**Emma**
-The Librarian persona. Opens from the `/dle-librarian` command.
-
 **Flag**
-A record of a gap the writing AI hit during generation. It shows up in [[Mero]]'s **Requests** under **📚 Lore gaps**, with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** (until it is flagged again), and **No** (gone for good).
+A saved record of a gap in the chat's lore. In upstream DeepLore the Librarian's writing-AI tools recorded these; this fork removed the Librarian (2026-10-27), so nothing flags new gaps, but saved ones still show up in [[Mero]]'s **Requests** under **📚 Lore gaps**, with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** (until it is flagged again), and **No** (gone for good).
 
 **Gap**
 The missing lore the flag records. It waits in Mero › Requests › 📚 Lore gaps.

@@ -39,7 +39,7 @@ function _resolveRoleByName(name) {
  * @property {boolean} constant - Always inject regardless of keywords
  * @property {boolean} seed - Content sent to AI as story context on new chats
  * @property {boolean} bootstrap - Force-inject when chat is short
- * @property {boolean} guide - Librarian-only writing/style/meta guide; never reaches the writing AI
+ * @property {boolean} guide - writing/style/meta guide; never reaches the writing AI
  * @property {number} tokenEstimate - Rough token count estimate
  * @property {number|null} scanDepth - Per-entry scan depth override (null = use global)
  * @property {boolean} excludeRecursion - Don't scan this entry's content during recursion
@@ -68,7 +68,7 @@ function _resolveRoleByName(name) {
  * @property {string} neverInsertTag - Tag for entries to skip
  * @property {string} [seedTag] - Tag for seed entries (Enhanced only)
  * @property {string} [bootstrapTag] - Tag for bootstrap entries (Enhanced only)
- * @property {string} [guideTag] - Tag for Librarian-only writing-guide entries
+ * @property {string} [guideTag] - Tag for writing-guide entries (never sent to the writing AI)
  */
 
 /**
@@ -232,7 +232,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
     const tagToMatch = tagConfig.lorebookTag.toLowerCase();
     const guideTagToMatch = tagConfig.guideTag ? tagConfig.guideTag.toLowerCase() : '';
     const hasGuideTag = !!(guideTagToMatch && tags.includes(guideTagToMatch));
-    // Guide entries admitted without the lorebook tag — they live in the index for Emma's tools.
+    // Guide entries are admitted without the lorebook tag — kept in the index (marked guide), never sent to the writing AI.
     if (!tags.includes(tagToMatch) && !hasGuideTag) {
         if (onSkip) onSkip(hasAnyFrontmatter ? 'SKIP_NO_LOREBOOK_TAG' : 'SKIP_NO_FRONTMATTER');
         return null;
@@ -297,7 +297,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
     const bootstrapTagToMatch = tagConfig.bootstrapTag ? tagConfig.bootstrapTag.toLowerCase() : '';
     const bootstrap = !!(bootstrapTagToMatch && tags.includes(bootstrapTagToMatch));
 
-    // Librarian-only — filtered out of every writing-AI surface.
+    // Writing guides — filtered out of every writing-AI surface.
     const guide = hasGuideTag;
 
     const scanDepth = typeof frontmatter.scanDepth === 'number' ? frontmatter.scanDepth : null;

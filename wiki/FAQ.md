@@ -18,20 +18,13 @@ A fast, cheap model. AI search reads compact entry summaries and picks which one
 DeepLore has been tested on 200+ entry vaults and handles them well. Vaults with 40+ entries automatically use a hierarchical pre-filter: entries cluster by category, the AI picks relevant categories, then individual entries within them. Vaults of 1000+ entries work, with slower index builds.
 
 ### Does this cost money?
-Only if you use AI search or a Librarian feature. Each generation in two-stage mode makes one AI search call (sometimes two for large vaults via the hierarchical pre-filter). On Haiku-class models, that runs to a fraction of a cent per message. Keyword-only mode is free. The sliding window cache reuses recent AI search results when only new chat messages are added, cutting calls further.
+Only if you use AI search or another AI feature. Each generation in two-stage mode makes one AI search call (sometimes two for large vaults via the hierarchical pre-filter). On Haiku-class models, that runs to a fraction of a cent per message. Keyword-only mode is free. The sliding window cache reuses recent AI search results when only new chat messages are added, cutting calls further.
 
 ### Can I use this on mobile?
 If SillyTavern runs on a remote server and you access it from a mobile browser, DeepLore works as long as Obsidian is reachable from the ST host (same machine, or accessible over the network). The most common setup is a desktop running both ST and Obsidian locally.
 
-### What is the Librarian (Emma)?
-Two linked things:
-- **Generation tools.** While the writing AI generates, it can call `search` to look up vault entries the pipeline missed and `flag` to record gaps when the lore it needs is not in the vault. Tool activity collapses into one expandable dropdown on the final message.
-- **Emma.** A separate chat agent. You open her with `/dle-librarian`. In this fork, flagged gaps show up as cards in [[Mero]]'s **Requests** (the side panel's Mero tab). She helps you author a vault entry from a flagged gap, fetches `lorebook-guide` entries for style reference, finds similar entries to dedupe against, and writes the new file to Obsidian when you confirm.
-
-The Librarian needs a tool-calling provider (Claude, Gemini, OpenAI-compatible, Cohere). Emma uses her own connection channel, separate from AI search.
-
-> [!IMPORTANT]
-> Turning on the Librarian auto-enables function calling on the active connection profile. If you disable function calling elsewhere, tool invocations break.
+### What happened to the Librarian (Emma)?
+This fork removed it on 2026-10-27. The co-writer [[Mero]] ☆ took over what was left: the lore gaps saved in a chat show up in her **Requests** (the side panel's Mero tab), and she suggests entry ideas.
 
 ## Writing entries
 
@@ -56,7 +49,7 @@ See [Writing Vault Entries](Writing-Vault-Entries) for the full guide.
 - **Bootstrap entry** (tag: `lorebook-bootstrap`): force-injected during the first few messages of a new chat (configurable threshold), then becomes a regular keyword-triggered entry.
 
 ### What is a guide entry?
-An entry tagged `lorebook-guide` is a Librarian-only writing or style reference. Emma fetches it via the `get_writing_guide` tool when she helps you author a new entry. Guide entries are indexed but never reach the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins.
+An entry tagged `lorebook-guide` is a writing or style reference, not story lore. Guide entries are indexed but never reach the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins.
 
 ### How do summaries work? Do I need them?
 The `summary` frontmatter field is used **only** in AI search. It tells the AI when to pick the entry. It is not injected into the writing AI's prompt; the entry's full content handles that. In keyword-only mode, summaries are unused. In two-stage mode, entries without a summary can still be selected but accuracy is significantly worse. Run `/dle-summarize` to auto-generate summaries for entries that are missing them. Summaries truncate to ~600 characters in the manifest by default (`aiSearchManifestSummaryLength`).
@@ -90,12 +83,6 @@ Three ways:
 2. **`/dle-inspect`.** Shows the full pipeline trace from the last generation.
 3. **The side panel.** **Lore › Sent** shows the entries sent with the last reply.
 
-### Why is the Librarian not flagging anything?
-Check that:
-1. The Librarian is enabled (run `/dle-librarian`: it warns when the Librarian is off).
-2. Your active connection supports tool calling (Claude, Gemini, OpenAI-compatible, Cohere). If function calling is disabled on the profile, the writing AI cannot call `flag`.
-3. The writing AI is actually reaching for missing lore. If your scenes do not call for unwritten characters, places, or rules, there are no gaps to flag.
-
 ## vs. built-in World Info
 
 ### How is this different from SillyTavern's World Info?
@@ -105,7 +92,6 @@ SillyTavern's built-in World Info matches keywords from a JSON file. DeepLore re
 - Multi-vault support for separating worlds or campaigns.
 - Per-chat overrides: pin, block, contextual gating on era, location, scene, custom fields.
 - Diagnostics: relationship graph, activation simulator, the live side panel.
-- The Librarian: gap-flagging during generation and Emma for authoring entries from those gaps.
 
 ### Can I import my existing SillyTavern lorebooks?
 Yes. Run `/dle-import` to convert World Info JSON exports into Obsidian vault notes with proper frontmatter. It handles standard WI exports, V2 character cards, and entry arrays. As of v2.5 the importer reads **every** WI field: most land natively (keys, secondary keys, `constant`, `order`→`priority`, `position`, `depth`, `probability`, `disable`, `role`, `excludeRecursion`, and all four `selectiveLogic` modes), and the rest round-trip into the vault as frontmatter so nothing is silently dropped. After import, DLE offers to AI-generate summaries for the new entries, reusing the `/dle-summarize` pipeline. See [[For World Info Users]] for the full field-by-field cheat sheet.

@@ -16,7 +16,6 @@ function _currentVerdictForChat() {
 }
 import { getCircuitState } from '../vault/obsidian-api.js';
 import { ds, formatTokensCompact, activityLog, announceToScreenReader, isDrawerVisible } from './drawer-state.js';
-import { tr } from '../i18n/i18n.js';
 
 const AI_CIRCUIT_COOLDOWN_MS = 30_000; // mirror state.js — drawer doesn't import the constant directly
 

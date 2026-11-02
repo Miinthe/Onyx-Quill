@@ -21,6 +21,10 @@ From left to right:
 
 While DeepLore is choosing lore, its working line shows on the bar too.
 
+**Floating icon drawer:** other extensions' floating icons (like CarrotKernel's 🥕) can wait in a small, low tab on top of the bar, at its left end, instead of floating over your chat. Tap the tab and they open in a row just above the bar, icons only (hover for the name). Tap one to use it as usual; hold it (or right-click on a PC) for that extension's own options. A number on an icon shows on the tab too. It's off at first: **Settings › Interface › The bar › Floating icon drawer** (off, phone only, always), and **Icons in the drawer › Choose…** has a switch per icon; switched off, an icon floats where it was before.
+
+**Guided swipe chip:** while a guided swipe's direction is in play (see below), it shows above the message box: ✎ edits it, **Keep** turns it into one of [[Mero]]'s 🧭 notes (it then stays until you switch it off), ✕ drops it. It clears itself when you send your next message.
+
 ## On a phone
 
 The bar has five buttons: 📖, the side-panel button, **Quick replies**, **My notes**, and **More** (re-evaluate, simple send, draft). Quick replies and More take over the bar's row when you tap them; **‹** goes back. Pull the handle up for more room.
@@ -52,7 +56,11 @@ Every message also gets one DeepLore button (📖), next to SillyTavern's own bu
 - **Pitch from here**: ask [[Mero]] for story ideas starting at this message.
 - **Why these entries**: which lore went out with this reply, and why.
 - **What this changed**: the board changes this reply made (opens Story › What changed).
+- **Ask Mero about this**: opens her with this message attached.
 - **Branch here as a new run**: SillyTavern's branch; the new branch then offers to become a new run.
+- **Start a rumor from this…**: only where the board's world layer is on.
+- **Guided swipe…**: only on the newest reply. Type what should change ("less flowery, he's colder here") and a new swipe is written with it. The direction stays for every swipe of that reply, then clears when you answer. No extra AI call: it goes to the writer with the author's notes.
+- **Compare swipes**: when a message has more than one swipe. They show side by side (stacked on a phone), each marked with the direction it was written with; **Use this one** picks it.
 - **Re-evaluate and swipe**: only on the newest reply.
 
 See also: [[Drawer|Side Panel]], [[Storyboards]], [[Mero]].

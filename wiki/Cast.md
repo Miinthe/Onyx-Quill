@@ -23,7 +23,7 @@ If there is no Cast yet, the side panel's Cast tab says so and has a button: **A
 
 ## The Cast tab
 
-Open the side panel and choose **Cast**. It has two folds.
+Open the side panel and choose **Cast**. It has three folds.
 
 ### This round
 
@@ -53,11 +53,20 @@ Tap a person to open them:
 - **While away**: what they did while they were gone. For someone away, **📜 What has X been up to?** asks for it now.
 - For a hidden person, **Peek** shows their secrets to you (until the page reloads); **Hide again** covers them.
 
+### Ties
+
+How each Cast person feels about the others, the main character and your persona: a few words, no meters. For example "Jun → {{user}}: distrusts, but follows anyway ↗". ↗ means warming, ↘ cooling. The main character and your persona's own story stays on the board; ties are always a Cast person's feelings.
+
+- The Cast's director writes them as part of its usual pass (no extra AI call), only when the newest messages show a feeling, and always with the line that shows it. **Tap a tie** to see that line and the message number.
+- ✎ edits a tie, 📌 pins it (the AI leaves a pinned tie alone), ✕ removes it, **+ Tie** adds one by hand (pinned).
+- At most 3 new ties a turn and 8 per person; a hidden person's ties stay veiled until you Peek.
+- **The writer gets** (the box at the bottom): the ties of people in the scene only.
+
 ---
 
 ## Good to know
 
-- Only people **in the scene** are told to the writer, with their plans and what they know.
+- Only people **in the scene** are told to the writer, with their plans, what they know and their ties.
 - NPC messages need a one-on-one chat and a Chat Completion connection for now.
 - Changes to the Cast show in **Story › What changed**, with Undo.
 

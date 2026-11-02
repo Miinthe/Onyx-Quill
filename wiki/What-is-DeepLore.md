@@ -40,13 +40,9 @@ DeepLore (DLE) is an alternative lorebook system that stores entries in an **Obs
 
 **Session Scribe and Auto Lorebook.** DLE can summarize sessions back to your vault as timestamped notes. Auto Lorebook scans recent chat and proposes new entries for characters, places, or concepts that came up but aren't in your vault yet.
 
-## The Librarian (Emma)
+## Mero ☆
 
-In v2, DLE adds **the Librarian**: writing-AI tools (`search` and `flag`) plus Emma, a chat agent for authoring entries.
-
-As you roleplay, the writing AI calls `search` to look up vault entries it needs, and calls `flag` when it reaches for a detail your vault doesn't cover. Each `flag` becomes a lore gap. In this fork, lore gaps show up as cards in [[Mero]] › Requests under **📚 Lore gaps**, where **Write it** opens Write a new entry… with the gap filled in.
-
-`lorebook-guide` entries are Librarian-only. They never reach the writing AI through any path.
+Upstream DeepLore v2 added the Librarian (Emma); this fork removed it on 2026-10-27. What it left behind moved to the co-writer [[Mero]] ☆: the lore gaps saved in a chat show up in her Requests, and she suggests entry ideas.
 
 ## How the pipeline works
 
@@ -97,8 +93,6 @@ You send a message
         v
   [8] Generate
       The writing AI generates a response with your lore in context.
-      If the Librarian is on, it can call search and flag tools
-      while generating.
 ```
 
 Stages 2 and 4 are the **two-stage** pipeline. Two other modes exist: **AI-only** sends the entire vault summary to the AI without keyword pre-filtering (more accurate on small vaults, much more expensive on large ones), and **keywords-only** disables AI search entirely (free, but loses the contextual matches).
@@ -111,9 +105,7 @@ Keywords-only mode: free.
 
 Two-stage mode: roughly one extra provider call per turn for AI search. Fraction of a cent per message on Haiku-class models; more on Sonnet or Opus. Local providers (Ooba, KoboldCpp, llama.cpp) work for AI search; expect 60-120s on a long chat where cloud APIs respond in under 10s.
 
-The Librarian: 1-3 tool-call rounds per generation when the writing AI calls `search` or `flag`. Emma's chat sessions are interactive, so cost depends on how much you talk to her. Tool-calling provider required (Claude, Gemini, OpenAI-compat, Cohere).
-
-Each feature has its own connection channel. Run free local inference for retrieval and pay only for Emma, or vice versa.
+Each feature has its own connection channel. Run free local inference for retrieval and pay only for Mero ☆, or vice versa.
 
 ## Who DeepLore is for
 

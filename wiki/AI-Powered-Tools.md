@@ -2,70 +2,10 @@
 
 Features that use AI to help you build, maintain, and grow your vault. These run alongside [[AI Search]] (which selects entries during generation); the tools on this page actively create or improve vault content.
 
-Your co-writer [[Mero]] ☆ has her own page. This page covers the other AI helpers, starting with the lore tools the writing AI can use during a reply (`search` and `flag`; the code and settings keys still call them the Librarian).
+Your co-writer [[Mero]] ☆ has her own page. She also took over what the removed Librarian left behind: saved lore gaps show up as her requests, and she suggests entry ideas. This page covers the other AI helpers.
 
 > [!NOTE]
 > Each tool below has its own independent connection channel, set in **Settings › AI & connections** (one row per job: Judge, Story helper, Mero ☆, Scribe, New lore, AI notepad, Optimize keywords). You can route the Scribe to one model and AI Search to another. Most default to inheriting from AI Search. Each channel is a SillyTavern **Connection Profile** (or "Inherit"); the legacy Custom Proxy mode was removed in v2.5 — see [[AI Search#connection]] for the migration note.
-
----
-
-## Lore tools during replies (search and flag)
-
-These tools help your vault grow as you roleplay.
-
-**Half 1: writing-AI tools.** During generation, the writing AI gets two function-calling tools: `search` and `flag`. When it reaches for a detail and isn't sure if your vault has it, it calls `search`. If the vault genuinely doesn't have it, it calls `flag` instead of inventing.
-
-**Where the gaps go.** Each flag shows up in [[Mero]]'s **Requests**, under **📚 Lore gaps**. **Write it** opens Write a new entry… with the gap filled in, and Mero can draft it there. For an entry that needs an update, **Open it** opens it in Obsidian. **Done** marks it as taken care of, **Hide** hides it until it is flagged again, and **No** removes it for good.
-
-**Emma.** The older entry-writing chat agent still exists behind `/dle-librarian` (her own connection channel, her own toolset). She checks what already exists, finds similar entries to dedupe against, pulls in any style guides marked `lorebook-guide`, and drafts the new entry.
-
-> [!IMPORTANT]
-> These tools auto-enable function calling on the active connection. If you disable function calling elsewhere on that profile, tool invocations break mid-generation with no error toast.
-
-### Writing-AI tools (`search` and `flag`)
-
-Both fire inside the writing AI's normal generation. Tool activity collapses into one expandable dropdown on the final assistant message; you still get one clean reply per turn.
-
-| Tool | Args | What it does |
-|---|---|---|
-| `search` | `queries: string[]` (up to 4) | BM25 vault search. Returns the single best hit with full content, plus up to 3 graph-linked entries in summary form. Excludes already-injected entries and `lorebook-guide` entries. |
-| `flag` | `title`, `reason`, `urgency` (`low`/`medium`/`high`), `flag_type` (`gap`/`update`), `entry_title` | Records a gap or update request (it shows up in Mero › Requests › 📚 Lore gaps). Re-flagging a similar gap merges with the existing record (frequency increment, urgency escalation). |
-
-The writing AI is capped at `librarianMaxSearches` searches per generation (default 2) and 5 flag calls. Internally a third tool, `write`, captures the final prose and transitions the loop from SEARCH to FLAG phase.
-
-### Emma's toolset
-
-Inside an Emma session, she has her own internal tool set (12 tools). Highlights:
-
-| Tool | Purpose |
-|---|---|
-| `search_vault` | BM25 search across the vault |
-| `get_entry` | Truncated preview + metadata |
-| `get_full_content` | Full entry content; populates her draft state |
-| `find_similar` | Duplicate detection before authoring a new entry |
-| `get_links` / `get_backlinks` | Walk `resolvedLinks` outgoing or incoming |
-| `list_entries` | Filter by type and tag |
-| `get_recent_chat` | Last N messages from the active chat |
-| `compare_entry_to_chat` | Side-by-side entry + recent chat |
-| `flag_entry_update` | Write a gap record from inside the session |
-| `get_writing_guide` | Fetch entries tagged `lorebook-guide`. Available only when guide entries exist. |
-
-The `lorebook-guide` tag marks an entry as Librarian-only. It is never injected into the writing AI through any pipeline path; only Emma can see it via `get_writing_guide`.
-
-### Connection channel
-
-The Librarian has its own connection channel (`librarianConnectionMode`), independent of AI Search. Defaults to **Inherit** (resolves to AI Search settings); set it to a specific **Connection Profile** to route Emma through a different model. Tool calling is required, so the resolved provider must support function calling.
-
-Supported tool-calling providers: Claude, Gemini (makersuite/vertexai), OpenAI-compatible (incl. NanoGPT, AI21, Pollinations, Moonshot), Cohere. Only `perplexity` is treated as no-tools and cannot drive the Librarian; the writing AI falls through to ST's normal generation when tool calling is unsupported, and a deduplicated warning fires.
-
-### Setup
-
-1. Run the Setup wizard (side panel ⋯ → **Setup wizard**, or `/dle-setup`) and, on its **Mero ☆** page, turn on **Let Mero look up lore during replies**. Under it you can switch the **Search tool** and the **Flag tool** on or off.
-2. Use a connection that supports tool calling (the default `inherit` works if your AI Search profile does)
-3. Verify with `/dle-health` (checks tool-calling support on the resolved profile)
-4. Roleplay normally; gaps collect in Mero › Requests › 📚 Lore gaps
-
-See also: `librarianPerMessageActivity` (default off) which changes whether gaps clear on each new generation. Off is the original behavior (gaps accumulate across messages); on ties gap and dropdown lifecycle to per-message scope.
 
 ---
 

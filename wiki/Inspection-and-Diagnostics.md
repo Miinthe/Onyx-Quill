@@ -229,12 +229,6 @@ Track how often each entry is matched and injected across generations. View with
 - Analytics persist in SillyTavern settings across sessions.
 - Resets when you clear settings or reinstall.
 
-### Librarian analytics
-
-When the Librarian is enabled, the analytics popup also lists Librarian-related activity: tool calls made, entries created or updated, writing guides fetched, and gap analysis results. Top unmet queries (gaps the Librarian flagged but no entry was authored for) appear at the bottom.
-
-Librarian session stats are tracked at the session level (not reset on chat change). Per-chat Librarian stats track activity within the current chat.
-
 ---
 
 ## Entry health check

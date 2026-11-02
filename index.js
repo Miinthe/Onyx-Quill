@@ -268,7 +268,6 @@ function _teardownDleExtension() {
 }
 
 // ── PM-mode entry registration (shared by init + CHAT_CHANGED + CHAT_LOADED + latch) ──
-const PM_ENTRY_IDS = ['constants', 'lore'];
 const PM_DISPLAY_NAMES_BASE = {
     'deeplore_notebook': 'DLE Author\'s Notebook',
     'deeplore_ai_notepad': 'DLE AI Notepad',

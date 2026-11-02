@@ -1,8 +1,8 @@
 # Setup wizard
 
-The setup wizard walks you through configuring DeepLore for the first time. Nine pages: Welcome, vault connection, tags and search mode, matching, AI search, Mero ☆ (lore tools during replies), vault structure, lorebook import, and Done. It takes you from install to working lore injection without leaving the popup.
+The setup wizard walks you through configuring DeepLore for the first time. Eight pages: Welcome, vault connection, tags and search mode, matching, AI search, vault structure, lorebook import, and Done. It takes you from install to working lore injection without leaving the popup.
 
-If you pick **keywords-only** on the tags-and-search-mode page, the AI search and Mero ☆ pages are skipped — both need a tool-calling AI connection — so you'll see seven pages instead of nine.
+If you pick **keywords-only** on the tags-and-search-mode page, the AI search page is skipped, so you'll see seven pages instead of eight.
 
 ## When it runs
 
@@ -59,7 +59,7 @@ Configure which Obsidian tags identify lorebook entries, and pick your search st
 | Two-stage | Keywords pre-filter, then AI search ranks the candidates. Recommended |
 | AI only | Send the entire vault manifest to AI search. More thorough, more expensive |
 
-If you select keywords-only, the AI search and Mero ☆ pages are skipped. (Both depend on a tool-calling AI connection.)
+If you select keywords-only, the AI search page is skipped.
 
 ### 4. Matching configuration
 
@@ -93,24 +93,7 @@ DLE connects to an AI for entry selection through a saved **SillyTavern Connecti
 > [!NOTE]
 > As of v2.5 the wizard offers only Connection Profile mode — the old Custom Proxy option was removed. No `config.yaml` changes are needed. If you upgraded from an older DeepLore that used a proxy, that setting is migrated to a profile automatically and a one-time notice asks you to choose one.
 
-### 6. Mero ☆
-
-*Skipped if you chose keywords-only on page 3.*
-
-Optional, and off by default. While a reply is written, the writing AI gets two tools: `search` (look up entries DeepLore missed) and `flag` (note a gap in your lore for later). Flagged gaps wait for you in [[Mero]]'s **Requests**, under **📚 Lore gaps**.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Let Mero look up lore during replies | Off | The on/off switch for both tools |
-| Search tool | On (when the switch is on) | Writing AI can look up vault entries the pipeline missed |
-| Flag tool | On (when the switch is on) | Writing AI can flag gaps in your lore for later review |
-
-> [!IMPORTANT]
-> Tool definitions add ~300 to 500 tokens to every generation's system prompt. Each `search` call adds a round-trip to the generation; `flag` calls don't. Start with just the flag tool if you want to minimize cost and see what your AI reaches for before enabling search.
-
-These tools require a tool-calling provider (Claude, Gemini, OpenAI-compat, Cohere). Enabling it auto-enables function calling on the active connection. If you disable function calling elsewhere on that profile, tool invocations break mid-generation.
-
-### 7. Vault structure
+### 6. Vault structure
 
 Optional. Creates starter files in your Obsidian vault.
 
@@ -121,7 +104,7 @@ Optional. Creates starter files in your Obsidian vault.
 
 Both are checkboxes. Status indicators show success or error for each.
 
-### 8. Import
+### 7. Import
 
 Optional. Import an existing SillyTavern lorebook into your Obsidian vault. You can also import later with `/dle-import`.
 
@@ -134,7 +117,7 @@ Import methods:
 
 Set a target folder for imported entries. Results show counts of imported, failed, and renamed entries.
 
-### 9. Done
+### 8. Done
 
 Review what got configured:
 

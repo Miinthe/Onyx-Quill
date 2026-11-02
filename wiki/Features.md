@@ -47,7 +47,7 @@ NPCs set up on the board, each with their own character card. They come and go, 
 
 ## Mero ☆
 
-Your co-writer, in the side panel's Mero tab. Talk with her about the story, ask for pitches and plans, and answer her requests (including lore gaps found while replies were written). See [[Mero]].
+Your co-writer, in the side panel's Mero tab. Talk with her about the story, ask for pitches and plans, and answer her requests (including the lore gaps saved in a chat). See [[Mero]].
 
 ---
 
@@ -86,26 +86,6 @@ Features that use AI to help you build and maintain your vault. See [[AI-Powered
 | **Optimize Keys** | AI analyzes an entry and suggests better keywords (`/dle-optimize-keys`) |
 | **Auto-Summary** | Generate AI summaries for entries missing a `summary` field (`/dle-summarize`) |
 | **Scribe-informed retrieval** | Feed Scribe summaries into AI search for broader story awareness |
-
----
-
-## Lore tools during replies (search and flag)
-
-While a reply is written, the writing AI can get two optional tools: `search` (look up entries DeepLore missed) and `flag` (note a gap in your lore). They are off by default; the Setup wizard's **Mero ☆** page has the switch **Let Mero look up lore during replies**. Flagged gaps land in [[Mero]]'s **Requests**, under **📚 Lore gaps**. Tool-calling provider required (Claude, Gemini, OpenAI-compatible, Cohere).
-
-| Feature | What it does |
-|---------|-------------|
-| **Generation tools** | Writing AI calls `search` and `flag` mid-generation to look up vault entries and flag gaps |
-| **Emma's toolset** | `search_vault`, `get_entry`, `get_full_content`, `find_similar`, `list_flags`, `get_links`, `get_backlinks`, `list_entries`, `get_recent_chat`, `flag_entry_update`, `compare_entry_to_chat`, and `get_writing_guide` |
-| **Session continuity** | Emma's session (messages, draft state, work queue) persists in `chat_metadata` across reloads and chat switches |
-| **Lore gap detection** | Writing AI flags missing or stale lore mid-generation; gaps land in Mero › Requests › 📚 Lore gaps. **Write it** opens Write a new entry… with the gap filled in (Mero can draft it there); **Open it** opens an entry that needs an update in Obsidian |
-| **Done, Hide, No** | **Done** marks a gap as taken care of. **Hide** hides it until it is flagged again. **No** removes it for good, even if it is flagged again |
-| **Vault audits** | `/dle-librarian audit` walks the entire vault and flags gaps, inconsistencies, and entries that need updates |
-| **Writing guides** | Tag a vault entry with `lorebook-guide` to make it a Librarian-only style reference. Emma fetches these via `get_writing_guide`. They never reach the writing AI through any path |
-| **Customizable persona** | Tweak Emma's personality and focus through an editable prompt |
-
-> [!IMPORTANT]
-> Turning on these lore tools auto-enables function calling on the active connection profile. If you disable function calling elsewhere, tool invocations break.
 
 ---
 

@@ -10,12 +10,12 @@
 
 If you've used SillyTavern's World Info (lorebooks), you know the pain: keyword matching breaks down as your world grows, and the entry you needed stays cold because nobody typed the magic word. DeepLore fixes that. It runs keyword matching first, then asks an AI to read what survived and pick the entries that actually fit the scene — so the right lore fires *even when the keyword was never typed.*
 
-It plugs into [SillyTavern](https://github.com/SillyTavern/SillyTavern) and works in the background while you write. As you roleplay, the writing AI can flag gaps in your world mid-generation, and they wait for you in Mero ☆'s requests. Your story builds your world; your world flows back into your story.
+It plugs into [SillyTavern](https://github.com/SillyTavern/SillyTavern) and works in the background while you write. As you roleplay, Mero ☆ can read the replies next to the lore that went out with them and suggest what an entry is missing, for you to accept or refuse. Your story builds your world; your world flows back into your story.
 
 New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get it running in five minutes.
 
 > [!NOTE]
-> **This fork** adds [[Storyboards]] (a board window with trackers), the [[Cast]] (NPCs who speak in their own messages), [[Mero]] ☆ (your co-writer), the [[DeepLore Bar]] above the message box, [[My Notes]] (private notes per chat, story or character), and a new [[Drawer|Side Panel]] with the tabs Lore, Filters, Story, Cast and Mero.
+> **This fork** adds [[Storyboards]] (a board window with trackers), the [[Cast]] (NPCs who speak in their own messages, with ties: how they feel about each other), [[Mero]] ☆ (your co-writer), the [[DeepLore Bar]] above the message box (with a drawer for other extensions' floating icons), [[My Notes]] (private notes per chat, story or character), and a new [[Drawer|Side Panel]] with the tabs Lore, Filters, Story, Cast and Mero.
 
 > [!NOTE]
 > The older standalone [`sillytavern-DeepLore`](https://github.com/pixelnull/sillytavern-DeepLore) extension is deprecated. This repo (formerly DeepLore) is the active project. Do not run both at once. Running both corrupts prompt injection.
@@ -25,9 +25,11 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 - **Three pipeline modes:** two-stage (keywords pre-filter, then AI selects), AI-only (full vault sent to AI, no keyword filtering), and keywords-only (no AI). Two-stage is the default.
 - **Any LLM provider:** Anthropic, OpenAI, OpenRouter, Gemini, DeepSeek, local backends (Ooba, KoboldCpp, llama.cpp), and anything else SillyTavern's Connection Manager supports.
 - **Multi-vault support:** connect multiple Obsidian vaults at once with content-hash dedup.
-- **Lore gaps:** optional writing-AI tools (`search`, `flag`) that detect missing lore mid-generation; the gaps wait in [[Mero]]'s Requests, where you can write the entry.
+- **Lore upkeep:** [[Mero]] checks the lore against the latest replies and brings entry changes to her Requests (with your sign-off, or on her own with an Undo).
 - **Storyboards and the Cast:** plan your story on a board; a helper AI moves the trackers as the story goes, and NPCs can speak for themselves. See [[Storyboards]] and [[Cast]].
-- **Mero ☆:** a co-writer to talk with about the story, with pitches, plans and notes. See [[Mero]].
+- **Mero ☆:** a co-writer to talk with about the story, with pitches, plans, notes, a phrase list against the writer's repeated phrases (the slop guard), and 🎲 Wordle for a break. See [[Mero]].
+- **Guided swipe:** swipe the newest reply with a direction ("colder, fewer words") that stays for that reply's swipes; compare swipes side by side. See [[DeepLore Bar]].
+- **Run cleanup:** delete a run's last chat and DeepLore offers to move that run's files into a trash folder in your vault (or delete them). See [[Settings Reference]].
 - **Per-chat pin and block:** override entry selection per chat. Force-include or exclude specific entries.
 - **Contextual gating:** filter entries by era, location, scene type, characters present, and any custom field you define in `field-definitions.yaml`. Visual rule builder included.
 - **Context Cartographer:** per-message trace (each message's 📖 → Why these entries) showing which entries fired and why (keyword hit, AI selection, constant, cascade, pin).

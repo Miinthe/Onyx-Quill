@@ -47,9 +47,9 @@ Returns first enabled vault, or `vaults[0]`, or a fallback object `{ name: 'Defa
 
 ### `resolveWriteVault(toolKey, settings, overrideName?)` (settings.js)
 
-Per-tool write destination. `toolKey` is `'librarian' | 'scribe' | 'autoSuggest'`. Precedence: `overrideName` (per-write picker) > `settings[{tool}WriteVaultId]` (configured default, a vault `name` string) > primary. Each step falls through cleanly if the named vault is missing or disabled — never throws. Use this instead of `getPrimaryVault()` at any AI-driven write site so the user can route Scribe / Auto Lorebook / Librarian writes to different vaults.
+Per-tool write destination. `toolKey` is `'scribe' | 'autoSuggest'`. Precedence: `overrideName` (per-write picker) > `settings[{tool}WriteVaultId]` (configured default, a vault `name` string) > primary. Each step falls through cleanly if the named vault is missing or disabled — never throws. Use this instead of `getPrimaryVault()` at any AI-driven write site so the user can route Scribe / Auto Lorebook writes to different vaults.
 
-Settings keys: `librarianWriteVaultId`, `scribeWriteVaultId`, `autoSuggestWriteVaultId`. Value is the target `vault.name`; empty string means "use primary." Librarian additionally exposes a per-write picker in its review popup (visible only when 2+ vaults are enabled) which feeds `overrideName`.
+Settings keys: `scribeWriteVaultId`, `autoSuggestWriteVaultId`. Value is the target `vault.name`; empty string means "use primary." Mero's entry writes (`src/mero-lore.js`) use the `autoSuggest` key and can pass a vault name as `overrideName`.
 
 ### Field definitions source
 
@@ -71,7 +71,7 @@ init()
        -> resolveLinks(vaultIndex)
        -> computeEntityDerivedState()    // entityNameSet, entityShortNameRegexes
        -> computeDerivedIndexFields()    // mentionWeights, folderList, vaultAvgTokens
-       -> buildBM25Index()              // if fuzzy/librarian search enabled
+       -> buildBM25Index()              // always built
        -> notifyIndexUpdated()
        -> buildIndex()                  // background, fire-and-forget with epoch guard
 
@@ -183,7 +183,7 @@ Takes `{filename, content}` and tag/field config. Returns a `VaultEntry` or `nul
 | `lorebook-never` | `neverInsertTag` | (entry skipped) | Entry excluded from index entirely |
 | `lorebook-seed` | `seedTag` | `seed: true` | Story context on new/short chats |
 | `lorebook-bootstrap` | `bootstrapTag` | `bootstrap: true` | Force-inject when chat is short |
-| `lorebook-guide` | `librarianGuideTag` | `guide: true` | Librarian-only; never reaches writing AI |
+| `lorebook-guide` | `guideTag` (was `librarianGuideTag` until settings v7) | `guide: true` | Writing guide, not lore; never reaches writing AI |
 
 **Guide conflict rule:** If both `lorebook-guide` and lorebook/seed/bootstrap tags are present, `guide` wins at runtime (the entry is admitted to the index via guide tag, but the `guide` flag causes filtering at injection time).
 
@@ -243,7 +243,7 @@ finalizeIndex()
   -> computeEntityDerivedState(entries)      // vault-pure.js
        -> setEntityNameSet()
        -> setEntityShortNameRegexes()        // also bumps entityRegexVersion
-  -> buildBM25Index(entries)                 // if fuzzy/librarian enabled -> setFuzzySearchIndex()
+  -> buildBM25Index(entries)                 // always built -> setFuzzySearchIndex()
   -> setAiSearchCache({empty})              // invalidate AI search cache
   -> takeIndexSnapshot() + detectChanges()  // core/sync.js
   -> showChangesToast()                     // if changes detected and toasts enabled
@@ -296,7 +296,7 @@ Shared between `finalizeIndex()` and `hydrateFromCache()` (BUG-370). Optional th
 
 ### Analytics pruning (vault.js: analytics block inside finalizeIndex())
 
-Removes `settings.analyticsData` keys that don't match any active `trackerKey(entry)` (format: `"vaultSource:title"`). Skips keys starting with `_` (sub-objects like `_librarian`). Prevents unbounded growth when vault entries are renamed/deleted.
+Removes `settings.analyticsData` keys that don't match any active `trackerKey(entry)` (format: `"vaultSource:title"`). Skips keys starting with `_` (sub-objects). Prevents unbounded growth when vault entries are renamed/deleted.
 
 ### IndexedDB cache save
 
@@ -431,13 +431,13 @@ Returns `Array<{title, score, entry}>` sorted by score descending.
 ### When BM25 is used
 
 1. **Pipeline matching (secondary filter):** When `settings.fuzzySearchEnabled` is true, BM25 augments keyword matching in the pre-filter stage.
-2. **Librarian `search_lore` tool:** When `settings.librarianSearchEnabled` is true, the Librarian's search tool queries the BM25 index.
+
+(The Librarian's `search_lore` tool also queried it; that was removed with the Librarian.)
 
 ### Build timing
 
-- **finalizeIndex():** Built if `fuzzySearchEnabled || librarianSearchEnabled`. Stored via `setFuzzySearchIndex()`.
+- **finalizeIndex():** Always built (since 2026-10-19; it used to depend on `fuzzySearchEnabled || librarianSearchEnabled`). Stored via `setFuzzySearchIndex()`.
 - **hydrateFromCache():** Also built during hydration so search is available before background rebuild.
-- If neither setting is enabled, `setFuzzySearchIndex(null)`.
 
 ### Logging
 

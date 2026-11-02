@@ -161,15 +161,6 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 - **Try:** Disable other lorebook/World Info extensions and test.
 - In `prompt_list` mode, conflicts are less likely since entries integrate with Prompt Manager.
 
-## Librarian and function calling
-
-### Function calling stops working in other extensions
-
-The Librarian auto-enables function calling on the active connection when it is in use. If you disable function calling elsewhere while the Librarian is active, tool invocations break.
-
-- **Fix:** turn the Librarian off if you need function calling disabled for other tooling.
-- See [[Features]] for the full Librarian behavior.
-
 ## Still stuck?
 
 1. Run `/dle-health` and review all errors and warnings.

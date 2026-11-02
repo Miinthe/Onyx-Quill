@@ -8,7 +8,7 @@
 <h1 align="center">DeepLore</h1>
 
 > [!NOTE]
-> **This fork** (branch `dev/board-model`) is a private, heavily changed DeepLore based on upstream 2.6.2. It adds [Storyboards](wiki/Storyboards.md) (a board window with trackers: steps, collections, places, state and dates, meters and flags), a [Cast](wiki/Cast.md) of NPCs who speak in their own messages, [Mero ☆](wiki/Mero.md), a co-writer in the side panel, the [DeepLore bar](wiki/DeepLore-Bar.md) above the message box, a new [side panel](wiki/Drawer.md) (Lore · Filters · Story · Cast · Mero), a new settings window, and a 📖 menu on each message with "Why these entries". The rest of this README describes upstream DeepLore. Where it mentions the drawer's tabs or Emma, the [wiki](wiki/Home.md) pages describe how this fork shows them today.
+> **This fork** (branch `dev/board-model`) is a private, heavily changed DeepLore based on upstream 2.6.2. It adds [Storyboards](wiki/Storyboards.md) (a board window with trackers: steps, collections, places, state and dates, meters and flags), a [Cast](wiki/Cast.md) of NPCs who speak in their own messages, [Mero ☆](wiki/Mero.md), a co-writer in the side panel, the [DeepLore bar](wiki/DeepLore-Bar.md) above the message box, a new [side panel](wiki/Drawer.md) (Lore · Filters · Story · Cast · Mero), a new settings window, and a 📖 menu on each message with "Why these entries". The rest of this README describes upstream DeepLore. Where it mentions the drawer's tabs, the [wiki](wiki/Home.md) pages describe how this fork shows them today. The fork removed upstream's Librarian (Emma) on 2026-10-27; Mero ☆ took over the saved lore gaps (her Requests) and suggests entry ideas.
 
 **World Info keyword matching breaks at scale. DeepLore reads your Obsidian vault instead: keywords plus AI retrieval, so the right lore fires even when the word wasn't typed.**
 
@@ -56,33 +56,6 @@ Chat → matchEntries (keywords + BM25 fuzzy)
   </a>
   <br>
   <a href="https://youtu.be/tiq0dfD6-RU?si=pTBw4r-RNCkHsoYZ">
-    <img src="https://img.shields.io/badge/%E2%96%B6_Watch_on_YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube">
-  </a>
-</p>
-
-## New in v2: Emma, your librarian
-
-Emma is how your lorebook grows.
-
-As you roleplay, the writing AI reaches for details: characters, places, rules, consequences. When it reaches for something that isn't in your vault, it flags the gap. You open the flag and chat with Emma, a separate librarian agent who helps you author a vault-accurate entry (or update one that drifted). She checks what already exists, pulls in style guides marked `lorebook-guide`, finds similar entries to dedupe against, and drafts the new file. Write-to-vault saves it back to Obsidian.
-
-Your story fills in your world. Your world fires back into your story.
-
-- Writing AI's tool activity collapses into one expandable dropdown on the final message
-- Emma has her own connection channel; route her to something cheaper if you want
-- `lorebook-guide` entries reach Emma only, never the writing AI
-- Tool-calling provider required for both (Claude, Gemini, OpenAI-compat, Cohere)
-
-<p align="center">
-  <img src="https://i.imgur.com/V8RnLdy.png" alt="Librarian tab with a flagged worldbuilding gap opened" width="640">
-</p>
-
-<p align="center">
-  <a href="https://youtu.be/jsPE9vkA8ck?si=6r-czyn5TvjdRf7M">
-    <img src="https://img.youtube.com/vi/jsPE9vkA8ck/maxresdefault.jpg" alt="Watch: Librarian (Emma)" width="720">
-  </a>
-  <br>
-  <a href="https://youtu.be/jsPE9vkA8ck?si=6r-czyn5TvjdRf7M">
     <img src="https://img.shields.io/badge/%E2%96%B6_Watch_on_YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube">
   </a>
 </p>
@@ -143,9 +116,9 @@ Force-directed layout, 200+ nodes, Louvain clustering, gap analysis, focus mode.
 
 ## Cost
 
-Keyword-only mode: free. AI search adds ~1 extra provider call per turn. Emma adds 1-3 tool-call rounds when she's active. Fraction of a cent per message on Haiku-class models; more on Sonnet / Opus.
+Keyword-only mode: free. AI search adds ~1 extra provider call per turn. Fraction of a cent per message on Haiku-class models; more on Sonnet / Opus.
 
-Each feature has an independent connection channel. Run free keyword retrieval and pay only for Emma, or vice versa. Works with local providers (Ooba, KoboldCpp, llama.cpp) for the AI search stage. Emma still needs a tool-calling provider.
+Each feature has an independent connection channel. Run free keyword retrieval and pay only for Mero ☆, or vice versa. Works with local providers (Ooba, KoboldCpp, llama.cpp) for the AI search stage.
 
 ## Privacy
 
@@ -194,7 +167,6 @@ Diagnostics exports for bug reports are pseudonymized before they leave your mac
   <img src="https://i.imgur.com/vzqxpr5.png" alt="Entry browser" width="640">
 </p>
 
-- **Librarian (Emma)** - your lorebook grows as you roleplay: writing AI flags gaps mid-generation, Emma helps you author the entries
 - **Two-stage AI retrieval** - keywords + AI selection
 - **Relationship Graph** - 200+ node vault view, clustering, gap analysis
 - **Session Scribe** - auto-summaries written back to the vault
@@ -219,14 +191,13 @@ Full feature docs: [**Wiki →**](https://github.com/pixelnull/sillytavern-DeepL
 
 - **Still beta.** Hundreds of bugs fixed across the 2.x line, but the surface is big.
 - **World Info parity gaps:** no regex keys, and `sticky`/`delay`/`group` scoring is preserved on import but not acted on (round-tripped, not enforced). Case-sensitivity, whole-word matching, and all four `selective_logic` modes (`and_any`/`and_all`/`not_all`/`not_any`) are supported. Import handles the rest; a few advanced WI behaviors downgrade and are flagged by `/dle-lint`.
-- **Librarian needs a tool-calling provider.** Emma uses native tool calls; route her to Claude, Gemini, an OpenAI-compatible endpoint, or Cohere. Reasoner-only models can't drive the loop.
 - **Obsidian API keys stored plaintext** in ST's extension settings JSON (platform limitation). Use a dedicated lorebook vault, not your personal one.
 
 See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the complete list.
 
 ## Upgrading
 
-> **v2.5 note**: Custom Proxy connection mode for AI features (claude-code-proxy direct routing via ST's CORS bridge) was removed in v2.5. All AI features now use SillyTavern Connection Profiles. If you were using Custom Proxy, DLE will show a migration popup on first boot of v2.5 and automatically switch each affected feature (AI Search, Scribe, Auto Lorebook, AI Notepad, Librarian, Optimize Keys) to its corresponding Connection Profile. `enableCorsProxy: true` in ST's `config.yaml` is no longer required for DLE AI features (it remains required only for ST's own raw-URL AI requests if you use those, and for Obsidian vault fetching when using HTTPS with a self-signed cert).
+> **v2.5 note**: Custom Proxy connection mode for AI features (claude-code-proxy direct routing via ST's CORS bridge) was removed in v2.5. All AI features now use SillyTavern Connection Profiles. If you were using Custom Proxy, DLE will show a migration popup on first boot of v2.5 and automatically switch each affected feature (AI Search, Scribe, Auto Lorebook, AI Notepad, Optimize Keys) to its corresponding Connection Profile. `enableCorsProxy: true` in ST's `config.yaml` is no longer required for DLE AI features (it remains required only for ST's own raw-URL AI requests if you use those, and for Obsidian vault fetching when using HTTPS with a self-signed cert).
 
 If you had **DeepLore Enhanced** (the previous name of this extension), update in place; same repo. No reindex needed; 1.0-beta vaults work as-is.
 

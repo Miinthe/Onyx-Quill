@@ -148,7 +148,7 @@ export function initGraphSettings(gs, dbg) {
                 // Clamp so the titlebar stays within the canvas-wrap rect — the panel can never
                 // be dragged fully off-canvas into an unrecoverable state (f056).
                 const parentRect = settingsPanel.parentElement.getBoundingClientRect();
-                const panelW = settingsPanel.offsetWidth, panelH = settingsPanel.offsetHeight;
+                const panelW = settingsPanel.offsetWidth;
                 const minVisible = 48; // keep at least this much of the panel reachable on each axis
                 const maxLeft = parentRect.width - minVisible;
                 const maxTop = parentRect.height - minVisible;

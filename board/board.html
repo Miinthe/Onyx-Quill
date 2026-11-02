@@ -4250,7 +4250,7 @@ function openDialog() {
 }
 const FOLDERS = ['Ladder/', 'Plot/', 'World/', 'The Kitchen/', 'Sessions/', 'Characters/', 'Places/', 'Judge/', 'Instance {run}/'];
 // Miinthe's run letters: a run folder carries the letter in its name ("Instance B"); the board stores it as a pattern
-// and reads the current run's folder. Play-born entries it writes there get instance: + character:, like Emma's.
+// and reads the current run's folder. Play-born entries it writes there get instance: + character: stamps.
 const RUNS = { 'Claude test': 'B', 'branch test': 'A' };
 const runLetter = () => RUNS[chat] || RUNS[play?.prevChat] || 'A';
 const isRunFolder = f => /\{run\}/.test(f);

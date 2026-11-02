@@ -123,7 +123,6 @@ export function renderInjectionTab() {
     const currentVerdict = _currentVerdictForChat();
     const previousVerdict = getPreviousVerdict();
     const sources = currentVerdict?.injectedSources?.length ? currentVerdict.injectedSources : null;
-    const prev = previousVerdict?.injectedSources?.length ? previousVerdict.injectedSources : null;
     const trace = currentVerdict?.trace ?? null;
 
     // Content-hash guard — skip full re-render when inputs are unchanged. Hash inputs:

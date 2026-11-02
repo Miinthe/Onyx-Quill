@@ -32,7 +32,7 @@ Format: `#N — title`. Listed under the subsystem you'd most likely be editing 
 - #14 — Listener registration via `_registerEs`
 - #15 — `scribeInProgress` must NOT reset on CHAT_CHANGED
 - #16 — Build epoch zombie guard
-- #33 — `suppressNextAgenticLoop` reset placement
+- #33 — (removed with the Librarian)
 - #44 — `MESSAGE_SWIPE_DELETED` emits an object payload
 - #50 — `trackerKey` drift is a regression class (10 drifted sites)
 - #59 — Boot-path race guards (BOOT-MED-1/2/3)
@@ -45,34 +45,20 @@ Format: `#N — title`. Listed under the subsystem you'd most likely be editing 
 **AI subsystem & circuit breaker** (`src/ai/`)
 - #10 — AI circuit breaker (pure query vs mutation gate; 401/403/429 excluded)
 - #11 — Settings cache removed (BUG-088; `invalidateSettingsCache` is a no-op)
-- #12 — Connection mode independence (`librarianConnectionMode` separate)
+- #12 — Connection mode independence
 - #34 — `hierarchicalPreFilter` uses an independent breaker probe
 - #36 — Error cause chaining (`{ cause: err }`) + `_isDebug()` ST-free read
 - #37 — Clear Picks must reset all pipeline caches
 - #38 — All `.abort()` calls go through `abortWith`
-- #39 — Tool-calling gate is per-model, not just per-source
 - #40 — Claude detection must cover OpenRouter relays (`isUnderlyingClaude`)
 - #48 — Reuse-sync must honor partial-fetch flags (V-C1)
 - #68 — Custom Proxy connection mode dead-headed in v2.5 (migration v3→v4)
 
-**Librarian / agentic loop** (`src/librarian/`)
+**Guide entries**
 - #5 — Guide entry isolation (`getWriterVisibleEntries`)
-- #8 — No DLE intermediate messages
-- #21 — Agentic loop epoch guards (+ `_runFlagIteration`)
-- #22 — Agentic loop stale-lock keepalive (C9)
-- #23 — Agentic loop re-entrancy guard (C1)
-- #24 — Tool result batching (C4 — 4 provider formats)
-- #25 — Provider format handling (raw, not normalized)
-- #27 — `saveReply` does NOT save to disk (call `saveChatConditional`)
-- #28 — `CHARACTER_MESSAGE_RENDERED` cleans `message.mes` async after `saveReply`
-- #29 — `type` must be forwarded to `saveReply`
-- #30 — `onProse` in the agentic loop is async (must await)
-- #35 — `librarianPerMessageActivity` changes gap/dropdown lifecycle
-- #41 — Gemini multi-turn messages MUST be OpenAI shape
-- #43 — Every post-await branch in agentic dispatch re-checks epoch
-- #54 — `onProse` throw must not lose paid-for prose (CRIT-LIB-3)
-- #66 — `searchLoreAction` returns structured `{text, titles}` — don't regex `###`
-- #67 — Librarian HIGH-severity fixes (HL2/HL3/HL4/HL5)
+
+**Librarian / agentic loop** (`src/librarian/` — removed 2026-10-27; these numbers now hold only a "(removed with the Librarian)" note)
+- #8, #21, #22, #23, #24, #25, #27, #28, #29, #30, #35, #39, #41, #43, #54, #66, #67, #81, #104, #105
 
 **Vault, indexing & import** (`src/vault/`, `core/utils.js`)
 - #49 — Import dedup existence check must fail loud on network errors (V-C2)
@@ -133,9 +119,8 @@ if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
 
 | Scope | Reset trigger | Examples |
 |---|---|---|
-| Session | Page load only | `aiSearchStats`, `librarianSessionStats` |
-| Chat | `CHAT_CHANGED` | `cooldownTracker`, `decayTracker`, `consecutiveInjections`, `injectionHistory`, `generationCount`, `chatInjectionCounts`, `perSwipeInjectedKeys`, `librarianChatStats` |
-| Generation | Each `onGenerate` run | `loreGapSearchCount` (always reset in `onGenerate()` after lock acquisition, unconditional) |
+| Session | Page load only | `aiSearchStats` |
+| Chat | `CHAT_CHANGED` | `cooldownTracker`, `decayTracker`, `consecutiveInjections`, `injectionHistory`, `generationCount`, `chatInjectionCounts`, `perSwipeInjectedKeys` |
 
 **Why:** Resetting a session-scoped stat on chat change loses cross-chat totals. NOT resetting a chat-scoped tracker on chat change leaks stale data into the new chat.
 
@@ -155,7 +140,7 @@ if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
 
 **Rule:** `lorebook-guide` entries MUST NOT reach the writing AI through any path. Use `getWriterVisibleEntries()` instead of `vaultIndex` for anything the writing AI sees.
 
-**Safe to show in:** Drawer Browse tab, graph, diagnostics, Librarian's `get_writing_guide` tool.
+**Safe to show in:** Drawer Browse tab, graph, diagnostics.
 
 **Where:** `src/state.js: getWriterVisibleEntries()`. Called in `index.js: onGenerate()` at the vault snapshot step. If you add a new path that sends vault data to the AI, it MUST go through this filter.
 
@@ -165,7 +150,7 @@ if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) return;
 
 **Rule:** When `lastMsg.extra.tool_invocations` exists or `lastMsg.is_system`, skip the pipeline entirely.
 
-**Why:** Other extensions may use ST's ToolManager. ST re-calls Generate after each tool invocation. Lore from the original generation is still in context. Re-running the pipeline wastes tokens. DLE's own Librarian uses the agentic loop (not ToolManager), so DLE tool calls never trigger this guard.
+**Why:** Other extensions may use ST's ToolManager. ST re-calls Generate after each tool invocation. Lore from the original generation is still in context. Re-running the pipeline wastes tokens.
 
 **Where:** `index.js: onGenerate()` — tool-call continuation skip block (checks `lastMsg.extra.tool_invocations` / `lastMsg.is_system` on the final chat entry).
 
@@ -186,13 +171,9 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 8. No DLE Intermediate Messages
+## 8. (removed with the Librarian) No DLE Intermediate Messages
 
-**Rule:** The agentic loop produces NO intermediate messages in `chat[]`. It runs its own multi-turn conversation internally, then inserts a single clean message via `addOneMessage()`.
-
-**Why (historical):** The old ToolManager approach created `tool_invocation` system messages and intermediate assistant messages that needed post-hoc stripping. The agentic loop eliminates this entire class of bugs — no `stripDleSystemMessages`, no `_cleanupOrphanedDleIntermediates`, no GENERATION_ENDED consolidation.
-
-**Where:** `index.js: onGenerate()` agentic loop dispatch branch — the `onProse` callback invokes `saveReply` once after the loop completes (single `addOneMessage` via `saveReply`).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -238,9 +219,9 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ## 12. Connection Mode Independence
 
-**Rule:** Each AI feature has its own independent connection config. `librarianConnectionMode` MUST NOT share with retrieval (`aiSearchConnectionMode`).
+**Rule:** Each AI feature has its own independent connection config.
 
-**Why (user feedback):** The 6 AI feature blocks (AI Search, Scribe, Auto Lorebook, AI Notepad, Librarian, Optimize Keys) are intentionally independent. Don't "helpfully" collapse them. `inherit` mode falls back to `aiSearch` settings (not to each other).
+**Why (user feedback):** The AI feature blocks (AI Search, Scribe, Auto Lorebook, AI Notepad, Optimize Keys) are intentionally independent. Don't "helpfully" collapse them. `inherit` mode falls back to `aiSearch` settings (not to each other).
 
 **Where:** `settings.js` — `resolveConnectionConfig(toolKey)` dispatches per-tool. See also `feedback_dle_ai_channels.md` in memory.
 
@@ -330,55 +311,33 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 21. Agentic Loop Epoch Guards
+## 21. (removed with the Librarian) Agentic Loop Epoch Guards
 
-**Rule:** The agentic loop MUST check `epoch !== chatEpoch || lockEpoch !== generationLockEpoch` at the TOP of every iteration, before any API call or state mutation. Also check `signal.aborted`. The FLAG-phase helper `_runFlagIteration` mirrors this guard — it accepts `epoch` and `lockEpoch` parameters and re-checks them around its own awaits (before `callWithTools`, after `callWithTools`, around each `flagLoreAction` call, and after each `flagLoreAction` returns before pushing to `toolActivity`).
-
-**Why:** The agentic loop runs multiple iterations (up to 15) with awaits between each. A chat switch or stop-button press during any iteration must bail the loop immediately. Without this, a stale loop writes tool results and creates messages in the wrong chat.
-
-**`flagLoreAction` now self-guards (Phase 3, 2026-05-29).** `flagLoreAction(args, callerEpoch)` takes the loop's captured epoch and guards BOTH its `persistGaps` (chat_metadata stays clean) AND its activity/analytics side-effects (`recordSessionActivity` / `notifyLoreGapsChanged` / `updateAnalytics` / `incrementStats`) behind `if (epoch === chatEpoch)` — symmetric with `searchLoreAction`. The loop threads its captured `epoch` in as the 2nd arg; direct/test callers omit it and fall back to a fresh `chatEpoch` capture. `flagLoreAction` is **synchronous internally** (no `await` — `async` only by signature), so when called the world can't shift underneath it; the loop's remaining post-call epoch/lock guard therefore only blocks the `toolActivity` (drawer-dropdown) push, NOT the persist/stats (those are already self-guarded inside `flagLoreAction`). `AbortError` in `_runFlagIteration` is re-thrown (not swallowed) so the main loop's catch can surface it via the standard abort path.
-
-**Where:** `src/librarian/agentic-loop.js: runAgenticLoop()` — epoch + abort check at iteration start of the main `for` loop; inline-flag path threads `epoch` into `flagLoreAction(tc.input, epoch)`. `src/librarian/agentic-loop.js: _runFlagIteration()` — pre-call guard, post-`callWithTools` guard, mid-flag-loop guard, `flagLoreAction(tc.input, epoch)`, post-`flagLoreAction` guard (skips only `toolActivity.push` on epoch shift). `src/librarian/librarian-tools.js: flagLoreAction()` — the `epoch === chatEpoch` self-guards around persist (L625) and activity/analytics (L650). Tests: `test/regression.test.mjs` F5a–F5d (CRIT-LIB-1).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 22. Agentic Loop Stale-Lock Keepalive (C9)
+## 22. (removed with the Librarian) Agentic Loop Stale-Lock Keepalive (C9)
 
-**Rule:** Call `setGenerationLockTimestamp(Date.now())` before every `callWithTools()` call and before tool processing in the agentic loop.
-
-**Why:** The generation lock has a 30s stale detection (`lockAge > 30_000` in `onGenerate()`'s lock-acquisition block). The agentic loop can run for much longer than 30s (multiple search + API round trips). Without keepalive, the stale-lock detector force-releases the lock mid-loop, bumping `generationLockEpoch`. The loop's next epoch check sees a mismatch and bails, silently dropping the generation.
-
-**Where:** `src/librarian/agentic-loop.js: runAgenticLoop()` — `setGenerationLockTimestamp(Date.now())` is called twice per iteration (before `callWithTools()` and before tool processing). `src/state.js: setGenerationLockTimestamp()` (updates timestamp without toggling the lock).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 23. Agentic Loop Re-Entrancy Guard (C1)
+## 23. (removed with the Librarian) Agentic Loop Re-Entrancy Guard (C1)
 
-**Rule:** After `abort()`, immediately call `setSendButtonState(true)` + `deactivateSendButtons()`. Restore in `finally`.
-
-**Why:** `abort()` calls ST's `unblockGeneration()`, which re-enables the send button. Without the guard, the user can trigger a new generation while the agentic loop is still running, causing race conditions with `chat.push` and `addOneMessage`.
-
-**Where:** `index.js: onGenerate()` agentic-loop dispatch branch — `setSendButtonState(true)` + `deactivateSendButtons()` immediately after `abort()`; restored in the dispatch `finally` via `setSendButtonState(false)` + `activateSendButtons()`.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 24. Tool Result Batching (C4)
+## 24. (removed with the Librarian) Tool Result Batching (C4)
 
-**Rule:** When building tool result messages for the agentic loop, ALL tool results from one assistant turn MUST be batched into the format the provider expects. Claude requires all `tool_result` blocks in a single `user` message. OpenAI/Cohere uses separate `tool` role messages.
-
-**Why:** Claude returns an API error if tool results arrive as separate messages. Google expects `functionResponse` parts in a single `function` role message. Sending results in the wrong format causes a 400 error and breaks the loop.
-
-**Where:** `src/librarian/agentic-api.js` `buildToolResults()` — handles all 4 provider formats.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 25. Provider Format Handling
+## 25. (removed with the Librarian) Provider Format Handling
 
-**Rule:** The agentic loop must preserve provider-native message format for multi-turn conversations. `buildAssistantMessage()` returns the raw response structure (not normalized), and `buildToolResults()` uses the provider-specific format.
-
-**Why:** CMRS passes messages through to the provider API. If DLE normalizes assistant messages to OpenAI format but the provider is Claude, the next API call fails because Claude doesn't understand `tool_calls` in the OpenAI format — it expects `content[]` with `tool_use` blocks. Each provider has its own wire format for tool-calling conversations.
-
-**Where:** `src/librarian/agentic-api.js` — `buildAssistantMessage()`, `buildToolResults()`, `parseToolCalls()`, `getTextContent()` all handle 4 formats (Claude, Google, OpenAI-compatible, Cohere).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -392,45 +351,27 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 27. `saveReply` Does NOT Save to Disk
+## 27. (removed with the Librarian) `saveReply` Does NOT Save to Disk
 
-**Rule:** After calling `saveReply({ type, getMessage })`, you MUST call `saveChatConditional()` to persist the message to disk.
-
-**Why:** `saveReply` handles the message lifecycle (creating the message object, emitting events like `MESSAGE_RECEIVED` and `CHARACTER_MESSAGE_RENDERED`), but it does NOT write to disk. In the agentic loop, `abort()` prevents ST's post-generation save from running, so the message would be lost on reload without an explicit `saveChatConditional()` call.
-
-**Where:** `index.js` agentic loop dispatch (Phase 8b).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 28. `CHARACTER_MESSAGE_RENDERED` Cleans `message.mes` Asynchronously After `saveReply`
+## 28. (removed with the Librarian) `CHARACTER_MESSAGE_RENDERED` Cleans `message.mes` Asynchronously After `saveReply`
 
-**Rule:** Do NOT assume `message.mes` is clean immediately after `await saveReply(...)`. Cleaning happens in the CHARACTER_MESSAGE_RENDERED event handler (`index.js` — the AI Notebook fallback-extraction block inside the `CHARACTER_MESSAGE_RENDERED` handler), which fires asynchronously after saveReply resolves. Code that runs directly after `await saveReply(...)` may still see raw text with `<dle-notes>` tags.
-
-**Why:** `saveReply` creates the message and emits `CHARACTER_MESSAGE_RENDERED`. However, ST's event dispatch resolves asynchronously — DLE's handler (which sets `message.mes = cleanedMessage`) runs after the current continuation. Swipes are written from the raw text by saveReply itself; the handler updates only `message.mes` and the DOM, not swipe slots. The raw text with notes is therefore preserved in swipes and only the in-memory `message.mes` / DOM are cleaned.
-
-**Where:** `index.js` `CHARACTER_MESSAGE_RENDERED` handler (registered via `_registerEs`), agentic loop dispatch (Phase 8b).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 29. `type` Must Be Forwarded to `saveReply`
+## 29. (removed with the Librarian) `type` Must Be Forwarded to `saveReply`
 
-**Rule:** The `type` parameter from `onGenerate(chatMessages, contextSize, abort, type)` must be forwarded to `saveReply({ type })` for correct swipe and regen behavior.
-
-**Why:** `saveReply` uses `type` to determine whether to create a new message or update an existing swipe. Without forwarding, regens and swipes create duplicate messages instead of replacing the current swipe.
-
-**Guard:** `type !== 'continue' && type !== 'append' && type !== 'appendFinal'` — these types fall through to ST's generation (DLE does not handle continuation types in the agentic loop).
-
-**Where:** `index.js` agentic loop dispatch (Phase 8b).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 30. `onProse` in the Agentic Loop Is Async
+## 30. (removed with the Librarian) `onProse` in the Agentic Loop Is Async
 
-**Rule:** `onProse` in the agentic loop is async and MUST be awaited: `await onProse?.(prose)`.
-
-**Why:** `onProse` now calls `saveReply` + `saveChatConditional`, which are async operations. If not awaited, the FLAG phase starts before the message is fully created, events are processed, and data is saved to disk. This can cause race conditions where FLAG tool calls reference a message that doesn't exist yet.
-
-**Where:** `src/librarian/agentic-loop.js` (write tool handler → FLAG phase transition).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -438,7 +379,7 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 **Rule:** `/dle-review` MUST set `skipNextPipeline = true` before calling `Generate('normal')`. The flag is consumed at the top of `onGenerate` (after quiet check, before tool-call check) and provides a clean early return.
 
-**Why:** The vault review runs its own generation with a custom system prompt. If the DLE pipeline runs on that generation, it injects lore (wasting tokens and confusing the review AI) and potentially triggers the Librarian agentic loop (which would abort the review generation entirely and run its own loop instead).
+**Why:** The vault review runs its own generation with a custom system prompt. If the DLE pipeline runs on that generation, it injects lore (wasting tokens and confusing the review AI).
 
 **Where:** `src/ui/commands-ai.js` (`/dle-review` handler). `index.js` (consumption in `onGenerate` early guards). `src/state.js` (`skipNextPipeline` + setter).
 
@@ -454,13 +395,9 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 33. `suppressNextAgenticLoop` Reset Placement
+## 33. (removed with the Librarian) `suppressNextAgenticLoop` Reset Placement
 
-**Rule:** The `suppressNextAgenticLoop` flag MUST be reset in the `if (suppressNextAgenticLoop)` branch, BEFORE the `else if` agentic dispatch. Do NOT reset it in `finally`.
-
-**Why:** The flag is a one-shot consumed-on-use control. If reset in `finally`, it would be consumed regardless of whether the `if` branch ran. But more critically, if the flag is NOT reset in the `if` branch and is instead reset only in `finally`, there's a subtle ordering issue: the `else if` agentic dispatch block has its own `finally` (with `setSendButtonState(false)` + `activateSendButtons`). If the flag were reset after the agentic dispatch's `finally`, it would work — but placing it in onGenerate's outer `finally` means it runs AFTER the agentic loop's inner `finally`, which is correct timing but wrong semantics. The flag must be consumed at the decision point where it gates the behavior, not deferred.
-
-**Where:** `index.js` agentic dispatch section (Phase 8b). `src/state.js` (`suppressNextAgenticLoop` + setter).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -474,19 +411,15 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 35. `librarianPerMessageActivity` Changes Gap and Dropdown Lifecycle
+## 35. (removed with the Librarian) `librarianPerMessageActivity` Changes Gap and Dropdown Lifecycle
 
-**Rule:** Any code that reads `message.extra.deeplore_tool_calls` must account for whether `librarianPerMessageActivity` is ON or OFF. Its presence is NOT guaranteed.
-
-**Why:** When OFF (non-default — the default flipped false→true in v2.5 Wave E; persisted `false` is honored), `deeplore_tool_calls` is deleted from `message.extra` on every swipe (in `index.js` MESSAGE_SWIPED handler — per-message-activity-off branch). Librarian dropdowns are always ephemeral. Gaps accumulate across messages. When ON, tool calls and gap records persist per-message across swipes, and gaps are cleared at generation start instead. This setting changes the entire gap and dropdown lifecycle.
-
-**Where:** `index.js` MESSAGE_SWIPED handler (per-message-activity-off branch deletes `deeplore_tool_calls`), `index.js: onGenerate()` gap-clearing branch (`persistGaps([])` when per-message-activity is on). `src/state.js` (`librarianPerMessageActivity` read via `getSettings()`).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
 ## 36. Error Cause Chaining
 
-**Rule:** Re-throws in `ai.js`, `proxy-api.js`, `obsidian-api.js`, and `agentic-api.js` use `new Error(msg, { cause: err })` to preserve original stack traces. Always check `error.cause` when debugging wrapped errors from these modules.
+**Rule:** Re-throws in `ai.js`, `proxy-api.js`, and `obsidian-api.js` use `new Error(msg, { cause: err })` to preserve original stack traces. Always check `error.cause` when debugging wrapped errors from these modules.
 
 **`_isDebug()` in `stages.js`:** Reads `globalThis.extension_settings?.deeplore_enhanced?.debugMode` directly instead of importing `settings.js`. This preserves test isolation -- tests don't have ST globals, so `_isDebug()` returns `false` by default without requiring a mock settings module.
 
@@ -510,47 +443,29 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 **`onExternalAbort` listeners** must propagate the upstream reason: `() => abortWith(localController, externalSignal.reason?.message || 'fallback_label')`. Stamping a generic reason on the local controller hides which upstream source fired.
 
-**Where:** Every file that creates an `AbortController`. AI / diagnostic / vault sites (attribution load-bearing): `src/ai/ai.js`, `src/ai/proxy-api.js`, `src/librarian/agentic-api.js`, `src/librarian/librarian-review.js`, `src/vault/obsidian-api.js`, `src/vault/scanner.js`, `index.js` (pipeline `pipelineAbort`), and `src/ui/commands-ai.js` (`/dle-summarize-range` `summarizeAbort` — added with the L-16 fix; routes through `abortWith`, gotcha #90). `scribe.js` / `auto-suggest.js` use `generateQuietPrompt` (no abort). DOM-interaction controllers (`src/graph/graph.js` pointer/drag listeners, `src/ui/vault-scan-popup.js`, `src/ui/settings-ui.js`) carry no diagnostic attribution, so a bare `.abort()` there is acceptable — but the rule above is absolute for any AI/network/diagnostic controller.
+**Where:** Every file that creates an `AbortController`. AI / diagnostic / vault sites (attribution load-bearing): `src/ai/ai.js`, `src/ai/proxy-api.js`, `src/vault/obsidian-api.js`, `src/vault/scanner.js`, `index.js` (pipeline `pipelineAbort`), and `src/ui/commands-ai.js` (`/dle-summarize-range` `summarizeAbort` — added with the L-16 fix; routes through `abortWith`, gotcha #90). `scribe.js` / `auto-suggest.js` use `generateQuietPrompt` (no abort). DOM-interaction controllers (`src/graph/graph.js` pointer/drag listeners, `src/ui/vault-scan-popup.js`, `src/ui/settings-ui.js`) carry no diagnostic attribution, so a bare `.abort()` there is acceptable — but the rule above is absolute for any AI/network/diagnostic controller.
 
 ---
 
-## 39. Tool-Calling Gate Is Per-Model, Not Just Per-Source
+## 39. (removed with the Librarian) Tool-Calling Gate Is Per-Model, Not Just Per-Source
 
-**Rule:** `isToolCallingSupported()` MUST check the resolved model against `NO_TOOLS_MODELS` regex set, not just the chat-completion source against `NO_TOOLS_SOURCES`.
-
-**Why:** Reasoning-only models (`deepseek-reasoner`, OpenAI `o1`/`o3`/`o4`, OpenRouter `*-r1` relays) belong to sources that DO support tool calling for their non-reasoning siblings. ST has no per-model tool gate (verified against staging `tool-calling.js`, 2026-04-24). Without the per-model check, DLE dispatches Librarian against a reasoner, the API returns no tool_calls, the loop exits with `exitReason='no_tools'`, and the model's reasoning narrative leaks into the assistant message as if it were prose. Silent failure.
-
-**Where:** `src/librarian/agentic-api.js` — `NO_TOOLS_MODELS` regex set, `isReasoningOnlyModel(model)` predicate, `isToolCallingSupported(model?)` checks both.
-
-**Also:** `getTextContent()` strips `<think>...</think>` blocks defensively. Thinking-capable but tool-supporting models (Claude 3.7+, deepseek-chat with thinking on, GLM-4.6) emit `<think>` tags around reasoning even when caller wants only the final reply. ST's `removeReasoningFromString` is gated on `power_user.reasoning.auto_parse` so cannot be relied upon.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
 ## 40. Claude Detection Must Cover OpenRouter Relays
 
-**Rule:** Code that gates Claude-specific REQUEST mitigations (thinking-vs-tool_choice 400 sidestep, `json_schema` skip) MUST use `isUnderlyingClaude(model)` — not `getProviderFormat() === 'claude'` and not bare `/^claude-/i.test(model)`.
+**Rule:** Code that gates Claude-specific REQUEST mitigations (thinking-vs-tool_choice 400 sidestep, `json_schema` skip) MUST use `isUnderlyingClaude(model)` — not a source-only check and not bare `/^claude-/i.test(model)`.
 
-**Why:** OpenRouter's source string is `'openrouter'`, so `getProviderFormat()` returns `'openai'` even for `anthropic/claude-*` models. OpenRouter forwards `reasoning.effort` to Anthropic upstream, so the same 400 ("Thinking may not be enabled when tool_choice forces tool use") fires for OR-Claude users. Json_schema also leaks because the bare regex `/^claude-/i` does not match `anthropic/claude-3.5-sonnet`.
+**Why:** OpenRouter's source string is `'openrouter'`, so a source-only check misses `anthropic/claude-*` models. OpenRouter forwards `reasoning.effort` to Anthropic upstream, so the same 400 ("Thinking may not be enabled when tool_choice forces tool use") fires for OR-Claude users. Json_schema also leaks because the bare regex `/^claude-/i` does not match `anthropic/claude-3.5-sonnet`.
 
-**Where:** `src/librarian/agentic-api.js: callWithTools()` (`reasoning_effort` override fires for `format === 'claude' || isUnderlyingClaude()`); `src/ai/ai.js: callViaProfile()` (`isClaudeModel = isUnderlyingClaude(effectiveModel)`).
-
-**Do NOT change `getProviderFormat()` itself** — parsing must stay OpenAI-shape for OR responses, regardless of what the underlying model is. The two helpers answer different questions: format = "how do I parse the response", underlying-claude = "what backend will run this".
+**Where:** `src/ai/claude-model-pure.js: isUnderlyingClaudeModel()` (moved here from the removed `src/librarian/`); `src/ai/ai.js: callViaProfile()` (`isClaudeModel = isUnderlyingClaude(effectiveModel)`); `index.js` `anthropic-only` response prefill.
 
 ---
 
-## 41. Gemini Multi-Turn Messages MUST Be OpenAI Shape
+## 41. (removed with the Librarian) Gemini Multi-Turn Messages MUST Be OpenAI Shape
 
-**Rule:** `buildAssistantMessage()` and `buildToolResults()` MUST emit OpenAI-shape messages for `format === 'google'` profile mode. Native Gemini shape (`{role:'model', parts:[]}`, `{role:'function', parts:[]}`) is silently dropped.
-
-**Why:** ST's `convertGooglePrompt()` (in `src/prompt-converters.js`) only reads `message.content` from input messages — it ignores any pre-existing `parts` array. Verified against ST staging branch 2026-04-24. If DLE pushes a `{role:'model', parts:[functionCall]}` assistant message back into the conversation, `convertGooglePrompt` sees `message.content === undefined` and emits `{role:'model', content:[{type:'text', text:''}]}`, then converts to `parts:[{text:''}]`. The tool_use round-trip is lost. Every assistant turn after the first becomes empty text. Multi-turn Librarian on Gemini is broken without this fix.
-
-**Round-trip contract:** `parseToolCalls()` stamps a synthetic id (`gemini-{timestamp}-{rand}`) onto the raw `responseContent.parts[i]` via `_dleSyntheticId`. `buildAssistantMessage()` reads it back when constructing OpenAI-shape `tool_calls[].id`. `buildToolResults()` emits `tool_call_id` matching that id. ST's `convertGooglePrompt` builds its own `toolNameMap` from the assistant turn's `tool_calls` and resolves the function name when emitting the next `functionResponse`. If the id mapping breaks, `toolNameMap[id] === 'unknown'` and Gemini sees `functionResponse.name = 'unknown'`.
-
-**Where:** `src/librarian/agentic-api.js` — `parseToolCalls` (id stamp), `buildAssistantMessage` (OpenAI-shape emit for google), `buildToolResults` (OpenAI-shape emit for google).
-
-**Also:** `getTextContent()` filters `p.thought !== true` for google — Gemini 2.5/3 emit reasoning as `parts[].thought=true` which would otherwise leak into prose.
-
-**Also:** `callWithTools()` wraps `sendRequest` in try/catch and re-throws Gemini-specific errors (`/blocked|SAFETY|RECITATION|promptFeedback|Candidate text empty/i`) as `SafetyBlockError` so callers can surface user-actionable guidance instead of generic "Generation failed".
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -558,7 +473,7 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 **Rule:** When `inSteppedThinking` is true, `onGenerate()` MUST early-return BEFORE any pipeline work. The flag is set/cleared by listeners on the literal-string events `'GENERATION_MUTEX_CAPTURED'` and `'GENERATION_MUTEX_RELEASED'` (custom events from `cierru/st-stepped-thinking/interconnection.js`, not in ST's `event_types`).
 
-**Why:** Stepped Thinking calls `Generate('normal', { force_chid })` for each thought-chain step. ST's interceptor system fires `deepLoreEnhanced_onGenerate` for those passes too — `type === 'normal'`, indistinguishable from a user turn. Without the gate: every thinking step re-runs vault search + AI scoring + Librarian dispatch, multiplying cost N× and corrupting both Stepped Thinking's output (Librarian eats it) and DLE's per-chat counters/cooldowns. Verified upstream `Generate('normal', { force_chid })` in `cierru/st-stepped-thinking/thinking/engine.js`, payload `{extension_name: 'stepped-thinking'}` in `interconnection.js` (2026-04-24).
+**Why:** Stepped Thinking calls `Generate('normal', { force_chid })` for each thought-chain step. ST's interceptor system fires `deepLoreEnhanced_onGenerate` for those passes too — `type === 'normal'`, indistinguishable from a user turn. Without the gate: every thinking step re-runs vault search + AI scoring, multiplying cost N× and corrupting DLE's per-chat counters/cooldowns. Verified upstream `Generate('normal', { force_chid })` in `cierru/st-stepped-thinking/thinking/engine.js`, payload `{extension_name: 'stepped-thinking'}` in `interconnection.js` (2026-04-24).
 
 **Where:** `index.js` — module-scope `inSteppedThinking` flag + `_steppedThinkingTimeout`; `_registerEs('GENERATION_MUTEX_CAPTURED', ...)` and `_registerEs('GENERATION_MUTEX_RELEASED', ...)` listeners; `onGenerate()` early-return after the `type === 'quiet'` guard but before `skipNextPipeline` check.
 
@@ -568,15 +483,9 @@ if (lockEpoch === generationLockEpoch) setGenerationLock(false);
 
 ---
 
-## 43. Every Post-Await Branch in the Agentic Dispatch Re-Checks Epoch
+## 43. (removed with the Librarian) Every Post-Await Branch in the Agentic Dispatch Re-Checks Epoch
 
-**Rule:** EVERY async branch in the Librarian agentic dispatch must re-check both `chatEpoch` and `generationLockEpoch` after each await. This applies to all THREE branches: (a) the `onProse` callback (in-loop save), (b) the post-loop `if (proseMsg)` normal path that attaches `tool_calls` and may inject the dropdown, (c) the post-loop `else if (result.prose)` fallback path that handles "AI returned prose without calling write() tool". At minimum check after `saveReply()` and after `saveChatConditional()`. If the epoch changed during the await, bail (set `proseMsg = null` in `onProse`; plain `return` in the post-loop branches).
-
-**Why:** `saveReply` awaits `MESSAGE_RECEIVED` and `CHARACTER_MESSAGE_RENDERED` handlers; either can yield long enough for the user to switch chats. Without a recheck, `chat[chat.length - 1]` is captured on the *new* active chat, then `saveChatConditional()` persists the captured ref into a chat that the user never asked to write to. The post-loop recheck at the outer try/catch isn't enough on its own — it stops further mutation but doesn't prevent a trailing `saveChatConditional()` (or `injectLibrarianDropdown`) from running on the wrong chat.
-
-Branch-specific risks: the `proseMsg` branch (b) is partially-safe because `proseMsg` itself is a direct reference captured against the correct old chat, so the `extra.deeplore_tool_calls = ...` write is safe across a CHAT_CHANGED. BUT the subsequent `injectLibrarianDropdown(chat.length - 1, ...)` uses a `chat.length` lookup that resolves against the NEW active chat — leaking a dropdown into the wrong chat's DOM. The recheck between `await saveChatConditional()` and `injectLibrarianDropdown` covers this (F6 fix, 2026-05-22). The fallback branch (c) is more dangerous because it bypasses `onProse` entirely — its `chat[chat.length - 1]` resolution and the dropdown injection both target the new chat (F3 fix, 2026-05-22). Every new await added to this dispatch needs another guard; do not inherit guards from neighboring blocks.
-
-**Where:** `index.js` — Librarian dispatch block: `onProse` callback (in-loop saves), the post-loop `if (proseMsg)` normal path (post-`saveChatConditional` recheck before `injectLibrarianDropdown`), and the post-loop `else if (result.prose)` fallback branch (rechecks after both `saveReply` and `saveChatConditional`). Tests: `test/regression.test.mjs` F3a–F3c (fallback branch) and F6a–F6c (proseMsg branch).
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -622,11 +531,11 @@ Branch-specific risks: the `proseMsg` branch (b) is partially-safe because `pros
 
 **Consumer contract for historical lookups (Wave B audit fix, 2026-05-22):** UI surfaces that inspect a SPECIFIC message (the per-message "Why?" button, cartographer popup opened on an older message, anything reading `message.extra.deeplore_sources` after page reload) MUST thread the message's `msgIdx` (= `chat.length` at gen start = the rendered message's `mesid`) through to the verdict-store API. Resolve via `getByMessageSync(msgIdx, chatId)` for the message's verdict and `getPreviousForMessage(msgIdx, chatId)` for its predecessor — never compare a bare `injectedSources` array against `getCurrent()` / `getPrevious()`, which would invert the diff direction (added/removed swap) whenever the inspected message isn't the live newest one. Also: prefer `getCurrentForChat(chatId)` over the ring-global `getCurrent()` so a stale verdict from another chat in the ring can't pollute the popup. Bug history: cartographer used a conditional fallback `(_currentVerdict?.injectedSources === sources) ? diff(current, prev) : diff({injectedSources: sources}, current)` — the else branch's `(current, previous)` were semantically swapped. Regression guard: `VRD-9` / `VRD-9b` in `test/regression.test.mjs`.
 
-**UI consumer rule (Verdict-audit M4, 2026-05-22):** Every UI render path, slash-command handler, drawer event handler, and tool runtime that reads "the current verdict" MUST resolve it as `getCurrentForChat(getCurrentChatId())`, never bare `getCurrent()`. `getCurrent()` is ring-global — returns the newest verdict for ANY chat in the ring, which leaks a stale verdict from a prior chat for ~50ms after CHAT_CHANGED (between `clearRing()` firing and `hydrateChat()` resolving). The chat-scoped variant correctly returns `null` during that window so the drawer / cartographer / `/dle-inspect` show "no verdict yet" instead of flickering the prior chat's data. Each migrated file defines a local `_currentVerdictForChat()` helper that swallows `getCurrentChatId()` throws (`try/catch → null`) — important during boot before ST internals are wired. The verdict-store API itself honors `getCurrentForChat(null)` → falls through to `getCurrent()` as a boot-window safety net. **Exempt paths (intentional bare `getCurrent`):** verdict-store internal definition; `src/diagnostics/flight-recorder.js` (captures pipeline-complete events where "newest write" IS what just completed). Migrated UI surfaces: `src/drawer/{drawer,drawer-render-tabs,drawer-render-footer,drawer-render-status,drawer-events}.js`, `src/ui/{cartographer,commands-pipeline,diagnostics}.js`, `src/librarian/librarian-tools.js`, `src/diagnostics/state-snapshot.js`. Regression guards: `VRD-13` (lint-style: no bare `getCurrent(` allowed in `src/drawer/`, `src/ui/`, `src/librarian/`, `src/diagnostics/state-snapshot.js`), `VRD-13b` (null-chatId fallback), `VRD-13c` (cross-chat flicker scenario) in `test/regression.test.mjs`.
+**UI consumer rule (Verdict-audit M4, 2026-05-22):** Every UI render path, slash-command handler, drawer event handler, and tool runtime that reads "the current verdict" MUST resolve it as `getCurrentForChat(getCurrentChatId())`, never bare `getCurrent()`. `getCurrent()` is ring-global — returns the newest verdict for ANY chat in the ring, which leaks a stale verdict from a prior chat for ~50ms after CHAT_CHANGED (between `clearRing()` firing and `hydrateChat()` resolving). The chat-scoped variant correctly returns `null` during that window so the drawer / cartographer / `/dle-inspect` show "no verdict yet" instead of flickering the prior chat's data. Each migrated file defines a local `_currentVerdictForChat()` helper that swallows `getCurrentChatId()` throws (`try/catch → null`) — important during boot before ST internals are wired. The verdict-store API itself honors `getCurrentForChat(null)` → falls through to `getCurrent()` as a boot-window safety net. **Exempt paths (intentional bare `getCurrent`):** verdict-store internal definition; `src/diagnostics/flight-recorder.js` (captures pipeline-complete events where "newest write" IS what just completed). Migrated UI surfaces: `src/drawer/{drawer,drawer-render-tabs,drawer-render-footer,drawer-render-status,drawer-events}.js`, `src/ui/{cartographer,commands-pipeline,diagnostics}.js`, `src/diagnostics/state-snapshot.js`. Regression guards: `VRD-13` (lint-style: no bare `getCurrent(` allowed in `src/drawer/`, `src/ui/`, `src/diagnostics/state-snapshot.js`), `VRD-13b` (null-chatId fallback), `VRD-13c` (cross-chat flicker scenario) in `test/regression.test.mjs`.
 
 **Hydrate/write race (F2 fix, 2026-05-22):** `hydrateChat(chatId)` MUST NOT clobber verdicts that arrived in the ring while it was awaiting IDB. CHAT_CHANGED dispatches `clearRing() + setCurrentChatId(new) + hydrateChat(new)` (async); if the user triggers Generate before hydration resolves, `onGenerate` calls `writeVerdict` synchronously and the fresh verdict lands in the ring. The pre-fix code did `ring = ring.filter(v => v.chatId !== chatId); ring.push(...slice)` — which deleted the fresh write, so `getCurrent` / `getCurrentForChat` / `getByMessageSync` all lost that turn's verdict. Fix (Option A — merge instead of replace): preserve any ring entry for this chat whose `ts` is newer than the freshest hydrated `ts` and re-append at the tail. Ordering after merge: other chats unchanged → chronological hydrated slice → preserved-fresh at tail (so backward scans find the live verdict first). Regression guard: `VRD-9c` in `test/regression.test.mjs`. **Hydrate-vs-hydrate race (M-4, gotcha #90):** F2 only covers write-vs-hydrate. A second axis — rapid A→B→C `CHAT_CHANGED` — could let `hydrateChat(B)` resolve AFTER `hydrateChat(C)` and write a left-behind chat's rows into the ring (possibly evicting the live chat under `RING_CAP`). `hydrateChat` now stamps a module `hydrationEpoch = ++hydrationEpoch` at entry and bails (`if (myEpoch !== hydrationEpoch) return 0`) after the `await listIdbForChat`, so only the newest hydration applies.
 
-**Where:** `src/verdict/verdict-store.js` (live, exports `getCurrent` / `getCurrentForChat` / `getPrevious` / `getPreviousForMessage` / `getByMessageSync`; the async `getByMessage` and ring+IDB `clearChat` were removed Phase 3), `src/verdict/verdict-pure.js` (testable helpers), `src/vault/cache.js` (shared IDB `DeepLoreEnhanced` schema v2). Consumer call sites: drawer (`drawer-render-tabs.js` / `-status.js` / `-footer.js` / `drawer.js` / `drawer-events.js`), `src/ui/cartographer.js`, `src/ui/commands-pipeline.js` (`/dle-inspect`), `src/ui/diagnostics.js`, `src/librarian/librarian-tools.js`, `src/diagnostics/flight-recorder.js`, `src/diagnostics/state-snapshot.js`. Tests: `test/verdict.test.mjs` (70 pure-helper), regression VRD-1..VRD-9c + VRD-13/13b/13c.
+**Where:** `src/verdict/verdict-store.js` (live, exports `getCurrent` / `getCurrentForChat` / `getPrevious` / `getPreviousForMessage` / `getByMessageSync`; the async `getByMessage` and ring+IDB `clearChat` were removed Phase 3), `src/verdict/verdict-pure.js` (testable helpers), `src/vault/cache.js` (shared IDB `DeepLoreEnhanced` schema v2). Consumer call sites: drawer (`drawer-render-tabs.js` / `-status.js` / `-footer.js` / `drawer.js` / `drawer-events.js`), `src/ui/cartographer.js`, `src/ui/commands-pipeline.js` (`/dle-inspect`), `src/ui/diagnostics.js`, `src/diagnostics/flight-recorder.js`, `src/diagnostics/state-snapshot.js`. Tests: `test/verdict.test.mjs` (70 pure-helper), regression VRD-1..VRD-9c + VRD-13/13b/13c.
 
 ---
 
@@ -715,13 +624,13 @@ Branch-specific risks: the `proseMsg` branch (b) is partially-safe because `pros
 
 ## 50. `trackerKey` Drift — Bare Title Fallbacks Are a Regression Class
 
-**Rule:** EVERY Map/Set keyed by entry identity in any pipeline, drawer, librarian, or ai-search code path MUST use `trackerKey(entry) = ${vaultSource || ''}:${title}` (or the lowercase-tail variant `${vaultSource || ''}:${title.toLowerCase()}` for case-insensitive lookups). Bare `entry.title` keys silently collapse same-titled cross-vault entries into one slot. Any `<entry>.title` in pipeline trace objects (`keywordMatched`, `aiSelected`, `cooldownRemoved`, `contextualGatingRemoved`, `gatedOut`, `stripDedupRemoved`, `budgetCut`, `refineKeyBlocked`, `probabilitySkipped`, `warmupFailed`, **`injected`**) MUST carry `vaultSource` so downstream perEntry aggregation honors the invariant.
+**Rule:** EVERY Map/Set keyed by entry identity in any pipeline, drawer, or ai-search code path MUST use `trackerKey(entry) = ${vaultSource || ''}:${title}` (or the lowercase-tail variant `${vaultSource || ''}:${title.toLowerCase()}` for case-insensitive lookups). Bare `entry.title` keys silently collapse same-titled cross-vault entries into one slot. Any `<entry>.title` in pipeline trace objects (`keywordMatched`, `aiSelected`, `cooldownRemoved`, `contextualGatingRemoved`, `gatedOut`, `stripDedupRemoved`, `budgetCut`, `refineKeyBlocked`, `probabilitySkipped`, `warmupFailed`, **`injected`**) MUST carry `vaultSource` so downstream perEntry aggregation honors the invariant.
 
 **Why (BUG-AUDIT v2.5 cross-cutting fix, 2026-05-22):** This is the highest-conviction systemic bug class in the v2.5 audit. The contract in CLAUDE.md ("ALWAYS use `trackerKey` for Map keys; bare titles collide") has been re-stated multiple times, yet drifted across at least 10 sites in 6 modules. Each new feature reintroduced the bare-title pattern because the local code "just needed a quick title lookup." The fix below patched every known site; this entry exists to catch the next regression at code-review time.
 
 **Ten sites that drifted (all fixed in this wave — see tests `MV-1..MV-11`):**
 1. `src/drawer/drawer-render-tabs.js` — `injectedSet.add(s.title.toLowerCase())` collapsed Alice@vault-a + Alice@vault-b (Browse tab + virtual-scroll window). Now uses `${vaultSource || ''}:${title.toLowerCase()}`.
-2. `src/librarian/librarian-tools.js` — `searchLore()` dedup `injectedTitles` set was bare-title; vault-B's "Alice" was suppressed when vault-A's "Alice" was injected.
+2. `src/librarian/librarian-tools.js` — (removed with the Librarian)
 3. `index.js` `trace.injected` lacked `vaultSource` — fallback chain on drawer (when injectedSources is empty but trace.injected isn't) lost the disambiguator.
 4. `src/stages.js: applyStripDedup` + `index.js` log writer — strip-dedup key omitted `vaultSource`. A Castle@A injected last turn falsely suppressed Castle@B this turn.
 5. `src/pipeline/match.js` — `titleMap = new Map(entries.map(e => [e.title.toLowerCase(), e]))` was last-vault-wins for cascade_links + characterContextScan. Now uses `Map<title, Entry[]>` and unions across vaults.
@@ -740,7 +649,7 @@ Branch-specific risks: the `proseMsg` branch (b) is partially-safe because `pros
 
 **Backward compatibility:** Single-vault setups have `vaultSource === '' || undefined` everywhere. The key `:title` matches itself and does NOT collide with `MyVault:title`. Legacy `deeplore_injection_log` rows written before this fix (no `vaultSource`) compare as `:title` — they still match new entries from single-vault setups, but will NOT match entries from a named vault. This is intentional: a vault rename or re-import should NOT trigger phantom dedup against pre-rename injections.
 
-**Where (regression guards):** `test/regression.test.mjs` `MV-1..MV-11` cover every site listed above. `test/vault.test.mjs` covers the broader multi-vault dedup contract. Any new code touching pipeline trace, drawer state, librarian dedup, or ai-search match resolution MUST add a corresponding `MV-N` guard before landing.
+**Where (regression guards):** `test/regression.test.mjs` `MV-1..MV-11` cover every site listed above. `test/vault.test.mjs` covers the broader multi-vault dedup contract. Any new code touching pipeline trace, drawer state, or ai-search match resolution MUST add a corresponding `MV-N` guard before landing.
 
 **#50 addendum (L13, 2026-05-29 — destructive-delete asymmetry fixed):** `applyRequiresExcludesGating` (`src/stages.js`) tracks active titles as a **refcount `Map<titleLower, count>`**, not a plain `Set`. Before, gating out one of two same-titled cross-vault entries called `activeTitles.delete(title)` and purged the title entirely — so a third entry's bare `requires:[Title]` wrongly failed even though the twin survived. The refcount decrements on drop and only deletes the title at count 0; the membership check stays a bare-title lookup, so item 7's permissive cross-vault semantics (any vault's "Castle" satisfies a bare `requires:[Castle]`) are unchanged. Titles are intentionally NOT vault-scoped — that would break item 7 and the MV-7 test. Regression test J1 in `test/stages.test.mjs` pins the fix. **(#24, 2026-07-01):** the legacy `applyGating` copy in `core/matching.js` — which had ZERO production callers and required this same fix to be hand-applied twice — was DELETED. `applyRequiresExcludesGating` is now the single source of truth for the requires/excludes fixpoint; tests call it with an empty exemption policy.
 
@@ -791,32 +700,15 @@ Branch-specific risks: the `proseMsg` branch (b) is partially-safe because `pros
 
 ---
 
-## 66. `searchLoreAction` Returns Structured `{text, titles}` — NEVER Regex `### ...` Out Of The Text
+## 66. (removed with the Librarian) `searchLoreAction` Returns Structured `{text, titles}` — NEVER Regex `### ...` Out Of The Text
 
-**Rule:** `searchLoreAction()` in `src/librarian/librarian-tools.js` returns `{ text: string, titles: string[] }` (with `toString()` / `Symbol.toPrimitive` back-compat coercion to `text`). Callers that need the authoritative matched-entry list MUST read `.titles` directly. Do NOT regex-extract `### (.+)` headings from `.text` — vault content is freeform Markdown, and entries routinely have their own `### Section`, `### Stats`, `### Background` subheadings. Regex-parsing inflates counts and pollutes the Activity dropdown with section names that don't exist as entries.
-
-**Why (CRIT-LIB-2, 2026-05-22):** The pre-fix agentic-loop did `[...searchResult.matchAll(/^### (.+)$/gm)].map(m => m[1])`, then `.filter(t => t !== 'Related entries:')`. Two problems: (a) every `### Section` inside vault content was falsely added as a "result title", causing the librarian Activity dropdown to claim 4-5 matches when only 1 entry was actually surfaced; (b) the literal-string filter `!== 'Related entries:'` broke under any locale change — translated `### Verwandte Einträge:` / `### 関連エントリ:` headings sailed straight into the title list. Both vanish under the structured return: `.titles` is built from `bestHit.title + linked.map(le => le.title)` in `searchLoreAction`, locale-agnostic and section-heading-immune by construction.
-
-**Defensive coercion:** Callers should still tolerate a legacy bare-string return (`typeof r === 'string' ? r : r?.text ?? ''` for text, `Array.isArray(r?.titles) ? r.titles : []` for titles). Belt-and-suspenders against future regressions.
-
-**Where:** `src/librarian/librarian-tools.js` (`_searchResult` helper + every return in `searchLoreAction`). Consumer: `src/librarian/agentic-loop.js` `case 'search'` block. Regression tests: `LIB-2a..LIB-2e` in `test/regression.test.mjs`.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 54. `onProse` Throw Must Not Lose Paid-For Prose
+## 54. (removed with the Librarian) `onProse` Throw Must Not Lose Paid-For Prose
 
-**Rule:** Inside the agentic loop's `case 'write'` block, `await onProse?.(prose)` MUST be wrapped in a try/catch. On failure, the loop returns `{ prose, toolActivity, usage }` immediately with `prose` populated — never let the throw propagate to index.js's outer catch, which would (a) skip the fallback save branch because `proseMsg` was not yet captured, and (b) surface a generic "Generation failed — try again or disable Librarian" toast over an LLM response the user already paid for.
-
-**Why (CRIT-LIB-3, 2026-05-22):** In the pre-fix code, if `await saveReply()` or `await saveChatConditional()` inside the `onProse` callback threw (disk full, IDB locked, ST internal error, transient race), the throw propagated up through `runAgenticLoop`, into the index.js try/catch at L1281. In that catch, `proseMsg` is null because its assignment (L1199) happens AFTER the failing await. The path then fell through to the generic `dedupError('Generation failed — try again or disable Librarian.')`, telling the user to retry — but the LLM had already generated valid prose and consumed tokens. The prose was lost behind a misleading error.
-
-**Fix design — preserve prose via either dispatch branch:**
-- The wrapping try/catch keeps `prose` and `writeDone` set, then `return { prose, toolActivity, usage }` from inside the iteration.
-- If onProse failed BEFORE `proseMsg` was captured (saveReply threw): `proseMsg` is null in index.js → the `else if (result.prose)` fallback branch runs `saveReply()` itself. Fallback branch is already F3-hardened with epoch guards.
-- If onProse failed AFTER `proseMsg` was captured (saveChatConditional threw mid-await): `proseMsg` is set in index.js → the `if (proseMsg)` primary branch runs, retries `saveChatConditional()`, with F6 epoch guard between save and dropdown injection.
-
-Either way, the user's prose lands in chat and tool_calls get attached. The pushEvent log records `onProse_error` with the failing error message so diagnostics still surfaces the underlying issue.
-
-**Where:** `src/librarian/agentic-loop.js` — `case 'write'` block, the `try { await onProse(prose); } catch { ... return {...} }` wrapper. The two consumer branches at `index.js: 1239` (`if (proseMsg)`) and `index.js: 1256` (`else if (result.prose)`) already exist; this fix routes prose to whichever branch the onProse partial state dictates. Regression tests: `LIB-3a..LIB-3e` in `test/regression.test.mjs`.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -881,19 +773,9 @@ Either way, the user's prose lands in chat and tool_calls get attached. The push
 
 ---
 
-## 67. Librarian HIGH-Severity Fixes (HL2/HL3/HL4/HL5)
+## 67. (removed with the Librarian) Librarian HIGH-Severity Fixes (HL2/HL3/HL4/HL5)
 
-Four independent invariants surfaced by the v2.5 Librarian audit (2026-05-22). Each has a sharp failure mode if violated. Tests pin them as `HL2/HL3/HL4/HL5` in `test/regression.test.mjs`.
-
-**HL2 — Scrub-before-truncate for error shaping (`src/librarian/agentic-api.js`).** When sanitizing API error response bodies before re-throwing as `Error.message`, scrub secrets FIRST, slice SECOND. The pre-fix order (`text.substring(0, 200).replace(...)`) cut tokens below the regex's `{10,}` minimum when they began in the last ~15 chars of the 200-char window — the regex missed and a partial bearer/sk-* leaked into the thrown error. Real Anthropic 401/403 bodies quote the offending header. Generalize: any new error-shaping helper that does replace + truncate must scrub first.
-
-**HL3 — Synthetic ids live in a module WeakMap, not on the raw response (`src/librarian/agentic-api.js`).** `parseToolCalls` used to stamp `p._dleSyntheticId = id` onto Google Gemini `responseContent.parts[i]`. That (a) made `parseToolCalls` non-pure despite its name, (b) crashes under strict mode if ST ever freezes responses, (c) leaks stamped ids into diagnostic re-serialization paths. The fix lifts assignment into `_ensureSyntheticIds(data)` → `Map<part, id>`, stored in a module-level `WeakMap` (`_syntheticIds`). `buildAssistantMessage` reads via `_getSyntheticId(part)`. Both consumers see the same id without touching raw data. WeakMap keying by part-object reference is safe because parts are only GC'd when the whole response object is.
-
-**HL4 — Snapshot+restore `extension_prompts` around the agentic dispatch clear (`index.js`).** Per gotcha #2, `clearPrompts` MUST NOT fire without verified replacement. The agentic dispatch clears DLE entries from `extension_prompts` (and PM aux contents) BEFORE `runAgenticLoop` so the agentic system prompt doesn't duplicate them. If the loop throws synchronously (no profile, Gemini safety block on the first call, etc.) the catch never re-populates them. Self-heals next turn, but any same-turn observer (other extension hooked into post-generation events) sees no lore. The fix snapshots DLE-prefixed `extension_prompts` + `deeplore_notebook` + `deeplore_ai_notepad` + PM contents BEFORE the clear, then restores in catch only when **no prose was produced** AND `epoch === chatEpoch && lockEpoch === generationLockEpoch`. Successful agentic runs intentionally leave the cleared state — the agentic message already replaced the pipeline's role for that turn.
-
-**HL5 — Defensive `proseMsg.extra ||= {}` (`index.js`).** ST's `saveReply` normally creates `message.extra = {}`, but third-party extensions can interpose on `MESSAGE_RECEIVED` and strip it. Without the guard, the primary-branch line `proseMsg.extra.deeplore_tool_calls = result.toolActivity` throws TypeError, propagates to the outer catch, and fires `'Generation failed'` AFTER the prose was already saved — dropdown silently lost. The fallback branch (`else if (result.prose)`) already had the guard from the Wave A F3 fix; the primary branch needed mirror coverage. Any new `.extra.<field> = ...` write in the agentic dispatch must repeat the guard.
-
-**Where:** `src/librarian/agentic-api.js` — HL2 scrub-then-slice in `callWithToolsViaProxy`; HL3 `_syntheticIds` WeakMap + `_ensureSyntheticIds`/`_getSyntheticId` helpers; `parseToolCalls` + `buildAssistantMessage` consume via the helpers. `index.js` — HL4 `_promptsSnapshot` capture before clear, restore in catch's no-prose branch; HL5 `proseMsg.extra = proseMsg.extra || {}` before the tool_calls assignment. Tests: `HL2-1..HL5-1` in `test/regression.test.mjs`.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
@@ -1013,7 +895,7 @@ Four small but sharp UI fixes that each protect a narrow correctness window. Non
 
 **V-M1 — Browse folder-grouping fallback must use `getWriterVisibleEntries()`, NOT raw `vaultIndex`.** `src/drawer/drawer-events.js: wireBrowseTab()` (~L630-645). On first toggle, `ds.browseFilteredEntries` is often empty (drawer just opened, no render pass yet). The pre-fix fallback fell through to raw `vaultIndex`, which (a) includes `lorebook-guide` entries the user never sees in Browse, and (b) ignores any active filter set. The folder-expanded Set then contained folders unrelated to what the user was actually looking at. Fix: use `getWriterVisibleEntries()` (parameterless — reads from module-scoped `vaultIndex` internally) for the fallback. This matches the contract from gotcha #5: anything user-facing that respects `lorebook-guide` semantics MUST go through this filter.
 
-**V-M2 — `wireStatusActions` MUST gate on `indexing` the same way `wireToolsTab` does.** `src/drawer/drawer-events.js: wireStatusActions()` (~L201-300). Tool buttons in the drawer's Tools tab refuse to run when `indexing===true` (BUG-359 guard at L140-148). The top status zone's action buttons (`scribe`, `newlore`, `librarian-chat`, `graph`, `clear-picks`, `skip-tools`) only checked `generationLock` — running `/dle-newlore` or `/dle-scribe` mid-index races the build commit (BUG-016 zombie-build territory). Fix: add `if (action !== 'refresh' && indexing) { dedupWarning('Indexing in progress — try again in a moment.', 'index_busy'); return; }` at the top of the click handler. **`refresh` is exempt** because it IS the index trigger (and has its own `ds.refreshing` latch) — gating it would deadlock the user out of recovering from a stuck indexing flag. The shared `dedupWarning` category `index_busy` participates in toast-dedup just like Wave C boot uses for its PM-mode warnings.
+**V-M2 — `wireStatusActions` MUST gate on `indexing` the same way `wireToolsTab` does.** `src/drawer/drawer-events.js: wireStatusActions()` (~L201-300). Tool buttons in the drawer's Tools tab refuse to run when `indexing===true` (BUG-359 guard at L140-148). The top status zone's action buttons (`scribe`, `newlore`, `graph`, `clear-picks`) only checked `generationLock` — running `/dle-newlore` or `/dle-scribe` mid-index races the build commit (BUG-016 zombie-build territory). Fix: add `if (action !== 'refresh' && indexing) { dedupWarning('Indexing in progress — try again in a moment.', 'index_busy'); return; }` at the top of the click handler. **`refresh` is exempt** because it IS the index trigger (and has its own `ds.refreshing` latch) — gating it would deadlock the user out of recovering from a stuck indexing flag. The shared `dedupWarning` category `index_busy` participates in toast-dedup just like Wave C boot uses for its PM-mode warnings.
 
 **V-M4 — Wizard test-conn surfaces a fallback string when `result.error` is `undefined`.** `src/ui/setup-wizard.js: wireConnectionTest()` (~L275-289). `testConnection` may return `{ ok: false, diagnosis: 'cert', error: undefined }` — the diagnosis branch fires the help popup but the error-line render then does `escapeHtml(undefined)`, which puts the literal string `"undefined"` into the UI. Fix: `const errorText = result.error || (result.diagnosis ? \`Diagnosis: ${result.diagnosis}\` : 'Unknown error');` before the escape call. Order matters — explicit `error` wins when present, diagnosis is the next-best derivative, "Unknown error" is the floor.
 
@@ -1043,7 +925,7 @@ Five small pipeline-stage fixes that each shut down a specific footgun. None cha
 
 ## 68. Custom Proxy connection mode dead-headed in v2.5
 
-**Files:** `src/ai/ai.js` (callAI dispatch), `src/librarian/agentic-api.js` (4 sites), `src/ai/proxy-api.js` (kept for rollback)
+**Files:** `src/ai/ai.js` (callAI dispatch), `src/ai/proxy-api.js` (kept for rollback)
 **Date:** 2026-05-23
 **Migration:** `settings.js: runMigrations` v3→v4 flips any `*ConnectionMode === 'proxy'` to `'profile'` and sets `_proxyMigrationV2_5_notice` sentinel. Boot-time popup explains + pulse-glows the migrated mode dropdown.
 **Rollback path:** Un-hide `<option value="proxy">` in `settings-popup.html` + `setup-wizard.html`. Revert `callAI` dispatch throw. `proxy-api.js` + `breaker-pure.js` classifiers still live.
@@ -1055,7 +937,6 @@ Five small pipeline-stage fixes that each shut down a specific footgun. None cha
 - `scribeConnectionMode`
 - `autoSuggestConnectionMode`
 - `aiNotepadConnectionMode`
-- `librarianConnectionMode`
 - `optimizeKeysConnectionMode`
 
 **Cascading consequence:** `enableCorsProxy: true` in ST's `config.yaml` is **no longer required for DLE AI features** as of v2.5 (Profile mode uses CMRS which routes server-side and bypasses the CORS bridge entirely). It IS still required if you use ST's own raw-URL AI requests outside DLE. Vault fetching via Obsidian Local REST API is unaffected — Obsidian's REST plugin has built-in CORS and DLE has never used the CORS bridge for vault traffic (see `docs/vault-and-indexing.md` §3 "CORS proxy usage").
@@ -1121,7 +1002,7 @@ User vault deletion is the single most damaging failure DLE can have. Layers in 
 
 ### getPrompt() resolver invariants
 
-`getPrompt(key)` is **synchronous by design** — called inside agentic loops and fence builders without await. Cache is preloaded at boot.
+`getPrompt(key)` is **synchronous by design** — callable without await. Cache is preloaded at boot.
 
 Resolution order:
 1. `promptCache` Map (populated at boot by `loadPrompts()`).
@@ -1133,7 +1014,7 @@ Resolution order:
 ### Placeholder contract
 
 Two interpolation styles, kept distinct on purpose:
-- **`${N}` numeric indices** — agentic loop fragments (nonce, tool count, max searches, etc.). Validator enforces parity between vault override and canonical (`validatePromptShape` R3). Substituted at call time by a local `interp(template, ...args)` helper.
+- **`${N}` numeric indices** — used by the removed Librarian's prompt fragments; no current prompt has them. Validator enforces parity between vault override and canonical (`validatePromptShape` R3). Substituted at call time by a local `interp(template, ...args)` helper.
 - **`{{maxEntries}}` Mustache style** — legacy AI-search system prompt contract. Substituted at call time via `.replace(/\{\{maxEntries\}\}/g, ...)`. Invisible to the validator.
 
 Don't unify these — the AI search prompt is user-editable with the Mustache placeholder already documented, and rewriting it to `${0}` would break every existing custom prompt users have written.
@@ -1233,12 +1114,11 @@ The drawer status (header) and contentinfo (footer) zones encode a strict, non-o
 - **Soft "cap trimmed lore" notes** (`.dle-bar-note`, B2) are gentle/muted/italic, info-tinted — NOT warning-orange, NOT error-red, no hatch/glow, no alarm verbs (dropped/hit/exceeded). They appear ONLY when a cap actually cost lore: entries note ("N of M shown") when `trace.positionalCandidates > injected`; token note ("trimmed to fit") when any `trace.injected[].truncated`.
 
 **Footer token-counting truths (A1/A2):**
-- The context bar fill = `promptManager.tokenUsage` ONLY (`ds.contextTokens`). The old `+lib` add (folding `librarianChatStats.estimatedExtraTokens`, a per-chat payload-size proxy) into the bar was wrong — Librarian I/O is a separate API call, never part of ST's settled prompt window. NEVER add librarian tokens back into the context-bar sum.
-- Real Librarian token I/O is surfaced as its OWN readout (`.dle-librarian-usage`, "Librarian: N tok") from **`state.librarianLastUsage`** — the measured `result.usage` ({totalInput,totalOutput}) captured in `index.js` after `runAgenticLoop`. This is a **per-turn snapshot** (coherent with the bar's "last generation" semantics), reset on CHAT_CHANGED. `librarianChatStats.estimatedExtraTokens` is a payload-size proxy retained ONLY for the settings-popup readout — do NOT use it for the footer.
+- The context bar fill = `promptManager.tokenUsage` ONLY (`ds.contextTokens`). (The Librarian's token readout and its `+lib` add were removed with it.)
 
 **Entries-bar numerator excludes outlets (B3).** Outlets bypass the `maxEntries` cap (`core/matching.js` — position NONE, placed via `{{outlet::name}}` macros) yet land in `acceptedEntries` → `trace.injected`. Counting them let the bar read e.g. "7/5" clamped to 100%. `trace.injected[].outlet` flags them; the bar counts only positional entries and surfaces outlets separately (`(+N outlet)` label suffix). The injection-tab badge still counts all sources — only the **header entries bar** numerator is positional-only.
 
-Cross-module data added this wave: `trace.injected[].outlet` (bool) and `trace.positionalCandidates` (number = positional injected + `budgetCut.length`) — both set in `index.js` at trace commit, read in `drawer-render-status.js`. Footer refreshes the librarian readout on `GENERATION_ENDED` (`drawer.js` `handleGenerationEnded` now also `scheduleRender(renderFooter)`), since usage is set just before that event is emitted.
+Cross-module data added this wave: `trace.injected[].outlet` (bool) and `trace.positionalCandidates` (number = positional injected + `budgetCut.length`) — both set in `index.js` at trace commit, read in `drawer-render-status.js`.
 
 ## 74. Status glyph is pure activity; phase labels come from ONE canonical map set by phase KEY, not text sniff (v2.5 Wave 2, 2026-05-29)
 
@@ -1250,7 +1130,7 @@ The drawer status dot (`.dle-status-dot`) and the phase-text surfaces were two-a
 
 **C2 — health off the glyph.** The dot no longer adds `STATUS_CLASSES[status]` colors or the `dle-status-changed` transition pulse. `computeOverallStatus` is kept ONLY to drive the SR-only `announceToScreenReader('Status: …')` live-region signal (a11y, not a visible color). All *visible* system health lives in the footer health icons (vault/connection/pipeline/cache/ai). The dot's tooltip is now activity-oriented ("DeepLore activity: <label> — click for full status"), not "System status: …". Don't put health color back on the glyph.
 
-**C3 — ONE canonical phase→label map, set by phase KEY.** `state.PIPELINE_PHASE_LABELS` + `pipelineLabelFor(phase)` are the single source of truth for BOTH the chat toast (`#dle-pipeline-status` via `_updatePipelineStatus`) and the drawer `.dle-pipeline-label`. The fragile `text.includes('Consulting')` sniff in `index.js` (which broke if the label was relabeled or localized) is gone: `runPipeline`'s `onStatus` callback now receives a **phase key** (`'prefilter'`, `'consulting'`), and `_pipelineOnStatus` does `setPipelinePhase(key); _updatePipelineStatus(pipelineLabelFor(key))`. **Contract:** never infer pipeline phase by matching display text — set the phase deterministically with a key, derive the label from the map. The NEW `prefilter` phase ("Narrowing categories…") is emitted in `pipeline.js` only when `settings.hierarchicalPreFilter` is true (otherwise it would flicker for a no-op). Sub-second stages (gating/dedup/formatAndGroup) get NO phase — they'd only flicker — so they inherit the prior phase's label. The agentic-loop search status keeps its dynamic `(n/m)` progress but uses the canonical "Searching vault…" prefix so its phase still resolves via `startsWith('Searching')`.
+**C3 — ONE canonical phase→label map, set by phase KEY.** `state.PIPELINE_PHASE_LABELS` + `pipelineLabelFor(phase)` are the single source of truth for BOTH the chat toast (`#dle-pipeline-status` via `_updatePipelineStatus`) and the drawer `.dle-pipeline-label`. The fragile `text.includes('Consulting')` sniff in `index.js` (which broke if the label was relabeled or localized) is gone: `runPipeline`'s `onStatus` callback now receives a **phase key** (`'prefilter'`, `'consulting'`), and `_pipelineOnStatus` does `setPipelinePhase(key); _updatePipelineStatus(pipelineLabelFor(key))`. **Contract:** never infer pipeline phase by matching display text — set the phase deterministically with a key, derive the label from the map. The NEW `prefilter` phase ("Narrowing categories…") is emitted in `pipeline.js` only when `settings.hierarchicalPreFilter` is true (otherwise it would flicker for a no-op). Sub-second stages (gating/dedup/formatAndGroup) get NO phase — they'd only flicker — so they inherit the prior phase's label.
 
 **C3 — Wave D toast structure + a11y + i18n (v2.5 Wave D, 2026-06-19).** `_updatePipelineStatus` (index.js) no longer `innerHTML`-replaces the whole toast each call. It builds a **stable two-node structure once**: a decorative `<i class="fa-spinner fa-spin" aria-hidden="true">` (never re-rendered, so its spin never restarts mid-pipeline) + a swappable `<span class="dle-pipeline-status-text">`. Phase changes only swap the span's `textContent` and **cross-fade** it via a remove→reflow→re-add of the `dle-phase-swap` class (`@keyframes dle-phase-swap` @ `--dle-dur-fast`/`--dle-ease-out`). **Contract:** never go back to `el.innerHTML = ... + text` — that restarts the spinner animation AND defeats the cross-fade. An unchanged-text call early-returns (no needless re-fade). The host carries `role=status` + `aria-live=polite` + `aria-atomic=true` (the glyph is `aria-hidden`, so the announced text is just prefix+phase). The prefix is `trf('dle_status_header', text)` (reuses the existing `"DeepLore: ${0}"` key — **localizable, zero new keys**; phase LABELS themselves are still English, a separate deferred i18n axis). **Reduced-motion:** the chat toast lives in `#form_sheld`, **OUTSIDE** the `#deeplore-drawer *` / `.dle-settings *` descendant-scoped animation-kill (the C1 note above only covers the drawer dot) — so the toast has its **own dedicated** `@media (prefers-reduced-motion: reduce)` block (`#dle-pipeline-status` + `.dle-toast-out` + `.dle-phase-swap` + spinner → `animation: none`). Killing `dle-toast-out`'s `animationend` is safe because `_removePipelineStatus` has a `setTimeout(…, 500)` fallback removal.
 
@@ -1327,40 +1207,23 @@ Wave 3 (D1–D5) closed the vocabulary/IA gaps left after the token-truth (Wave 
 
 ## 80. JSON-returning utility AI calls MUST suppress Claude thinking (`disableThinkingOnClaude`) (2026-06-02)
 
-**Rule:** Every DLE AI call whose response is parsed as JSON (`extractAiResponseClient` / `json_schema`) MUST pass `disableThinkingOnClaude: true` in its `callAI` connection config. Current sites: **AI Search** (`src/ai/ai.js` ~L888), **hierarchicalPreFilter** (`src/ai/ai.js` ~L455), **callAutoSuggest** profile path (`src/ai/auto-suggest.js` ~L90 — serves both autoSuggest and optimizeKeys keyword-gen). The Librarian already does the equivalent (`librarian-session.js:702` + unconditional `reasoning_effort='auto'` in `agentic-api.js:374`). The flag actuates Claude-only inside `callViaProfile` (`ai.js` ~L179, gated on `isClaudeModel`) by sending `reasoning_effort='auto'`, which ST maps to a `null` thinking budget → no `thinking` block.
+**Rule:** Every DLE AI call whose response is parsed as JSON (`extractAiResponseClient` / `json_schema`) MUST pass `disableThinkingOnClaude: true` in its `callAI` connection config. Current sites: **AI Search** (`src/ai/ai.js` ~L888), **hierarchicalPreFilter** (`src/ai/ai.js` ~L455), **callAutoSuggest** profile path (`src/ai/auto-suggest.js` ~L90 — serves both autoSuggest and optimizeKeys keyword-gen). The flag actuates Claude-only inside `callViaProfile` (`ai.js` ~L179, gated on `isClaudeModel`) by sending `reasoning_effort='auto'`, which ST maps to a `null` thinking budget → no `thinking` block.
 
 **Why:** ST staging PR **#5236** (2026-03-03) gated `isAdaptiveModel` behind config `claude.enableAdaptiveThinking` (shipped `config.yaml` default `false`; code default `true` — a mismatch). For **non-adaptive** Claude thinking models (sonnet-4-5 / opus-4-5 / haiku-4-5 / 3-7, AND opus-4-6/sonnet-4-6 when the flag is off), an **undefined** `reasoning_effort` makes the server's `calculateClaudeBudgetTokens` fall to `Math.max(0,1024)` → **thinking forced ON**. The default OpenAI completion preset ships `reasoning_effort: 'auto'`, and ST's client `getReasoningEffort` converts `'auto' → undefined` before sending — so "do nothing" lands on the forced-thinking branch. Thinking then eats the response budget / leaks reasoning → JSON parse fails → `recordAiFailure` ×2 → circuit breaker opens → **keyword fallback**. Verified against the live ST staging checkout: `auto → null` (`prompt-converters.js` `calculateClaudeBudgetTokens`), `REASONING_EFFORT.auto === 'auto'`, and the literal `'auto'` override survives the preset merge in `custom-request.js` (`{...payload, ...overridePayload}`).
 
-**Scope boundary:** Prose-returning utility calls (**Scribe** `scribe.js`/`summarize.js`, **summaryGen** `commands-ai.js:387`) are intentionally NOT included — thinking is harmless on prose (no parse step) and can improve quality. The fix is Claude-arm only (zero non-Claude regression); non-Claude reasoning models (Gemini thinkingBudget, OpenAI o-series) are a separate, unaddressed follow-up. Note also that `src/ai/claude-adaptive-check.js`'s "auto/unset → 400" warning for opus-4-6/sonnet-4-6 is **stale** on this ST snapshot (`auto → null → no thinking → no 400`); the empirical proof is that the Librarian already forces `'auto'` on those models and tool use works. **Resolved in gotcha #82 (2026-06-03):** the proactive warning surfaces were dead-headed (they were false alarms whose advice re-forced thinking ON); only a reactive 400-error rewrite remains.
+**Scope boundary:** Prose-returning utility calls (**Scribe** `scribe.js`/`summarize.js`, **summaryGen** `commands-ai.js:387`) are intentionally NOT included — thinking is harmless on prose (no parse step) and can improve quality. The fix is Claude-arm only (zero non-Claude regression); non-Claude reasoning models (Gemini thinkingBudget, OpenAI o-series) are a separate, unaddressed follow-up. Note also that `src/ai/claude-adaptive-check.js`'s "auto/unset → 400" warning for opus-4-6/sonnet-4-6 is **stale** on this ST snapshot (`auto → null → no thinking → no 400`); the empirical proof was that the Librarian (since removed) forced `'auto'` on those models and tool use worked. **Resolved in gotcha #82 (2026-06-03):** the proactive warning surfaces were dead-headed (they were false alarms whose advice re-forced thinking ON); only a reactive 400-error rewrite remains.
 
 **Guarded by:** regression `THINK-OFF-1` / `THINK-OFF-2` (source-text drift guards in `test/regression.test.mjs`).
 
-## 81. Librarian FLAG (gap-finder) turn is BACKGROUNDED — runs AFTER lock release, guarded on chatEpoch + lockEpoch + swipe_id (Issue-1, 2026-06-02)
+## 81. (removed with the Librarian) Librarian FLAG (gap-finder) turn is BACKGROUNDED — runs AFTER lock release, guarded on chatEpoch + lockEpoch + swipe_id (Issue-1, 2026-06-02)
 
-**Rule:** The Librarian's FLAG phase is no longer a synchronous loop iteration. `runAgenticLoop` now returns `{ prose, toolActivity, usage, pendingFlag }` where `pendingFlag` is a **detached thunk** (or `null`). The caller (`index.js` proseMsg branch) fires it **fire-and-forget** — `(async () => { ... })().catch(...)`, never awaited — so the generation lock + send button release in the dispatch `finally` WITHOUT waiting on the flag API round-trip. This is the fix for "the gap finder round blocks things for too long": prose is delivered via `onProse` exactly as before, but the user is freed immediately instead of being held through a full extra `callWithTools` flag turn (often many seconds on a thinking model).
-
-**What still runs synchronously:** **inline flags** — a `write` + `flag` in ONE model response. Those cost no extra round-trip (already in the response), so the per-toolCall `case 'flag'` handles them in-loop; `phase === PHASE_FLAG` (set by the write case) is now only an *in-response sentinel*, not a loop-phase that drives another iteration. The loop `break`s on `writeDone` immediately after the tool-result message is pushed.
-
-**Staleness has THREE axes — chatEpoch + lockEpoch + swipe_id (don't drop any):**
-- **chatEpoch** — catches a chat switch (`_runFlagIteration` pre/post-call guards + index.js `_bgStale()`).
-- **lockEpoch** — catches a *superseding generation*. Subtle: `state.js setGenerationLock(false)` does **NOT** change `generationLockEpoch` (it bumps only on ACQUIRE, `if (v) generationLockEpoch++`). So after a plain lock release the captured `lockEpoch` still equals `generationLockEpoch` and the flag proceeds; but the moment a **new generation** acquires the lock the epoch increments and the stale background flag auto-cancels (pre-call guard → no wasted API call; post-call → no state pollution). Dropping it would let a superseded flag write into the wrong turn.
-- **swipe_id** — catches *swipe navigation*, which bumps **neither** epoch. This axis was added after peer review found a HIGH bug: ST swaps `message.extra` per swipe (`syncSwipeToMes` does `message.extra = structuredClone(swipe_info[id].extra)`), and DLE's `MESSAGE_SWIPED` handler `delete`s the swapped-in `deeplore_tool_calls`. A flag turn in flight while the user swipes to a **different** alternate of the prose message would otherwise `concat` its activity onto — and inject a dropdown over — the wrong swipe, then persist it. The index.js IIFE captures `_bgSwipeId = _bgProseMsg.swipe_id ?? 0` at dispatch and bails (`_bgStale()`) if it changed. Navigating away and BACK to the same swipe is fine (swipe_id matches; ST restored that swipe's extra incl. the search tool_calls). When it bails mid-swipe, only the per-message dropdown activity is dropped — the **gap itself is still recorded** in `loreGaps` by `flagLoreAction` (chatEpoch-guarded, unaffected by swipe).
-
-`_bgStale()` (index.js) checks all three and is called BEFORE the destructive `extra.deeplore_tool_calls` write AND again after the `saveChatConditional` await (TOCTOU).
-
-**Known limitation — the in-flight flag API call is NOT cancellable (best-effort):** the dispatch's outer `finally` removes the `GENERATION_STOPPED` / `CHAT_CHANGED` abort listeners before the detached thunk reaches its `callWithTools`, so once the dispatch returns, `pipelineAbort.signal` never aborts again. A user pressing **Stop** during the (now backgrounded) flag turn does NOT cancel the request — the profile/CMRS path completes server-side and its result is silently discarded by the epoch/swipe guards. This is intentional: prose is already delivered, the visible generation IS stopped (lock released, button re-enabled), and the only cost is one extra small tool-call round-trip's tokens. The `signal.aborted` checks inside `_runFlagIteration` still catch an abort that landed *before* teardown. If true cancellation is ever required, give the thunk its own `AbortController` wired to a one-shot `GENERATION_STOPPED`/`CHAT_CHANGED` listener torn down when it settles.
-
-**Caller contract:** `pendingFlag()` resolves to `{ flagCount, flagActivity }` with a **fresh** `flagActivity` array (NOT the loop's `toolActivity`). index.js appends `flagActivity` onto the already-saved prose message's `extra.deeplore_tool_calls` (search + inline-flag entries committed at loop return), re-saves, and re-injects the dropdown. Dropdown re-inject is idempotent (`librarian-ui.js injectLibrarianDropdown` removes any existing `.dle-librarian-details` first), so the second inject replaces the search-only dropdown with the full search+flags list. The prose message is located by **stable object ref** (`chat.indexOf(_bgProseMsg)`), not a captured numeric index.
-
-**Degraded path:** the CRIT-LIB-3 onProse-error early return does NOT carry `pendingFlag` (returns `{ prose, toolActivity, usage }`) — a broken persistence path skips backgrounded flagging entirely (`result.pendingFlag` is falsy → caller no-ops). The `'flagging'` pipeline phase is no longer SET anywhere (the label stays in the map for compat); `setPipelinePhase` import was removed from `agentic-loop.js`.
-
-**Guarded by:** behavioral `F5-BG-1/2/3` (drive REAL `runAgenticLoop` through the stub loader) + source-drift `AGENTIC-LOOP-S10/S11/S12` in `test/regression.test.mjs`. S12 pins all three staleness axes (chatEpoch/lockEpoch/swipe_id) AND that the guard runs before the destructive write. The pre-existing `_runFlagIteration` epoch/abort guards (`F5a-e`, gotcha #21) still apply unchanged — they're what makes the now-detached thunk safe. **Note (peer-review caveat):** the index.js IIFE (swipe guard, the wrong-swipe write path, the un-cancellable in-flight call) runs only in the real ST host — it is NOT exercised by the stub-loader behavioral tests, only by the S12 source-drift guard. Treat S12 as a structural backstop, not behavioral proof.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ## 82. Claude adaptive-thinking warning is REACTIVE-ONLY — proactive surfaces dead-headed (2026-06-03)
 
 **Rule:** DLE's `claude-adaptive-check` (`src/ai/claude-adaptive-check.js`) no longer **proactively** warns about adaptive Claude models (`claude-(opus-4-6|sonnet-4-6)`) bound to a completion preset with `reasoning_effort` `'auto'`/unset. The startup sweep (`index.js` init) and the pre-flight block in `callViaProfile()` (`ai.js`) — toast + `setClaudeAutoEffortState(true, …)` + `claimClaudeAdaptiveToastSlot` — are **removed**. Only the **reactive** path survives: when an actual API call throws an error matching `400|bad request|top_k|thinking|reasoning_effort`, `callViaProfile`'s catch **lazily** runs `detectClaudeAdaptiveIssue` and, if `detail.bad`, rewrites the error via `buildClaudeAdaptiveMessage(detail, 'error')`.
 
-**Why:** the warning's premise — adaptive model + `auto`/unset preset → **400** — is **false on current ST staging**. ST maps `reasoning_effort` `'auto'`/unset → a **null** thinking budget (`calculateClaudeBudgetTokens` → `null`), so no `thinking` block, no 400. **Empirical proof:** the Librarian forces `reasoning_effort='auto'` on these exact models and tool use works (no 400). Worse, the warning's *advice* — "set Reasoning Effort to Low/Medium/High" — **forces thinking ON**, which is precisely what breaks the JSON utility calls that gotcha #80's `disableThinkingOnClaude` fix avoids. So the proactive warning was a false alarm that actively pushed users toward re-breaking AI Search/autoSuggest. It was also redundant for DLE's own calls, which now send a literal `'auto'` override regardless of preset.
+**Why:** the warning's premise — adaptive model + `auto`/unset preset → **400** — is **false on current ST staging**. ST maps `reasoning_effort` `'auto'`/unset → a **null** thinking budget (`calculateClaudeBudgetTokens` → `null`), so no `thinking` block, no 400. **Empirical proof:** the Librarian (since removed) forced `reasoning_effort='auto'` on these exact models and tool use worked (no 400). Worse, the warning's *advice* — "set Reasoning Effort to Low/Medium/High" — **forces thinking ON**, which is precisely what breaks the JSON utility calls that gotcha #80's `disableThinkingOnClaude` fix avoids. So the proactive warning was a false alarm that actively pushed users toward re-breaking AI Search/autoSuggest. It was also redundant for DLE's own calls, which now send a literal `'auto'` override regardless of preset.
 
 **Dead-headed, NOT deleted:** `claudeAutoEffortBad`/`claudeAutoEffortDetail` + observers (`state.js`), the drawer chip (`drawer-render-status.js`), the settings banner (`settings-ui.js`), the dismiss state (`drawer-state.js`/`drawer-events.js`), the diagnostics readouts (`state-snapshot.js`/`export.js`), the i18n keys (7 locales), and `claimClaudeAdaptiveToastSlot`/`resolveFeatureConnectionMode`/`shouldCheckClaudeAdaptiveForFeature` all **remain** but are **dormant** — nothing sets the flag true, so the chip/banner never render. Kept (mirrors the proxy dead-head idiom, gotcha #68) to avoid churning 7 locale files + i18n parity tests, and so a future ST build that genuinely 400s on adaptive+`auto` can re-wire the proactive path quickly. **Do NOT delete the dormant surfaces without re-verifying ST's `reasoning_effort` handling first.**
 
@@ -1398,9 +1261,9 @@ Wave 3 (D1–D5) closed the vocabulary/IA gaps left after the token-truth (Wave 
 
 Extends gotcha #79 (per-tick footer/gating perf) to the whole drawer.
 
-**Rule 1 — gate the heavy painters on `isDrawerVisible()` (`src/drawer/drawer-state.js`).** `renderInjectionTab`, `renderBrowseTab`, `renderGatingTab` (`drawer-render-tabs.js`), `renderLibrarianTab` (`drawer-render-librarian.js`), and `renderFooter` (`drawer-render-footer.js`) each early-return when the drawer is hidden. This kills the dominant waste: generation-time observer churn (verdict / counts / `CHAT_COMPLETION_PROMPT_READY` ticks) was filtering+sorting the whole vault and repainting the footer into a `display:none` drawer. Renders deferred while closed are replayed by `flushDrawerRenders()` on the closed→open transition (drawer.js toggle handler + `navigateToBrowseEntry`).
+**Rule 1 — gate the heavy painters on `isDrawerVisible()` (`src/drawer/drawer-state.js`).** `renderInjectionTab`, `renderBrowseTab`, `renderGatingTab` (`drawer-render-tabs.js`), and `renderFooter` (`drawer-render-footer.js`) each early-return when the drawer is hidden. This kills the dominant waste: generation-time observer churn (verdict / counts / `CHAT_COMPLETION_PROMPT_READY` ticks) was filtering+sorting the whole vault and repainting the footer into a `display:none` drawer. Renders deferred while closed are replayed by `flushDrawerRenders()` on the closed→open transition (drawer.js toggle handler + `navigateToBrowseEntry`).
 
-**Why visible-only and NOT active-tab** (deviation from the Wave F plan's "drawer-open + active-tab"): the tab-bar badges are written by the tab renders themselves and are visible for EVERY tab whenever the drawer is open — `.dle-librarian-badge` (pending-gap count + tab aria-label) is written inside `renderLibrarianTab`; the Browse count badge (`updateTabBadges`, ungated via `renderStatusZone`) reads `ds.browseFilteredEntries` which only `renderBrowseTab` populates. Active-tab gating would stale those badges the moment you're on a different tab. Visible-only keeps every tab fresh while the drawer is open (each observer still renders all tabs), so a tab-switch needs no flush — only the closed→open boundary does.
+**Why visible-only and NOT active-tab** (deviation from the Wave F plan's "drawer-open + active-tab"): the tab-bar badges are written by the tab renders themselves and are visible for EVERY tab whenever the drawer is open — the Browse count badge (`updateTabBadges`, ungated via `renderStatusZone`) reads `ds.browseFilteredEntries` which only `renderBrowseTab` populates. Active-tab gating would stale those badges the moment you're on a different tab. Visible-only keeps every tab fresh while the drawer is open (each observer still renders all tabs), so a tab-switch needs no flush — only the closed→open boundary does.
 
 **`isDrawerVisible()` keys on `openDrawer`, NOT `pinnedOpen`.** `pinnedOpen` is pin *state*: a pinned-but-closed drawer is `closedDrawer pinnedOpen` (offsetHeight 0 — NOT visible); pinned-and-open is `openDrawer pinnedOpen`. So `classList.contains('openDrawer')` is correct for both pinned and unpinned, and it's a class read (no reflow) — never use `offsetParent`/`offsetHeight` here (these run on hot paths). ST's `doNavbarIconClick` is the single writer of `openDrawer`; drawer.js's toggle handler reads the same class to set aria-expanded.
 
@@ -1410,13 +1273,13 @@ Extends gotcha #79 (per-tick footer/gating perf) to the whole drawer.
 
 **Verified live** (test ST, 255-entry vault): closed-drawer direct `renderBrowseTab/Footer/Injection/Gating` calls no-op (`ds.browseFilteredEntries` stays 255, footer doesn't throw); reopen replays the deferred query change (→0) then restores (→255); clean boot shows correct badge (255) + footer, zero console errors. Source-of-truth (`ds.browseFilteredEntries`/`browseRowModel`) tracks the query exactly (255/0/255) — painted virtual-scroll row counts lag only because the headless preview tab throttles `requestAnimationFrame` (~1.8 s when `document.hidden`), an artifact of the harness, not the gate.
 
-**Where:** `src/drawer/drawer-state.js` (`isDrawerVisible`), `src/drawer/drawer.js` (`flushDrawerRenders` + toggle/`navigateToBrowseEntry` wiring), `src/drawer/drawer-render-tabs.js` (3 gates + `_lastBrowseRenderHash`), `drawer-render-librarian.js` (gate), `drawer-render-footer.js` (gate + `_footerCache`), `src/state.js` (`chatInjectionCountsVersion`).
+**Where:** `src/drawer/drawer-state.js` (`isDrawerVisible`), `src/drawer/drawer.js` (`flushDrawerRenders` + toggle/`navigateToBrowseEntry` wiring), `src/drawer/drawer-render-tabs.js` (3 gates + `_lastBrowseRenderHash`), `drawer-render-footer.js` (gate + `_footerCache`), `src/state.js` (`chatInjectionCountsVersion`).
 
 ---
 
 ## 86. Drawer a11y hardening — forced-colors fallbacks, full radiogroup keys, universal `:active` (v2.5 Wave G, 2026-06-19)
 
-**Radiogroups are native `<button role="radio">` — Enter/Space activate for free; only arrows need JS.** The two DLE radiogroups (`.dle-why-filter-btn` in the Why? tab, `.dle-librarian-sub-tab` in Librarian; both in `drawer.html`) now handle **Up/Left = prev, Down/Right = next** (was Left/Right only) in `drawer-events.js`. Don't add explicit Space/Enter handlers — the button element fires `click` natively on both, and a manual `trigger('click')` on top double-fires (idempotent for a radio, but avoid). Roving tabindex (only the checked button is tabbable) is set in the render, not here. These are the ONLY two radiogroups in the codebase (grep `role="radio"`); the setup wizard / settings popup have none.
+**Radiogroups are native `<button role="radio">` — Enter/Space activate for free; only arrows need JS.** The DLE radiogroup (`.dle-why-filter-btn` in the Why? tab, in `drawer.html`; the Librarian's `.dle-librarian-sub-tab` went with it) now handles **Up/Left = prev, Down/Right = next** (was Left/Right only) in `drawer-events.js`. Don't add explicit Space/Enter handlers — the button element fires `click` natively on both, and a manual `trigger('click')` on top double-fires (idempotent for a radio, but avoid). Roving tabindex (only the checked button is tabbable) is set in the render, not here. It is the ONLY radiogroup in the codebase (grep `role="radio"`); the setup wizard / settings popup have none.
 
 **Universal `:active` press feedback.** A single rule in `style.css` gives every DLE `button` / `[role="button"]` / `[role="radio"]` under `#deeplore-drawer` / `.dle-settings` / `.dle-popup` a `transform: translateY(1px)` on press. It's an **instantaneous** state change (no `transition`), so it is intentionally NOT disabled under `prefers-reduced-motion` (reduced-motion targets timed motion, not a press dip). Scoped to DLE roots so ST's own controls keep their native feedback.
 
@@ -1430,7 +1293,7 @@ Extends gotcha #79 (per-tick footer/gating perf) to the whole drawer.
 
 ## 87. goo-spinner is DLE's loading visual — vendored Web Component, accent via currentColor, sized by ATTRIBUTE not CSS (v2.5 Wave I, 2026-06-19)
 
-`<goo-spinner>` (`src/vendor/goo-spinner.js`) is a self-contained Web Component (Shadow DOM + its own SVG goo filter; jelly physics in rAF). Registered ONCE by a side-effect import at the top of `index.js` (`import './src/vendor/goo-spinner.js'`) — must run before any drawer/settings/wizard HTML that uses the tag. It replaced every `fa-spinner fa-spin` loading glyph in the codebase (toast, status dot, empty states, browse-refresh, graph layout overlay, librarian tool spinner, setup-wizard buttons, drawer + settings "refresh" buttons).
+`<goo-spinner>` (`src/vendor/goo-spinner.js`) is a self-contained Web Component (Shadow DOM + its own SVG goo filter; jelly physics in rAF). Registered ONCE by a side-effect import at the top of `index.js` (`import './src/vendor/goo-spinner.js'`) — must run before any drawer/settings/wizard HTML that uses the tag. It replaced every `fa-spinner fa-spin` loading glyph in the codebase (toast, status dot, empty states, browse-refresh, graph layout overlay, setup-wizard buttons, drawer + settings "refresh" buttons).
 
 **Accent color via `currentColor`.** Every instance passes `color="currentColor"`; the component fills with it; one global rule `goo-spinner { color: var(--dle-accent, …) }` (style.css) makes them all take the DLE accent and adapt dark/light. Don't pass a literal `color=` (defaults to a hardcoded blue if you omit it AND skip the global rule).
 
@@ -1448,13 +1311,13 @@ Extends gotcha #79 (per-tick footer/gating perf) to the whole drawer.
 
 **Left intentionally (NOT spinners):** `.dle-shimmer` (cold-start skeleton — a shimmer idiom, not a spinner); the **scribe** button's `fa-spin` (spins its OWN meaningful glyph, not a dedicated `fa-spinner`, and its re-enable lifecycle is only the 15s timeout — converting risked an orphaned goo). The two "refresh" buttons DO convert because they swapped their icon to a dedicated `fa-spinner` (start/finish are self-contained in one promise → hide `<i>`, append `.dle-btn-goo`, remove on finally).
 
-**Where:** `src/vendor/goo-spinner.js` (vendored), `index.js` (import + toast glyph), `style.css` (global accent rule + toast +50% + dead pulse), `src/drawer/{drawer-render-status (status dot), drawer-render-tabs (empty state), drawer-events (refresh btn)}.js`, `drawer.html` (browse loading + refresh), `src/graph/graph.js`, `src/librarian/librarian-review.js`, `src/ui/{setup-wizard,settings-ui}.js`. **Verified live:** element defined; toggle icon is the book SVG (not goo); status-dot goo size 40 @ speed 0.25 idle, accent color; toast computed font 18.45px / padding 8px 24px / gap 12 / goo 38; zero console errors. Dark/light + Windows-HC: accent var is theme-derived so it adapts; forced-colors can't be preview-emulated (see #86).
+**Where:** `src/vendor/goo-spinner.js` (vendored), `index.js` (import + toast glyph), `style.css` (global accent rule + toast +50% + dead pulse), `src/drawer/{drawer-render-status (status dot), drawer-render-tabs (empty state), drawer-events (refresh btn)}.js`, `drawer.html` (browse loading + refresh), `src/graph/graph.js`, `src/ui/{setup-wizard,settings-ui}.js`. **Verified live:** element defined; toggle icon is the book SVG (not goo); status-dot goo size 40 @ speed 0.25 idle, accent color; toast computed font 18.45px / padding 8px 24px / gap 12 / goo 38; zero console errors. Dark/light + Windows-HC: accent var is theme-derived so it adapts; forced-colors can't be preview-emulated (see #86).
 
 ---
 
 ## 88. Per-tool "Test message" button uses LIVE (unsaved) settings + `callAI` — keep it on the all-English accordion island (2026-06-19)
 
-Each AI-connection accordion (`buildAccordionHtml` in `src/ui/settings-ui.js`, one per `TOOL_CONNECTION_CONFIGS` key: aiSearch / scribe / autoSuggest / aiNotepad / librarian / optimizeKeys) has a **Test message** button. Handler (delegated on `#dle-sp-ai-connections` in `bindAccordionEvents`): `resolveConnectionConfig(toolKey)` → `callAI('You are a connection test…', 'Reply with exactly: OK', conn)` → ST-style toast.
+Each AI-connection accordion (`buildAccordionHtml` in `src/ui/settings-ui.js`, one per `TOOL_CONNECTION_CONFIGS` key: aiSearch / scribe / autoSuggest / aiNotepad / optimizeKeys) has a **Test message** button. Handler (delegated on `#dle-sp-ai-connections` in `bindAccordionEvents`): `resolveConnectionConfig(toolKey)` → `callAI('You are a connection test…', 'Reply with exactly: OK', conn)` → ST-style toast.
 
 - **Reads the LIVE connection config, including unsaved edits.** The accordion change handlers mutate the `settings` object synchronously (before the debounced save), so `resolveConnectionConfig` already reflects the dropdown/model the user just picked — the test probes what they're currently looking at, not the last-persisted value. Don't "fix" this by forcing a save first.
 - **Probe config overrides:** `skipThrottle = true` (a manual test must not consume `callAI`'s throttle window and block the next real call), `maxTokens = 64` (connectivity check, tiny reply), `disableThinkingOnClaude = true` (gotcha #80 — keep it a clean short reply).
@@ -1466,11 +1329,9 @@ Each AI-connection accordion (`buildAccordionHtml` in `src/ui/settings-ui.js`, o
 
 ## 89. Codex 5-agent audit fixes (26 confirmed bugs, 2026-06-20)
 
-Verification report: `audit/bug-audit-5-agent-2026-06-20-VERIFIED.md`. Tests: `test/audit-fix-{privacy,librarian,lifecycle,vault,secondary}.test.mjs` (333 assertions). The invariants this batch established or corrected — pin them, they sit on the same regression-prone surfaces as #50/#38/#46:
+Verification report: `audit/bug-audit-5-agent-2026-06-20-VERIFIED.md`. Tests: `test/audit-fix-{privacy,lifecycle,vault,secondary}.test.mjs` (333 assertions at the time; the librarian test file was removed with the Librarian). The invariants this batch established or corrected — pin them, they sit on the same regression-prone surfaces as #50/#38/#46:
 
-**Librarian routing — derive from the RESOLVED profile, NEVER ST global state (P1-5, P1-6).** Both `isToolCallingSupported()`'s tool-gate AND `getProviderFormat()`'s message-shape format MUST be derived from the resolved DLE Librarian profile (`resolveConnectionConfig('librarian')` → `ConnectionManagerRequestService.getProfile(profileId).api` → `CONNECT_API_MAP[api].source`), **not** global `connectionManager.selectedProfile` / `oai_settings.chat_completion_source`. Mirror `getResolvedModel(connConfig)` (already correct). The gate's source-check and model-check must answer about the SAME profile. The loop's `_resolveProviderFormat(connConfig)` must be passed `connConfig` (arg-less = global fallback = the bug). Failure modes the old code hit: false-skip of a valid Librarian + misleading "no function calling" warning; abort-then-throw when global set but Librarian unset; silent multi-turn tool-history corruption / 400 when Librarian provider ≠ global provider (the documented mixed-provider config, gotcha #12). The file's `getResolvedModel`/`getActiveProfileId` comments already named this principle ("#27 sym 2"); two sites violated it. **`getActiveProfileId()` is dead code (tests-only) — do not wire it into the gate.**
-
-**Emma session shares the AI circuit breaker (P3-1).** `librarian-session.js` `sendMessage` wraps `callAI` with `tryAcquireHalfOpenProbe` / `recordAiSuccess` / `recordAiFailure` + `isExcludedFromBreaker` (the scribe pattern). `callAI`/`callViaProfile` do **NOT** touch the breaker — callers own it. The old comment claiming "lower layers already called recordAiFailure()" was false; don't reinstate it.
+**Librarian routing (P1-5, P1-6) and Emma's breaker (P3-1):** (removed with the Librarian)
 
 **Diagnostics export — privacy (P1-2/3/4 + A1).** The shareable blob must never carry: (a) AI prompt/chat bodies — `export.js` redacts `systemPrompt`/`userMessage`/`response` to `[redacted len=N]` before scrub; (b) prompt-bearing settings/presets — `scrubber.js` redacts `/prompt/i` keys + `promptPresets` bodies to `[prompt len=N]` in the key-walk (key precedence: `SENSITIVE_KEY_RE` still wins); (c) serialized JSON/header secrets regardless of length — new `scrubString` patterns cover `"api_key":"…"`, `X-API-Key:`, `Authorization: Basic/Bearer`, `Cookie:`/`Set-Cookie:` (the old key-only redaction missed short/string-framed secrets); (d) URL userinfo creds — `stripUrlSecrets()` now also runs on the SHARED-path `api-url`/`reverseProxy` emissions in `state-snapshot.js`, not just the eyes-only reference file. Extends #19/#20.
 
@@ -1478,7 +1339,7 @@ Verification report: `audit/bug-audit-5-agent-2026-06-20-VERIFIED.md`. Tests: `t
 
 **Vault/index/cache/import (P1-1, P2-6/7/8, P3-2/3/4/5).** Fresh `buildIndex()` catch carries forward the failed vault's prior entries (`vaultSource===vault.name`), mirroring the reuse path — closes the silent live-index drop. Under `merge` mode, ANY vault failure commits the WHOLE prior snapshot (`skipCacheSave`) because merged entries keep only the first member's `vaultSource` — per-vault carry-forward can't recover a failed non-first member. Merge array-union list adds `cascadeLinks` + `refineKeys`. `cache-validate.js` rejects non-finite `tokenEstimate` (`!Number.isFinite || <0`) — `Infinity` used to pass and poison budget math. `convertWiEntry` uses `sanitizeFilename` (Windows reserved names / leading-trailing dots) instead of the weak local regex. Import `onProgress` fires in a per-entry `finally` so failed dedup/existence-check entries still advance the bar. Conflict-mode dupe warning uses one shared `conflictModeMessage(mode)` helper on BOTH fresh-build and reuse-sync paths (reuse used to always say "first"). Hierarchical pre-filter `callAI` now passes a category-selection `jsonSchema` (extends #80/#84).
 
-**Secondary/drawer/graph (P3-7..P3-11).** Librarian related-link `titleMap` is `Map<titleLower, Entry[]>` + trackerKey exclude (extends #50). Browse nav threads `vaultSource` (`browseNavigateVault`/`browseExpandedVault` state + pure `resolveNavTarget(entries,title,vaultSource)`) so duplicate titles open the right row. Graph + graph-health `titleToIdx` is `Map<titleLower, idx[]>` — edges/cycles wire to EVERY matching node (cross-vault duplicates no longer drop edges / false-orphan). Cartographer's Obsidian title link routes through `openObsidianUri` via the shared `.dle-obsidian-link` class + delegated handler + `rel="noopener noreferrer"` (extends #83). 24 dynamic JS-template `<button>`s across graph / librarian-review / drawer / cartographer got `type="button"` — #58's "Where" list (static `.html`) did not cover JS-built buttons.
+**Secondary/drawer/graph (P3-7..P3-11).** Browse nav threads `vaultSource` (`browseNavigateVault`/`browseExpandedVault` state + pure `resolveNavTarget(entries,title,vaultSource)`) so duplicate titles open the right row. Graph + graph-health `titleToIdx` is `Map<titleLower, idx[]>` — edges/cycles wire to EVERY matching node (cross-vault duplicates no longer drop edges / false-orphan). Cartographer's Obsidian title link routes through `openObsidianUri` via the shared `.dle-obsidian-link` class + delegated handler + `rel="noopener noreferrer"` (extends #83). 24 dynamic JS-template `<button>`s across graph / librarian-review / drawer / cartographer got `type="button"` — #58's "Where" list (static `.html`) did not cover JS-built buttons.
 
 **Prompt validator R2 narrowed (P2-9).** R2 rejects a body only when it contains a REAL vault-entry tag — `containsRealLorebookTag()`: an inline `#lorebook-…` hashtag at a word boundary, OR a YAML `tags:` block/array/value listing a `lorebook-…` value. A bare/backticked prose mention (e.g. `` `lorebook-guide` `` in the canonical Librarian prompts) now PASSES. Applies to both overlay validation and the delete-cage preflight (`verifyPromptFileForDeletion` routes through `validatePromptShape`). Test fixtures that asserted prose mentions are rejected were updated to real `#hashtag` forms.
 
@@ -1494,17 +1355,17 @@ Source report: `audit/bug-audit-fresh-2026-06-20/REPORT.md`. This batch sits on 
 
 **Diagnostics scrubber — URL userinfo + bare token/auth keys (H-3, L-29, L-30).** A new FIRST `PATTERNS` entry strips `scheme://user:pass@host` → `scheme://<redacted>@host` and MUST run before the IPv4/email/hostname patterns: a numeric-IP/localhost proxy (`https://user:p4ss@127.0.0.1:8080`, the self-hosted shape) otherwise leaked the PASSWORD in plaintext (IPv4 masks the host; email can't match a numeric TLD; the host pattern only sees the `user` segment). DLE persists per-tool `*ProxyUrl` settings dumped verbatim into the verbose blob, so this is load-bearing. `SENSITIVE_KEY_RE` adds word-boundary `\btoken\b`/`\bauth\b` (catches a key named exactly `token`/`auth`; the `\b` keeps `maxTokens`/`tokenizer`/`tokenEstimate` SAFE). `interceptors.js` scrubs the fetch `errorBody` BEFORE the 500-char slice so a secret straddling the boundary isn't severed mid-pattern. Extends #19/#20/#89-privacy.
 
-**Priority falsy-coalesce class — use `?? 50`, NEVER `|| 50` (M-1, L-1).** `priority: 0` is the highest importance in the lower-wins convention; `||` silently demoted it to the 50 default at EVERY sort/compare/label/write site (`comparePriority`, `core/matching.js` gating sort, drawer Browse sort, graph color, librarian tool-results, AND the librarian vault-WRITE `priority: ${draft.priority}` — that one corrupted the on-disk frontmatter). WI import (`convertWiEntry`) is `Number(order)`→NaN for missing, so it gates on `Number.isFinite` (not `??`). `fuzzySearchMinScore` likewise `??` (though clamped ≥0.1, so 0 never reaches runtime). **The missing-priority DEFAULT stays 50, NOT the parser's 100** — `comparePriority`/`validateCachedEntry`/`stages` tests pin 50; aligning to 100 (the audit's secondary recommendation) is a behavior change, deferred. Same class warning as #50: reviewers reject new `priority || N`.
+**Priority falsy-coalesce class — use `?? 50`, NEVER `|| 50` (M-1, L-1).** `priority: 0` is the highest importance in the lower-wins convention; `||` silently demoted it to the 50 default at EVERY sort/compare/label/write site (`comparePriority`, `core/matching.js` gating sort, drawer Browse sort, graph color, and the since-removed Librarian's tool-results and vault write). WI import (`convertWiEntry`) is `Number(order)`→NaN for missing, so it gates on `Number.isFinite` (not `??`). `fuzzySearchMinScore` likewise `??` (though clamped ≥0.1, so 0 never reaches runtime). **The missing-priority DEFAULT stays 50, NOT the parser's 100** — `comparePriority`/`validateCachedEntry`/`stages` tests pin 50; aligning to 100 (the audit's secondary recommendation) is a behavior change, deferred. Same class warning as #50: reviewers reject new `priority || N`.
 
 **Verdict store — IDB handle + hydrate-vs-hydrate race (M-3, M-4).** `pruneCurrentChat`'s common under-cap path (`victims.length === 0`) must `db.close()` before `return 0` — it sat inside the phase-1 `try` and skipped both that try's catch-close and phase-2's `finally`, leaking an `IDBDatabase` every ~10th `writeVerdict`. `hydrateChat` stamps a module `hydrationEpoch = ++hydrationEpoch` at entry and bails (`if (myEpoch !== hydrationEpoch) return 0`) after the `await listIdbForChat` — a slow read resolving after a newer `CHAT_CHANGED` (rapid A→B→C) otherwise wrote a left-behind chat's rows into the ring and could evict the live chat under `RING_CAP`. Complements the F2 write-vs-hydrate fix (#46) — that one only covered writeVerdict-vs-hydrate.
 
 **Matching — char-scan UNION, cascade refine-bypass, probability trace (M-13, L-11, L-12).** `characterContextScan` is a UNION of title-matched AND key-matched entries (`[...titleMatches, ...keyMatches]`, deduped by the `matchedSet.has` object-identity guard) — the old `titleMap.get() || entries.filter(keyMatch)` made them mutually exclusive, dropping `keys:`-referencing entries whenever any entry's TITLE equalled the character name. Cascade INTENTIONALLY bypasses the `refine_keys`/`selectiveLogic` gate (it's an explicit author title-pull, like the warmup bypass — BUG-035); recursion is keyword-triggered so it KEEPS the gate via `testEntryMatch`. Cascade + recursion probability skips now push to `probabilitySkipped` so `/dle-why` can explain them.
 
-**Settings default-fill + connection-mode enums (L-37, L-41, L-13).** `getSettings()` default-fill now ALSO re-fills when the default is an object/array but the stored value is `null` (a persisted `null` `analyticsData` survived the `=== undefined` gate, then threw in `Object.hasOwn(null, …)` at commit → misleading "Couldn't load your lore" toast). Numeric/string/boolean null-sentinels (e.g. `librarianSessionToolCallCap`) stay untouched. `aiSearchConnectionMode` gains an enum constraint `['profile','proxy']` — it is the inheritance ROOT and must never be `'inherit'` (would cascade `'inherit'` into `callAI` → throw); no whitelist previously guarded it. `applyStripDedup`'s `defaultSettings` fallback is the canonical injection defaults `{injectionPosition:1, injectionDepth:4, injectionRole:0}`, NOT `{}` — `{}` produced literal `undefined` key slots that never matched the write side for any external/diagnostic caller. (L-42: `librarianConnectionMode` enum INTENTIONALLY still permits `'proxy'` — the dead-head dispatch throws a descriptive migration error; per the v2.5 plan, don't remove proxy surfaces till v3.)
+**Settings default-fill + connection-mode enums (L-37, L-41, L-13).** `getSettings()` default-fill now ALSO re-fills when the default is an object/array but the stored value is `null` (a persisted `null` `analyticsData` survived the `=== undefined` gate, then threw in `Object.hasOwn(null, …)` at commit → misleading "Couldn't load your lore" toast). Numeric/string/boolean null-sentinels stay untouched. `aiSearchConnectionMode` gains an enum constraint `['profile','proxy']` — it is the inheritance ROOT and must never be `'inherit'` (would cascade `'inherit'` into `callAI` → throw); no whitelist previously guarded it. `applyStripDedup`'s `defaultSettings` fallback is the canonical injection defaults `{injectionPosition:1, injectionDepth:4, injectionRole:0}`, NOT `{}` — `{}` produced literal `undefined` key slots that never matched the write side for any external/diagnostic caller.
 
-**index.js lifecycle hardening (L-36, L-38, L-39, L-40).** Injection-log write now guards `epoch===chatEpoch && lockEpoch===generationLockEpoch` (was epoch-only; defense-in-depth, mirrors Stages 8/9). The agentic-dispatch inner `finally` guards each cleanup step (`setSendButtonState`/`activateSendButtons`/`_removePipelineStatus`) in its own try so a throw can't skip the `GENERATION_ENDED` emit or strand the send button. The PM phase-1 boot poll (rapid 10s interval + its deadline timeout) is tracked at module scope (`_pmRegistrationPhase1Interval`/`_pmRegistrationPhase1Timeout`) and cleared in teardown — a hot-reload otherwise left the old instance's poll firing into the new module (extends #53). The notepad-extract in-progress flag is set INSIDE the IIFE `try` (was before it, contradicting its own comment) so a sync throw can't leak it.
+**index.js lifecycle hardening (L-36, L-38, L-39, L-40).** Injection-log write now guards `epoch===chatEpoch && lockEpoch===generationLockEpoch` (was epoch-only; defense-in-depth, mirrors Stages 8/9). The PM phase-1 boot poll (rapid 10s interval + its deadline timeout) is tracked at module scope (`_pmRegistrationPhase1Interval`/`_pmRegistrationPhase1Timeout`) and cleared in teardown — a hot-reload otherwise left the old instance's poll firing into the new module (extends #53). The notepad-extract in-progress flag is set INSIDE the IIFE `try` (was before it, contradicting its own comment) so a sync throw can't leak it.
 
-**Subsystem one-liners.** Librarian (M-5: epoch-guard `break` pushes an `<aborted>` tool-result before breaking so no orphaned `tool_call`→400; M-6: re-derive `frontmatterOverride` after a programmatic `updateFieldsFromDraft`; M-7: `persistGaps` evicts OLDEST-first to keep `loreGaps` chronological; M-14: restore the pre-edit snapshot on epoch-mismatch return, not just 'Aborted by user'; M-15/L-18: exclude synthetic budget-nudge messages — `msg.synthetic` — from BOTH the DOM↔session index map and the restore render; L-17: `buildChatMessages` synthesizes a `(continue)` user turn so the array is never system-only→400; L-19: guard `s.analyticsData` before deref). Graph/drawer (M-16: `e`/`E` key gets the DAG guard the dblclick handler already had; M-18: `getNodeRadius` honors `graphNodeSizeMode`; L-24: clear the "Click again to confirm" label+timer on the confirming click; L-25: Browse "since last gen" keys on `vaultSource:title`; L-26: custom-field value cache keys on `length:indexTimestamp`; L-27: focus-tree defers `fitToView` 260ms like the DAG path; L-28: drop the dead `display=''` write). i18n (M-9: strip inert `" +` artifacts from ja-jp's BACKTICK `LIBRARIAN_PRIMER`/`_FIRSTRUN_QA_SCRIPT` — genuine `"…" +` concat exports were correct; L-31: drop the English `'s'` plural `${1}` from `AGENTIC_TOOLS_INTRO` in ja/zh/ru; L-32: `extractPlaceholders` also matches mustache `{{name}}`; L-33: `getAiPromptLocale` reads the `aiPromptLocale` setting per its JSDoc). Vault (M-12: merge mode + ANY vault fetch failure commits the WHOLE prior snapshot in the REUSE path too — merged provenance keeps only the first member's `vaultSource`, so per-vault carry-forward can't recover a failed non-first member; was only in the full build, P2-7/#89; L-2: `_parserWarnings` persisted in the cache whitelist; L-6: frontmatter key regex is `/u`-flagged `\p{L}` so non-ASCII keys parse; L-7/L-8: `entry.keys` array-guard + `avgDl>0` guard in BM25; L-9: `classifyError` CORS text points to Connection Profiles, not removed `enableCorsProxy`; L-10: `clampWithLog` rejects NaN; L-43: dead `_buildReject` removed). **Verified-correct / intentional (do NOT "fix"):** L-5 (scanner abort counter — the only abort source fires after the progress popup's DOM is gone, so the stalled bar is never observed); L-21 (`/dle-set-folder` matchCount already mirrors `applyFolderFilter`'s `!folderPath → true` root rule); L-4 (`classifyReuseFetch` is test-pinned, not a runtime caller); L-14 (degenerate sliding-window cache tier is inert but harmless, kept as a net).
+**Subsystem one-liners.** Lore gaps (M-7: `persistGaps` evicts OLDEST-first to keep `loreGaps` chronological; the batch's other Librarian fixes were removed with it). Graph/drawer (M-16: `e`/`E` key gets the DAG guard the dblclick handler already had; M-18: `getNodeRadius` honors `graphNodeSizeMode`; L-24: clear the "Click again to confirm" label+timer on the confirming click; L-25: Browse "since last gen" keys on `vaultSource:title`; L-26: custom-field value cache keys on `length:indexTimestamp`; L-27: focus-tree defers `fitToView` 260ms like the DAG path; L-28: drop the dead `display=''` write). i18n (L-32: `extractPlaceholders` also matches mustache `{{name}}`; L-33: `getAiPromptLocale` reads the `aiPromptLocale` setting per its JSDoc). Vault (M-12: merge mode + ANY vault fetch failure commits the WHOLE prior snapshot in the REUSE path too — merged provenance keeps only the first member's `vaultSource`, so per-vault carry-forward can't recover a failed non-first member; was only in the full build, P2-7/#89; L-2: `_parserWarnings` persisted in the cache whitelist; L-6: frontmatter key regex is `/u`-flagged `\p{L}` so non-ASCII keys parse; L-7/L-8: `entry.keys` array-guard + `avgDl>0` guard in BM25; L-9: `classifyError` CORS text points to Connection Profiles, not removed `enableCorsProxy`; L-10: `clampWithLog` rejects NaN; L-43: dead `_buildReject` removed). **Verified-correct / intentional (do NOT "fix"):** L-5 (scanner abort counter — the only abort source fires after the progress popup's DOM is gone, so the stalled bar is never observed); L-21 (`/dle-set-folder` matchCount already mirrors `applyFolderFilter`'s `!folderPath → true` root rule); L-4 (`classifyReuseFetch` is test-pinned, not a runtime caller); L-14 (degenerate sliding-window cache tier is inert but harmless, kept as a net).
 
 ---
 
@@ -1537,7 +1398,7 @@ ST clones a git extension into a folder named after the **repo slug** — verifi
 
 **Migration is partial by design** (no big-bang): the first tranche converted error/warning bodies that benefit from copy/dedup (`classifyError(err)` sites + vault/import/ai failures). Most info/success and many transient warnings remain raw `toastr.*` — that's intentional, tracked as a follow-up. New error sites SHOULD use `notify.error(msg, { copyable: true })`.
 
-**Where:** facade + dedup in `src/toast-dedup.js`. First adopters: `src/ui/commands-ai.js`, `commands-vault.js`, `commands-pipeline.js`, `commands-admin.js`, `popups.js`, `src/librarian/librarian-review.js`, `src/ai/auto-suggest.js`, `src/drawer/drawer-events.js`. CSS affordances: `.dle-toast-copyable` / `.dle-toast-copied` / `.dle-toast-actions` / `.dle-toast-action`.
+**Where:** facade + dedup in `src/toast-dedup.js`. First adopters: `src/ui/commands-ai.js`, `commands-vault.js`, `commands-pipeline.js`, `commands-admin.js`, `popups.js`, `src/ai/auto-suggest.js`, `src/drawer/drawer-events.js`. CSS affordances: `.dle-toast-copyable` / `.dle-toast-copied` / `.dle-toast-actions` / `.dle-toast-action`.
 
 ---
 
@@ -1557,7 +1418,7 @@ Both constants live in `src/drawer/drawer-state.js`. **Why the viewport source w
 
 **Rule:** `runPipeline` shallow-snapshots settings once per run (`const settings = { ...getSettings() }`) and passes that snapshot as an explicit parameter to every stage it invokes: `matchEntries(chat, snapshot, { settings })`, `hierarchicalPreFilter(candidates, chat, signal, settings)`, `buildCandidateManifest(candidates, bootstrap, settings)`, `aiSearch(..., signal, settings)`. When adding a NEW stage call inside `runPipeline`, thread the snapshot the same way — do not let the callee default to its own `getSettings()`.
 
-**Why:** Before this fix the snapshot's "async stages see a consistent view" comment was a lie — every one of those callees re-read live `getSettings()` internally, so a user editing settings during the (up to tens of seconds) AI await made the keyword fallback, cache keys, and thresholds read DIFFERENT values than `trace.mode` recorded. The callees keep a `settingsIn || getSettings()` fallback ONLY for out-of-pipeline callers (settings-ui test button, librarian-session, external API) where live settings are correct.
+**Why:** Before this fix the snapshot's "async stages see a consistent view" comment was a lie — every one of those callees re-read live `getSettings()` internally, so a user editing settings during the (up to tens of seconds) AI await made the keyword fallback, cache keys, and thresholds read DIFFERENT values than `trace.mode` recorded. The callees keep a `settingsIn || getSettings()` fallback ONLY for out-of-pipeline callers (settings-ui test button, external API) where live settings are correct.
 
 **Also in this fix:** the per-generation `analyticsData: { ...rawSettings.analyticsData }` copy was deleted — it had zero readers inside `runPipeline` (index.js's Stage 8 `recordAnalytics` uses its own live `settings.analyticsData`, which is the same object `getSettings()` returns and mutations must persist through).
 
@@ -1624,7 +1485,7 @@ Module-level render-hash memos in `src/drawer/drawer-render-tabs.js` (injection 
 
 ## 100. `neutralizeClosingTag` is the ONE fence sanitizer for `<entry>` bodies in AI manifests (thermo #20, 2026-07-03)
 
-`neutralizeClosingTag(text, tagName)` in `src/helpers.js` (ZWSP inserted after `</`, case-insensitive, whitespace-tolerant — mirror of ai.js's `sanitizeWrapped`) neutralizes fence breakouts in AI-facing manifests. Both `buildCandidateManifest` (`src/ai/manifest.js`) and `formatLinkedManifest` (`src/librarian/librarian-tools.js`) sanitize the **entire inner body** (title line + summary — the title inside the body line was the same hole; only the `name=""` attribute was escaped before). A literal `</entry>` in a summary used to break the XML fence and inject text into the lore-selection prompt / Emma's context. Any new XML-fenced surface that interpolates untrusted vault content MUST import this helper — don't duplicate it, don't hand-roll a regex. This sanitizer applies to AI-SELECTION manifests only — injected prose for the writing prompt is NOT altered. Guards: `FEN-1`–`FEN-4` in `test/unit.mjs`.
+`neutralizeClosingTag(text, tagName)` in `src/helpers.js` (ZWSP inserted after `</`, case-insensitive, whitespace-tolerant — mirror of ai.js's `sanitizeWrapped`) neutralizes fence breakouts in AI-facing manifests. `buildCandidateManifest` (`src/ai/manifest.js`) sanitizes the **entire inner body** (title line + summary — the title inside the body line was the same hole; only the `name=""` attribute was escaped before). A literal `</entry>` in a summary used to break the XML fence and inject text into the lore-selection prompt. Any new XML-fenced surface that interpolates untrusted vault content MUST import this helper — don't duplicate it, don't hand-roll a regex. This sanitizer applies to AI-SELECTION manifests only — injected prose for the writing prompt is NOT altered. Guards: `FEN-1`–`FEN-4` in `test/unit.mjs`.
 
 ---
 
@@ -1650,47 +1511,21 @@ The v2.6 settings overhaul deleted the Connection/Features header rows and both 
 
 - **`TAB_ALIAS` (`openSettingsPopup`, `src/ui/settings-ui.js`) is permanent, not migration debris.** `matching`→`search`, `ai`→`search`, `connection`→`obsidian`, `features`→`author-notebook`. Persisted `dle-last-settings-tab` values, `openSettingsPopup({tab, subtab})` callers, and `data-goto-tab`/`data-goto-subtab` attrs may carry pre-overhaul tokens indefinitely. `resolveTabToken(tab, subtab)` prefers the subtab (it IS a tab now), then aliases. Do not remove.
 - **The merged Search tab spans TWO DOM panel blocks** that both carry `data-settings-panel="search"` (`#dle-sp-search` = old Matching, `#dle-sp-ai` = old AI Search — kept in place to avoid relocating 170 lines across the Injection panel). `switchSettingsTab`'s attribute selector activates BOTH; any code that assumes one panel per token (e.g. `querySelector('.dle-settings-panel.active')` — singular) is wrong. The settings-search jump-highlight already walks ALL `.active` blocks. Never give the second block its own nav entry.
-- **Nav-API bridge:** handlers wired in `bindPopupEvents` (different function scope from `openSettingsPopup`) reach `switchSettingsTab`/`resolveTabToken` via `$container.data('dleNav')`. The pre-overhaul code referenced these closures as free variables from `bindPopupEvents`/`bindAccordionEvents` — a latent `ReferenceError` at click time on `.dle-goto-tab-link` and the librarian profile-missing deep link. Any NEW cross-panel navigation wired outside `openSettingsPopup` MUST use the bridge.
+- **Nav-API bridge:** handlers wired in `bindPopupEvents` (different function scope from `openSettingsPopup`) reach `switchSettingsTab`/`resolveTabToken` via `$container.data('dleNav')`. The pre-overhaul code referenced these closures as free variables from `bindPopupEvents`/`bindAccordionEvents` — a latent `ReferenceError` at click time on `.dle-goto-tab-link`. Any NEW cross-panel navigation wired outside `openSettingsPopup` MUST use the bridge.
 - **Storage:** `dle-last-settings-tab` (accountStorage) now stores flat tokens; `dle-last-features-subtab`/`dle-last-connection-subtab` are read ONCE during alias resolution and never written again. Accordion collapse state: `dle-settings-nav-groups` (accountStorage, JSON `{group: collapsed}`); first run (key absent) = all groups collapsed, About pinned as landing panel. `switchSettingsTab` auto-expands the active tab's group.
 - **Type tokens re-anchored (global):** `--dle-text-*` are now `calc(var(--mainFontSize) * ratio)` instead of `em` — one fixed size per token everywhere, tracks ST's font-scale slider, kills nested-em compounding. `rem` would NOT track fontScale (ST sizes body, not html). `.dle-settings-popup` scopes a bolder `lg` 1.25 / `xl` 1.6 override; the drawer/graph/popups keep the global 1.1/1.25.
 - **ARIA:** sidebar is a plain `nav` + `aria-current="page"` — NOT `role=tablist` (accordion group headers are invalid tablist children; same violation class as the old nested subtabs, BUG-225 lineage). Panels have no `role=tabpanel`.
 
 ---
 
-## 104. Flag activity is gated on `flagLoreAction().ok` — ghost flags desync chat vs drawer (GHOST-FLAG, 2026-07-03)
+## 104. (removed with the Librarian) Flag activity is gated on `flagLoreAction().ok` — ghost flags desync chat vs drawer (GHOST-FLAG, 2026-07-03)
 
-Live repro on v2.6.0: the assistant reply header said "3 gaps noted" while the drawer Librarian → Flags panel was truthfully empty (`deeplore_lore_gaps: []`). Root cause chain:
-
-1. Models routinely omit `reason` in the `flag` tool call **despite `required: ['title','reason']` in the schema** — some provider backends (observed: CMRS `cc`-mode profiles) don't enforce JSON-schema `required`.
-2. Old `flagLoreAction` hard-rejected on missing reason (`return 'No reason provided.'`) **before** creating/persisting the gap — silently discarding real gap signal.
-3. Both agentic-loop call paths (inline `case 'flag'` and `_runFlagIteration`) pushed the flag into `toolActivity` **without checking the result** — the per-message "N gaps noted" dropdown rendered flags that were never in `loreGaps`.
-
-Invariants now:
-
-- **`flagLoreAction(args, callerEpoch?)` returns `{ ok, message }`**, not a string. `message` = tool-result text for the model (wording unchanged). `ok` = "this gap is really in `loreGaps` (validated + `persistGaps` succeeded on a matching epoch)". `ok` is `false` on missing title, epoch mismatch, or `persistGaps` failure (no chatMetadata — BUG-304 cold start).
-- **Missing/empty `reason` no longer rejects the flag** — recorded with `reason: ''`. Title stays mandatory. The drawer already renders empty reasons (`'No reason provided'` fallback, `drawer-events.js`). `findSimilarGap` merge is safe with `''` (`.includes('')` keeps the existing reason).
-- **Both loop paths push `toolActivity` ONLY when `flagResult.ok === true`.** A bare-string return is treated as NOT recorded (contract drift guard: reverting the return type makes flags visibly stop rendering instead of silently ghosting). Any future `flagLoreAction` call site MUST gate its render/activity on `.ok`.
-- Attempts still count toward `MAX_FLAG_CALLS` (cap counts calls, not successes).
-
-Guards: `test/regression.test.mjs` GHOST-FLAG-1..3 (loop gate, string-contract drift, backgrounded-turn end-to-end). `flagLoreAction`'s leniency itself is not node-testable (ST imports) — verified live.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---
 
-## 105. Backgrounded FLAG turn RETRIES a malformed flag call — the model drifts to `{flags:[{note,…}]}` when prose beats schema (2026-07-04)
+## 105. (removed with the Librarian) Backgrounded FLAG turn RETRIES a malformed flag call — the model drifts to `{flags:[{note,…}]}` when prose beats schema (2026-07-04)
 
-Live repro on v2.6.1 (Opus 4.6 via CMRS `cc`): the gap-finder ran every turn (`backgroundFlag:true`), the model found real gaps and called `flag` — but with **`{ flags: [ { note, type, urgency }, … ] }`**: a batched array with prose-derived field names, NOT the flat `TOOL_FLAG` schema (`{title, reason, flag_type, urgency}`, `required:['title','reason']`). `flagLoreAction` read `args.title` → `undefined` → rejected every flag → drawer Flags panel stayed empty despite the header noting gaps.
-
-**Root cause is prompt-vs-schema, not a parser bug.** The schema on the wire is correct and flat (verified). The model followed the *flagging prose* over the JSON schema: the post-write `buildFlaggingInstructions` said "Flag types:" / "Urgency levels:" and never named `title`/`reason`, and "Maximum N flags per turn" invited batching — so the model generalized the earlier `search({queries:[…]})` array pattern into `flag({flags:[…]})` and invented `note` for the unnamed description field. Fixed on two axes:
-
-1. **Prompt** — `buildFlaggingInstructions` (hardcoded EN) and `AGENTIC_TOOL_FLAG` (i18n, **EN only** so far — 6 locales lag) now name the flat fields with an example: `flag(title, reason, flag_type, urgency)` + "one call per gap, do not batch".
-2. **Retry backstop (feedback-to-agent)** — `_runFlagIteration` is now a bounded loop (`MAX_FLAG_ITERATIONS = 2`). `flagInputProblem(input)` flags a malformed shape (a `flags` array, non-object, or missing `title`) **before** `flagLoreAction`; a malformed call is NOT recorded and NOT counted toward `MAX_FLAG_CALLS` — instead `FLAG_FORMAT_HINT` is fed back as the tool result and the loop re-calls so the model re-emits the flat shape. One retry only: fumble the format twice and the gaps are dropped rather than looping.
-
-Invariants:
-- **Missing `reason` is NOT malformed** — `flagInputProblem` only trips on a `flags` array / non-object / missing `title`. The GHOST-FLAG (#104) leniency for reason-less flags MUST survive; treating missing reason as malformed would re-break titled reason-less flags.
-- **A `flagLoreAction` `ok:false` (persist failure) is NOT malformed** — retrying can't fix missing chatMetadata, so it does not trip the retry loop (only the pre-`flagLoreAction` shape check does).
-- Every retry iteration re-runs the full epoch/lock/abort guards (gotcha #21 + #81). A chat switch or superseding generation between the round-trips bails cleanly (`return flagCount`).
-- The retry lives ONLY in the backgrounded `_runFlagIteration`. The **inline** flag path (main loop `case 'flag'`, write+flag in one response) is single-shot by design (breaks on `writeDone`) — it does not retry; the prompt fix is its only mitigation.
-
-Guards: `test/regression.test.mjs` F5-RETRY (malformed → correction → flat re-emission recorded, exactly one extra API call) + F5-RETRY-2 (fumble twice → 0 recorded, capped at 2 iterations). F5a-e + GHOST-FLAG-1..3 unchanged (well-formed and pre-`flagLoreAction`-bail paths). Prompt wording verified live on the 8002 test instance.
+Removed 2026-10-27 with `src/librarian/` and the reply takeover. The number stays so references still resolve.
 
 ---

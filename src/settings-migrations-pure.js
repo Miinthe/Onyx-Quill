@@ -88,4 +88,9 @@ export function runMigrations(settings, fromVersion, _toVersion) {
             if (left.length) settings._proxyMigrationV2_5_notice = left; else delete settings._proxyMigrationV2_5_notice;
         }
     }
+    if (fromVersion < 7) {
+        // 6 → 7 (2026-11-02, Miinthe: "finally remove emma from my code"): the writing-guide tag drops the Librarian's name.
+        if (typeof settings.librarianGuideTag === 'string' && settings.guideTag == null) settings.guideTag = settings.librarianGuideTag;
+        delete settings.librarianGuideTag;
+    }
 }

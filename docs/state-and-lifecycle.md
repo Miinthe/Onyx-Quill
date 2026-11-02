@@ -111,20 +111,17 @@ under `multiVaultConflictResolution='all'` (CLAUDE.md trackerKey invariant).
 | `scribeInProgress` | `boolean` | **NOT reset on CHAT_CHANGED** | runScribe | scribe lock |
 | `lastScribeSummary` | `string` | Chat (hydrated) | runScribe, CHAT_CHANGED | scribe context, AI search |
 
-### Librarian State
+### Lore Gap State
+(The Librarian was removed on 2026-10-27; its search counter, stats and usage readouts went with it. The lore gaps stayed: `src/lore-gaps.js`, shown as Mero's requests.)
+
 | Variable | Type | Reset scope | Writers | Readers |
 |---|---|---|---|---|
-| `loreGaps` | `array` | Chat (hydrated) | persistGaps, CHAT_CHANGED | drawer librarian tab (hidden in this fork), Mero › Requests (`src/mero-window.js`) |
-| `loreGapSearchCount` | `number` | Generation (→0) | onGenerate (agentic dispatch), searchLoreAction | max search limit |
-| `librarianSessionStats` | `{searchCalls, flagCalls, estimatedExtraTokens}` | **Session** (NOT reset) | librarian-tools.js | drawer footer |
-| `librarianChatStats` | `{searchCalls, flagCalls, estimatedExtraTokens}` | Chat (→zeroed) | librarian-tools.js, CHAT_CHANGED | drawer (settings popup readout only — NOT footer) |
-| `librarianLastUsage` | `{input, output, total}` | Chat (→zeroed) | index.js (post-`runAgenticLoop`, from `result.usage`), CHAT_CHANGED | drawer footer `.dle-librarian-usage` readout |
+| `loreGaps` | `array` | Chat (hydrated) | persistGaps (`src/lore-gaps.js`), CHAT_CHANGED | Mero › Requests (`src/mero-window.js`) |
 
 ### Pipeline Control Flags
 | Variable | Type | Reset scope | Writers | Readers |
 |---|---|---|---|---|
 | `skipNextPipeline` | `boolean` | Consumed on use (→false) | commands-ai.js (`/dle-review`) | onGenerate (early return before tool-call check) |
-| `suppressNextAgenticLoop` | `boolean` | Consumed on use (→false) | drawer-events.js (skip-tools toggle button) | onGenerate (agentic dispatch branch) |
 
 ### UI State
 | Variable | Type | Reset scope | Writers | Readers |
@@ -197,14 +194,14 @@ Each observable is a `Set<() => void>`. Registration returns an unsubscribe func
 | Index updated | `onIndexUpdated` | `notifyIndexUpdated` | finalizeIndex in vault.js | drawer, settings-ui |
 | AI stats | `onAiStatsUpdated` | `notifyAiStatsUpdated` | aiSearch, scribe calls | drawer footer |
 | Circuit state | `onCircuitStateChanged` | `notifyCircuitStateChanged` | recordAiSuccess/Failure | drawer, settings-ui |
-| Injection sources ready | `onInjectionSourcesReady` | `notifyInjectionSourcesReady` | `writeVerdict()` commit in onGenerate (index.js :1217, :1239 — fires immediately after the per-turn verdict is written, before the agentic loop / ST generation) | drawer (Why? tab only) |
+| Injection sources ready | `onInjectionSourcesReady` | `notifyInjectionSourcesReady` | `writeVerdict()` commit in onGenerate (index.js :1217, :1239 — fires immediately after the per-turn verdict is written, before ST generation) | drawer (Why? tab only) |
 | Pipeline complete | `onPipelineComplete` | `notifyPipelineComplete` | onGenerate finally, CHAT_CHANGED | drawer (all tabs) |
 | Gating changed | `onGatingChanged` | `notifyGatingChanged` | context/field changes, CHAT_CHANGED | drawer gating tab |
 | Pin/block changed | `onPinBlockChanged` | `notifyPinBlockChanged` | pin/block commands | drawer injection tab |
 | Generation lock | `onGenerationLockChanged` | `notifyGenerationLockChanged` | setGenerationLock | drawer status |
 | Field definitions | `onFieldDefinitionsUpdated` | `notifyFieldDefinitionsUpdated` | setFieldDefinitions | drawer gating tab, rule builder |
 | Indexing state | `onIndexingChanged` | `notifyIndexingChanged` | setIndexing | drawer status |
-| Lore gaps | `onLoreGapsChanged` | `notifyLoreGapsChanged` | setLoreGaps | drawer librarian tab (hidden), Mero › Requests (`src/mero-window.js`) |
+| Lore gaps | `onLoreGapsChanged` | `notifyLoreGapsChanged` | setLoreGaps | Mero › Requests (`src/mero-window.js`) |
 | Claude auto-effort **(DORMANT, gotcha #82)** | `onClaudeAutoEffortChanged` | (inline in setter) | ~~setClaudeAutoEffortState~~ no live caller | drawer chip, settings banner (dormant) |
 | Pipeline phase | `onPipelinePhaseChanged` | `notifyPipelinePhase` (via `setPipelinePhase`) | `setPipelinePhase()` | drawer status display |
 
@@ -287,12 +284,9 @@ drop is now `clearChatIdb(chatId)`, used by the CHAT_DELETED handler — not on 
 See `docs/gotchas.md` #46. `index.js` imports these aliased: `clearRing as clearVerdictRing`,
 `setCurrentChatId as setVerdictChatId`, `hydrateChat as hydrateVerdictChat` (index.js :90-93).
 
-### 8. Librarian State Hydration
+### 8. Lore Gap Hydration
 ```
 setLoreGaps(metadata.deeplore_lore_gaps?.map(normalizeLoreGap) || [])
-setLoreGapSearchCount(0)
-setLibrarianChatStats({...zeroed...})
-clearSessionActivityLog()
 ```
 
 ### 9. UI Reset + Notifications
@@ -307,11 +301,11 @@ If `injectionMode === 'prompt_list'`, re-registers PM entries for the new active
 
 ### 11. Chat Load UI Injection
 Deferred via `setTimeout` + `requestAnimationFrame`. Epoch-guarded (`injectEpoch === chatEpoch`).
-- **Migration pass 1**: `tool_invocations` → `deeplore_tool_calls` (BUG-126 sentinel)
+- **Migration pass 1**: (removed with the Librarian)
 - **Migration pass 2**: `deeplore_sources` from empty intermediates → correct reply
-- **UI injection**: Cartographer buttons + Librarian dropdowns on last 50 messages
+- **UI injection**: Cartographer buttons on last 50 messages
 
-**Save semantics:** When migration mutated `m.extra.*` and/or set the `deeplore_migration_v2` sentinel, persistence MUST go through `await saveChatConditional()`, not `saveMetadataDebounced()`. The debounced metadata save can be cancelled by a CHAT_CHANGED that fires before the timer expires — the sentinel and message extras would both be lost, so the migration would re-run on the next reload while the dropdown UI vanishes for the current session. The RAF callback is async; re-check `injectEpoch === chatEpoch` immediately before the await.
+**Save semantics:** When migration mutated `m.extra.*` and/or set the `deeplore_migration_v2` sentinel, persistence MUST go through `await saveChatConditional()`, not `saveMetadataDebounced()`. The debounced metadata save can be cancelled by a CHAT_CHANGED that fires before the timer expires — the sentinel and message extras would both be lost, so the migration would re-run on the next reload. The RAF callback is async; re-check `injectEpoch === chatEpoch` immediately before the await.
 
 ---
 
@@ -324,10 +318,10 @@ All registered via `_registerEs()` in `init()`. Full list:
 | `GENERATION_STOPPED` | Release lock, clear status, bump lockEpoch, clear prompts (inline in `init()`) |
 | `GENERATION_ENDED` (AI Notebook) | Extract `<dle-notes>` (tag mode) or async extract (extract mode) (inline in `init()`) |
 | `CHARACTER_MESSAGE_RENDERED` | Cartographer sources, AI Notebook fallback, Scribe trigger, Auto-suggest (inline in `init()`) |
-| `MESSAGE_SWIPED` | Clear tool calls/sources/notes on swiped message, rebuild counts (inline in `init()`) |
-| ~~`MESSAGE_DELETED`~~ | *(Removed — agentic loop produces no intermediates to clean up)* |
+| `MESSAGE_SWIPED` | Clear sources/notes on swiped message, rebuild counts (inline in `init()`) |
+| ~~`MESSAGE_DELETED`~~ | *(Removed)* |
 | `MESSAGE_SWIPE_DELETED` | Clean up per-message extras (inline in `init()`) |
-| `CHAT_DELETED` / `GROUP_CHAT_DELETED` | `_onChatDeleted(name)` — clear Librarian session state, then evict the deleted chat's verdict IDB rows (see note below, L3) |
+| `CHAT_DELETED` / `GROUP_CHAT_DELETED` | `_onChatDeleted(name)` — evict the deleted chat's verdict IDB rows (see note below, L3) |
 | `CONNECTION_PROFILE_DELETED` | `_onProfileDeleted` — null dangling profileIds, toast |
 | `CONNECTION_PROFILE_UPDATED` | `_onProfileUpdated` — invalidate settings cache |
 | `SETTINGS_UPDATED` | Invalidate settings cache (inline in `init()`) |
@@ -343,7 +337,7 @@ All registered via `_registerEs()` in `init()`. Full list:
 | `_realChatChangedHandler` | Set by `_installRealChatChangedHandler`. While `null`, the early stub queues events; once set, the stub becomes a trampoline that forwards directly. |
 | `_pendingChatChanged` / `_pendingChatChangedFired` | Single-slot queue for CHAT_CHANGED events that fire during init's awaits. Drained exactly once at `_installRealChatChangedHandler`. |
 
-**`_onChatDeleted(name)` verdict IDB eviction (L3, 2026-05-29):** `_onChatDeleted` now also clears the deleted chat's verdict IndexedDB rows via `clearChatIdb(name)` (fire-and-forget, try/catch, NOT awaited). Both `CHAT_DELETED` and `GROUP_CHAT_DELETED` emit the deleted chat's id as the first arg, in the same form `getCurrentChatId()` returns (the value verdict keys IDB rows on). Still calls `clearLibrarianSessionState()` first. ST wipes `chat_metadata` on delete, but verdict IDB is a SEPARATE store — without this, deleted chats' verdict rows leaked forever.
+**`_onChatDeleted(name)` verdict IDB eviction (L3, 2026-05-29):** `_onChatDeleted` clears the deleted chat's verdict IndexedDB rows via `clearChatIdb(name)` (fire-and-forget, try/catch, NOT awaited). Both `CHAT_DELETED` and `GROUP_CHAT_DELETED` emit the deleted chat's id as the first arg, in the same form `getCurrentChatId()` returns (the value verdict keys IDB rows on). ST wipes `chat_metadata` on delete, but verdict IDB is a SEPARATE store — without this, deleted chats' verdict rows leaked forever.
 
 ### Setup-wizard skip state (`_wizardSkipped` / `_wizardLastStep`, v2.6)
 

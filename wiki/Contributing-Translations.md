@@ -13,7 +13,7 @@ Two files per locale:
 | Path | What's in it | Format |
 |---|---|---|
 | `locales/dle.{lang}.json` | UI strings: buttons, labels, tooltips, toasts, popups, slash-command help, drawer text, settings | JSON key-value (~2250 keys) |
-| `src/i18n/prompts/{lang}.js` | LLM-facing prompts: Librarian (Emma), AI search, Scribe, Auto-Suggest, Optimize Keys, Notepad, Summarize | JavaScript exports |
+| `src/i18n/prompts/{lang}.js` | LLM-facing prompts: AI search, Scribe, Auto-Suggest, Optimize Keys, Notepad, Summarize | JavaScript exports |
 
 **What's NOT translated:**
 - Vault entry content (user's own files in Obsidian — your language)
@@ -120,7 +120,7 @@ This validates dict shape, checks every locale has the same key set as the Engli
 If you spot a bad translation but don't have time to PR a fix, open an issue using the **"Translation Feedback"** issue template (New Issue → Translation Feedback; it auto-applies the `i18n`, `translation`, and `help wanted` labels). The template prompts for:
 
 - Locale code (`es-es`, `fr-fr`, etc.)
-- Key name (e.g. `dle_drawer_tab_browse`, or an AI-prompt export like `EMMA_FIRSTRUN_GREETING`)
+- Key name (e.g. `dle_drawer_tab_browse`, or an AI-prompt export like `SCRIBE_PROMPT`)
 - Current translation
 - Suggested translation
 - Why (formality, register, technical accuracy, tone)

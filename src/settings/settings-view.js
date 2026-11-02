@@ -112,7 +112,7 @@ const fx = {
 /** Text rows: today's rules for empty / tidy values. → the value to store, or undefined to refuse. */
 function tidyText(row, raw) {
     const v = String(raw ?? '');
-    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', librarianGuideTag: 'lorebook-guide', fieldDefinitionsPath: 'DeepLore/field-definitions.yaml', scribeFolder: 'Sessions' };
+    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', guideTag: 'lorebook-guide', fieldDefinitionsPath: 'DeepLore/field-definitions.yaml', scribeFolder: 'Sessions' };
     if (row.key in fallback) return v.trim() || fallback[row.key];
     if (row.key === 'autoSuggestFolder') return v.trim();
     if (row.key === 'promptsFolderPath') {
@@ -997,7 +997,6 @@ async function showAbout() {
     const list = [
         ['Kara-Emily-Gren-STChar.png', 'Kara Emily Gren', 'Forensic researcher. Was. The boundary between study and practice became more a matter of preference.'],
         ['Nott-STChar.png', 'Nott', 'Norse goddess of night. Pale, tattooed, wrapped in black that drinks light rather than catching it.'],
-        ['Emma-STChar.png', 'Emma', 'Copper-red hair, hazel-green eyes, assessing whether what you just said is worth writing down.'],
     ];
     const f = el('div', 'dle-st-fb');
     for (const [file, name, desc] of list) {

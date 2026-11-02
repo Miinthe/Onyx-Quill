@@ -68,7 +68,7 @@ These don't exist in WI. Skim once so you know they're there:
 
 - **Seed entries** (`lorebook-seed`): content sent to the AI search stage as story context on new chats. Force-injected into the writing AI prompt as well. See [[Glossary#Seed Entry]].
 - **Bootstrap entries** (`lorebook-bootstrap`): force-inject when chat is short (default: 3 or fewer messages), then become regular triggered entries. See [[Glossary#Bootstrap Entry]].
-- **Guide entries** (`lorebook-guide`): Librarian-only writing and style guides. Never reach the writing AI through any path. See [[AI-Powered Tools#Librarian]].
+- **Guide entries** (`lorebook-guide`): writing and style guides, not story lore. Never reach the writing AI through any path. See [[Glossary#Guide Entry]].
 - **`summary` field**: tells AI search *when* to pick this entry. Required for AI search to work well. See [[Frontmatter Fields]].
 - **Contextual gating**: `era`, `location`, `scene_type`, `character_present`, plus your own custom fields filter entries by story state. See [[Custom Fields]].
 - **`requires` / `excludes`**: entry-title graph gating. `requires: [Bloodchain]` means "only inject me if Bloodchain was also selected." See [[Entry Matching and Behavior]].

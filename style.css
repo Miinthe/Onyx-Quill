@@ -56,7 +56,7 @@
        body TEXT color, so on a LIGHT theme it became dark text on a saturated mid-tone accent
        fill with no guaranteed contrast. DLE's accent/success/error fills are all saturated
        mid-to-dark tones, so a near-white foreground is the contrast-safe pairing regardless
-       of theme. Shared so the scattered on-fill sites (accent button, librarian/error badges)
+       of theme. Shared so the scattered on-fill sites (accent button, error badges)
        stop disagreeing (was: body-color vs raw SmartThemeBodyColor vs hardcoded #fff). The
        small text-shadow keeps the glyph legible if a user's fill lands unusually light. */
     --dle-on-accent: #fff;
@@ -1566,9 +1566,8 @@ button.dle-chip-x:hover {
 }
 
 /* LOCAL PATCH 2026-08-03 (Miinthe): quick-tool buttons are icon-only everywhere, not only on
-   mobile. Just three of the seven carried text (Refresh / Reroll Lore / Skip Librarian), so
-   the row was a mixed bag that wrapped onto a second line at the panel's normal width, with
-   Skip Librarian stranded underneath. Dropping those three labels fits all seven on one row.
+   mobile. A few carried text (Refresh / Reroll Lore), so the row was a mixed bag that wrapped
+   onto a second line at the panel's normal width. Dropping those labels fits them on one row.
    Every button keeps its `title` and `aria-label`, so the name survives on hover and for
    screen readers — and on desktop, where hover exists, nothing is lost at all. */
 .dle-action-label { display: none; }
@@ -3297,7 +3296,7 @@ button.dle-browse-block.dle-block-active {
 
 /* f018/f019: single source of truth for native-control tinting across DLE surfaces.
    Previously range sliders had no accent (OS-default blue thumb) while a couple of graph
-   sliders used --dle-info and a few Librarian checkboxes used --dle-accent — three divergent
+   sliders used --dle-info and a few checkboxes used --dle-accent — three divergent
    treatments. Scope one accent to every native range/checkbox in the popup + drawer so they
    all read as DLE-themed in both dark and light. Per-component overrides below are removed. */
 .dle-settings-popup input[type="range"],
@@ -5549,7 +5548,7 @@ button.dle-chip-x:focus-visible { outline: 2px solid var(--dle-focus); outline-o
    On mobile these grow to their natural height and let .dle-drawer-inner — the drawer's one
    real scroller — do the scrolling.
    NOT included on purpose: inline snippets inside a row (.dle-browse-preview-text,
-   .dle-preview) and the Librarian chat transcript. Uncapping those would inflate individual
+   .dle-preview). Uncapping those would inflate individual
    rows rather than remove a scroll surface, which is a different problem. */
 #deeplore-panel.dle-mobile .dle-gating-fields-container,
 #deeplore-panel.dle-mobile .dle-scroll-region {

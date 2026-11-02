@@ -4,15 +4,11 @@ Code-level internals for the editable-prompts subsystem. For user-facing docs se
 
 ## What it does
 
-DLE ships **30** LLM-facing prompts as compiled-in string constants in `src/i18n/prompts/{locale}.js`. The editable-prompts feature lets users override any of them with MD files inside their Obsidian vault. Runtime reads vault file → falls back to compiled-in dict at the user's chosen `aiPromptLocale`.
+DLE ships **6** LLM-facing prompts as compiled-in string constants in `src/i18n/prompts/{locale}.js`. The editable-prompts feature lets users override any of them with MD files inside their Obsidian vault. Runtime reads vault file → falls back to compiled-in dict at the user's chosen `aiPromptLocale`.
 
-The 30 keys are everything `en.js` exports except `__meta` (`KNOWN_PROMPT_KEYS = Object.keys(PromptsEn).filter(k => k !== '__meta' && k !== 'default')`, `prompt-validators.js:37-39`). They split into two groups via `classifyPromptKey()` (`src/ui/prompts-tab.js:214-218` — substantive iff key does NOT start with `AGENTIC_`, **except** `AGENTIC_ROLE_SECTION` which is forced substantive):
-- **Substantive (12)** — the 3 `EMMA_*_GREETING` keys, `LIBRARIAN_PRIMER`, `LIBRARIAN_FIRSTRUN_QA_SCRIPT`, `AGENTIC_ROLE_SECTION`, `AI_SEARCH_SYSTEM_PROMPT`, `AI_NOTEPAD_PROMPT`, `SCRIBE_PROMPT`, `AUTO_SUGGEST_PROMPT`, `OPTIMIZE_KEYS_PROMPT`, `SUMMARIZE_PROMPT`. Multi-line prose, real tuning surface.
-- **Agentic fragments (18)** — `AGENTIC_FENCE_*` headers (7), `AGENTIC_TOOL_*` descriptions (4), `AGENTIC_TOOLS_INTRO`, `AGENTIC_WORKFLOW*` step labels (5), `AGENTIC_IMPORTANT_FINAL`. Short, structural. Collapsible by default in the UI. (`AGENTIC_ROLE_SECTION` is the lone `AGENTIC_*` key NOT counted here.)
+The 6 keys are everything `en.js` exports except `__meta` (`KNOWN_PROMPT_KEYS = Object.keys(PromptsEn).filter(k => k !== '__meta' && k !== 'default')`, `prompt-validators.js`): `AI_SEARCH_SYSTEM_PROMPT`, `AI_NOTEPAD_PROMPT`, `SCRIBE_PROMPT`, `AUTO_SUGGEST_PROMPT`, `OPTIMIZE_KEYS_PROMPT`, `SUMMARIZE_PROMPT`.
 
-> Counts verified 2026-05-28 via `Object.keys(PromptsEn)` against `en.js`: 30 keys, 12 substantive, 18 fragments.
-
-> **This fork:** `classifyPromptKey()` and the two grid sections are gone. `renderPromptsGrid()` (`src/ui/prompts-tab.js`) shows one list sorted by plain name and leaves out every key matching `RETIRED_PROMPT = /^(EMMA_|LIBRARIAN_|AGENTIC_)/` (the retired writer-engine prompts; they stay loadable in code but are not listed). The substantive / fragment split above is kept for reference only.
+> **This fork:** upstream shipped 30 prompts; the 24 that belonged to the Librarian (`EMMA_*`, `LIBRARIAN_*`, `AGENTIC_*`) were removed with it (shipped live 2026-10-27). Their keys are listed in `src/prompts/deprecated-keys.js`, so an old vault prompt file for one of them stays deletable. `classifyPromptKey()` and the two grid sections (substantive / agentic fragments) are gone: `renderPromptsGrid()` (`src/ui/prompts-tab.js`) shows one list sorted by plain name and still skips any key matching `RETIRED_PROMPT = /^(EMMA_|LIBRARIAN_|AGENTIC_)/`.
 
 ## File layout
 
@@ -64,7 +60,7 @@ Frontmatter fields:
 ## Resolution flow
 
 ```
-getPrompt(key)             // sync, called inside agentic loops + fence builders
+getPrompt(key)             // sync
   → promptCache.get(key)   // populated at boot
     → fallback: PromptsEn[key]
     → fallback: '' + console.warn
@@ -103,10 +99,10 @@ Hash computation uses `simpleHash` from `core/utils.js` (not cryptographic; just
 **Prompts tab** (between Features and System in the old settings popup; commit 5). In this fork the settings window opens the new view (`src/settings/`, section **Prompts** under AI), which reuses these handlers:
 - Language dropdown writes `aiPromptLocale`. Change triggers confirm-and-overwrite-all if vault overrides exist (Q3).
 - Folder path field writes `promptsFolderPath` (in the new settings window this row is under Vault › Prompts folder). Sanitized through `sanitizePromptsFolderPath()` on change; reverts to default with toastr warning if input is unsafe.
-- **Export Prompts to Vault** — writes all 30 prompts (`exportAllPrompts()` iterates `KNOWN_PROMPT_KEYS`, `prompts-tab.js:110-129`) via `writePromptFile()`. Confirms before clobbering existing overrides. The status line shows the live count (`Exporting ${KNOWN_PROMPT_KEYS.size} prompts…`, `prompts-tab.js:475`).
+- **Export Prompts to Vault** — writes all 6 prompts (`exportAllPrompts()` iterates `KNOWN_PROMPT_KEYS`, `prompts-tab.js`) via `writePromptFile()`. Confirms before clobbering existing overrides. The status line shows the live count (`Exporting ${KNOWN_PROMPT_KEYS.size} prompts…`, `prompts-tab.js:475`).
 - **Reload Prompts** — re-runs `loadPrompts()` to pick up vault edits.
 - **Reset All Prompts** — iterates `KNOWN_PROMPT_KEYS` through `deletePromptFile()`. Every delete passes the six-layer cage.
-- **Status grid** (commit 6) — per-row source, status badge, error indicator, action buttons. Substantive prompts shown by default; agentic fragments in a collapsible `<details>`.
+- **Status grid** (commit 6) — per-row source, status badge, error indicator, action buttons.
 
 Per-row actions:
 - compiled-in → **Export this one** (write canonical → file)
@@ -134,11 +130,9 @@ await loadPromptsForBoot(getSettings());
 
 ## Migration
 
-The 18 inline `AGENTIC_*` fragments + the substantive defaults previously held copies of these strings in:
-- `src/librarian/librarian-prompts.js` (Emma greetings + primer + QA script)
-- `src/librarian/agentic-messages.js` (agentic loop role/fence/tool/workflow fragments)
+The defaults previously held copies of these strings in:
 - `src/ai/ai.js` + `src/ui/settings-ui.js` (AI search system prompt fallback)
-- `index.js` + `src/librarian/agentic-messages.js` (AI Notepad fallback)
+- `index.js` (AI Notepad fallback)
 - `src/ai/scribe.js` (Scribe summarizer fallback)
 - `src/ai/auto-suggest.js` (Auto-Suggest fallback)
 - `src/ui/popups.js` (Optimize Keys fallback)

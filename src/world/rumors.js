@@ -18,7 +18,7 @@ import * as K from '../kit/kit.js';
 import { addRecord } from './world-pure.js';
 import { newPost, updatePost, postsOf, mergeTaught } from './feed-pure.js';
 import { USER, MAIN, personByKey, storyClock, stampText } from './messages-pure.js';
-import { RUMOR, rumorName, seedRumorPrompt, parseSeed, SEED_SCHEMA, KIND_WORDS, noticers, runningRumors, withHeard, withDrift, heardFact, rumorChanges, rumorPrompt, parseRumor, RUMOR_SCHEMA, tipPrompt, parseTip, TIP_SCHEMA, normRumor, namesTipper } from './rumor-pure.js';
+import { RUMOR, rumorName, seedRumorPrompt, parseSeed, SEED_SCHEMA, noticers, runningRumors, withHeard, withDrift, heardFact, rumorChanges, rumorPrompt, parseRumor, RUMOR_SCHEMA, tipPrompt, parseTip, TIP_SCHEMA, normRumor, namesTipper } from './rumor-pure.js';
 import { nameOfKey as nameOf } from './messages.js';
 import { everyone } from './feed.js';
 

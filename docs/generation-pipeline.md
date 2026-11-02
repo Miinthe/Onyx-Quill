@@ -8,18 +8,18 @@ The generation pipeline is DLE's core — most regressions originate here. This 
 
 `onGenerate(chatMessages, contextSize, abort, type)` is the generation interceptor, called by SillyTavern's interceptor system before each generation. It is registered on `globalThis.deepLoreEnhanced_onGenerate` (module bottom).
 
-**Inputs:** `chatMessages` (filtered copy of ST's chat array — NOT the global `chat`; pushing to it loses data), `contextSize` (context window tokens), `abort` (callback to prevent ST's generation — used by agentic loop dispatch), `type` (generation type string).
+**Inputs:** `chatMessages` (filtered copy of ST's chat array — NOT the global `chat`; pushing to it loses data), `contextSize` (context window tokens), `abort` (callback to prevent ST's generation — used by the Cast round take-over and an [OOC]-only message), `type` (generation type string).
 
-**Side effects:** Calls `setExtensionPrompt()` to inject lore into the prompt. When Librarian agentic loop is active: calls `abort()`, runs its own generation loop, and inserts a message via `addOneMessage()`. Mutates `chat_metadata` (injection logs, counts, swipe keys). Mutates state variables (trackers, sources, trace).
+**Side effects:** Calls `setExtensionPrompt()` to inject lore into the prompt. Mutates `chat_metadata` (injection logs, counts, swipe keys). Mutates state variables (trackers, sources, trace).
 
 **The entire function is guarded by `generationLock`** — only one pipeline can run at a time.
 
-**Pipeline status element:** `_updatePipelineStatus` puts the status into the DeepLore bar's working slot `#dle-bar-work` (`src/bar/bar.js`) when the bar is shown, otherwise prepends to `#form_sheld` (not `#chat`). `_removePipelineStatus` uses a slide-down animation (`dle-toast-out` class + `animationend` listener). Phase labels come from the canonical `state.PIPELINE_PHASE_LABELS` map (one source for the toast AND the drawer label — see gotcha #74). Progression: `choosing` "Choosing lore…" → (`prefilter` "Narrowing categories…" when `hierarchicalPreFilter` is enabled) → `consulting` "Consulting vault…" → `generating` "Generating…" → (Librarian: `searching`/`writing`/`flagging`). **v2.5 Wave 2:** `runPipeline`'s `onStatus` callback receives a phase KEY (e.g. `'consulting'`), not display text — `index.js` sets `pipelinePhase` deterministically and derives the label via `pipelineLabelFor()`. The old `text.includes('Consulting')` sniff is gone.
+**Pipeline status element:** `_updatePipelineStatus` puts the status into the DeepLore bar's working slot `#dle-bar-work` (`src/bar/bar.js`) when the bar is shown, otherwise prepends to `#form_sheld` (not `#chat`). `_removePipelineStatus` uses a slide-down animation (`dle-toast-out` class + `animationend` listener). Phase labels come from the canonical `state.PIPELINE_PHASE_LABELS` map (one source for the toast AND the drawer label — see gotcha #74). Progression: `choosing` "Choosing lore…" → (`prefilter` "Narrowing categories…" when `hierarchicalPreFilter` is enabled) → `consulting` "Consulting vault…" → `generating` "Generating…". (The map still holds the removed Librarian's `searching`/`writing`/`flagging` labels; nothing sets them.) **v2.5 Wave 2:** `runPipeline`'s `onStatus` callback receives a phase KEY (e.g. `'consulting'`), not display text — `index.js` sets `pipelinePhase` deterministically and derives the label via `pipelineLabelFor()`. The old `text.includes('Consulting')` sniff is gone.
 
 **LP1 elapsed heartbeat + Cancel (v2.6):** the toast now carries two inert children built once alongside the spinner + text span — an elapsed-seconds readout (`.dle-pipeline-elapsed`) and a Cancel button (`.dle-pipeline-cancel`). Both `_updatePipelineStatus(text, phaseKey)` and `_renderPipelineToast(text, phaseKey)` take a phaseKey 2nd arg now; the one-time structure build still respects gotcha #74 (only `.dle-pipeline-status-text` is swapped on phase change — the spinner, elapsed span, and cancel button are built once so the spinner physics and the cancel listener survive phase swaps).
 
-- **Heartbeat:** `_startPipelineElapsed(phaseKey, span)` runs a single 1/sec `setInterval` that ticks a "(Ns)" suffix, gated to `_PIPELINE_ELAPSED_PHASES = {consulting, generating, searching, writing, flagging}` (the indeterminate AI round-trips; `choosing`/`prefilter` are sub-second so they show no counter). It is idempotent for the same phase (doesn't reset mid-wait) and re-zeros on phase change so each AI wait reads its OWN elapsed time. `_stopPipelineElapsed()` clears the interval and is called at the TOP of EVERY `_removePipelineStatus` path (deferred-show cancel, dwell-deferred slide-out, immediate) — so no interval can ever leak across generations.
-- **Cancel:** `_pipelineCancel()` stops the heartbeat then calls ST's `stopGeneration()` — the EXACT function the Stop button invokes. The module-scoped toast helpers can't reach the per-generation `pipelineAbort` AbortController (local to `onGenerate`), so cancel routes through the canonical Stop path instead: `stopGeneration()` aborts ST's controller and emits `GENERATION_STOPPED`, which reaches BOTH `onGenerate`'s `onStop` listener (`abortWith(pipelineAbort, …)` aborts DLE's live AI request) AND the init-block `GENERATION_STOPPED` handler (bumps `generationLockEpoch`, releases the lock, clears stale prompts, sets phase idle, removes the toast). The agentic dispatch's `AbortError` unwinds through its try/finally, restoring the send button. Because this is literally the Stop-button path, send-button + lock + epoch teardown all match the battle-tested behavior — nothing bespoke to keep in sync. If `stopGeneration()` throws, it falls back to emitting `GENERATION_STOPPED` directly + removing the toast so the user isn't stranded. See gotcha #74 / #38.
+- **Heartbeat:** `_startPipelineElapsed(phaseKey, span)` runs a single 1/sec `setInterval` that ticks a "(Ns)" suffix, gated to `_PIPELINE_ELAPSED_PHASES = {consulting, generating}` (the indeterminate AI round-trips; `choosing`/`prefilter` are sub-second so they show no counter). It is idempotent for the same phase (doesn't reset mid-wait) and re-zeros on phase change so each AI wait reads its OWN elapsed time. `_stopPipelineElapsed()` clears the interval and is called at the TOP of EVERY `_removePipelineStatus` path (deferred-show cancel, dwell-deferred slide-out, immediate) — so no interval can ever leak across generations.
+- **Cancel:** `_pipelineCancel()` stops the heartbeat then calls ST's `stopGeneration()` — the EXACT function the Stop button invokes. The module-scoped toast helpers can't reach the per-generation `pipelineAbort` AbortController (local to `onGenerate`), so cancel routes through the canonical Stop path instead: `stopGeneration()` aborts ST's controller and emits `GENERATION_STOPPED`, which reaches BOTH `onGenerate`'s `onStop` listener (`abortWith(pipelineAbort, …)` aborts DLE's live AI request) AND the init-block `GENERATION_STOPPED` handler (bumps `generationLockEpoch`, releases the lock, clears stale prompts, sets phase idle, removes the toast). Because this is literally the Stop-button path, send-button + lock + epoch teardown all match the battle-tested behavior — nothing bespoke to keep in sync. If `stopGeneration()` throws, it falls back to emitting `GENERATION_STOPPED` directly + removing the toast so the user isn't stranded. See gotcha #74 / #38.
 
 ---
 
@@ -38,9 +38,9 @@ onGenerate(chatMessages, contextSize, abort, type)
 
 1. **Quiet generations** (type `'quiet'`, `index.js:670`): Background API calls (e.g., summarization). No lore injection. If `!settings.enabled`, also clears the stale prefill prompt so it doesn't survive a mid-session toggle.
 2. **Response prefill** (`applyResponsePrefill(settings)`, `index.js:682`): Runs BEFORE every skip guard, on purpose — prefill must survive stepped-thinking, `skipNextPipeline`, and tool-call-continuation generations (all of which still emit a writing-AI call that benefits from prefill). When the prefill setting is off it clears any stale `PREFILL_ID` extension prompt. This is a separate injection axis from the lore pipeline.
-3. **Stepped Thinking coexistence** (`inSteppedThinking`, `index.js:688`): When a Stepped Thinking generation pass is in flight, the pipeline AND the Librarian dispatch are skipped — otherwise the pipeline would re-enter N× per user turn and the Librarian would corrupt thinking output. Records `{ skipped: true, reason: 'stepped_thinking' }` in the flight recorder.
+3. **Stepped Thinking coexistence** (`inSteppedThinking`, `index.js:688`): When a Stepped Thinking generation pass is in flight, the pipeline is skipped — otherwise it would re-enter N× per user turn. Records `{ skipped: true, reason: 'stepped_thinking' }` in the flight recorder.
 4. **`skipNextPipeline` bypass** (`index.js:695`): One-shot flag checked after the stepped-thinking guard and before the tool-call continuation check. When true, the entire DLE pipeline is skipped (early return). The flag is consumed immediately (reset to `false`). Used by `/dle-review` to prevent the DLE pipeline from running on vault review generations — the review needs a clean generation with no lore injection.
-5. **Tool-call continuations** (`index.js:704`): When the last message has `extra.tool_invocations` or `is_system`, ST is re-calling Generate after a tool invocation from another extension using ST's ToolManager. Lore from the original generation is still in context. Re-running would waste tokens and corrupt analytics. Records `{ skipped: true, reason: 'tool_call_continuation' }` in the flight recorder. DLE's own Librarian uses the agentic loop (not ToolManager), so DLE tool calls never trigger this guard.
+5. **Tool-call continuations** (`index.js:704`): When the last message has `extra.tool_invocations` or `is_system`, ST is re-calling Generate after a tool invocation from another extension using ST's ToolManager. Lore from the original generation is still in context. Re-running would waste tokens and corrupt analytics. Records `{ skipped: true, reason: 'tool_call_continuation' }` in the flight recorder.
 
 ---
 
@@ -245,54 +245,9 @@ Enriches `trace` with gating/budget/dedup details. **Epoch-guarded** (in `onGene
 
 ---
 
-## Phase 8b: Agentic Loop Dispatch (in `onGenerate()`)
+## Phase 8b: Agentic Loop Dispatch (removed)
 
-After pipeline commit and `_updatePipelineStatus('Generating...')`, DLE fires `notifyInjectionSourcesReady()` (so the drawer can render the Why? tab early, before generation completes), then checks whether to run its own generation loop:
-
-```
-  → notifyInjectionSourcesReady()          // Drawer renders Why? tab early
-  → Guard: type !== 'continue' && type !== 'append' && type !== 'appendFinal'
-    → If any of those: fall through to ST's generation
-  → If suppressNextAgenticLoop:
-    → Reset flag to false (consumed)
-    → Fall through to ST's normal generation
-  → Else if librarianEnabled && isToolCallingSupported() && type not in {continue, append, appendFinal}:
-    → abort(true)                          // Prevent ST from generating + break interceptor chain (BUG-AUDIT Fix 30, index.js:1474)
-    → setSendButtonState(true)             // C1: Re-entrancy guard (abort re-enables send)
-    → deactivateSendButtons()
-    → setLoreGapSearchCount(0)             // C6: Reset search counter
-    → buildChatMessages(chatMessages, pipelineContext, injectedTitles, settings)
-    → runAgenticLoop(messages, signal, epoch, lockEpoch, ..., onProse)
-      → During loop: onProse(prose) fires on write() tool call (PRIMARY path)
-        → saveReply({ type, getMessage })  // Message lifecycle (events, swipe handling)
-        → saveChatConditional()            // Disk save (abort() prevents ST's post-gen save)
-    → POST-AWAIT EPOCH CHECK
-    → If result.prose (FALLBACK — AI returned text without write() tool):
-      → saveReply + saveChatConditional    // Same as above, but post-loop
-    → injectLibrarianDropdown (if enabled)
-    → finally:
-      → setSendButtonState(false) + activateSendButtons()
-      → emit GENERATION_ENDED
-    → return (don't fall through to ST's generation)
-  → Else: fall through to ST's normal generation
-  → Runtime warning: if librarianEnabled && !isToolCallingSupported(), dedupWarning fires
-```
-
-**`suppressNextAgenticLoop`**: One-shot flag exposed via the skip-tools toggle button in the drawer status zone (in this fork that button sits in the old action row, which `drawer-frame.js` hides; it is not in the new header or ⋯ menu). When true, the Librarian agentic loop is skipped for that generation (lore is still injected via `setExtensionPrompt`, but the generation falls through to ST's normal path instead of DLE's agentic loop). The flag is reset in the `if (suppressNextAgenticLoop)` branch, BEFORE the `else if` agentic dispatch — see gotchas.md for why this placement matters.
-
-**Runtime warning**: After the agentic dispatch block, a `dedupWarning` fires when `librarianEnabled && !isToolCallingSupported()`. This warns the user that the Librarian requires function calling support, which the current provider/model does not offer.
-
-The agentic loop runs the state machine (SEARCH -> write -> DONE; the FLAG turn is backgrounded), calling `searchLoreAction` and `flagLoreAction` directly. `searchLoreAction` returns a structured `{ text, titles }` record — the loop passes `text` to the LLM as the tool result and reads `titles` directly for the Activity-dropdown record. NEVER regex-extract `### ...` from `text` (vault content has its own subheadings; see `docs/gotchas.md` #66).
-
-`onProse` is async and awaited inside a try/catch — it calls `saveReply({ type })` + `saveChatConditional()` so the message is fully created, events processed, and saved to disk before the loop returns. `type` from `onGenerate` is forwarded to `saveReply` for correct swipe/regen behavior. Tool activity is stored directly on `message.extra.deeplore_tool_calls`. If `onProse` throws (saveReply / saveChatConditional failure), the loop returns the generated prose anyway so index.js's primary (`if (proseMsg)`) or fallback (`else if (result.prose)`) save branch can recover it — paid-for prose is never silently lost. See `docs/gotchas.md` #54.
-
-**Backgrounded FLAG turn (Issue-1, 2026-06-02):** the gap-finder no longer blocks generation. `runAgenticLoop` returns `{ prose, toolActivity, usage, pendingFlag }`; once `write` delivers prose the loop breaks and the dispatch releases the generation lock + send button in its `finally` WITHOUT awaiting the flag round-trip. index.js's `proseMsg` branch then fires `result.pendingFlag()` in a detached, unawaited `(async () => {...})().catch(...)` IIFE; when it resolves it appends the new `flagActivity` to the saved prose message's `extra.deeplore_tool_calls` and re-injects the dropdown (idempotent). The thunk guards on `chatEpoch` + `lockEpoch` + `swipe_id` (`_bgStale()`) so a chat switch, a newer generation, or a swipe to a different alternate of the prose message all cancel the stale late write — checked before the destructive `extra.deeplore_tool_calls` write and again after the save await. The in-flight flag API call is best-effort and not cancellable once the dispatch returns (Stop only discards its result). Inline flags (write+flag in one response) still process synchronously. See `docs/gotchas.md` #81.
-
-**C9 keepalive:** The agentic loop calls `setGenerationLockTimestamp(Date.now())` before every API call and before tool processing. Without this, the 30s stale-lock detector in Phase 2 would force-release the lock mid-loop, causing epoch mismatch on the next iteration.
-
-**`abort(true)` (BUG-AUDIT Fix 30, index.js:1474):** The dispatch passes `true` to `abort` so ST's `runGenerationInterceptors` breaks the interceptor chain immediately. Plain `abort()` only flags `aborted=true` but lets every later interceptor still run against the chat DLE has already replaced.
-
-**C1 re-entrancy:** `abort(true)` calls ST's `unblockGeneration()`, which re-enables the send button. The dispatch immediately locks it again via `setSendButtonState(true)`. Restored in `finally`.
+The Librarian's agentic loop (DLE aborting ST's generation and writing the reply itself in a tool loop) was removed with the Librarian (2026-10-27). After pipeline commit, DLE fires `notifyInjectionSourcesReady()` (so the drawer can render early) and SillyTavern always writes the reply.
 
 ---
 
@@ -354,13 +309,13 @@ finally {
 5. Tool-call continuations skip the pipeline entirely
 6. Guide entries are filtered out (in `onGenerate()`) via `getWriterVisibleEntries()` — they never reach the writing AI
 7. `pipelineRan` controls whether `decrementTrackers` runs in `finally` — set to `true` (in `onGenerate()`) only after the vault snapshot is confirmed non-empty
-8. When Librarian is enabled + tool calling supported, DLE aborts ST's generation and runs its own agentic loop. The loop calls `setGenerationLockTimestamp` as keepalive (C9) and uses `setSendButtonState` as re-entrancy guard (C1).
+8. (removed with the Librarian)
 9. `onGenerate`'s first parameter is `chatMessages` (a filtered copy), NOT the global `chat`. Never push to it — use the global `chat` import for message creation.
-10. `notifyInjectionSourcesReady()` fires before the agentic loop dispatch, allowing the drawer to render the Why? tab early.
-11. `onProse` in the agentic loop is async and must be awaited — it runs `saveReply` + `saveChatConditional`.
-12. `type` from `onGenerate` is forwarded to `saveReply` for correct swipe/regen behavior. Continue/append/appendFinal types fall through to ST.
+10. `notifyInjectionSourcesReady()` fires right after pipeline commit, allowing the drawer to render the Why? tab early.
+11. (removed with the Librarian)
+12. (removed with the Librarian)
 13. `skipNextPipeline` is consumed before the tool-call continuation check — it provides a clean early exit for `/dle-review` without touching any pipeline state.
-14. `suppressNextAgenticLoop` is consumed in its own `if` branch before `else if` agentic dispatch — the reset MUST happen there, not in `finally`, to ensure it's consumed even when the agentic loop doesn't fire.
+14. (removed with the Librarian)
 
 ---
 
@@ -387,19 +342,6 @@ onGenerate(chatMessages, contextSize, abort, type)             [index.js]
   ├─ clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, ...)   [core/pipeline.js]
   ├─ setExtensionPrompt(tag, text, pos, depth, wiScan, role)   [ST API]
   ├─ notifyInjectionSourcesReady()                              [state.js — drawer Why? tab]
-  ├─ (suppressNextAgenticLoop check — if true, consume flag, fall through to ST)
-  ├─ (Agentic Loop Dispatch — else if librarianEnabled && isToolCallingSupported && not continue/append):
-  │   ├─ abort()                                               [prevent ST generation]
-  │   ├─ buildChatMessages(chatMessages, pipelineCtx, injTitles) [agentic-messages.js]
-  │   ├─ runAgenticLoop(messages, signal, epoch, lockEpoch, onProse) [agentic-loop.js]
-  │   │   ├─ callWithTools(messages, tools, toolChoice, ...)   [agentic-api.js → CMRS]
-  │   │   ├─ searchLoreAction(args)                            [librarian-tools.js]
-  │   │   ├─ flagLoreAction(args)                              [librarian-tools.js]
-  │   │   └─ await onProse?.(prose)                            [async — saveReply + saveChatConditional]
-  │   ├─ saveReply({ type, getMessage })                       [ST API — message lifecycle]
-  │   ├─ saveChatConditional()                                 [ST API — disk save]
-  │   └─ return (skip ST generation)
-  ├─ (Runtime warning: dedupWarning if librarianEnabled && !isToolCallingSupported)
   ├─ trackGeneration(entries, genCount, trackers, settings)     [src/stages.js]
   ├─ recordAnalytics(matched, injected, analyticsData)         [src/stages.js]
   └─ finally:

@@ -33,8 +33,8 @@ export const defaultSettings = {
     seedTag: 'lorebook-seed',
     bootstrapTag: 'lorebook-bootstrap',
     // The writing-guide tag (Settings › Vault › "Writing-guide tag"): entries with it are style guides, never story lore.
-    // The key keeps its old name so saved settings carry over (the Librarian that once read them is gone, 2026-10-19).
-    librarianGuideTag: 'lorebook-guide',
+    // Saved as `librarianGuideTag` until settings version 7 (2026-11-02), which renames it.
+    guideTag: 'lorebook-guide',
     newChatThreshold: 3,
     scanDepth: 4,
     maxEntries: 10,
@@ -288,7 +288,7 @@ export const defaultSettings = {
     analyticsData: {},
     _wizardCompleted: false,
     // Increment to trigger migrations in runMigrations().
-    settingsVersion: 6,
+    settingsVersion: 7,
 };
 
 /** Per-tool settings-key map for resolveConnectionConfig(). */

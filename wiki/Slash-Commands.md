@@ -114,7 +114,7 @@ Replay the current chat history step by step, showing which entries activate and
 ---
 
 ### `/dle-analytics`
-Show entry usage analytics. Table sorted by injection count: entry name, match count, injection count, last-used timestamp. Includes a Never Injected section for dead-entry detection. When the Librarian is enabled, also lists Librarian totals (searches, flags, entries written/updated) and the top unmet queries.
+Show entry usage analytics. Table sorted by injection count: entry name, match count, injection count, last-used timestamp. Includes a Never Injected section for dead-entry detection.
 
 ---
 
@@ -242,21 +242,6 @@ Write a session summary note to the configured Session Scribe folder.
 Browse all session notes from the configured scribe folder. Notes sort newest first, with character name and timestamp. Click a note to expand the full body.
 
 Requires a configured scribe folder. Fetches notes from Obsidian's REST API.
-
----
-
-### `/dle-librarian [gap <id> | review | audit]`
-Open the Librarian. The Librarian helps you author vault entries from gaps the writing AI flagged during chat.
-
-**Usage:**
-- `/dle-librarian` open a new Librarian session
-- `/dle-librarian gap <id>` open Emma on a specific gap
-- `/dle-librarian review` start a guided gap review
-- `/dle-librarian audit` start a vault audit session
-
-**Notes:**
-- Requires the Librarian to be enabled in settings.
-- Uses the Librarian connection (independent from AI search).
 
 ---
 
@@ -479,7 +464,6 @@ Run the guided setup wizard: connect the Obsidian vault, configure the lorebook 
 | `/dle-review [question]` | Send vault to AI for review |
 | `/dle-scribe [focus]` | Write session note to Obsidian |
 | `/dle-scribe-history` | Browse session notes |
-| `/dle-librarian [gap <id> \| review \| audit]` | Open the Librarian |
 | `/dle-pin <name>` | Pin entry for this chat |
 | `/dle-unpin <name>` | Remove a pin |
 | `/dle-block <name>` | Block entry for this chat |

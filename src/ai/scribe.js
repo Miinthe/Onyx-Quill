@@ -12,7 +12,6 @@ import {
 import { getContext, saveMetadataDebounced } from '../../../../../extensions.js';
 import { getSettings, resolveConnectionConfig, resolveWriteVault } from '../../settings.js';
 import { writeNote } from '../vault/obsidian-api.js';
-import { folderList } from '../state.js';   // LOCAL PATCH (Miinthe): session folder resolution
 import { resolveSessionFolder } from './session-folder-pure.js';
 import { buildIndex } from '../vault/vault.js';
 import { buildAiChatContext } from '../../core/utils.js';
@@ -81,6 +80,7 @@ import {
     scribeInProgress, lastScribeSummary, chatEpoch,
     setScribeInProgress, setLastScribeSummary, setLastScribeChatLength,
     tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe,
+    folderList,   // LOCAL PATCH (Miinthe): session folder resolution
 } from '../state.js';
 import { dedupError, dedupWarning } from '../toast-dedup.js';
 import { pushEvent } from '../diagnostics/interceptors.js';

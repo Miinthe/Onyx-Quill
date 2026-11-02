@@ -441,7 +441,7 @@ export async function buildIndex() {
             neverInsertTag: settings.neverInsertTag,
             seedTag: settings.seedTag,
             bootstrapTag: settings.bootstrapTag,
-            guideTag: settings.librarianGuideTag,
+            guideTag: settings.guideTag,
         };
 
         // Per-build parser ledger. Populated by parseVaultFile's onSkip + per-entry
@@ -870,7 +870,7 @@ export async function buildIndexWithReuse() {
         neverInsertTag: settings.neverInsertTag,
         seedTag: settings.seedTag,
         bootstrapTag: settings.bootstrapTag,
-        guideTag: settings.librarianGuideTag,
+        guideTag: settings.guideTag,
     };
 
     const indexSnapshot = [...vaultIndex];

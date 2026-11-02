@@ -20,9 +20,6 @@ import * as PromptsEn from '../i18n/prompts/en.js';
 import { resolveLocale } from '../i18n/i18n-pure.js';
 import {
     buildPromptOverlay,
-    normalizePromptBody,
-    promptHash,
-    computePromptStatus,
 } from './prompt-store-pure.js';
 import { KNOWN_PROMPT_KEYS, sanitizePromptsFolderPath } from './prompt-validators.js';
 import {

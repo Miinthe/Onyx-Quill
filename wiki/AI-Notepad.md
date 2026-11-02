@@ -123,6 +123,6 @@ In tag mode, the instruction prompt is appended after the notes, telling the AI 
 ## Related pages
 
 - [[Features]]: feature overview
-- [[AI Powered Tools]]: Session Scribe (longer summaries to vault), Auto Lorebook, Librarian, others
+- [[AI Powered Tools]]: Session Scribe (longer summaries to vault), Auto Lorebook, others
 - [[Injection and Context Control]]: how injection position, depth, and role work
 - [[Slash Commands]]: `/dle-ai-notepad` and `/dle-notebook` reference

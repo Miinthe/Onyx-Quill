@@ -79,7 +79,7 @@ AI search reuses an existing SillyTavern API connection through a Connection Man
 7. Click **Test AI Search** to verify
 
 > [!NOTE]
-> The legacy **Custom Proxy** connection mode was removed in v2.5. If you ran an older DeepLore that pointed AI search at a local proxy (e.g. claude-code-proxy), DeepLore migrates that setting to **Connection Profile** automatically on first load and shows a one-time notice asking you to pick a profile. Connection Profile is now the only supported path, and DeepLore's AI features no longer require `enableCorsProxy: true`. The same applies to the Scribe, Auto Lorebook, AI Notepad, Librarian, and Optimize Keys channels.
+> The legacy **Custom Proxy** connection mode was removed in v2.5. If you ran an older DeepLore that pointed AI search at a local proxy (e.g. claude-code-proxy), DeepLore migrates that setting to **Connection Profile** automatically on first load and shows a one-time notice asking you to pick a profile. Connection Profile is now the only supported path, and DeepLore's AI features no longer require `enableCorsProxy: true`. The same applies to the Scribe, Auto Lorebook, AI Notepad, and Optimize Keys channels.
 
 ---
 

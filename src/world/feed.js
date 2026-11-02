@@ -15,7 +15,7 @@ import { callAI } from '../ai/ai.js';
 import { live } from '../board-live.js';
 import { icon as I } from '../kit/icons.js';
 import * as K from '../kit/kit.js';
-import { addRecord, normWorld, neverTalk } from './world-pure.js';
+import { addRecord, neverTalk } from './world-pure.js';
 import { USER, MAIN, peopleOf, storyClock, stampText, newMessage } from './messages-pure.js';
 import { personNow } from '../cast-pure.js';
 import {
@@ -25,8 +25,7 @@ import {
 import { RUMOR, NEWS, normRumor, KIND_WORDS, newsAccount, rumorName, accountCard } from './rumor-pure.js';
 import { tellQuoted, ungive, regive } from './rumors.js';
 import { groupsForPulse } from './groups.js';
-import { askComment } from './messages.js';
-import { asRowHtml, handleAsClick, currentMe, nameOfKey as nameOf, avatarOf as avatar, roleOfKey as roleOf, mainInfo, cardText, charText, writeAgain } from './messages.js';
+import { askComment, asRowHtml, handleAsClick, currentMe, nameOfKey as nameOf, avatarOf as avatar, roleOfKey as roleOf, mainInfo, cardText, charText, writeAgain } from './messages.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
