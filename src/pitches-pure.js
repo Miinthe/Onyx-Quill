@@ -28,6 +28,7 @@
  */
 import { findQuoteMatch } from './quote-match-pure.js';
 import { named, nameRule } from './mero-names-pure.js';
+import { normAsks, MAX_ASKS } from './ask-pure.js';
 
 export const PITCHES_KEY = 'deeplore_mero_pitches';   // chat_metadata: { list, next, menu, dropped }
 
@@ -105,7 +106,7 @@ export function normPitch(p) {
         made: int(p.made, 0), ...(p.tone === 'nsfw' ? { tone: 'nsfw' } : {}),
     };
     for (const k of ['msg', 'at', 'armed', 'firedAt', 'fb']) if (Number.isFinite(Number(p[k]))) out[k] = int(p[k], 0);
-    for (const k of ['quote', 'noteId', 'moment', 'firedQ', 'draft']) if (str(p[k]).trim()) out[k] = clip(p[k], k === 'draft' ? 1200 : 300);
+    for (const k of ['quote', 'noteId', 'moment', 'firedQ', 'draft', 'open']) if (str(p[k]).trim()) out[k] = clip(p[k], k === 'draft' ? 1200 : 300);   // open: what the talk left open (shown, never sent to the writer)
     if (p.mine) out.mine = true;
     if (p.peek) out.peek = true;
     const plan = normPlan(p.plan);
@@ -383,6 +384,86 @@ export function takePitchCards(text, castNames = []) {
         return '';
     });
     return { text: t.replace(/\n{3,}/g, '\n\n').trim(), pitches };
+}
+
+// ── 💡 Pitch from a talk (Miinthe, 2026-11-02) ───────────────────────────────────
+// "If I tell Mero I want a volcano outbreak, and we plan this all out, I want this to reach the story." The 💡 Pitch
+// button under a talk writes up what the two of them WORKED OUT — her ideas and Mero's that she went along with — as
+// real pitches and plans. The 💡 drawer stays the hands-off one ("I want something with danger, give me suggestions").
+
+export const MAX_TALK_PITCHES = 3;
+
+/**
+ * The prompt. talk: { title, msgs: [{ who, t }] }. ctx: { persona, character, user, names, board: [line], castNames,
+ * donts: [text], replies: [{ i, name, text }], already: [text] — cards made from this talk before } (the same things a
+ * batch is told, smaller).
+ */
+export function talkPitchPrompt(talk, ctx = {}, { ask = true } = {}) {
+    const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
+    const msgs = arr(talk?.msgs).filter(m => m && (m.who === 'miinthe' || m.who === 'mero') && str(m.t).trim()).slice(-40);
+    const system = [
+        `You are Mero ☆, Miinthe's co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
+        'Miinthe and you planned something in the talk below. Write up what you WORKED OUT TOGETHER as pitch cards she can send into her story.',
+        // Miinthe 2026-11-02: the first plan took Mero's own suggestions she never answered as agreed ("the pitch is off")
+        'What counts: Miinthe\'s ideas, and yours ONLY where she said yes or built on them. An idea of yours she didn\'t answer, or a question of yours she didn\'t answer, is still open — not agreed. When she changed her mind, her last word counts. Leave out what she turned down.',
+        'Add nothing new: no new events, people, twists or details the talk didn\'t have.',
+        ask
+            // the first press checks before it writes (live test 2026-11-02: as a plain rule, Mero's own unanswered guess still became a card)
+            ? `FIRST fill "open": every IMPORTANT point that is not settled — who does it, what happens, how it ends. These are ALWAYS open: a question you asked in the talk that Miinthe didn't answer; an idea or guess of yours ("my guess", "maybe", "we could") she didn't say yes to. One question per open point — never two points in one question. Its answers are real alternatives to EACH OTHER for that one point (2 to 4, short, from the talk where it has them): {"q": "the question?", "pick": "one"|"many", "options": ["…", "…"]}. Your unconfirmed idea gets its own question (e.g. "Does Toaster try to smooth it over?" → yes / no, he makes it worse / …). At most ${MAX_ASKS}, the most important first. Small details are not important. If "open" has anything, Miinthe answers it first: leave "items" empty.`
+            : 'Miinthe answered your questions (her answers are the latest message) or chose to write it up as it is: write the cards now. Use what she said and what she PICKED — an answer she didn\'t pick, and an idea of yours she never confirmed, is not in the cards. Whatever is still open goes in "open" on the card, never decided by you.',
+        `One card per separate idea the talk settled (at most ${MAX_TALK_PITCHES}; the most settled first). A card is a "pitch" when it is one thing that happens, a "plan" when the talk laid out several steps in order — then each beat is one concrete thing that happens in the story and can be recognized when it does, in the talk's order (2 to ${MAX_BEATS} beats).`,
+        'Write "text" and "goal" as what HAPPENS in the story, a plain sentence in present tense with names ("The missing sugar cubes set off a blame game in the kitchen.") — never an instruction ("create…", "have Kettle…", "make it…"), never about the talk. Beats the same way.',
+        'Miinthe plays her own character: a card never decides what her character does, says or feels — write it from the world\'s and the other characters\' side.',
+        'Kinds: "twist" — something happens · "acts" — a character does something on their own (name them in "who") · "callback" — something from earlier comes back. Strength: "nudge" small · "turn" changes where the scene goes · "bomb" changes the story.',
+        'Cards already made from this talk are listed: never write one of them again. Only when the talk CHANGED one since, write the changed version. If nothing new was settled since, answer with no items.',
+        ask ? 'Answer with JSON only: {"open": [question, …], "items": [card, …]} — a card is described below.' : '',
+        `Answer with JSON only: {"items": [{"type": "pitch"|"plan", "kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "from": "what in the talk it comes from, a few words", "text": "what happens (type pitch)", "goal": "where the plan leads (type plan)", "beats": ["…", "…"] (type plan), "open": "what is still open, a few words, or \"\""}]}. If the talk settled nothing concrete yet: {"items": [], "why": "one short line on what is still missing"}.`,
+    ].filter(Boolean).join('\n\n');
+    const user = [
+        sec(`The talk${talk?.title ? ` — “${talk.title}”` : ''}`, msgs.map(m => `${m.who === 'miinthe' ? named('Miinthe', ctx.names) : 'Mero'}: ${clip(m.t, 1500)}`).join('\n\n')),
+        sec('Already made from this talk — don\'t repeat', arr(ctx.already).map(t => `- ${clip(t, 400)}`).join('\n')),
+        sec('DON\'T — never against these', arr(ctx.donts).map(t => `- ${t}`).join('\n')),
+        sec('The board — where the story stands', arr(ctx.board).join('\n')),
+        sec('The Cast (use these names in "who")', arr(ctx.castNames).join(', ')),
+        sec('The latest messages of the story (for names and where things stand — not for new ideas)', arr(ctx.replies).slice(-4).map(r => `#${r.i} ${r.name}: ${clip(r.text, 800)}`).join('\n\n')),
+    ].filter(Boolean).join('\n').trim();
+    return { system: `${named(system, ctx.names)}\n\n${nameRule(ctx.names)}`, user };
+}
+
+/** The answer → { list: [pitch fields, plans with `plan`], why, asks }. Every card is from the talk (src 'talk'). */
+export function parseTalkPitches(text, castNames = [], talkTitle = '') {
+    const v = jsonOf(text);
+    const asks = normAsks(v?.open ?? v?.ask ?? v?.asks);
+    const raw = Array.isArray(v) ? v : arr(v?.items ?? v?.pitches);
+    const out = [];
+    const none = t => !t || /^(none|nothing|-|n\/a)\.?$/i.test(t);
+    const tidy = t => { const x = str(t).trim(); return x ? x[0].toUpperCase() + x.slice(1) : x; };
+    for (const x of raw) {
+        if (!isObj(x)) continue;
+        const beats = arr(x.beats).map(b => tidy(typeof b === 'string' ? b : b?.text)).filter(b => str(b).trim());
+        const open = clip(x.open, 200);
+        let p = null;
+        if (beats.length >= 2) p = planOf({ ...x, goal: tidy(x.goal || x.text), beats }, castNames);
+        if (!p) p = itemOf({ ...x, text: tidy(x.text || x.goal || beats[0] || '') }, castNames);
+        if (!p || p.kind === 'ask' || out.some(y => low(y.text) === low(p.text))) continue;
+        out.push({ ...p, src: 'talk', from: p.from || clip(talkTitle, 160) || 'your talk with Mero', ...(none(open) ? {} : { open }) });
+        if (out.length >= MAX_TALK_PITCHES) break;
+    }
+    return { list: out, why: clip(v?.why, 200), asks };   // asks win on a first press (pitchFromTalk)
+}
+
+/** ✏ Edit a pitch from the talk or the drawer: new words (a plan: goal + beats, one per line). Null when nothing usable. */
+export function editedPitch(p, { text = '', goal = '', beats = null } = {}) {
+    if (!p) return null;
+    if (p.plan) {
+        const b = arr(beats).map(x => clip(x, 300)).filter(Boolean).slice(0, MAX_BEATS);
+        if (b.length < 2) return null;
+        const g = clip(goal || p.plan.goal, 300);
+        const old = arr(p.plan.beats);
+        return { text: g || p.text, plan: { ...p.plan, goal: g, beats: b.map((t, k) => (old[k] && old[k].text === t ? old[k] : { text: t, floor: old[k]?.floor ?? DEFAULT_FLOOR })) } };
+    }
+    const t = clip(text, 600);
+    return t ? { text: t } : null;
 }
 
 // ── 🪜 plans ─────────────────────────────────────────────────────────────────

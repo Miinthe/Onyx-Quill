@@ -56,32 +56,31 @@ export function compareSwipes(i) {
     });
 }
 
-// ── the chip above the message box ───────────────────────────────────────────
+// ── the bar's 🧭 button holds the direction (Miinthe, 2026-11-02: "store the guide info in that icon instead" — the chip
+// above the message box sat under the floating icon drawer). bar.js draws the button from chat_metadata itself. ──
 
+/** The bar redraws its button (lit, with the direction as its tooltip) whenever the direction changes. */
 function drawChip() {
-    const form = document.getElementById('send_form');
-    let chip = document.getElementById('dle-guide-chip');
-    const g = guide();
-    if (!form || !guideActive(g, last())) { chip?.remove(); return; }
-    if (!chip) {
-        chip = document.createElement('div');
-        chip.id = 'dle-guide-chip'; chip.className = 'dk dle-guide-chip';
-        chip.innerHTML = '<span aria-hidden="true">🧭</span><span class="dle-guide-t"></span><button type="button" data-g="edit" title="Edit the direction" aria-label="Edit the direction">✎</button><button type="button" data-g="keep" title="Keep it as one of Mero’s 🧭 notes: it stays until you switch it off">Keep</button><button type="button" data-g="drop" title="Drop it: new swipes are written as usual" aria-label="Drop the direction">✕</button>';
-        chip.addEventListener('click', e => {
-            const b = e.target.closest('[data-g]'); if (!b) return;
-            const now = guide();
-            if (b.dataset.g === 'edit') openGuide(now.i);
-            else if (b.dataset.g === 'drop') { put(clearGuide(now)); K.notify({ text: 'Direction dropped. New swipes are written as usual.' }); }
-            else if (b.dataset.g === 'keep') {
-                const n = addNote({ kind: 'steer', text: now.text, story: true, last: 'pinned', scope: 'chat', on: true });
-                put(clearGuide(now));
-                K.notify({ text: n ? 'Kept as a 🧭 note in Mero’s notes. It stays until you switch it off.' : 'Couldn’t keep it as a note.', tone: n ? 'good' : 'wait' });
-            }
-        });
-    }
-    if (chip.parentElement !== form) form.prepend(chip);
-    chip.querySelector('.dle-guide-t').textContent = g.text;
-    chip.title = `For this reply’s swipes: ${g.text}`;
+    document.getElementById('dle-guide-chip')?.remove();   // the old chip, if a page still has one
+    try { window.dispatchEvent(new Event('dle-guide')); } catch { /* noop */ }
+}
+
+/** The bar's button: no direction yet → "What should change?"; a direction in force → what to do with it. */
+export function guideClick(anchor) {
+    const g = guide(), i = last();
+    if (!guideActive(g, i)) { openGuide(i); return; }
+    K.openMenu(anchor, [
+        { label: `🧭 ${g.text.length > 60 ? g.text.slice(0, 60) + '…' : g.text}`, sub: 'the direction for this reply’s swipes', disabled: true },
+        'sep',
+        { label: 'Swipe again with it', icon: 'refresh', onClick: () => newSwipe(i) },
+        { label: 'Change the direction…', icon: 'edit', onClick: () => openGuide(i) },
+        { label: 'Keep it as a 🧭 note', icon: 'keep', sub: 'stays until you switch it off', onClick: () => {
+            const n = addNote({ kind: 'steer', text: g.text, story: true, last: 'pinned', scope: 'chat', on: true });
+            put(clearGuide(guide()));
+            K.notify({ text: n ? 'Kept as a 🧭 note in Mero’s notes. It stays until you switch it off.' : 'Couldn’t keep it as a note.', tone: n ? 'good' : 'wait' });
+        } },
+        { label: 'Drop it', icon: 'close', sub: 'new swipes as usual', onClick: () => { put(clearGuide(guide())); K.notify({ text: 'Direction dropped. New swipes are written as usual.' }); } },
+    ]);
 }
 
 export function initGuidedSwipe() {

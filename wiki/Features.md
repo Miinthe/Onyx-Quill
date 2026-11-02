@@ -47,7 +47,7 @@ NPCs set up on the board, each with their own character card. They come and go, 
 
 ## Mero ☆
 
-Your co-writer, in the side panel's Mero tab. Talk with her about the story, ask for pitches and plans, and answer her requests (including the lore gaps saved in a chat). See [[Mero]].
+Your co-writer, in the side panel's Mero tab. Talk with her about the story (she looks things up in your lore, the board, the whole chat and the Cast, and asks with question cards), turn what you planned together into pitches and plans, ask for suggestions, and answer her requests (including the lore gaps saved in a chat). Redo, edit and delete messages in a talk. See [[Mero]].
 
 ---
 

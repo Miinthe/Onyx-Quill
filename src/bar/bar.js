@@ -1,7 +1,7 @@
 /**
  * Overhaul round 2a (2026-10-15) — the DeepLore bar above the message box. Rules: bar-pure.js. Looks: frame.css.
  *
- * PC:    📖 · side panel (dot / envelope) · starred Quick Replies · all Quick Replies · My notes │ Re-evaluate · Simple send · Draft
+ * PC:    📖 · side panel (dot / envelope) · starred Quick Replies · all Quick Replies · My notes │ Re-evaluate · Guided swipe · Simple send · Draft
  * Phone: 📖 · side panel · Quick Replies · My notes · ⋯ (the special buttons); the last two take over the row (‹ back), and a
  *        handle on top pulls the row taller for more rows (Miinthe: "I hate being unnecessarily limited").
  * While DeepLore works on a reply its status line (index.js, the old toast) sits in the bar, with Cancel.
@@ -10,7 +10,7 @@
  * Quick Replies are SillyTavern's own (the Quick Reply extension's sets); a star puts one on the bar. While at least
  * one is starred, SillyTavern's own Quick Reply row is hidden (her design: the bar takes its place).
  */
-import { saveSettingsDebounced, eventSource, event_types } from '../../../../../../script.js';
+import { saveSettingsDebounced, eventSource, event_types, chat_metadata } from '../../../../../../script.js';
 import { getContext } from '../../../../../extensions.js';
 import { getSettings } from '../../settings.js';
 import { requestsHere, replyWaits, onRequestsChanged } from '../requests.js';
@@ -19,6 +19,7 @@ import { panelButton, toggleHot, moveHot, isHot, hotButtons, qrTitle, draftStep 
 import * as K from '../kit/kit.js';
 import { toggleNotes, notesOpen, close as closeNotes } from '../notes.js';
 import { worldHere, worldOpen, toggleWorld, closeWorld, worldDots } from '../world/world.js';
+import { asGuide, guideActive, GUIDE_KEY } from '../guided-swipe-pure.js';
 
 const I = K.icon;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -227,7 +228,10 @@ function draw() {
     const worldB = wOn ? db('world', 'globe', 'World: chatter, news, messages, people', worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join(''), worldOpen() ? ' on' : '') : '';
     const panelB = db('panel', pb.icon, pb.title, dot, pCls);
     const draftDot = draftText ? '<span class="dle-dot draft"></span>' : '';
-    const specials = db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') +
+    // 🧭 Guided swipe (Miinthe, 2026-11-02: in the bar after Re-evaluate; the button holds the direction — lit while one is in force)
+    const gd = asGuide(chat_metadata?.[GUIDE_KEY]), gOn = guideActive(gd, (getContext()?.chat || []).length - 1);
+    const guideB = db('guide', 'wand', gOn ? `Guided swipe — direction: “${gd.text}” (click: swipe again, change, keep or drop it)` : 'Guided swipe: swipe the newest reply with a direction (“less flowery”, “he’s colder here”)', gOn ? '<span class="dle-dot"></span>' : '', gOn ? ' on' : '');
+    const specials = db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') + guideB +
         db('ssend', 'ssend', 'Simple send: post as your message, no reply') +
         db('draft', 'draft', draftText ? 'Put the draft back' : 'Keep as a draft (follows you to other devices)', draftDot);
     const allQr = sets.map(x => x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
@@ -236,7 +240,7 @@ function draw() {
         const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
         row = `<div class="dle-grab" data-b="grab" title="Pull up for more room"></div>${db('back', 'back', 'Back')}<div class="dle-take${takeH > 46 ? ' wrapped' : ''}" style="height:${takeH}px">${inner}</div>`;
     } else if (phone()) {
-        row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + db('sp', 'more', 'More: re-evaluate, simple send, draft', draftDot);
+        row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + db('sp', 'more', gOn ? `More — a swipe direction is set: “${gd.text}”` : 'More: re-evaluate, guided swipe, simple send, draft', draftDot + (gOn ? '<span class="dle-dot" style="right:12px"></span>' : ''));
     } else {
         row = book + panelB + `<div class="dle-hot">${hot.map(qrBtn).join('')}</div>` + db('qrs', 'qr', 'All quick replies', '', '') + notesB + worldB + '<span class="dle-vsep"></span>' + specials;
     }
@@ -324,6 +328,7 @@ function onClick(e) {
         case 'sp': mode = 'sp'; draw(); break;
         case 'back': mode = 'home'; draw(); break;
         case 'reev': reevaluate(); break;
+        case 'guide': import('../guided-swipe.js').then(m => m.guideClick(b)); break;
         case 'ssend': simpleSend(); break;
         case 'draft': draft(); break;
         case 'notes': toggleNotes(); break;
@@ -371,7 +376,8 @@ export function initBar() {
     onRequestsChanged(soon);
     onMeroChanged(soon);   // Mero's glow (seen / set aside)
     window.addEventListener('dle-notes', soon);   // My notes opened / closed → the button's pressed look
-    window.addEventListener('dle-world', soon);   // the world panel opened / closed, or its board changed
+    window.addEventListener('dle-world', soon);
+    window.addEventListener('dle-guide', soon);   // the swipe direction set / dropped → the 🧭 button lit or not   // the world panel opened / closed, or its board changed
     const later = () => setTimeout(() => { mount(); }, 300);
     try {
         eventSource.on(event_types.CHAT_CHANGED, later);

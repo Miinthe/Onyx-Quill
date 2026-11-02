@@ -56,7 +56,8 @@ export function discretionMap(w) {
     try { for (const p of everyone(w)) { const d = discretion(p); if (d) m.set(p.key, d); } } catch { /* no board */ }
     return m;
 }
-// the news and rumor accounts are voices, not story people (Miinthe, E7: "news and story people are the same")
+// the news and rumor accounts are voices, not characters (Miinthe, E7: "news and story people are the same"); the chip and the
+// People heading say "Characters" (Miinthe, 2026-11-02: "what does 'story people' even mean?")
 const kindOf = (w, key) => (key === USER ? 'user' : key === MAIN ? 'main' : String(key).startsWith('v:') || key === RUMOR || key === NEWS ? 'voice' : 'cast');
 
 // ── Chatter ─────────────────────────────────────────────────────────────────
@@ -64,7 +65,7 @@ const kindOf = (w, key) => (key === USER ? 'user' : key === MAIN ? 'main' : Stri
 export function renderChatter(body, w) {
     const letters = w.look === 'letters', me = currentMe();
     const list = feedView(H.store(), filter, k => kindOf(w, k));
-    let h = asRowHtml() + `<div class="dle-wd-feed"><div class="dle-wd-fchips">${[['all', 'All'], ['news', 'News'], ['rumor', '◌ Rumors'], ['cast', 'Story people']].map(([v, l]) => `<button type="button" class="dk-chip${filter === v ? ' on' : ''}" data-ff="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`;
+    let h = asRowHtml() + `<div class="dle-wd-feed"><div class="dle-wd-fchips">${[['all', 'All'], ['news', 'News'], ['rumor', '◌ Rumors'], ['cast', 'Posts']].map(([v, l]) => `<button type="button" class="dk-chip${filter === v ? ' on' : ''}" data-ff="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`;
     h += `<div class="dle-wd-postbox"><button type="button" class="dk-ib" data-photo title="Attach a photo (described)" aria-label="Attach a photo">📷</button><textarea class="dk-field" rows="1" data-post-ta data-tagbox placeholder="${letters ? 'Pin a note to the board as' : 'Post as'} ${esc(nameOf(me))}…" aria-label="New post"></textarea><button type="button" class="dk-btn dk-primary" data-post>${letters ? 'Pin it' : 'Post'}</button></div>`;
     if (feedBusy) h += '<div class="dle-wd-hint">The world is posting…</div>';
     if (!list.length) h += `<div class="dle-wd-empty"><b>${letters ? 'Nothing pinned to the board yet.' : 'No chatter yet.'}</b><span>Posts come as the story moves (your "how alive" mix on the board). Post something yourself, and someone may answer.</span></div>`;
@@ -148,7 +149,7 @@ export function renderPeople(body, w) {
       <small class="ab">${esc([p.interests.join(' · '), p.quirks].filter(Boolean).join(' — ') || p.about || '')}</small></div>`).join('') : '');
     // order (Miinthe, 2026-10-26: "'regulars' are in an awkward place"): the story's people, then the regulars (people of the place),
     // then the voices and accounts — the rumor account under its own heading, not passing for a story voice
-    body.innerHTML = `<div class="dle-wd-ppl">${grp('The story\'s people', ppl.filter(p => p.kind === 'main' || p.kind === 'cast'))}${grp('Regulars', ppl.filter(p => p.kind === 'regular'))}${grp('Story voices', ppl.filter(p => p.kind === 'voice'))}${w.sections.feed ? `<div class="dle-wd-lgh">Rumor account</div><div class="dle-wd-prow">${avatar(RUMOR)}<b>${esc(nameOf(RUMOR))}</b><small class="ab">The story's rumor account: anyone can post or send a tip without a name. Its name is set on the board.</small></div>` : ''}
+    body.innerHTML = `<div class="dle-wd-ppl">${grp('Characters', ppl.filter(p => p.kind === 'main' || p.kind === 'cast'))}${grp('Regulars', ppl.filter(p => p.kind === 'regular'))}${grp('Story voices', ppl.filter(p => p.kind === 'voice'))}${w.sections.feed ? `<div class="dle-wd-lgh">Rumor account</div><div class="dle-wd-prow">${avatar(RUMOR)}<b>${esc(nameOf(RUMOR))}</b><small class="ab">The story's rumor account: anyone can post or send a tip without a name. Its name is set on the board.</small></div>` : ''}
       <div class="dle-wd-hint">Passers-by stay nameless: they make the numbers ("and 23 others like this").</div>
       <button type="button" class="dk-btn" data-board-people>Edit people on the board</button></div>`;
 }

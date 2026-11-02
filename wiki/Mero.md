@@ -10,23 +10,45 @@ Mero is your co-writer. You can talk with her about the story outside the rolepl
 
 ## Talking with her
 
-The big area is your talk. Type in **Talk to Mero…** and press **Send**.
+The big area is your talk. Type in **Talk to Mero…** and press **Send**. "Mero is typing…" shows while she works.
 
-- **Pitch** opens the Pitches drawer.
+- **Pitch** turns what you two worked out in this talk into real pitches (see [Pitches from a talk](#pitches-from-a-talk)). It never opens the suggestions; those are under 💡 in her rail.
 - **Where are we?** asks her for a recap of where the story stands.
-- At the top: the talk's name (click it to rename), the kind of talk (💭 **Yapping**, 🗺 **Planning**, ✋ **Feedback** or 🎲 **Games**), **ⓘ** (what Mero was told for her last answer), and **⋯**: **Check the lore**, **Wrap up** (she offers what you agreed as notes), **Resolve for now**, **Archive** and **Delete**.
+- At the top: the talk's name (click it to rename), the kind of talk (💭 **Yapping**, 🗺 **Planning**, ✋ **Feedback**; Mero sets it herself as the talk goes, so it is only a label), **ⓘ** (what Mero was told for her last answer), and **⋯**: **Check the lore**, **Wrap up** (she offers what you agreed as notes), **Resolve for now**, **Archive** and **Delete**.
+
+Mero reads the room: a hello gets a short hello, planning gets a thinking partner, "I don't like that reply" gets feedback. She makes notes only when you ask ("make that a note", Wrap up). Her **bold** and *italics* show as such.
 
 Talks live with the character, so every chat and run of that character sees them.
 
+### She looks things up
+
+Mero can look things up before she answers: search and read your **lore**, open a **tracker** of the board, search and read the **whole chat** (not only the latest replies), and check someone in the **Cast**. She only reads; nothing she looks up changes anything.
+
+- While she works, each lookup shows as its own line under "Mero is typing…".
+- Afterwards her answer's header says **🔎 3 lookups**; click it to see what she looked at and what she found.
+- **🔎 lookups off** means her AI can't do lookups (some local models can't), so she answered only from what she was given. DeepSeek can.
+
+### Her questions
+
+When she needs to know something with a few clear answers, she asks with a **question card**: pick one (●) or several (☑), or write **your own answer**. **Anything to add?** under the questions takes extra details. Then **Send answers**. Your answers go in as your message and she answers them. Answered cards stay, showing what you picked.
+
+### Each message's buttons
+
+Hover a message (tap on a phone) for its buttons, in the message's own header:
+
+- On Mero's answer: **↻** answers again (her last answer only). The old answer stays as a swipe: **◀ 1/2 ▶** flips between them. The swipes are gone as soon as you write again.
+- On your message: **✏** edits it. On your last message, **Save & ask again** removes what came after and lets Mero answer the new words.
+- **🗑** deletes a message: it asks **Keep | Delete** first.
+
 ### 🎲 Games
 
-A break from the story: start a talk and pick **🎲 Games** (or set a talk's kind to Games). It opens a game picker; today there is **Wordle**. Guess the five-letter word in six tries, with the on-screen keys or your keyboard. Green means the right letter in the right spot, yellow means it's in the word but elsewhere. The game checks the letters itself, so the colors are always right, and a made-up word doesn't cost a try. Mero reacts after every guess (one short AI call each; without her AI she uses ready-made lines). **Hint** asks her for a clue that doesn't give the word away, and **New word** starts another round, as often as you like.
+A break from the story: in **Talks**, press **🎲 Play**. It opens a game picker; today there is **Wordle**. Guess the five-letter word in six tries, with the on-screen keys or your keyboard. Green means the right letter in the right spot, yellow means it's in the word but elsewhere. The game checks the letters itself, so the colors are always right, and a made-up word doesn't cost a try. Mero reacts after every guess (one short AI call each; without her AI she uses ready-made lines). **Hint** asks her for a clue that doesn't give the word away, and **New word** starts another round, as often as you like.
 
 ## Her rail
 
 The row of icons on the outer edge opens her drawers:
 
-- **Talks**: all your talks, with search and a filter by kind (**All**, then 💭 🗺 ✋ 🎲 as icons; hover for the name). **New** starts one.
+- **Talks**: all your talks, with search and a filter by kind (**All**, then 💭 🗺 ✋ 🎲 as icons; hover for the name). Each talk shows what came out of it: 💡 pitches, 🪜 plans, 📝 notes. **New** starts a talk, **🎲 Play** a game.
 - **Requests**: things waiting for your answer, grouped by who asks: 🤖 the board's helper (when it is not sure about a move), 🪜 your plans, and ☆ Mero (her own ideas about your lore, and the slop guard's question when the writer keeps reusing a phrase: **Ban it**, **Use it less** or **It's fine**; see below). **📚 Lore gaps** lists things the story needed that no entry had (saved in older chats; new ones aren't found any more since the Librarian was removed), with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** and **No**. Each other card has its own buttons, like **Accept**, **Deny**, **Add it**, **Keep it** or **Leave it**. **Check the lore** asks her to read the latest replies next to the entries sent with them and say what an entry is missing.
 - **Notes**: notes for the writer or just for your talks. **Note** adds one. Each note has a kind (🚫 Don't, 🧭 Steer, 💡 Idea, 📄 Fact), how long it lasts (the next reply, a few replies, or until removed) and where it applies (this chat, this run, the character, or the board). Your notebooks are here too: **Notebook**, **AI notepad** and **Scribe**. Below the notes: **🚫 Phrases to avoid** (see below).
 - **Pitches and plans**: see below.
@@ -50,7 +72,12 @@ Phrases the writer leans on too much ("her breath hitched", "a testament to"). F
 
 ## Pitches and plans
 
-Open **Pitches** from the rail, the **Pitch** button, or a reply's 📖 → **Pitch from here**.
+Two ways to get a pitch:
+
+- **Suggestions** (hands-off, "give me something with danger"): 💡 **Pitches** in her rail, or a reply's 📖 → **Pitch from here**.
+- **From a talk** (you're in control): plan it with her, then press **Pitch** under the talk. See below.
+
+### Suggestions
 
 Choose what you want (tap the summary line to change it): **Shape** (⚡ one-shot or 🪜 multistep, which makes a plan), **Visible** or hidden, **How many**, **Strength** (🌱 nudge, 🔀 turn, 💥 bombshell), **Tone** (SFW / NSFW) and **Focus**. Add a wish in **Anything in mind?**, then press **Pitch**.
 
@@ -64,6 +91,14 @@ Pick the pitches you like, then:
 - 👎 **Not my thing**: Mero remembers. You can say why (too much, not like them, not now, wrong tone) or skip.
 
 **New batch** throws the shown ones away and pitches again. **Set them all aside** puts the unused ones aside without counting them as 👎.
+
+### Pitches from a talk
+
+Plan something with Mero (a volcano outbreak, a party that goes wrong), then press **Pitch** under the talk, or just tell her "make that a pitch".
+
+1. If something important is still open, she asks first with question cards: one question per open point. Her own ideas you never said yes to count as open too ("Does Toaster try to smooth it over?"). Answer (and add details if you like), then **Write the pitch**, **Keep talking** (your answers go in as your message and you plan on; press Pitch again when ready), or **Skip, write it as is**.
+2. She writes up what you worked out: your ideas, and hers only where you agreed. One thing that happens becomes a pitch; steps in order become a 🪜 plan with those beats. What is still open shows as *Still open: …* on the card and never goes to the writer.
+3. The cards show right in the talk with **Next reply** / **Start the plan**, **My line**, **Edit** and 👎. They are kept ideas, also listed in 💡 Pitches. Pressing **Pitch** again later only writes what is new.
 
 ---
 

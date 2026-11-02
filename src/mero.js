@@ -27,8 +27,11 @@ import { getCurrentForChat } from './verdict/verdict-store.js';
 import {
     MERO_KEY, CHAT_NOTES_KEY, asStore, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
+    askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
-import { takePitchCards } from './pitches-pure.js';
+import { TOOL_DEFS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep } from './mero-tools-pure.js';
+import { callWithTools, toolsPossible } from './ai/tool-call.js';
+import { askAnswerText, answerAsks } from './ask-pure.js';
 import { boardSummary, namedTrackers, trackerDetails, nowLine } from './mero-board-pure.js';
 import { getMeroMap } from './board-store.js';
 import { refreshMeroMap, editMeroMap } from './mero-map.js';
@@ -82,7 +85,7 @@ export function newTalk(tag = 'yap') {
 export function updateTalk(id, patch) {
     const t = findTalk(id); if (!t) return null;
     if (typeof patch.title === 'string' && patch.title.trim()) { t.title = patch.title.trim().slice(0, 80); t.mine = true; }
-    if (patch.tag) t.tag = patch.tag;
+    if (patch.tag) { t.tag = patch.tag; t.tagMine = true; }   // she picked it: Mero's [[KIND]] no longer changes it
     if (patch.state) t.state = patch.state;
     t.updated = new Date().toISOString(); saveStore(); return t;
 }
@@ -312,28 +315,84 @@ export function setPitchSink(fn) { pitchSink = fn; }
 /** The talk as one readable text — for the ⓘ view only (it is sent as real turns). */
 const flatten = messages => messages.map(m => `${m.role === 'user' ? 'Miinthe' : 'Mero'}: ${m.content}`).join('\n\n');
 
+// ── 🔎 lookups (Miinthe, 2026-11-02: tool calls, shown while she works and in the reply's header afterwards) ─────────
+
+const working = new Map();   // talk id → [{ label, got }] — the lookups of the answer being written now (memory only)
+/** What Mero is looking up right now, per talk — for "Mero is typing…" with one line per lookup. */
+export const meroWorking = () => Object.fromEntries([...working].map(([id, steps]) => [id, steps.map(x => ({ ...x }))]));
+const noTools = new Set();   // profiles that refused tools this session: Mero answers the old way there
+const low = s => String(s ?? '').toLowerCase().trim();
+
+/** Everything the lookups read — gathered once per answer, only when she looks something up. */
+function lookupData() {
+    const chat = getContext()?.chat || [];
+    let L = null; try { L = live(); } catch { /* no board */ }
+    let cast = [];
+    try { cast = mentionables().filter(m => m.group === 'Cast'); } catch { /* none */ }
+    const nameOf = m => m.label.replace(/\s*\((?:in the scene|the main character)\)$/, '');
+    return {
+        entries: vaultIndex || [],
+        chat: chat.map((m, i) => ({ m, i })).filter(({ m }) => m && !m.is_system && typeof m.mes === 'string').map(({ m, i }) => ({ i, name: m.is_user ? (name1 || 'Miinthe') : m.name, text: splitOoc(m.mes).clean })),
+        board: L?.board || null, state: L?.state || null,
+        entryText: title => String((vaultIndex || []).find(e => e.title === title)?.content || ''),
+        castNames: cast.map(nameOf),
+        castText: name => { const q = low(name); const hit = cast.find(m => low(nameOf(m)) === q) || cast.find(m => low(nameOf(m)).includes(q) || q.includes(low(nameOf(m)).split(/\s+/)[0])); return hit ? hit.text() : ''; },
+    };
+}
+
 /**
- * Miinthe says something in a talk; Mero answers. Returns { ok, talk } or { ok: false, error } — the talk keeps
- * Miinthe's message either way. `text` may be the 🧭 question. `opener`: Mero speaks first (a big moment) — `text`
- * is then only her cue, never shown as Miinthe's message.
+ * The rounds: Mero may look things up (TOOL_DEFS) before she answers; every lookup shows at once in `steps` (the live
+ * list). The last round offers no lookups, so she has to answer. Returns { text, steps }.
  */
-export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}) {
-    const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
-    const said = String(text || '').trim(); if (!said) return { ok: false, error: 'nothing to send' };
-    const first = !t.msgs.some(m => m.who === 'mero');
-    const extra = (Array.isArray(ctx) ? ctx : []).filter(c => c && c.label).slice(0, 6).map(c => ({ label: String(c.label).slice(0, 120), text: String(c.text || '').slice(0, 2000) }));
-    if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
-    if (t.state !== 'open') t.state = 'open';
-    t.updated = new Date().toISOString(); saveStore();
+async function answerWithLookups(system, messages, conn, steps, onStep) {
+    const msgs = [{ role: 'system', content: system }, ...messages.map(m => ({ role: m.role, content: m.content }))];
+    let data = null, used = 0;
+    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        const last = round === MAX_TOOL_ROUNDS || used >= MAX_LOOKUPS;
+        const r = await callWithTools(msgs, TOOL_DEFS, conn, { choice: last ? 'none' : 'auto' });
+        if (!r.calls.length || last) return { text: r.text };
+        msgs.push({ role: 'assistant', content: r.text || '', tool_calls: r.calls.map(c => ({ id: c.id, type: 'function', function: { name: c.name, arguments: typeof c.args === 'string' ? c.args : JSON.stringify(c.args || {}) } })), ...(r.reasoning ? { reasoning_content: r.reasoning } : {}) });
+        for (const c of r.calls) {
+            const a = argsOf(c.args);
+            let res;
+            if (used >= MAX_LOOKUPS) res = { text: 'No more lookups for this answer — answer with what you have.', got: '' };
+            else {
+                used++;
+                const step = { label: toolLabel(c.name, a) }; steps.push(step); onStep();
+                try { data ||= lookupData(); res = runTool(c.name, a, data); } catch (err) { res = { text: `The lookup failed: ${err?.message || err}`, got: 'failed' }; }
+                step.got = res.got; onStep();
+            }
+            msgs.push({ role: 'tool', tool_call_id: c.id, content: res.text });
+        }
+    }
+    return { text: '' };
+}
+
+/**
+ * Mero answers the talk as it is in `history` (the messages before her answer). `said` = Miinthe's message she answers
+ * (for the board lookups and "she asked for a pitch"). opener: Mero speaks first — `said` is only her cue.
+ * Returns { version: { t, at, cards?, steps? }, kind, title, raw } — throws when the call fails.
+ */
+async function answerFor(t, history, said, { opener = false } = {}) {
     const conn = resolveConnectionConfig('mero');
-    if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!conn.profileId) throw new Error('Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile');
+    // "Mero is typing…" from the first moment — the board summary below can take up to 20 seconds, and nothing showing
+    // then looked like she was broken (Miinthe, 2026-11-02)
+    busy++; changed();
+    try { return await answerInner(t, history, said, { opener }, conn); } finally { busy--; changed(); }
+}
+async function answerInner(t, history, said, { opener }, conn) {
     // her summary of the board, written now if the board changed since (quiet, one call; mero-map.js)
     // — at most 20 seconds: a slow call must not hold her answer up; it finishes in the background for the next one
     try { const n = live()?.board?.name; if (n) await Promise.race([refreshMeroMap(n).catch(() => null), new Promise(r => setTimeout(r, 20000))]); } catch { /* names only this time */ }
     const w = meroWhere(), pkg = contextPackage();
     const vault = t.review ? reviewEntries() : null;
-    const built = buildMeroPrompt({ settings: store().settings, talk: t, character: w.character, ...pkg, vault, firstAnswer: first && !t.mine });
+    const lookups = !vault && conn.mode === 'profile' && !getSettings().aiForceUserRole && !noTools.has(conn.profileId) && toolsPossible(conn.profileId);
+    const first = !history.some(m => m.who === 'mero');
+    const pitchAsked = !opener && askedForPitch(said);
+    const built = buildMeroPrompt({ settings: store().settings, talk: { ...t, msgs: history }, character: w.character, ...pkg, vault, firstAnswer: first && !t.mine, lookups, pitchAsked });
     const { system } = built, messages = opener ? [...built.messages, { role: 'user', content: said }] : built.messages;
+    if (!messages.length || messages[messages.length - 1].role !== 'user') throw new Error('Nothing for Mero to answer here.');
     // looked up on the board (Miinthe 2026-10-26): the trackers her message names, their details for THIS message only —
     // never stored in the talk, so later messages don't carry them again
     let lookedUp = [];
@@ -345,37 +404,182 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
         const last = messages[messages.length - 1];
         if (lookedUp.length && last?.role === 'user') messages[messages.length - 1] = { ...last, content: `${last.content}\n\n[Looked up on the board]\n${lookedUp.join('\n\n')}` };
     }
+    const steps = [];
+    working.set(t.id, steps);
     lastTold.set(t.id, { model: conn.profileId, sections: [
         ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
         ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
         ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
+        ['🔎 Her lookups', lookups ? 'She can look things up (lore, board, chat, Cast) — what she looked up shows above her answer.' : 'Not with this connection — she sees only what is listed here.'],
     ] });
-    busy++; changed();
     try {
-        // a vault review: the answer length from Settings (Answer length for /dle-review), and time to read it all
-        const rt = getSettings().reviewResponseTokens;
-        const callConn = vault ? { ...conn, ...(rt > 0 ? { maxTokens: rt } : {}), timeout: Math.max(conn.timeout || 0, 300000) } : conn;
-        // the talk as real turns: her last message, the ones before as history (a pasted script let a model write Miinthe's lines)
-        const r = await callAI(system, messages[messages.length - 1].content, { ...callConn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, history: messages.slice(0, -1) });
-        const raw = r?.text ?? '';
+        let raw = '', nolook = false;
+        if (lookups) {
+            try { raw = (await answerWithLookups(system, messages, conn, steps, changed)).text; }
+            catch (err) {
+                // a profile that can't do tools: remember it for this session, answer the old way
+                console.warn('[DLE] Mero: lookups failed, answering without them:', err?.message || err);
+                if (!steps.length) { noTools.add(conn.profileId); nolook = true; }   // e.g. LM Studio: the model's template can't take tools
+                steps.length = 0; raw = '';
+            }
+        }
+        if (!raw.trim()) {
+            // a vault review: the answer length from Settings (Answer length for /dle-review), and time to read it all
+            const rt = getSettings().reviewResponseTokens;
+            const callConn = vault ? { ...conn, ...(rt > 0 ? { maxTokens: rt } : {}), timeout: Math.max(conn.timeout || 0, 300000) } : conn;
+            // the talk as real turns: her last message, the ones before as history (a pasted script let a model write Miinthe's lines)
+            const r = await callAI(system, messages[messages.length - 1].content, { ...callConn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, history: messages.slice(0, -1) });
+            raw = r?.text ?? '';
+            if (!raw.trim()) console.warn('[DLE] Mero: the model sent back an empty answer', r);
+        }
         const told = lastTold.get(t.id); if (told) told.raw = raw;
-        if (!raw.trim()) console.warn('[DLE] Mero: the model sent back an empty answer', r);
-        const pc = takePitchCards(raw, pitchSink?.castNames?.() || []);
-        const a = parseMeroAnswer(pc.text);
-        // notes only when asked (Miinthe 2026-10-26) — Feedback talks may offer one once the fix is agreed
-        if (a.cards.length && t.tag !== 'fb' && !opener && !askedForNote(said)) a.cards = [];
+        const a = parseMeroAnswer(raw);
+        // notes only when asked (Miinthe 2026-10-26: "too quick to make notes") — everywhere now; in a fixing talk she asks first
+        if (a.cards.length && !opener && !askedForNote(said)) a.cards = [];
+        // her AI can't look things up: the reply's header says so instead of staying empty
+        if (!vault && (nolook || noTools.has(conn.profileId) || (conn.mode === 'profile' && !toolsPossible(conn.profileId)))) nolook = true;
+        const version = { t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(steps.length ? { steps: steps.map(x => keptStep(x.label, x.got)) } : {}), ...(nolook && !steps.length ? { nolook: true } : {}), ...(a.asks.length ? { asks: a.asks } : {}) };
+        return { version, kind: a.kind, title: a.title, pitchAsked };
+    } finally { working.delete(t.id); changed(); }
+}
+
+/** The tag fills itself in from what she says the talk is about — unless Miinthe picked it, or it is a game. */
+function autoTag(t, kind) { if (kind && !t.tagMine && t.tag !== 'game' && !t.review) t.tag = kind; }
+
+/** Miinthe asked for a pitch: the talk is written up as pitch cards right after the answer (pitches.js). */
+async function pitchIfAsked(t, asked) {
+    if (!asked || !pitchSink?.fromTalk) return null;
+    try { const r = await pitchSink.fromTalk(t.id); return r?.ok ? null : r?.error || null; } catch (err) { return err?.message || String(err); }
+}
+
+/**
+ * Miinthe says something in a talk; Mero answers. Returns { ok, talk } or { ok: false, error } — the talk keeps
+ * Miinthe's message either way. `text` may be the 🧭 question. `opener`: Mero speaks first (a big moment) — `text`
+ * is then only her cue, never shown as Miinthe's message.
+ */
+export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}) {
+    const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
+    const said = String(text || '').trim(); if (!said) return { ok: false, error: 'nothing to send' };
+    const extra = (Array.isArray(ctx) ? ctx : []).filter(c => c && c.label).slice(0, 6).map(c => ({ label: String(c.label).slice(0, 120), text: String(c.text || '').slice(0, 2000) }));
+    dropSwipes(t.msgs);   // she wrote again: the swipes of Mero's last answer are gone (Miinthe 2026-11-02)
+    if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
+    if (t.state !== 'open') t.state = 'open';
+    t.updated = new Date().toISOString(); saveStore();
+    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    const first = !t.msgs.some(m => m.who === 'mero');
+    try {
+        const r = await answerFor(t, t.msgs.slice(), said, { opener });
         const t2 = findTalk(talkId) || t;
-        let pitchNos = [];
-        if (pc.pitches.length && pitchSink) { try { pitchNos = pitchSink.add(pc.pitches) || []; } catch (err) { console.warn('[DLE] Mero: pitch cards skipped:', err?.message || err); } }
-        t2.msgs.push({ who: 'mero', t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(pitchNos.length ? { pitchNos } : {}) });
-        if (first && !t2.mine) t2.title = a.title || fallbackTitle(said);
+        t2.msgs.push({ who: 'mero', ...r.version });
+        if (first && !t2.mine) t2.title = r.title || fallbackTitle(said);
+        autoTag(t2, r.kind);
         t2.updated = new Date().toISOString(); saveStore();
-        return { ok: true, talk: t2 };
+        const pitchError = await pitchIfAsked(t2, r.pitchAsked);
+        return { ok: true, talk: findTalk(talkId) || t2, ...(pitchError ? { pitchError } : {}) };
     } catch (err) {
         console.warn('[DLE] Mero could not answer:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
-    } finally { busy--; changed(); }
+    }
+}
+
+// ── ↻ redo, swipes, delete, edit (Miinthe, 2026-11-02: "I have no way to re-do the mero reply, to delete a mero reply
+// or to edit my own reply") — swipes only until she writes again, never stored for long ──────────────────────────
+
+const lastMeroIndex = t => { for (let k = t.msgs.length - 1; k >= 0; k--) if (t.msgs[k].who === 'mero') return k; return -1; };
+const riiBefore = (t, k) => { for (let i = k - 1; i >= 0; i--) if (t.msgs[i].who === 'miinthe') return t.msgs[i].t; return ''; };
+
+/** ↻ Mero answers her last message again; the old answer stays as a swipe (◀ 1/2 ▶). */
+export async function redoMero(talkId, k) {
+    const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
+    if (k !== lastMeroIndex(t) || t.msgs.slice(k + 1).some(m => m.who === 'miinthe')) return { ok: false, error: 'Only her last answer can be redone.' };
+    const history = t.msgs.slice(0, k);
+    if (!history.some(m => m.who === 'miinthe')) return { ok: false, error: 'She spoke first here — there is nothing to answer again.' };
+    try {
+        const r = await answerFor(t, history, riiBefore(t, k));
+        const t2 = findTalk(talkId); const m = t2?.msgs[k];
+        if (!m || m.who !== 'mero') return { ok: false, error: 'The talk changed meanwhile.' };
+        addVersion(m, r.version);
+        autoTag(t2, r.kind);
+        t2.updated = new Date().toISOString(); saveStore();
+        return { ok: true };
+    } catch (err) { return { ok: false, error: err?.message || String(err) }; }
+}
+
+/** ◀ ▶ Show another version of Mero's last answer. */
+export function swipeMero(talkId, k, dir) {
+    const t = findTalk(talkId), m = t?.msgs[k];
+    if (!m || m.who !== 'mero') return false;
+    const { list, at } = versionsOf(m);
+    const n = at + (dir < 0 ? -1 : 1);
+    if (n < 0 || n >= list.length) return false;
+    showVersion(m, n); saveStore(); return true;
+}
+
+/** 🗑 Delete one message of the talk (hers or Mero's). */
+export function deleteMsg(talkId, k) {
+    const t = findTalk(talkId); if (!t || !t.msgs[k]) return false;
+    t.msgs.splice(k, 1);
+    t.updated = new Date().toISOString(); saveStore(); return true;
+}
+
+/**
+ * ✏ Miinthe changes her own message. `again`: everything after it goes and Mero answers the new words (only for her
+ * last message — Save & ask again).
+ */
+export async function editMsg(talkId, k, text, { again = false } = {}) {
+    const t = findTalk(talkId), m = t?.msgs[k];
+    const said = String(text || '').trim();
+    if (!m || m.who !== 'miinthe' || !said) return { ok: false, error: 'Nothing to save.' };
+    m.t = said;
+    if (!again) { t.updated = new Date().toISOString(); saveStore(); return { ok: true }; }
+    if (t.msgs.slice(k + 1).some(x => x.who === 'miinthe')) { saveStore(); return { ok: false, error: 'Only your last message can be asked again.' }; }
+    t.msgs.splice(k + 1);
+    dropSwipes(t.msgs);
+    t.updated = new Date().toISOString(); saveStore();
+    try {
+        const r = await answerFor(t, t.msgs.slice(), said);
+        const t2 = findTalk(talkId) || t;
+        t2.msgs.push({ who: 'mero', ...r.version });
+        autoTag(t2, r.kind);
+        t2.updated = new Date().toISOString(); saveStore();
+        const pitchError = await pitchIfAsked(t2, r.pitchAsked);
+        return { ok: true, ...(pitchError ? { pitchError } : {}) };
+    } catch (err) { return { ok: false, error: err?.message || String(err) }; }
+}
+
+/** 💡 The talk's pitches were written up (pitches.js): Mero's line, with the cards under it. */
+export function noteTalkPitches(talkId, { text, pitchNos = [], planNos = [], pitchIds = [], asks = [] } = {}) {
+    const t = findTalk(talkId); if (!t) return;
+    dropSwipes(t.msgs);
+    t.msgs.push({ who: 'mero', t: String(text || '…'), at: new Date().toISOString(), ...(pitchNos.length ? { pitchNos, planNos, pitchIds } : {}), ...(asks.length ? { asks, pcheck: true } : {}) });
+    t.updated = new Date().toISOString(); saveStore();
+}
+
+/**
+ * ❓ Miinthe answers Mero's question cards on message k (answers: [{ picked: [i], own }] per card). Her answers become her
+ * message, and Mero answers it — or, for the cards 💡 Pitch asked first, the talk is written up right after (skipped:
+ * written up as it is, the open points stay open).
+ */
+export async function answerTalkAsks(talkId, k, answers = [], { skipped = false, detail = '', talk = false } = {}) {
+    const t = findTalk(talkId), m = t?.msgs[k];
+    if (!m || m.who !== 'mero' || !Array.isArray(m.asks) || !m.asks.length) return { ok: false, error: 'Those questions are gone.' };
+    if (t.msgs.slice(k + 1).some(x => x.who === 'miinthe')) return { ok: false, error: 'You wrote since — answer in the box instead.' };
+    const asks = answerAsks(m.asks, answers, { skipped });
+    // "Anything to add?" (Miinthe, 2026-11-02: "I do not seem to have a chance to add more details in between")
+    const more = String(detail || '').trim();
+    const said = [skipped ? '' : askAnswerText(asks), more].filter(Boolean).join('\n\n');
+    if (!skipped && !said) return { ok: false, error: 'Pick an answer, write your own, or add something.' };
+    m.asks = asks;
+    if (m.pcheck && !talk) {
+        if (said) { dropSwipes(t.msgs); t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString() }); }
+        t.updated = new Date().toISOString(); saveStore();
+        if (!pitchSink?.fromTalk) return { ok: false, error: 'Pitches are not ready yet.' };
+        return pitchSink.fromTalk(talkId, { ask: false });
+    }
+    saveStore();
+    // a normal card, or "Keep talking" on Pitch's questions: her answers are her message and Mero answers it
+    return sendToMero(talkId, said);
 }
 
 /** 🧭 Where are we? — asked in this talk, or a new 💭 talk when none is open. */

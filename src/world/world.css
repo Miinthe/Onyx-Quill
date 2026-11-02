@@ -69,19 +69,36 @@
 .dle-wd-scene { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-desk); color: var(--dk-ink); font: inherit; font-size: var(--dk-fs-s); cursor: pointer; }
 .dle-wd-scene:hover { border-color: var(--w); }
 .dle-wd-scene .dk-i { width: 13px; height: 13px; }
-.dle-wd-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 4px; }
+.dle-wd-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
 .dle-wd-thread .daymark { align-self: center; padding: 6px 0 2px; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
 .dle-wd-thread .bw { display: flex; flex-direction: column; gap: 2px; }
 .dle-wd-thread .bw.in { align-items: flex-start; } .dle-wd-thread .bw.out { align-items: flex-end; }
-.dle-wd-thread .bub { max-width: 84%; padding: 7px 11px; border-radius: 16px; line-height: 1.45; overflow-wrap: anywhere; }
-.dle-wd-thread .bub.in { background: var(--dk-menu); color: var(--dk-ink); border-bottom-left-radius: 5px; }
-.dle-wd-thread .bub.out { background: color-mix(in oklab, var(--w) 38%, var(--dk-page)); color: var(--dk-ink); border-bottom-right-radius: 5px; }
+.dle-wd-thread .bub { max-width: 100%; padding: 7px 12px; border-radius: 18px; line-height: 1.4; overflow-wrap: anywhere; }
+/* a phone's text messages (Miinthe, 2026-11-02: "weird and bland"): a clear gray for theirs, a solid color for the sender's
+   side; messages in a row stick together, the tail only on the last; Edit / Delete as small icons beside, on hover */
+.dle-wd-thread .bub.in { background: color-mix(in oklab, var(--dk-ink) 15%, var(--dk-page)); color: var(--dk-ink); }
+.dle-wd-thread .bub.out { background: color-mix(in oklab, var(--w, var(--dk-accent)) 78%, #000 22%); color: #fff; }
+.dle-wd-thread .bub.out .wd-at { color: inherit; font-weight: 700; }   /* @-names stay readable on the colored bubble */
+.dle-wd-thread .bw.mid, .dle-wd-thread .bw.last { margin-top: -6px; }   /* 2px apart inside a run */
+.dle-wd-thread .bw.in.solo .bub, .dle-wd-thread .bw.in.last .bub { border-bottom-left-radius: 5px; }
+.dle-wd-thread .bw.out.solo .bub, .dle-wd-thread .bw.out.last .bub { border-bottom-right-radius: 5px; }
+.dle-wd-thread .bw.in.first .bub, .dle-wd-thread .bw.in.mid .bub { border-bottom-left-radius: 6px; }
+.dle-wd-thread .bw.in.mid .bub, .dle-wd-thread .bw.in.last .bub { border-top-left-radius: 6px; }
+.dle-wd-thread .bw.out.first .bub, .dle-wd-thread .bw.out.mid .bub { border-bottom-right-radius: 6px; }
+.dle-wd-thread .bw.out.mid .bub, .dle-wd-thread .bw.out.last .bub { border-top-right-radius: 6px; }
+.dle-wd-thread .brow { display: flex; align-items: center; gap: 4px; max-width: 84%; }
+.dle-wd-thread .bw.out .brow { flex-direction: row-reverse; }
+.dle-wd-thread .brow .acts { flex: none; display: inline-flex; gap: 0; opacity: 0; transition: opacity .12s; }
+.dle-wd-thread .bw:hover .brow .acts, .dle-wd-thread .bw:focus-within .brow .acts { opacity: 1; }
+.dle-wd-thread .bw.tapped .brow .acts { opacity: 1; }   /* a phone: tap the bubble */
+.dle-wd-thread .brow .acts button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); padding: 0; cursor: pointer; font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); }
+.dle-wd-thread .brow .acts button[data-done] { width: auto; padding: 0 6px; color: var(--dk-ink); }
+.dle-wd-thread .brow .acts button:hover { background: var(--dk-menu); color: var(--dk-ink); }
+.dle-wd-thread .brow .acts .dk-i { width: 13px; height: 13px; }
 .dle-wd-thread .bub.edit { outline: 2px solid var(--w); }
 .dle-wd-thread .meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 0 6px; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
 .dle-wd-thread .meta button { border: 0; background: transparent; color: var(--dk-muted); font: inherit; padding: 0 2px; border-radius: 4px; cursor: pointer; }
 .dle-wd-thread .meta button:hover { color: var(--dk-ink); }
-.dle-wd-thread .meta .acts { display: inline-flex; gap: 2px; opacity: .6; }
-.dle-wd-thread .bw:hover .acts, .dle-wd-thread .bw:focus-within .acts { opacity: 1; }
 .dle-wd-thread .swipe { display: inline-flex; align-items: center; gap: 2px; }
 .dle-wd-thread .swipe .dk-i { width: 13px; height: 13px; }
 .dle-wd-thread .typing { align-self: flex-start; display: inline-flex; gap: 4px; padding: 9px 12px; border-radius: 16px; background: var(--dk-menu); }
@@ -92,8 +109,11 @@
 /* letters: paper, a wax seal, the salutation and signature in a hand — dark, aged paper (Miinthe, 2026-10-19: the light paper
    "burns my eyes"); one set of colors for letters, the board's notes and articles */
 .dle-world { --dle-paper: #3a3128; --dle-paper-out: #30342e; --dle-paper-2: #4a3f33; --dle-paper-ink: #ece0c8; --dle-paper-muted: #bba98a; --dle-paper-line: #5e503e; }
-.dle-wd-thread.letters .bub { max-width: 94%; border-radius: 3px; padding: 12px 14px; background: var(--dle-paper); color: var(--dle-paper-ink); box-shadow: 0 2px 0 var(--dle-paper-line), 0 6px 16px rgba(0, 0, 0, .25); }
+.dle-wd-thread.letters .brow { max-width: 94%; }
+.dle-wd-thread.letters .bw.mid, .dle-wd-thread.letters .bw.last { margin-top: 0; }
+.dle-wd-thread.letters .bub { max-width: 100%; border-radius: 3px; padding: 12px 14px; background: var(--dle-paper); color: var(--dle-paper-ink); box-shadow: 0 2px 0 var(--dle-paper-line), 0 6px 16px rgba(0, 0, 0, .25); }
 .dle-wd-thread.letters .bub.out { background: var(--dle-paper-out); }
+.dle-wd-thread.letters .bw .bub { border-radius: 3px; }   /* paper keeps its corners — runs don't apply to letters */
 .dle-wd-thread.letters .bub .sal, .dle-wd-thread.letters .bub .sig { display: block; font: italic 600 1.05em/1.2 Georgia, "Times New Roman", serif; }
 .dle-wd-thread.letters .bub .sal { margin-bottom: 4px; } .dle-wd-thread.letters .bub .sig { text-align: right; margin-top: 6px; }
 .dle-wd-thread.letters .meta .seal { width: 9px; height: 9px; border-radius: 50%; background: #a8433a; }
@@ -145,10 +165,11 @@
 .dle-wd-lgh.fold .cnt { flex: none; margin-left: auto; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--dk-menu); color: var(--dk-ink); font: 700 var(--dk-fs-xs)/18px var(--dk-f-body); letter-spacing: 0; text-align: center; }
 .dle-wd-row .nm .muted { font-size: 11px; opacity: .8; }
 /* editing keeps the message's lines (a text box, not the bubble itself) */
-.dle-wd-thread .bub.edit { width: 84%; padding: 4px; }
+.dle-wd-thread .bub.edit { width: 100%; padding: 4px; }
+.dle-wd-thread .brow:has(.bub.edit) { width: 84%; }
 .dle-wd-thread .bub .edit-ta { display: block; width: 100%; min-height: 3em; resize: vertical; border: 0; background: transparent; color: inherit; font: inherit; line-height: 1.45; padding: 4px 6px; white-space: pre-wrap; }
 .dle-wd-thread .bub .edit-ta:focus-visible { outline: none; }
-.dle-wd-thread.letters .bub.edit { width: 94%; }
+.dle-wd-thread.letters .brow:has(.bub.edit) { width: 94%; }
 
 /* ── the feed: Chatter, News, People (stage 4, 2026-10-19) ── */
 .dle-wd-body:has(> .dle-wd-feed), .dle-wd-body:has(> .dle-wd-news), .dle-wd-body:has(> .dle-wd-ppl) { padding: 0; gap: 0; }

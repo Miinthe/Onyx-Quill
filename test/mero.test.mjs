@@ -71,9 +71,9 @@ test('Mero\'s answer: note cards and the title are taken out of the text she say
     assertEqual(fallbackTitle('I keep wondering why the fridge never talks at parties'), 'I keep wondering why the fridge');
 });
 
-test('Mero\'s prompt: who she is, the tag\'s rules, what she knows; the talk as messages', () => {
+test('Mero\'s prompt: who she is, reading the room, what she knows; the talk as messages', () => {
     const p = buildMeroPrompt({ settings: { persona: 'Warm and nerdy.' }, talk: { tag: 'fb', msgs: [{ who: 'miinthe', t: 'He apologises too much.' }, { who: 'mero', t: 'Agreed.' }] }, character: 'Kettle', board: ['Relationship: Friends'], replies: [{ i: 4, name: 'Kettle', text: 'Sorry!' }], talkNotes: [{ text: 'Miinthe loves quiet sulking.' }], firstAnswer: true });
-    assert(p.system.includes('Mero ☆') && p.system.includes('Warm and nerdy.') && p.system.includes('FEEDBACK talk') && p.system.includes('Relationship: Friends') && p.system.includes('#4 Kettle: Sorry!') && p.system.includes('Miinthe loves quiet sulking.') && p.system.includes('[[TITLE]]'));
+    assert(p.system.includes('Mero ☆') && p.system.includes('Warm and nerdy.') && p.system.includes('Read the room') && p.system.includes('Feedback on a reply') && p.system.includes('[[KIND]]') && p.system.includes('Relationship: Friends') && p.system.includes('#4 Kettle: Sorry!') && p.system.includes('Miinthe loves quiet sulking.') && p.system.includes('[[TITLE]]'));
     assertEqual(p.messages, [{ role: 'user', content: 'He apologises too much.' }, { role: 'assistant', content: 'Agreed.' }]);
 });
 
@@ -294,7 +294,7 @@ test('board Mero: talk — suggestions only for what is on the board', () => {
     assert(r.ok && r.text === 'Two things.');
     assertEqual(r.suggestions.map(x => `${x.kind}:${x.name || x.title}`), ['step:Sweethearts', 'entry:Rung 2 · Friends', 'tracker:Jealousy']);
     assertEqual(r.suggestions[1].i, 1);
-    assertEqual(parseBoardMero('talk', 'Just words, no JSON.', { brief: BRIEF }), { ok: true, text: 'Just words, no JSON.', suggestions: [] });
+    assertEqual(parseBoardMero('talk', 'Just words, no JSON.', { brief: BRIEF }), { ok: true, text: 'Just words, no JSON.', suggestions: [], asks: [] });
     assertEqual(parseBoardMero('talk', '', { brief: BRIEF }).ok, false);
     assertEqual(readJson('[1,2]'), null);
 });
@@ -349,10 +349,14 @@ test('looked-up details: each step with its own entry (not the shared one, not t
     const d = trackerDetails(DB, 'ete', DS, t => ({ Bond: 'He took the bond.', Return: 'He offers it back.', Core: 'SHARED' }[t] || ''));
     assert(d.includes('- The Stolen Bond: He took the bond.') && d.includes('- The Return Offered: He offers it back.') && !d.includes('SHARED'), d);
 });
-test('Mero is told she sees names only — and to say so instead of pretending; planning has no pitch cards', () => {
+test('without lookups she is told she sees names only; with them, to look it up; planning ends in the 💡 Pitch button', () => {
     const plan = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'miinthe', t: 'x' }] }, boardMap: ['Relationship: Foreign Envoy ← now'] }).system;
-    assert(plan.includes('never pretend you looked it up') && plan.includes('Relationship: Foreign Envoy ← now'));
-    assert(plan.includes('writing partner') && !plan.includes('[[PITCH'), 'planning: a partner, no pitch format');
+    assert(plan.includes('never pretend you looked it up') && plan.includes('Relationship: Foreign Envoy ← now') && !plan.includes('search_lore'));
+    assert(plan.includes('writing partner') && !plan.includes('[[PITCH') && plan.includes('💡 Pitch button'), 'planning: a partner; pitches through the button, never markup');
+    const look = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'miinthe', t: 'x' }] }, lookups: true }).system;
+    assert(look.includes('search_lore') && look.includes('look it up first') && !look.includes('never pretend you looked it up'));
+    assert(buildMeroPrompt({ talk: { msgs: [{ who: 'miinthe', t: 'make it a pitch' }] }, pitchAsked: true }).system.includes('just asked for a pitch'));
+    assert(!buildMeroPrompt({ talk: { tagMine: true, msgs: [] } }).system.includes('[[KIND]]'), 'a tag she picked is never re-sorted');
     assert(buildMeroPrompt({ talk: { tag: 'yap', msgs: [] } }).system.includes('Offer a note ONLY when'));
 });
 

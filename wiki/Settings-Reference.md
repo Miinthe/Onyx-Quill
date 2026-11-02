@@ -207,7 +207,7 @@ The prompt each AI job uses: **The judge**, **Scribe**, **New lore**, **Optimize
 
 ## Mero
 
-Your co-writer: who she is and how she helps. Her AI is picked in AI & connections. See [[Mero]].
+Your co-writer: who she is and how she helps. Her AI is picked in AI & connections. Her lookups (lore, board, chat, Cast) need an AI that takes tool calls, like DeepSeek; with one that can't (some local models in LM Studio), her answers say **🔎 lookups off** and she answers from what she was given. See [[Mero]].
 
 ### Who she is
 

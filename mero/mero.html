@@ -36,12 +36,11 @@ button { cursor: pointer; }
 .thead .t1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .thead h2 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .thead .t2 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.kindsel { flex: none; max-width: 104px; height: 20px; padding: 0 6px; border: 0; border-radius: 999px; font: 700 calc(11px * var(--fontScale, 1))/1 var(--dk-f-body); background: var(--dk-accent-soft); color: var(--dk-accent-ink); cursor: pointer; }
+.kindsel { flex: none; max-width: 104px; height: 20px; padding: 0 8px; display: inline-flex; align-items: center; white-space: nowrap; cursor: default; border: 0; border-radius: 999px; font: 700 calc(11px * var(--fontScale, 1))/1 var(--dk-f-body); background: var(--dk-accent-soft); color: var(--dk-accent-ink); cursor: pointer; }
 .kindsel.yap { background: var(--dk-mero-soft); color: var(--dk-mero); }
 .kindsel.plan { background: var(--dk-good-soft); color: var(--dk-good); }
 .kindsel.fb { background: var(--dk-bad-soft); color: var(--dk-bad); }
 .kindsel.game { background: var(--dk-wait-soft); color: var(--dk-wait); }
-.kindsel option { background: var(--dk-page); color: var(--dk-ink); }
 .ib { width: 28px; height: 28px; flex: none; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dk-muted); }
 .ib:hover, .ib[aria-expanded="true"] { color: var(--dk-ink); background: var(--dk-menu); border-color: var(--dk-line); }
 .ttl { cursor: text; border-radius: 6px; padding: 0 3px; }
@@ -55,7 +54,60 @@ button { cursor: pointer; }
 .m { max-width: 92%; padding: 7px 10px; border-radius: 10px; font-size: var(--dk-fs); overflow-wrap: anywhere; }
 .m.miinthe { align-self: flex-end; background: var(--dk-accent-soft); }
 .m.mer { align-self: flex-start; background: var(--dk-menu); border: 1px solid var(--dk-line); }
-.m.mer::before { content: "Mero ☆"; display: block; font: 700 calc(11px * var(--fontScale, 1))/1.3 var(--dk-f-display); color: var(--dk-mero); }
+/* each message's own header (2026-11-02): Mero's name, her lookups (click to see them), the swipes, the buttons */
+.m.mer { min-width: min(250px, 92%); }   /* room for the header on one line */
+.mh > * { flex: none; white-space: nowrap; }
+.mh { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-height: 20px; margin: -2px 0 2px; font: 700 calc(11px * var(--fontScale, 1))/1.3 var(--dk-f-display); color: var(--dk-mero); }
+.mh .sp { flex: 1 1 0; min-width: 0; }
+.m.miinthe .mh { justify-content: flex-end; margin: 0 0 -2px; min-height: 0; }
+.mh .look { border: 0; background: none; padding: 0 2px; color: var(--dk-muted); font: 600 var(--dk-fs-xs)/1.3 var(--dk-f-body); text-decoration: underline dotted; }
+.mh .nolook { color: var(--dk-muted); font: 600 var(--dk-fs-xs)/1.3 var(--dk-f-body); opacity: .8; cursor: help; }
+.mh .look:hover, .mh .look[aria-expanded="true"] { color: var(--dk-ink); }
+.mh .swp { display: inline-flex; align-items: center; gap: 2px; color: var(--dk-muted); font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); }
+.mh .swp button, .mact button { width: 22px; height: 20px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--dk-muted); }
+.mh .swp button:hover:not(:disabled), .mact button:hover { background: var(--dk-page); color: var(--dk-ink); }
+.mh .swp button:disabled { opacity: .3; cursor: default; }
+.mact { display: inline-flex; gap: 1px; opacity: 0; transition: opacity .12s; }
+.m:hover .mact, .m:focus-within .mact, .mact.sure { opacity: 1; }
+@media (hover: none) { .mact { opacity: .7; } }
+.mact .dk-i { width: 13px; height: 13px; }
+.mact button[data-mkeep] { width: auto; padding: 0 6px; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); color: var(--dk-ink); }
+.mact button.sure { width: auto; padding: 0 6px; background: var(--dk-bad-soft); color: var(--dk-bad); font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); }
+.steps { margin: 0 0 6px; padding: 5px 8px; border-left: 2px solid var(--dk-mero); border-radius: 0 6px 6px 0; background: color-mix(in oklab, var(--dk-mero) 7%, transparent); display: grid; gap: 2px; font-size: var(--dk-fs-s); }
+.steps .got { color: var(--dk-muted); }
+.m .edit { display: grid; gap: 6px; min-width: min(320px, 70vw); }
+.m .edit textarea { width: 100%; resize: vertical; min-height: 60px; border: 1px solid var(--dk-accent); border-radius: 8px; padding: 5px 8px; background: var(--dk-page); color: var(--dk-ink); font: inherit; }
+/* Mero is typing… with each lookup on its own line, as it happens */
+.busy .wk { display: block; padding-left: 14px; color: var(--dk-muted); }
+.busy .wk.on::after { content: " …"; }
+/* 💡 pitches made from the talk, right in it, with their buttons */
+.tpc { align-self: stretch; display: flex; flex-direction: column; gap: 6px; padding: 9px 11px 10px; border: 1px solid var(--dk-line); border-top: 3px solid var(--dk-mero); border-radius: 10px; background: var(--dk-page); font-size: var(--dk-fs); }
+.tpc .ch { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.tpc .ch .no { font-family: var(--dk-f-mono); }
+.tpc .ch .sp { flex: 1; }
+.tpc ol { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
+.tpc .row .btn { height: 24px; padding: 0 8px; font-size: var(--dk-fs-s); }
+.tpc textarea, .tpc input { width: 100%; border: 1px solid var(--dk-accent); border-radius: 8px; padding: 5px 8px; background: var(--dk-page); color: var(--dk-ink); font: inherit; }
+.tpc textarea { resize: vertical; min-height: 60px; }
+/* ❓ question cards (Miinthe, 2026-11-02: "multi selection to wrap up the plan, like Claude does") */
+.askc { align-self: stretch; display: grid; gap: 10px; padding: 9px 11px 10px; border: 1px solid var(--dk-line); border-left: 3px solid var(--dk-mero); border-radius: 10px; background: var(--dk-page); }
+.askc .aq { display: grid; gap: 5px; }
+.askc .aq b { font-weight: 700; }
+.askc .aq .mini { margin-left: 6px; font-weight: 400; }
+.askc .aopts { display: grid; gap: 4px; }
+.askc .aopt { display: flex; gap: 8px; align-items: flex-start; width: 100%; padding: 6px 9px; border: 1px solid var(--dk-line); border-radius: 8px; background: transparent; color: var(--dk-ink); text-align: left; font: inherit; }
+.askc .aopt:hover { border-color: color-mix(in oklab, var(--dk-mero) 50%, var(--dk-line)); }
+.askc .aopt[aria-pressed="true"] { border-color: var(--dk-mero); background: var(--dk-mero-soft); font-weight: 600; }
+.askc .aopt .mk { flex: none; width: 14px; text-align: center; color: var(--dk-mero); }
+.askc .aown { width: 100%; height: 30px; padding: 0 9px; border: 1px dashed var(--dk-line); border-radius: 8px; background: transparent; color: var(--dk-ink); font: inherit; }
+.askc .adet { width: 100%; min-height: 44px; resize: none; padding: 6px 9px; border: 1px solid var(--dk-line); border-radius: 8px; background: transparent; color: var(--dk-ink); font: inherit; }
+.askc .adet:focus { outline: none; border-color: var(--dk-mero); }
+.askc .aown:focus { outline: none; border-style: solid; border-color: var(--dk-mero); }
+.askc.done { gap: 4px; opacity: .9; }
+.askc.done .got { color: var(--dk-muted); font-size: var(--dk-fs-s); }
+.askc.done .got b { color: var(--dk-ink); font-weight: 600; }
+.pc .popen, .tpc .popen { font-size: var(--dk-fs-s); color: var(--dk-muted); font-style: italic; }
+.sess .badges { color: var(--dk-ink); font-weight: 600; }
 .m.sys { align-self: center; padding: 0; background: none; font-size: var(--dk-fs-s); color: var(--dk-muted); }
 .m .pnos { display: block; margin-top: 4px; font-size: var(--dk-fs-s); font-weight: 700; color: var(--dk-mero); }
 .m .pnos button { border: 0; background: none; color: inherit; text-decoration: underline dotted; padding: 0; font: inherit; }
@@ -349,7 +401,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
   <div class="mero" id="mero">
     <div class="talk">
       <div class="thead">
-        <div class="t1"><h2 id="s-title"></h2><select class="kindsel" id="s-tag" aria-label="Kind of talk" title="Kind of talk"><option value="yap">💭 Yapping</option><option value="plan">🗺 Planning</option><option value="fb">✋ Feedback</option><option value="game">🎲 Games</option></select><button class="ib" id="s-told" title="What Mero was told for her last answer" aria-label="What Mero was told"></button><button class="ib" id="s-more" aria-haspopup="menu" aria-expanded="false" title="Check the lore, wrap up, resolve, archive, delete" aria-label="More for this talk"></button></div>
+        <div class="t1"><h2 id="s-title"></h2><span class="kindsel" id="s-tag" role="note" aria-label="Kind of talk"></span><button class="ib" id="s-told" title="What Mero was told for her last answer" aria-label="What Mero was told"></button><button class="ib" id="s-more" aria-haspopup="menu" aria-expanded="false" title="Check the lore, wrap up, resolve, archive, delete" aria-label="More for this talk"></button></div>
         <div class="t2 mini" id="s-line"></div>
       </div>
       <div class="msgs" id="msgs" aria-live="polite"></div>
@@ -375,7 +427,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
     </div>
 
     <section class="drawer" id="d-sess" hidden aria-label="Talks">
-      <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="btn" id="new-game" title="A game with Mero">🎲 Play</button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
       <div class="db">
         <input class="srch" id="sess-q" type="search" placeholder="Search talks" aria-label="Search talks">
         <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="Yapping" aria-label="Yapping">💭</button><button data-v="plan" aria-pressed="false" title="Planning" aria-label="Planning">🗺</button><button data-v="fb" aria-pressed="false" title="Feedback" aria-label="Feedback">✋</button><button data-v="game" aria-pressed="false" title="Games" aria-label="Games">🎲</button></div>
@@ -503,6 +555,11 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   });
   const linkTrackers = h => (D.trackers || []).reduce((t, n) => (n && t.includes(esc(n)) ? t.split(esc(n)).join(`<button class="tlink" data-story="${esc(n)}" title="Open the Story tab at ${esc(n)}">${esc(n)}</button>`) : t), h);
   const nl2br = h => h.replace(/\n/g, '<br>');
+  /** **bold**, *italics*, _italics_ (Miinthe, 2026-11-02: the asterisks showed). Runs on already-escaped text, so it only adds <b>/<i>. */
+  const md = h => h
+    .replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[^*\w])\*(?=[^\s*])([^*\n]*?[^\s*])\*(?![*\w])/g, '$1<i>$2</i>')
+    .replace(/(^|[^\w])_(?=\S)([^_\n]*?\S)_(?!\w)/g, '$1<i>$2</i>');
 
   function pickTalk() {
     const talks = D.talks || [];
@@ -514,31 +571,201 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $('#s-tag').hidden = false; $('#s-told').hidden = false;
     $('#s-title').innerHTML = `<span class="ttl" id="s-ttl" title="Click to rename">${esc(cur.title)}</span>${cur.mine ? '' : ' <span class="smart" title="Mero named it — rename it to make it yours">✨</span>'}`;
     $('#s-ttl').onclick = renameTalk;
-    $('#s-tag').value = cur.tag; $('#s-tag').className = 'kindsel ' + cur.tag;
+    // the tag is Mero's to set as the talk goes — shown, never picked (Miinthe, 2026-11-02)
+    const tg = $('#s-tag'); tg.textContent = TAG[cur.tag][0]; tg.className = 'kindsel ' + cur.tag;
+    tg.title = cur.tag === 'game' ? 'A game' : 'Mero sorts the talk herself as it goes';
   }
   const cardHtml = (c, k, j) => `<div class="card" style="--kc:${KIND[c.kind][2]}"><div class="ch">📝 ${c.state === 'kept' ? 'Kept' : c.state === 'no' ? 'Not kept' : 'Keep this note?'} <small>from this talk</small>${c.state ? `<span class="cardstate${c.state === 'no' ? ' no' : ''}">${c.state === 'kept' ? '✓ in 📝 Notes' : ''}</span>` : ''}</div>
       <div>${KIND[c.kind][0]} <b>${esc(c.text)}</b></div>
       ${c.state ? '' : `<div class="row"><select aria-label="Kind" data-ck="${k}:${j}">${Object.entries(KIND).map(([v, x]) => `<option value="${v}"${v === c.kind ? ' selected' : ''}>${x[0]} ${x[1]}</option>`).join('')}</select>
         <select aria-label="How long" data-cl="${k}:${j}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === c.last ? ' selected' : ''}>${x}</option>`).join('')}</select>
         <select aria-label="Where it applies" data-cs="${k}:${j}">${Object.entries(SCOPE).filter(([v]) => v !== 'run' || D.where.run).filter(([v]) => v !== 'board' || D.where.board).map(([v, x]) => `<option value="${v}"${v === c.scope ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
-      <div class="row"><button class="btn p" data-keep="${k}:${j}">${I('keep')}Keep</button><button class="btn ghost" data-no="${k}:${j}">No</button>${cur.tag === 'fb' && (c.kind === 'dont' || c.kind === 'steer') ? `<button class="btn m2" data-redo="${k}:${j}" title="Keep it and swipe the last reply with it in force. The board's rolls and moves stay">${I('refresh')}Redo the last reply with this note</button>` : ''}</div>`}</div>`;
+      <div class="row"><button class="btn p" data-keep="${k}:${j}">${I('keep')}Keep</button><button class="btn ghost" data-no="${k}:${j}">No</button>${c.kind === 'dont' || c.kind === 'steer' ? `<button class="btn m2" data-redo="${k}:${j}" title="Keep it and swipe the last reply with it in force. The board's rolls and moves stay">${I('refresh')}Redo the last reply with this note</button>` : ''}</div>`}</div>`;
+  // ── one message: its header (name, 🔎 lookups, ◀ ▶ swipes, ↻ ✏ 🗑), its text, the 💡 cards made from it ──
+  const lookOpen = new Set();   // "talkid:k" — lookups unfolded
+  let editing = null;           // { k } — her message being edited
+  let sure = null, sureAt = 0;  // "k" — 🗑 pressed: Delete / Keep showing (since sureAt)
+  let pEditing = null;          // a pitch id being edited in the talk
+  const askSel = {};            // "talkid:k" → [{ picked: Set, own }] — her picks on question cards not sent yet
+  let lastSig = '';             // talk + message count the talk was last drawn with (scroll to the bottom only on news)
+  const lastMero = () => { for (let k = cur.msgs.length - 1; k >= 0; k--) if (cur.msgs[k].who === 'mero') return k; return -1; };
+  const lastRii = () => { for (let k = cur.msgs.length - 1; k >= 0; k--) if (cur.msgs[k].who === 'miinthe') return k; return -1; };
+  function msgHtml(m, k) {
+    const mine = m.who === 'miinthe', key = cur.id + ':' + k, busyNow = !!D.busy || !!PV().busy;
+    const steps = m.steps || [], nsw = (m.sw || []).length;
+    const del = sure === String(k)
+      ? `<button data-mkeep title="Keep it" aria-label="Keep the message">Keep</button><button data-mdelyes="${k}" class="sure" title="Delete this message for good" aria-label="Delete this message">Delete</button>`
+      : `<button data-mdel="${k}" title="Delete this message" aria-label="Delete this message">${I('trash')}</button>`;
+    const acts = mine
+      ? `<span class="mact${sure === String(k) ? ' sure' : ''}"><button data-medit="${k}" title="Edit your message" aria-label="Edit your message">${I('edit')}</button>${del}</span>`
+      : `<span class="mact${sure === String(k) ? ' sure' : ''}">${k === lastMero() && !cur.msgs.slice(k + 1).some(x => x.who === 'miinthe') && cur.msgs.slice(0, k).some(x => x.who === 'miinthe') && !busyNow ? `<button data-mredo="${k}" title="Answer again — this answer stays as a swipe until you write again" aria-label="Answer again">${I('refresh')}</button>` : ''}${del}</span>`;
+    const head = mine ? `<div class="mh">${acts}</div>`
+      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.nolook ? '<span class="nolook" title="Mero\'s AI connection can\'t do lookups (tool calls), so she answered only from what she was given. DeepSeek can; a local model in LM Studio often can\'t.">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
+    const looks = !mine && steps.length && lookOpen.has(key) ? `<div class="steps">${steps.map(x => `<span>${esc(x.label)}${x.got ? ` <span class="got">— ${esc(x.got)}</span>` : ''}</span>`).join('')}</div>` : '';
+    const body = mine && editing?.k === k
+      ? `<div class="edit"><textarea data-meditin aria-label="Your message">${esc(m.t)}</textarea><div class="row"><button class="btn p" data-msave="0">Save</button>${k === lastRii() ? '<button class="btn m2" data-msave="1" title="Mero answers the new words — her answers after it go">Save &amp; ask again</button>' : ''}<button class="btn ghost" data-mcancel>Cancel</button></div></div>`
+      : mine ? nl2br(md(esc(m.t))) : linkTrackers(nl2br(md(esc(m.t))));
+    const ctx = (m.ctx || []).length ? `<span class="ctxs">${m.ctx.map(c => `<span title="${esc(String(c.text || '').slice(0, 300))}">📎 ${esc(c.label)}</span>`).join('')}</span>` : '';
+    // 💡 made from this message: the cards themselves when they belong to this chat; older ones as the old link
+    const ids = m.pitchIds || [], here = ids.map(id => pById(id)).filter(Boolean);
+    const gone = ids.length - here.length;
+    const pnos = !ids.length && (m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>`
+      : gone ? `<span class="pnos" title="Pitches belong to the chat they were made in">💡 ${gone === ids.length ? 'Made' : `${gone} more made`} in another chat of ${esc(D.where.character || 'this character')}${(m.pitchNos || []).length ? ` (${m.pitchNos.map(n => '#' + n).join(' ')})` : ''}</span>` : '';
+    return `<div class="m ${mine ? 'miinthe' : 'mer'}" data-k="${k}">${head}${looks}${body}${ctx}${pnos}</div>` + askHtml(m, k) + here.map(tpCard).join('') + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('');
+  }
+  // ❓ her question cards: live on her latest message; answered ones show what was picked
+  function askHtml(m, k) {
+    const asks = m.asks || [];
+    if (!asks.length) return '';
+    const done = asks.some(a => a.done), later = cur.msgs.slice(k + 1).some(x => x.who === 'miinthe');
+    if (done || later) {
+      return `<div class="askc done">${asks.map(a => { const got = [...(a.picked || []).map(i => a.opts[i]), ...(a.own ? [a.own] : [])]; return `<div class="got">❓ ${esc(a.q)} → ${a.done === 'skipped' ? 'skipped' : got.length ? got.map(x => `<b>${esc(x)}</b>`).join(' · ') : 'not answered'}</div>`; }).join('')}</div>`;
+    }
+    const key = cur.id + ':' + k, sel = askSel[key] ||= Object.assign(asks.map(() => ({ picked: new Set(), own: '' })), { detail: '' });
+    const busyNow = !!D.busy || !!PV().busy;
+    return `<div class="askc" data-ask="${k}">${asks.map((a, j) => `<div class="aq"><div><b>${esc(a.q)}</b><span class="mini">${a.many ? 'pick any' : 'pick one'}</span></div>
+      <div class="aopts">${a.opts.map((o, i) => { const on = sel[j].picked.has(i); return `<button class="aopt" data-aopt="${j}:${i}" aria-pressed="${on}"><span class="mk">${a.many ? (on ? '☑' : '☐') : (on ? '●' : '○')}</span><span>${esc(o)}</span></button>`; }).join('')}</div>
+      <input class="aown" data-aown="${j}" placeholder="Or your own answer…" aria-label="Your own answer" value="${esc(sel[j].own)}"></div>`).join('')}
+      <textarea class="adet" data-adet rows="2" placeholder="Anything to add? Details, a twist, what you have in mind…" aria-label="Anything to add">${esc(sel.detail)}</textarea>
+      <div class="row">${m.pcheck ? `<button class="btn m2" data-asend${busyNow ? ' disabled' : ''}>${I('pitch')}Write the pitch</button><button class="btn" data-atalk${busyNow ? ' disabled' : ''} title="Send your answers and keep planning with Mero — press Pitch when you're ready">${I('talks')}Keep talking</button><button class="btn ghost" data-askip${busyNow ? ' disabled' : ''} title="Write it up now — what is open stays open on the card">Skip, write it as is</button>` : `<button class="btn m2" data-asend${busyNow ? ' disabled' : ''}>${I('send')}Send answers</button>`}</div></div>`;
+  }
+  // a 💡 pitch / 🪜 plan from this talk, with the drawer's own actions (one pitch, two places to click)
+  function tpCard(p) {
+    const plan = !!p.plan, can = PICKABLE.includes(p.st);
+    if (pEditing === p.id && can) {
+      return `<div class="tpc pc" data-tp="${p.id}"><div class="ch"><span class="no">#${p.no}</span><span>✏ ${plan ? 'Edit the plan' : 'Edit the pitch'}</span></div>`
+        + (plan ? `<input data-tpgoal value="${esc(p.plan.goal || p.text)}" aria-label="Where the plan leads"><div class="mini">The beats, one per line:</div><textarea data-tpbeats rows="${Math.max(3, p.plan.beats.length + 1)}" aria-label="The beats, one per line">${esc(p.plan.beats.map(b => b.text).join('\n'))}</textarea>`
+          : `<textarea data-tptext rows="3" aria-label="The pitch">${esc(p.text)}</textarea>`)
+        + `<div class="row"><button class="btn p" data-tpa="save">Save</button><button class="btn ghost" data-tpa="cancel">Cancel</button></div></div>`;
+    }
+    const kind = plan ? `🪜 plan · ${p.plan.beats.length} beats` : (PK[p.kind] || '');
+    const body = (plan ? `<div><b>${esc(p.plan.goal || p.text)}</b></div>${planBody(p)}` : `<div>${esc(p.text)}</div>`) + (p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : '');
+    const st = {
+      dir: '<div class="pstate wait">✍️ Goes to the writer with your next reply — hidden from the chat.</div><div class="row"><button class="btn ghost" data-tpa="takeback">Take it back</button></div>',
+      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>`,
+      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at}.</div>`,
+      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div>',
+      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>`,
+      given: `<div class="pstate cast">🎭 ${esc(p.gaveTo?.name || '')}'s plan now.</div><div class="row"><button class="btn ghost" data-tpa="takeback">Take it back</button></div>`,
+    }[p.st] || '';
+    const busyNow = !!PV().busy;
+    const btns = can ? `<div class="row"><button class="btn m2" data-tpa="use"${busyNow ? ' disabled' : ''} title="${plan ? 'The writer is led through it beat by beat' : 'Goes to the writer with your next reply, hidden from the chat'}">${I('send')}${plan ? 'Start the plan' : 'Next reply'}</button>${plan ? '' : `<button class="btn" data-tpa="draft"${busyNow ? ' disabled' : ''} title="Mero drafts your next line from it, in your message box">${I('line')}My line</button>`}<button class="btn" data-tpa="edit">${I('edit')}Edit</button><span class="sp" style="flex:1"></span><button class="btn ghost" data-tpa="no" title="Not my thing. Mero remembers" aria-label="Not my thing">${I('thumb')}</button></div>` : '';
+    return `<div class="tpc pc" data-tp="${p.id}"><div class="ch"><span class="no">#${p.no}</span><span>${kind}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span><span>also in 💡 Pitches</span></div>${body}${st}${btns}</div>`;
+  }
   function drawTalk() {
     pickTalk(); drawHead();
     const game = cur?.tag === 'game';
     $('#comp').hidden = game; $('#wd-foot').hidden = !game || !cur.game; $('#msgs').classList.toggle('wd-on', game && !!cur.game);
-    if (game) { drawGame(); drawNotesline(); return; }
-    if (!cur) { $('#msgs').innerHTML = `<div class="m sys">${D.where.charKey ? 'Write below to start a talk.' : 'Open a character chat to talk with Mero.'}</div>`; drawNotesline(); return; }
-    $('#msgs').innerHTML = (cur.msgs.length ? '' : `<div class="card" style="--kc:var(--dk-mero)"><div class="ch">What kind of talk? <small>you can change it any time from the tag above</small></div><div class="row"><button class="btn" data-tagpick="yap">💭 Yapping</button><button class="btn" data-tagpick="plan">🗺 Planning</button><button class="btn" data-tagpick="fb">✋ Feedback</button><button class="btn" data-tagpick="game">🎲 Games</button></div></div>`)
-      + cur.msgs.map((m, k) => `<div class="m ${m.who === 'mero' ? 'mer' : 'miinthe'}">${m.who === 'mero' ? linkTrackers(nl2br(esc(m.t))) : nl2br(esc(m.t))}${(m.ctx || []).length ? `<span class="ctxs">${m.ctx.map(c => `<span title="${esc(String(c.text || '').slice(0, 300))}">📎 ${esc(c.label)}</span>`).join('')}</span>` : ''}${(m.pitchNos || []).length ? `<span class="pnos">💡 <button data-topitch>${m.pitchNos.map(n => '#' + n).join(' ')} in your Pitches</button></span>` : ''}</div>` + (m.cards || []).map((c, j) => cardHtml(c, k, j)).join('')).join('');
-    $('#msgs').scrollTop = 1e6; wireTalk(); drawNotesline();
+    if (game) { drawGame(); drawNotesline(); drawBusy(); return; }
+    if (!cur) { $('#msgs').innerHTML = `<div class="m sys">${D.where.charKey ? 'Write below to start a talk.' : 'Open a character chat to talk with Mero.'}</div>`; drawNotesline(); drawBusy(); return; }
+    if (editing && cur.msgs[editing.k]?.who !== 'miinthe') editing = null;
+    // to the bottom only when something new arrived (or another talk opened); any other redraw keeps her place
+    const sig = cur.id + ':' + cur.msgs.length + ':' + (D.busy ? 1 : 0), fresh = sig !== lastSig; lastSig = sig;
+    const keepScroll = !!editing || !!pEditing || !fresh;
+    const top = $('#msgs').scrollTop;
+    $('#msgs').innerHTML = (cur.msgs.length ? '' : '<div class="m sys">Just start — Mero sorts the talk herself (💭 chatting · 🗺 planning · ✋ fixing a reply).</div>')
+      + cur.msgs.map(msgHtml).join('');
+    $('#msgs').scrollTop = keepScroll ? top : 1e6; wireTalk(); drawNotesline(); drawBusy();
+    const ed = $('[data-meditin]'); if (ed && document.activeElement !== ed && editing?.fresh) { editing.fresh = false; ed.focus(); ed.setSelectionRange(ed.value.length, ed.value.length); }
+  }
+  /** "Mero is typing…" — and under it, each lookup on its own line as she makes it (2026-11-02). */
+  function drawBusy() {
+    const steps = (cur && D.working?.[cur.id]) || [], pb = PV().busy === 'talk';
+    $('#busy').hidden = !D.busy && !pb;
+    $('#busy').innerHTML = pb ? '☆ Mero is writing up the pitch…'
+      : '☆ Mero is typing…' + steps.map((x, k) => `<span class="wk${!x.got && k === steps.length - 1 ? ' on' : ''}">${esc(x.label)}${x.got ? ` — ${esc(x.got)}` : ''}</span>`).join('');
   }
   const cardFields = key => ({ kind: $(`[data-ck="${key}"]`)?.value, last: $(`[data-cl="${key}"]`)?.value, scope: $(`[data-cs="${key}"]`)?.value });
   function wireTalk() {
     $$('[data-keep]').forEach(b => b.onclick = () => { const [k, j] = b.dataset.keep.split(':').map(Number); HOST.keepCard(cur.id, k, j, cardFields(b.dataset.keep)); toast('Kept — in force from the next reply.'); });
     $$('[data-no]').forEach(b => b.onclick = () => { const [k, j] = b.dataset.no.split(':').map(Number); HOST.dropCard(cur.id, k, j); });
-    $$('[data-redo]').forEach(b => b.onclick = async () => { const [k, j] = b.dataset.redo.split(':').map(Number); b.disabled = true; const r = await HOST.redo(cur.id, k, j, cardFields(b.dataset.redo)); if (!r.ok) toast(r.error); else toast('↻ Swiping the last reply with the note in force.'); });
-    $$('[data-tagpick]').forEach(b => b.onclick = () => HOST.updateTalk(cur.id, { tag: b.dataset.tagpick }));
+    $$('[data-redo]').forEach(b => b.onclick = async () => { const [k, j] = b.dataset.redo.split(':').map(Number); b.disabled = true; const r = await HOST.redoNote(cur.id, k, j, cardFields(b.dataset.redo)); if (!r.ok) toast(r.error); else toast('↻ Swiping the last reply with the note in force.'); });
     $$('[data-topitch]').forEach(b => b.onclick = () => { pView = 'pick'; openD('d-pitch', true); });
+    // the message's own buttons
+    $$('[data-mlook]').forEach(b => b.onclick = () => { const key = cur.id + ':' + b.dataset.mlook; lookOpen.has(key) ? lookOpen.delete(key) : lookOpen.add(key); drawTalk(); });
+    $$('[data-mswp]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.mswp.split(':').map(Number); HOST.swipe(cur.id, k, d); });
+    $$('[data-mredo]').forEach(b => b.onclick = async () => { showErr(''); b.disabled = true; const r = await HOST.redo(cur.id, +b.dataset.mredo); if (!r.ok) showErr(r.error); });
+    // 🗑 asks first, with its own Delete / Keep — a double-click can't delete (Miinthe lost a message, 2026-11-02)
+    $$('[data-mdel]').forEach(b => b.onclick = () => { const k = b.dataset.mdel; sure = k; sureAt = Date.now(); drawTalk(); setTimeout(() => { if (sure === k) { sure = null; drawTalk(); } }, 5000); });
+    $$('[data-mkeep]').forEach(b => b.onclick = () => { sure = null; drawTalk(); });
+    $$('[data-mdelyes]').forEach(b => b.onclick = () => { if (Date.now() - sureAt < 500) return; const k = +b.dataset.mdelyes; sure = null; editing = null; HOST.deleteMsg(cur.id, k); });
+    $$('[data-medit]').forEach(b => b.onclick = () => { editing = { k: +b.dataset.medit, fresh: true }; drawTalk(); });
+    const ed = $('[data-meditin]');
+    if (ed) {
+      autogrow(ed); ed.addEventListener('input', () => autogrow(ed));
+      ed.onkeydown = e => { if (e.key === 'Escape') { editing = null; drawTalk(); } if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('[data-msave="0"]')?.click(); };
+    }
+    $$('[data-msave]').forEach(b => b.onclick = async () => {
+      const k = editing?.k, text = $('[data-meditin]')?.value || '', again = b.dataset.msave === '1';
+      if (k == null || !text.trim()) return;
+      editing = null; showErr('');
+      const r = HOST.editMsg(cur.id, k, text, again);
+      if (!again) { const x = await r; if (!x.ok) toast(x.error); return; }
+      drawTalk(); const x = await r; if (!x.ok) showErr(x.error); else if (x.pitchError) toast(x.pitchError);
+    });
+    $$('[data-mcancel]').forEach(b => b.onclick = () => { editing = null; drawTalk(); });
+    // ❓ question cards
+    $$('#msgs .askc[data-ask]').forEach(card => {
+      const k = +card.dataset.ask, key = cur.id + ':' + k, m = cur.msgs[k], sel = askSel[key];
+      if (!m || !sel) return;
+      card.querySelectorAll('[data-aopt]').forEach(b => b.onclick = () => {
+        const [j, i] = b.dataset.aopt.split(':').map(Number), a = m.asks[j], s0 = sel[j];
+        if (a.many) { s0.picked.has(i) ? s0.picked.delete(i) : s0.picked.add(i); }
+        else { const was = s0.picked.has(i); s0.picked.clear(); if (!was) s0.picked.add(i); }
+        // only this question's buttons change — no redraw, so the talk stays where it is (Miinthe: "the chat snaps downwards")
+        card.querySelectorAll(`[data-aopt^="${j}:"]`).forEach(o => { const n = +o.dataset.aopt.split(':')[1], on = s0.picked.has(n); o.setAttribute('aria-pressed', String(on)); o.querySelector('.mk').textContent = a.many ? (on ? '☑' : '☐') : (on ? '●' : '○'); });
+      });
+      card.querySelectorAll('[data-aown]').forEach(inp => {
+        inp.oninput = () => { sel[+inp.dataset.aown].own = inp.value; };
+        inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); card.querySelector('[data-asend]')?.click(); } };
+      });
+      const det = card.querySelector('[data-adet]');
+      if (det) { autogrow(det); det.oninput = () => { sel.detail = det.value; autogrow(det); }; det.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); card.querySelector('[data-asend]')?.click(); } }; }
+      const go = async (skipped, talk = false) => {
+        showErr('');
+        const answers = sel.map(x => ({ picked: [...x.picked], own: x.own.trim() })), detail = (sel.detail || '').trim();
+        if (!skipped && !detail && !answers.some(x => x.picked.length || x.own)) { toast('Pick an answer, write your own, or add something.'); return; }
+        card.querySelectorAll('button, input, textarea').forEach(x => { x.disabled = true; });
+        $('#busy').hidden = false; $('#busy').textContent = m.pcheck && !talk ? '☆ Mero is writing up the pitch…' : '☆ Mero is typing…';
+        const r = await HOST.answerAsks(cur.id, k, answers, { skipped, detail, talk });
+        delete askSel[key];
+        if (r && !r.ok) showErr(r.error); else if (r?.pitchError) showErr(`the pitch: ${r.pitchError}`);
+        drawBusy();
+      };
+      const send = card.querySelector('[data-asend]'); if (send) send.onclick = () => go(false);
+      const skip = card.querySelector('[data-askip]'); if (skip) skip.onclick = () => go(true);
+      const tk = card.querySelector('[data-atalk]'); if (tk) tk.onclick = () => go(false, true);
+    });
+    // 💡 cards in the talk
+    $$('#msgs .tpc [data-tpa]').forEach(b => b.onclick = async () => {
+      const id = b.closest('[data-tp]').dataset.tp, p = pById(id), a = b.dataset.tpa;
+      if (!p) return;
+      if (a === 'edit') { pEditing = id; drawTalk(); b.closest('[data-tp]')?.querySelector('textarea, input')?.focus(); return; }
+      if (a === 'cancel') { pEditing = null; drawTalk(); return; }
+      if (a === 'save') {
+        const card = b.closest('[data-tp]');
+        const f = p.plan ? { goal: card.querySelector('[data-tpgoal]').value, beats: card.querySelector('[data-tpbeats]').value.split('\n').map(x => x.trim()).filter(Boolean) } : { text: card.querySelector('[data-tptext]').value };
+        const r = HOST.pitchEdit(id, f); if (!r.ok) { toast(r.error); return; }
+        pEditing = null; toast('Saved.'); return;
+      }
+      if (a === 'use' && p.plan) { const r = HOST.planStart(id); toast(r.ok ? `🪜 #${p.no} starts — the writer works toward beat 1.` : r.error); }
+      else if (a === 'use') { const r = HOST.pitchUse(id); toast(r.ok ? `✍️ #${p.no} goes with your next reply.` : r.error); }
+      else if (a === 'draft') { const r = await HOST.pitchDraft(id); toast(r.ok ? '📝 Your line is in the message box — change it, then send.' : r.error); }
+      else if (a === 'no') { HOST.pitchNo([id], ''); toast('👎 Noted — pitches learn your taste.'); }
+      else if (a === 'takeback') { HOST.pitchTakeBack(id); toast('Taken back — it\'s with the kept ideas.'); }
+    });
+    // a running plan's own controls work here too (the same as in the drawer)
+    $$('#msgs .tpc [data-pa]').forEach(b => b.onclick = () => {
+      const id = b.closest('[data-tp]').dataset.tp, a = b.dataset.pa;
+      if (a === 'abandon') { HOST.planAbandon(id); toast('🗑 Plan abandoned.'); }
+      else if (a === 'linger') { HOST.planLinger(id); toast('⏳ Lingering — this beat takes a few more replies.'); }
+      else if (a === 'ruse') { HOST.planUseReview(id); toast('🪜 The plan goes on with the new beats.'); }
+      else if (a === 'rdrop') HOST.planDropReview(id);
+      else if (a === 'extend' || a === 'redirect') { b.disabled = true; HOST.planRewrite(id, a).then(r => { toast(r.ok ? 'Mero suggests new beats — review them on the plan.' : r.error); }); }
+    });
+    $$('#msgs .tpc [data-pfloor]').forEach(i => i.onchange = () => HOST.planSet(i.closest('[data-tp]').dataset.tp, { floor: { k: +i.dataset.pfloor, n: +i.value } }));
+    $$('#msgs .tpc [data-psees]').forEach(x => x.onchange = () => HOST.planSet(x.closest('[data-tp]').dataset.tp, { sees: x.value }));
+    $$('#msgs .tpc [data-ptimer]').forEach(x => x.onchange = () => HOST.planSet(x.closest('[data-tp]').dataset.tp, { timer: +x.value }));
   }
   // 🎲 games (2026-10-27): the host keeps the game and checks the letters (games/wordle-pure.js); this draws it
   const wdIn = {};   // talk id → the letters typed into the current row
@@ -639,7 +866,15 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const list = (D.talks || []).filter(s => (sessFilter === 'all' || s.tag === sessFilter) && (!q || (s.title + ' ' + s.summary).toLowerCase().includes(q)));
     const when = s => new Date(s.updated).toLocaleDateString([], { day: 'numeric', month: 'short' });
     // each talk can be deleted from the list (Miinthe, 2026-10-19: "deleting a conversation is only possible within the conversation")
-    const item = s => `<div class="sessrow"><button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button><button class="ib sessdel" data-sdel="${s.id}" title="Delete this talk" aria-label="Delete this talk">${I('trash')}</button></div>`;
+    // what came out of a talk (2026-11-02): 💡 pitches · 🪜 plans · 📝 notes kept from it
+    const badges = s => {
+      let pit = 0, pl = 0;
+      for (const m of s.msgs || []) { const n = (m.pitchIds || m.pitchNos || []).length, p = (m.planNos || []).length; pit += n - p; pl += p; }
+      const no = (D.notes || []).filter(x => x.from === s.id).length;
+      const out = [pit && `💡${pit}`, pl && `🪜${pl}`, no && `📝${no}`].filter(Boolean).join(' ');
+      return out ? `<span class="badges" title="Made in this talk: ${[pit && `${pit} pitch${pit > 1 ? 'es' : ''}`, pl && `${pl} plan${pl > 1 ? 's' : ''}`, no && `${no} note${no > 1 ? 's' : ''}`].filter(Boolean).join(', ')}">${out}</span> · ` : '';
+    };
+    const item = s => `<div class="sessrow"><button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${badges(s)}${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button><button class="ib sessdel" data-sdel="${s.id}" title="Delete this talk" aria-label="Delete this talk">${I('trash')}</button></div>`;
     const group = (st, label) => fold('sess-' + st, label, list.filter(s => s.state === st).map(item));
     $('#sess-list').innerHTML = (group('open', 'Open') + group('resolved', 'Resolved — reopen any time') + group('archived', 'Archived')) || '<p class="mini">No talk yet.</p>';
     drawMoments();
@@ -648,6 +883,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   }
   $('#sess-q').oninput = e => { sessQ = e.target.value; drawSessions(); };
   $$('#sess-f button').forEach(b => b.onclick = () => { sessFilter = b.dataset.v; $$('#sess-f button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawSessions(); });
+  $('#new-game').onclick = () => { const t = HOST.newTalk('game'); if (!t) { toast('Open a character chat first.'); return; } cur = t; refresh(); closeDrawers(); };
   $('#new-sess').onclick = () => { const t = HOST.newTalk('yap'); if (!t) { toast('Open a character chat first.'); return; } cur = t; refresh(); closeDrawers(); $('#c-in').focus(); };
 
   // notes drawer
@@ -712,8 +948,10 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const tags = [...text.matchAll(/(?:^|\s)@([\w#-]+)/g)].map(m => m[1]);
     const said = tags.length && HOST.mentionResolve ? HOST.mentionResolve(tags) : [];
     const ctx = [...ctxPicked, ...said.filter(c => !ctxPicked.some(p => p.label === c.label))]; ctxPicked = []; drawCtx();
+    $('#busy').hidden = false; $('#busy').textContent = '☆ Mero is typing…';   // at once — the host catches up a moment later
     const r = await HOST.send(cur.id, text, ctx);
-    if (!r.ok) showErr(r.error);
+    drawBusy();
+    if (!r.ok) showErr(r.error); else if (r.pitchError) showErr(`the pitch: ${r.pitchError}`);
   }
   // 📎 Add context (Miinthe, 2026-10-19: "a function in general to add to mero in the chat itself. Like add context and then
   // select the thing you want to add as context"): pick posts, rumors, conversations, lore entries; they go with the message
@@ -784,10 +1022,23 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   $('#c-in').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#c-send').click(); } });
   $('#c-where').onclick = async () => { showErr(''); const r = await HOST.where(cur?.id || null); if (r?.talk) cur = r.talk; if (!r.ok) showErr(r.error); };
   const wrapUp = () => { if (cur && !D.busy) send('Wrap up: is there anything we agreed in this talk that isn\'t a note yet? Offer it as a note card.'); };
-  $('#c-pitch').onclick = () => openD('d-pitch', true);
+  // 💡 Pitch under the talk (Miinthe, 2026-11-02): what you two worked out in THIS talk becomes real pitches — whatever its
+  // tag. It never opens the suggestions (Miinthe: "the pitch icon still takes me to the suggestion pitches") — those live on
+  // the rail's 💡 only. A talk with nothing in it yet says so instead.
+  const talkPitchable = () => !!cur && cur.tag !== 'game' && !cur.review && cur.msgs.some(m => m.who === 'miinthe') && cur.msgs.some(m => m.who === 'mero');
+  function drawPitchBtn() {
+    const b = $('#c-pitch');
+    b.title = 'Turn what you and Mero worked out in this talk into pitches you can send into the story';
+    b.disabled = !!D.busy || !!PV().busy;
+  }
+  $('#c-pitch').onclick = async () => {
+    if (!talkPitchable()) { toast('Nothing to pitch yet — talk it through with Mero first, then press Pitch. Suggestions are under 💡 in the side rail.'); return; }
+    showErr('');
+    const r = await HOST.pitchFromTalk(cur.id);
+    if (!r.ok) showErr(r.error); else if (!r.n && !r.asking) toast('Nothing concrete to pitch yet — Mero says what is missing.');
+  };
 
   // header menu
-  $('#s-tag').onchange = e => HOST.updateTalk(cur.id, { tag: e.target.value });
   // ⋯ (v13): Check the lore, Wrap up, then resolve / archive / delete
   $('#s-more').onclick = e => {
     e.stopPropagation();
@@ -979,7 +1230,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     if (p.plan) {
       const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Plan #${p.no}` : '';
       return `<div class="pc${p.hide ? ' hid' : ''}${p.peek ? ' peek' : ''}${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>🪜 ${p.hide ? 'a hidden plan' : 'plan'} · ${p.plan.beats.length} beats</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.hide ? `<button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button>` : ''}</div>
-        <div class="${p.hide && !p.peek ? 'blur' : ''}"><div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div><div><b>${esc(p.plan.goal || p.text)}</b></div></div>${planBody(p)}</div>`;
+        <div class="${p.hide && !p.peek ? 'blur' : ''}"><div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div><div><b>${esc(p.plan.goal || p.text)}</b></div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}</div>${planBody(p)}</div>`;
     }
     const from = `<div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div>`;
     if (p.st === 'hidden' || p.st === 'fired') {
@@ -1001,7 +1252,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       kept: '',
     }[p.st] || '';
     const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Pitch #${p.no}` : '';
-    return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${PK[p.kind] || ''}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${st}</div>`;
+    return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${PK[p.kind] || ''}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}${st}</div>`;
   }
   const pSec = (key, title, items) => (items.length ? fold(key, title, items.map(pCard)) : '');
   let focusOpen = false;   // the Focus row's add list (drawPitches)
@@ -1168,8 +1419,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     document.body.classList.toggle('pleft', !D.popped && D.side === 'left');   // the rail follows the panel's side (v13)
     $('#pop-out').title = D.popped ? 'Back into the side panel' : 'Pop Mero out into her own window';
     $('#pop-out').innerHTML = I(D.popped ? (D.side === 'left' ? 'panelL' : 'panel') : 'popout');
-    $('#busy').hidden = !D.busy;
-    drawTalk(); drawSessions(); drawNotes(); drawSettings(); drawReqs(); drawPitches();
+    drawTalk(); drawSessions(); drawNotes(); drawSettings(); drawReqs(); drawPitches(); drawPitchBtn();
     // just popped out: the talks list beside the talk, the way her own window is meant to look
     if (popNow && $$('.drawer').every(d => d.hidden)) openD('d-sess', true);
     if (!cur && $$('.drawer').every(d => d.hidden)) goHome();   // no talk open: the list, never an empty talk

@@ -123,13 +123,11 @@ test('taste: notes keep their mark; the oldest 👍 go first past the limit', ()
     assert(/^Not my thing \(too much\)/.test(tasteText({ text: 'x' }, false, 'too much')));
 });
 
-test('Mero\'s [[PITCH]] cards come out of the talk text; feedback talks get no pitch format', () => {
+test('old [[PITCH]] cards still come out of a talk text; no talk is told to write them any more (the 💡 Pitch button does)', () => {
     const r = takePitchCards('Love it!\n[[PITCH kind=acts strength=turn who=kettle]] Kettle takes the tray to the cellar. [[/PITCH]]\n[[PITCH kind=ask]] Q? [[/PITCH]]', ['Kettle']);
     assertEqual(r.text, 'Love it!');
     assertEqual(r.pitches.length, 1); assertEqual(r.pitches[0].who, 'Kettle'); assertEqual(r.pitches[0].src, 'talk');
-    assert(/\[\[PITCH/.test(buildMeroPrompt({ talk: { tag: 'yap', msgs: [] } }).system), 'yapping may turn into a pitch');
-    assert(!/\[\[PITCH/.test(buildMeroPrompt({ talk: { tag: 'plan', msgs: [] } }).system), 'planning is a partner talk, not pitches (Miinthe 2026-10-26)');
-    assert(!/\[\[PITCH/.test(buildMeroPrompt({ talk: { tag: 'fb', msgs: [] } }).system));
+    for (const tag of ['yap', 'plan', 'fb']) assert(!/\[\[PITCH/.test(buildMeroPrompt({ talk: { tag, msgs: [] } }).system), tag);
     assertEqual(normTalk({ msgs: [{ who: 'mero', t: 'x', pitchNos: [4, 'y', 5] }] }).msgs[0].pitchNos.join(','), '4,5');
 });
 

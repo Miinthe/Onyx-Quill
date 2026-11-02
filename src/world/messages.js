@@ -148,22 +148,30 @@ export function threadHtmlFor(th, { me: self, letters = false, typing: dots = fa
 function threadHtml(th, { me: self, other, letters, peek, group = false }) {
     const lastMine = th.map(m => m.from).lastIndexOf(self), lastTheirs = th.map(m => m.from).lastIndexOf(other);
     let h = `<div class="dle-wd-thread${letters ? ' letters' : ''}${leaking ? ' leaking' : ''}">`;
-    withHeaders(th).forEach(({ header, m }, k) => {
+    // text-message look (Miinthe, 2026-11-02: DMs looked "weird and bland, not much like text messages"): messages sent in a
+    // row stick together and only the last one has the tail; Edit / Delete are small icons beside the bubble (on hover);
+    // Read, swipes, "leaked" stay under the last one
+    const rows = withHeaders(th);
+    rows.forEach(({ header, m }, k) => {
         if (header) h += `<div class="daymark">${esc(header)}</div>`;
+        const prev = rows[k - 1], next = rows[k + 1];
+        const joinUp = !header && prev && prev.m.from === m.from, joinDown = next && !next.header && next.m.from === m.from;
+        const grp = joinUp ? (joinDown ? 'mid' : 'last') : (joinDown ? 'first' : 'solo');
         const out = m.from === self, side = out ? 'out' : 'in', ed = editing === m.id, picked = leakSel.has(m.id);
         let txt = richText(textOf(m), tagNames());
         if (letters) txt = `<span class="sal">Dear ${esc(nameOf(m.to))},</span>${txt}<span class="sig">${esc(nameOf(m.from))}</span>`;
-        else if (peek && !(group && out)) txt = `<b class="from">${esc(nameOf(m.from))}</b>${txt}`;
-        h += `<div class="bw ${side}${picked ? ' picked' : ''}"${leaking ? ` data-pick="${esc(m.id)}" role="checkbox" aria-checked="${picked}" tabindex="0"` : ''}><div class="bub ${side}${ed ? ' edit' : ''}" data-mid="${esc(m.id)}">${ed ? `<textarea class="edit-ta" data-edit-ta aria-label="Edit the message" rows="${Math.min(14, Math.max(2, textOf(m).split('\n').length + 1))}">${esc(textOf(m))}</textarea>` : txt}</div><div class="meta">`;
-        if (letters) h += '<span class="seal"></span>';
-        if (m.onWay) h += `<span>On its way · arrives ${esc(arrivalText(m.arrives))}</span>`;
-        if (m.leaked?.length) h += `<span class="lk">${I('leak')}leaked to ${esc(m.leaked.join(', '))}</span>`;
+        else if (peek && !(group && out) && !joinUp) txt = `<b class="from">${esc(nameOf(m.from))}</b>${txt}`;
+        let meta = '';
+        if (letters) meta += '<span class="seal"></span>';
+        if (m.onWay) meta += `<span>On its way · arrives ${esc(arrivalText(m.arrives))}</span>`;
+        if (m.leaked?.length) meta += `<span class="lk">${I('leak')}leaked to ${esc(m.leaked.join(', '))}</span>`;
+        let acts = '';
         if (!leaking && !peek) {
-            if (!out && k === lastTheirs && Array.isArray(m.alts)) h += `<span class="swipe"><button type="button" data-sw="-1" title="Previous version">${I('left')}</button>${(m.s || 0) + 1}/${m.alts.length}<button type="button" data-sw="1" title="Another version">${I('right')}</button></span>`;
-            if (out && k === lastMine && !letters && other !== USER) h += `<span class="rr">${m.read ? 'Read' : 'Delivered'}</span>`;
-            h += `<span class="acts">${ed ? '<button type="button" data-done>Done</button>' : '<button type="button" data-edit>Edit</button>'}<button type="button" data-del>Delete</button></span>`;
+            if (!out && k === lastTheirs && Array.isArray(m.alts)) meta += `<span class="swipe"><button type="button" data-sw="-1" title="Previous version">${I('left')}</button>${(m.s || 0) + 1}/${m.alts.length}<button type="button" data-sw="1" title="Another version">${I('right')}</button></span>`;
+            if (out && k === lastMine && !letters && other !== USER) meta += `<span class="rr">${m.read ? 'Read' : 'Delivered'}</span>`;
+            acts = `<span class="acts">${ed ? '<button type="button" data-done>Done</button>' : `<button type="button" data-edit title="Edit" aria-label="Edit">${I('edit')}</button>`}<button type="button" data-del title="Delete" aria-label="Delete">${I('trash')}</button></span>`;
         }
-        h += '</div></div>';
+        h += `<div class="bw ${side} ${grp}${picked ? ' picked' : ''}"${leaking ? ` data-pick="${esc(m.id)}" role="checkbox" aria-checked="${picked}" tabindex="0"` : ''}><div class="brow"><div class="bub ${side}${ed ? ' edit' : ''}" data-mid="${esc(m.id)}">${ed ? `<textarea class="edit-ta" data-edit-ta aria-label="Edit the message" rows="${Math.min(14, Math.max(2, textOf(m).split('\n').length + 1))}">${esc(textOf(m))}</textarea>` : txt}</div>${acts}</div>${meta ? `<div class="meta">${meta}</div>` : ''}</div>`;
     });
     if (!peek && typing.has(other + '|' + self)) h += '<div class="typing" aria-label="writing"><i></i><i></i><i></i></div>';
     if (!th.length) h += `<div class="dle-wd-empty"><b>${letters ? 'No letters yet.' : 'No messages yet.'}</b><span>${letters ? 'A letter takes story time: it arrives on the next story day.' : 'Write the first one below.'}</span></div>`;
@@ -206,6 +214,9 @@ export { mainInfo, cardText, charText, voicesNow };
 
 export function onMessagesClick(e, body, w) {
     const q = s => e.target.closest(s);
+    // on a phone, a tap on a bubble shows its Edit / Delete (no hover there); a tap on another hides them again
+    const tb = !leaking && !editing && q('.dle-wd-thread .bub') && !q('button, a, textarea, input');
+    if (tb) { const bw = q('.bw'); const was = bw.classList.contains('tapped'); body.querySelectorAll('.bw.tapped').forEach(x => x.classList.remove('tapped')); bw.classList.toggle('tapped', !was); }
     if (handleAsClick(e)) return true;
     if (onGroupClick(e, body, w)) return true;
     if (q('[data-pin]')) { H.save(togglePin(H.store(), q('[data-pin]').dataset.pin)); H.render(); return true; }

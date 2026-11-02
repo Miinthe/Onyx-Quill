@@ -34,7 +34,7 @@ The board opens as a big window over SillyTavern. **Close** (top right) takes yo
 
 - **Add ▸** opens a second row: **+ Tracker…**, **+ Step**, **+ Entry**, **+ Connection**, **+ Fork**, **+ Detour**, **+ Note**.
 - **Play ▸** → **Walk the board in story order**: a play-through in a sandbox. Your chats are untouched.
-- **Mero** opens [[Mero]] on the board, to help you set it up.
+- **Mero** opens [[Mero]] on the board, to help you set it up. When she needs to know something (which tracker, how it should end) she asks with question cards: pick an answer or write your own, add details under **Anything to add?**, then **Send answers**.
 
 Click a tile to see and edit it in the side area of the window.
 

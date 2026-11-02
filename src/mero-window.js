@@ -18,7 +18,7 @@ import {
     boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
     meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
-    startGame, gameGuess, gameHint,
+    startGame, gameGuess, gameHint, meroWorking, redoMero, swipeMero, deleteMsg, editMsg, answerTalkAsks,
 } from './mero.js';
 import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequests } from './requests.js';   // 📬 (step 3)
 import { lookAtLore, undoEntry, meroLooking, onLookChanged, initMeroLore } from './mero-lore.js';   // ☆ entry ideas
@@ -36,7 +36,7 @@ function load() {
     try { trackers = [...getTrackers().map(t => t.name), ...(live()?.board.trackers || []).map(t => t.name)]; } catch { /* no board */ }
     return clone({
         where: meroWhere(), talks: meroTalks(), notes: meroNotes(), settings: meroSettings(), busy: meroBusy(),
-        connection: meroConnectionName(), trackers: [...new Set(trackers)], popped, lastIndex: (getContext()?.chat || []).length - 1,
+        connection: meroConnectionName(), trackers: [...new Set(trackers)], popped, working: meroWorking(), lastIndex: (getContext()?.chat || []).length - 1,
         requests: requestsHere(), holding: replyWaits(), looking: meroLooking(), glow: meroGlow(), pitches: P.pitchesView(),
         profiles: (extension_settings?.connectionManager?.profiles || []).map(p => ({ id: p.id, name: p.name || p.id })), profileId: getSettings().meroProfileId || '',
         side: getSettings().drawerSide === 'left' ? 'left' : 'right',   // her rail follows the panel's side (v13)
@@ -163,6 +163,10 @@ function popToggle() {
 window.__dleMeroHost = {
     load, dark: () => stIsDark(),
     send: (id, text, ctx) => sendToMero(id, text, { ctx }),
+    // ↻ ◀ ▶ 🗑 ✏ on the talk's messages (2026-11-02)
+    redo: (id, k) => redoMero(id, k), swipe: (id, k, dir) => swipeMero(id, k, dir), deleteMsg: (id, k) => deleteMsg(id, k),
+    editMsg: (id, k, text, again) => editMsg(id, k, text, { again: !!again }),
+    answerAsks: (id, k, answers, opts = {}) => answerTalkAsks(id, k, answers, { skipped: !!opts.skipped, detail: opts.detail || '', talk: !!opts.talk }),   // ❓ question cards
     mentionList: () => clone(mentionList()), mentionResolve: tags => clone(mentionResolve(tags)),
     pickContext: async () => { const v = await pickContext(); const tab = document.getElementById('dle-tab-mero'); if (v && tab && !tab.classList.contains('active')) tab.click(); return v ? clone(v) : null; },
     where: id => whereAreWe(id),
@@ -172,7 +176,7 @@ window.__dleMeroHost = {
     deleteTalk: (id, what) => deleteTalk(id, what),
     keepCard: (id, k, c, f) => keepCard(id, k, c, f),
     dropCard: (id, k, c) => dropCard(id, k, c),
-    redo: (id, k, c, f) => redoWithNote(id, k, c, f),
+    redoNote: (id, k, c, f) => redoWithNote(id, k, c, f),
     addNote: f => clone(addNote(f)),
     updateNote: (id, patch) => updateNote(id, patch),
     removeNote: id => removeNote(id),
@@ -199,7 +203,7 @@ window.__dleMeroHost = {
     momentsAside: keys => setMomentsAside(keys),
     talkMoments: async keys => { const r = await talkAboutMoments(keys); return r?.talk ? { ok: true, talk: clone(r.talk) } : r; },
     // 💡 pitches
-    pitch: opts => P.pitch(opts), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(),
+    pitch: opts => P.pitch(opts), pitchFromTalk: id => P.pitchFromTalk(id), pitchEdit: (id, f) => P.editPitch(id, f), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(),
     pitchUse: id => P.useNextReply(id), pitchDraft: id => P.draftLine(id), pitchGive: (id, c, p) => P.giveTo(id, c, p), pitchTakeBack: id => P.takeBack(id),
     pitchKeep: ids => P.keep(ids), pitchLetGo: id => P.letGo(id), pitchNo: (ids, why) => P.notMine(ids, why), pitchPeek: (id, on) => P.peek(id, on),
     pitchTalk: ids => P.talkOpener(ids), tasteEdit: (id, text) => P.editTaste(id, text),

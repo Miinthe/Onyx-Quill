@@ -16,6 +16,7 @@ From left to right:
 - **All quick replies**: the sets SillyTavern has on here: global ones, this chat's and this character's (only those set to visible). Press ☆ next to one to put it on the bar (★ takes it off again). With no set on here, it says so.
 - **My notes**: your own notes, never sent to the AI (switch it off in Settings › Interface › The bar). See [[My Notes]].
 - **Re-evaluate and swipe**: undo what the newest reply changed on the board, ask again, and write a new swipe.
+- **🧭 Guided swipe**: swipe the newest reply with a direction ("less flowery, he's colder here"). The button holds the direction: while one is in force it is lit with a dot and its tooltip shows the direction; press it for **Swipe again with it**, **Change the direction…**, **Keep it as a 🧭 note** (it then stays until you switch it off, in [[Mero]]'s notes) or **Drop it**. It clears itself when you send your next message.
 - **Simple send**: post what you typed as your message, without asking for a reply.
 - **Keep as a draft**: put what you typed aside. Press it again to put it back. The draft follows you to other devices. If the box already has other text, DeepLore asks before it swaps the two, so nothing you typed is lost.
 
@@ -23,11 +24,9 @@ While DeepLore is choosing lore, its working line shows on the bar too.
 
 **Floating icon drawer:** other extensions' floating icons (like CarrotKernel's 🥕) can wait in a small, low tab on top of the bar, at its left end, instead of floating over your chat. Tap the tab and they open in a row just above the bar, icons only (hover for the name). Tap one to use it as usual; hold it (or right-click on a PC) for that extension's own options. A number on an icon shows on the tab too. It's off at first: **Settings › Interface › The bar › Floating icon drawer** (off, phone only, always), and **Icons in the drawer › Choose…** has a switch per icon; switched off, an icon floats where it was before.
 
-**Guided swipe chip:** while a guided swipe's direction is in play (see below), it shows above the message box: ✎ edits it, **Keep** turns it into one of [[Mero]]'s 🧭 notes (it then stays until you switch it off), ✕ drops it. It clears itself when you send your next message.
-
 ## On a phone
 
-The bar has five buttons: 📖, the side-panel button, **Quick replies**, **My notes**, and **More** (re-evaluate, simple send, draft). Quick replies and More take over the bar's row when you tap them; **‹** goes back. Pull the handle up for more room.
+The bar has five buttons: 📖, the side-panel button, **Quick replies**, **My notes**, and **More** (re-evaluate, guided swipe, simple send, draft). Quick replies and More take over the bar's row when you tap them; **‹** goes back. While a swipe direction is set, More shows a dot. Pull the handle up for more room.
 
 ---
 

@@ -18,13 +18,13 @@ import { turnIndex } from './turn-index.js';
 import { getCurrentForChat } from './verdict/verdict-store.js';
 import { runningCasts, personNow, handChange, MAX_PLANS } from './cast-pure.js';
 import { quietThreads } from './mero-glow-pure.js';
-import { meroKnows, meroNotes, addNote, removeNote, updateNote, setPitchSink } from './mero.js';
+import { meroKnows, meroNotes, addNote, removeNote, updateNote, setPitchSink, meroTalks, noteTalkPitches } from './mero.js';
 import {
     PITCHES_KEY, asPitches, normMenu, addBatch, dropPicking, bringBack, setPitch, removePitch, trimPitches, pitchPrompt, parsePitches,
     parseHidden, directionText, surpriseText, LAND_SYSTEM, LAND_SCHEMA, landUser, MOMENT_SYSTEM, MOMENT_SCHEMA, momentUser, checkFrom,
     fallbackDue, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, pitchLine, KINDS,
     parsePlans, startPlan, planLines, repliesSince, BEAT_SYSTEM, BEAT_SCHEMA, beatUser, beatDue, tickBeat, rewindPlan, timerDue,
-    lingerPatch, rewritePrompt, parseRewrite, applyReview,
+    lingerPatch, rewritePrompt, parseRewrite, applyReview, talkPitchPrompt, parseTalkPitches, editedPitch,
 } from './pitches-pure.js';
 import { addRequest, onAnswer } from './requests.js';
 
@@ -137,6 +137,63 @@ export async function pitch({ comment = '', fromMsg = null, like = [] } = {}) {
         console.warn('[DLE] pitches failed:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
     } finally { busy = null; changed(); }
+}
+
+/**
+ * 💡 Pitch from a talk (Miinthe, 2026-11-02): what Miinthe and Mero worked out in this talk, written up as real pitches / plans.
+ * They are kept ideas at once (a new batch from the 💡 drawer must never sweep them away) and show in the talk with
+ * their buttons. Nothing settled yet: Mero says what is missing instead. Returns { ok, n } or { ok: false, error }.
+ */
+export async function pitchFromTalk(talkId, { ask = true } = {}) {
+    if (busy) return { ok: false, error: 'Mero is still on the last one.' };
+    const conn = resolveConnectionConfig('mero');
+    if (!conn.profileId) return { ok: false, error: noConn };
+    const t = meroTalks().find(x => x.id === talkId);
+    if (!t) return { ok: false, error: 'That talk is gone.' };
+    if (!t.msgs.some(m => m.who === 'miinthe') || !t.msgs.some(m => m.who === 'mero')) return { ok: false, error: 'Nothing in this talk to pitch from yet.' };
+    const c = pitchContext(null), names = castNames();
+    // what this talk already made (in this chat): Mero writes those again only when the talk changed them
+    const ids = new Set(t.msgs.flatMap(m => m.pitchIds || []));
+    const already = store().list.filter(p => ids.has(p.id)).map(p => (p.plan ? `${p.plan.goal || p.text} (plan: ${p.plan.beats.map(b => b.text).join(' → ')})` : p.text));
+    const { system, user } = talkPitchPrompt(t, { persona: c.persona, character: c.character, user: c.user, names: c.names, board: c.board, castNames: names, donts: c.donts, replies: c.replies, already }, { ask });
+    busy = 'talk'; changed();
+    try {
+        const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, maxTokens: Math.max(Number(conn.maxTokens) || 0, 1500) });
+        const { list, why, asks } = parseTalkPitches(r?.text, names, t.title);
+        // something important still open: Mero asks first, as question cards (Miinthe 2026-11-02: "multi selection to wrap up the plan")
+        if (asks.length && ask) {
+            noteTalkPitches(talkId, { text: `Before I write it up — ${asks.length === 1 ? 'one thing is' : `${asks.length} things are`} still open:`, asks });
+            return { ok: true, n: 0, asking: true };
+        }
+        if (!list.length) {
+            if (!String(r?.text || '').trim()) return { ok: false, error: 'Mero sent back an empty answer — try 💡 Pitch again.' };
+            noteTalkPitches(talkId, { text: why ? `Nothing to pitch yet — ${why}` : 'Nothing concrete to pitch yet. Let\'s settle it a bit more first.' });
+            return { ok: true, n: 0 };
+        }
+        const s = store(), from = s.next;
+        const s2 = addBatch(s, list.map(p => ({ ...p, st: 'kept' })), { made: lastIndex(), replace: false });
+        save(s2);
+        const made = s2.list.filter(p => p.no >= from && p.no < from + list.length).sort((a, b) => a.no - b.no);
+        noteTalkPitches(talkId, {
+            text: made.length > 1 ? `Here's what we worked out, as ${made.length} cards:` : 'Here\'s what we worked out:',
+            pitchNos: made.map(p => p.no), planNos: made.filter(p => p.plan).map(p => p.no), pitchIds: made.map(p => p.id),
+        });
+        return { ok: true, n: made.length };
+    } catch (err) {
+        console.warn('[DLE] pitch from a talk failed:', err?.message || err);
+        return { ok: false, error: err?.message || String(err) };
+    } finally { busy = null; changed(); }
+}
+
+/** ✏ Edit a pitch that isn't out in the story yet: new words (a plan: goal + beats). */
+export function editPitch(id, fields = {}) {
+    const p = get(id);
+    if (!p) return { ok: false, error: 'That pitch is gone.' };
+    if (!['fresh', 'kept', 'skipped'].includes(p.st)) return { ok: false, error: 'It\'s out in the story already — take it back first.' };
+    const patch = editedPitch(p, fields);
+    if (!patch) return { ok: false, error: p.plan ? 'A plan needs at least two beats.' : 'The pitch can\'t be empty.' };
+    save(setPitch(store(), id, patch));
+    return { ok: true };
 }
 
 // ── what Miinthe does with a pitch ───────────────────────────────────────────────
@@ -409,7 +466,7 @@ export function initPitches() {
         return true;
     });
     setPitchSink({
-        castNames, writerLines: planWriterLines,
+        castNames, writerLines: planWriterLines, fromTalk: pitchFromTalk,
         add: list => { const s = store(), from = s.next; save(addBatch(s, list, { made: lastIndex(), replace: false })); return list.map((_, k) => from + k); },
     });
     try {

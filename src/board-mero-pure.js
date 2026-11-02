@@ -39,6 +39,8 @@ export function boardText(brief) {
 }
 
 const who = ({ persona = '', character = '' } = {}) => `You are Mero ☆, Miinthe's co-writer and story bestie${character ? ` for her roleplay with ${character}` : ''}.${persona ? ` ${oneLine(persona)}` : ''}`;
+import { normAsks, MAX_ASKS } from './ask-pure.js';
+
 const JSON_ONLY = 'Answer with JSON only, no other text.';
 
 /**
@@ -94,7 +96,9 @@ function boardPrompt(task, input = {}, me = {}) {
         system: [who(me), 'Right now you help Miinthe set up her storyboard (trackers with steps; entries linked to tiles). Talk like yourself, short — two to five sentences.',
             'You may suggest changes; Miinthe accepts or refuses each one. Kinds: {"kind":"step","tracker":"<tracker id>","name":"…","why":"…"} adds a step at the end of a tracker; {"kind":"tracker","name":"…","icon":"<one emoji>","steps":["…"],"why":"…"} a new tracker with 2 to 7 steps; {"kind":"entry","tracker":"<tracker id>","step":<step number>,"title":"…","why":"…"} an entry for a step that has none.',
             'Use only tracker ids and step numbers that are on the board. No suggestions is fine.',
-            `${JSON_ONLY} {"text":"your answer","suggestions":[…]}`].join('\n'),
+            // question cards (Miinthe, 2026-11-02: "would be useful for storyboard Mero as well")
+            `When you need to know something from Miinthe to help (which tracker, what should happen, how it ends) and there are a few clear possible answers, ask it as a question card in "asks" instead of in your text: {"q":"the question?","pick":"one"|"many","options":["…","…"]} — 2 to 4 short answers that really differ (she can always write her own), at most ${MAX_ASKS} cards, only when you need to know.`,
+            `${JSON_ONLY} {"text":"your answer","suggestions":[…],"asks":[…]}`].join('\n'),
         user: [boardText(i.brief), arr(i.talk).length ? `\nThis talk so far:\n${arr(i.talk).slice(-8).map(m => `${m.who === 'you' ? (me?.names?.you || 'The author') : (me?.names?.me || 'Mero')}: ${oneLine(m.t)}`).join('\n')}` : '', `\nMiinthe: ${quick || oneLine(i.message)}`].filter(Boolean).join('\n'),
     };
 }
@@ -136,7 +140,7 @@ const cleanList = (list, max, len = 60) => [...new Set(arr(list).map(x => oneLin
  */
 export function parseBoardMero(task, text, input = {}) {
     const v = readJson(text);
-    if (task === 'talk' && !v && str(text).trim()) return { ok: true, text: oneLine(text).slice(0, 2000), suggestions: [] };
+    if (task === 'talk' && !v && str(text).trim()) return { ok: true, text: oneLine(text).slice(0, 2000), suggestions: [], asks: [] };
     if (!v) return { ok: false, error: 'Mero\'s answer could not be read — try again' };
     if (task === 'tiles') {
         const have = new Set(arr(input.have).map(low));
@@ -176,8 +180,9 @@ export function parseBoardMero(task, text, input = {}) {
         }
     }
     const answer = oneLine(v.text ?? v.answer).slice(0, 2000);
-    if (!answer && !out.length) return { ok: false, error: 'Mero\'s answer came back empty — try again' };
-    return { ok: true, text: answer || (out.length ? 'Here’s what I’d add — it’s marked ✨ on the board.' : ''), suggestions: out };
+    const asks = normAsks(v.asks ?? v.ask);
+    if (!answer && !out.length && !asks.length) return { ok: false, error: 'Mero\'s answer came back empty — try again' };
+    return { ok: true, text: answer || (out.length ? 'Here’s what I’d add — it’s marked ✨ on the board.' : asks.length ? 'A quick question first:' : ''), suggestions: out, asks };
 }
 
 /** Why Mero can't help on the board right now ('' = she can). */
