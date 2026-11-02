@@ -23,6 +23,8 @@ The board opens as a big window over SillyTavern. **Close** (top right) takes yo
 
 - The board's name and three views: **Board** (the tiles), **Outline** (the same as a list) and **Timeline** (this chat's real history: moves, starts, places, items, days, with "Go to message").
 - **File**: New…, Open…, Save, Save as…, Save as and apply to…, Save as template, Apply to…, Delete board….
+
+**Starting a new board:** **File › New…** offers an empty board or one of four starter templates, each a small working example of what a board can do: **Slow-burn romance** (relationship steps with a fork at the confession, Trust and Attraction meters, one-way flags like First kiss), **Mystery** (an investigation, clues and suspects with states, places), **Fantasy quest** (a quest with a fork at the trial, a pack with gold that grows, a map, day · time · weather, a health meter) and **Slice of life** (dated events on a calendar, becoming family, a mood meter, places around town, shared memories that grow). Everything in them can be renamed, changed or removed. Your own templates from **Save as template** are listed under them.
 - **Edit**: Undo, Redo, Rename board…, Duplicate, Move row up / down, Ask before removing, Delete…, Folders this board reads…, Suggest a setup from the folders…, Board settings…, Smart arrange.
 - **View**: the three views and the window's color themes. **Appearance**: Everywhere… or This board….
 - **Help**: Keyboard shortcuts, Show tips in the panels, Getting started, Tips, Keyboard & mouse, Slash commands, What's what.

@@ -41,6 +41,7 @@ import { ENTRY_TYPES } from './board-entry-pure.js';
 import { callAI } from './ai/ai.js';
 import { meroSettings, meroWhere, meroConnectionName } from './mero.js';
 import { BOARD_MERO_TASKS, buildBoardMeroPrompt, parseBoardMero, meroBoardBlock } from './board-mero-pure.js';
+import { STARTER_TEMPLATES } from './board-templates-pure.js';
 import { persistGaps } from './lore-gaps.js';
 import { meroNames } from './mero-names-pure.js';
 
@@ -189,6 +190,7 @@ function load() {
         })(),
         worldFired: Object.fromEntries((chat_metadata?.deeplore_world?.records || []).filter(r => r?.kind === 'fired' && r.plan).map(r => [r.plan, { i: r.i, hit: r.hit !== false }])),
         prefs: { ...prefs() },
+        templates: STARTER_TEMPLATES,   // the built-in starter templates of New board (board-templates-pure.js, 2026-11-02)
         askBeforeRemoving: askBeforeRemoving(),   // overhaul step 4: Edit ▸ Ask before removing = the setting in Settings → Interface
         stDark: stIsDark(),
     };

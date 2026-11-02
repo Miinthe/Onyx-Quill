@@ -1745,139 +1745,23 @@ function setTheme(v) {
 if (HOST) { try { HD = HOST.load(); applyTheme(); } catch (e) { showBreak(`Loading from DeepLore failed: ${e?.message || e}\n${String(e?.stack || '').split('\n').slice(0, 4).join('\n')}`); throw e; } }
 if (!HOST) applyTheme();
 
-// ── example data (the toy story) ───────────────────────────────────────────
-const TEMPLATES = {
-  'Simple love story': { trackers: [
-    { name: 'Relationship', steps: ['Strangers', 'Acquaintances', 'Friends', 'Sweethearts', 'Together'], direction: 'both', skip: false, start: null },
-  ] },
-  'Mystery': { trackers: [
-    { name: 'Investigation', steps: ['Crime', 'Clues', 'Suspects', 'Twist', 'Reveal'], direction: 'forward', skip: false, start: null },
-  ] },
-};
+// ── built-in templates (board-templates-pure.js: four starters for new users, 2026-11-02) — from DeepLore; the
+// standalone preview of this page has none and starts on an empty board ─────────────────────────────────────
+const TEMPLATES = HD?.templates && typeof HD.templates === 'object' ? clone(HD.templates) : {};
 
-let boards = {
-  'Toaster & Kettle': {
-    folders: ['Ladder/', 'Plot/', 'World/'],
-    applied: ['test bot 1 (character)', 'branch test', 'Claude test'],
-    trackers: [
-      { id: 'rel', name: 'Relationship', icon: '💞', color: '#d0145e', direction: 'both', skip: false, settle: 2, folder: 'Ladder/', starts: [], onFall: 'keep',
-        steps: [
-          { name: 'Strangers', entry: 'Rung 1 · Strangers', oneWay: true },
-          { name: 'Neighbours', entry: 'Rung 2 · Neighbours', detours: [{ name: 'broken up', entries: ['Breakup · Still next door'] }, { name: 'divorced', entries: ['Divorce · The aftermath'] }] },
-          { name: 'Friends', entries: ['Rung 3 · Friends', 'Friends · Shared breakfast', 'Friends · Inside jokes'], detours: [{ name: 'Feud', entries: ['Detour · Feud'] }],
-            fork: [{ name: 'Confesses', entries: [] }, { name: 'Chickens out', entries: [], then: { kind: 'back', step: 2 } }] },
-          { name: 'Sweethearts', entry: 'Rung 4 · Sweethearts', fallTo: { step: 1, detour: 'broken up' } },
-          { name: 'Married', needs: [{ world: 'world', due: 'party', color: 2 }], entries: ['Rung 5 · Married', 'Married · How they act', 'Married · What counts', 'Married · The town hall'], kinds: { 'Married · How they act': 'guidance', 'Married · What counts': 'judge' }, pins: { 'Married · How they act': true }, fallTo: { step: 1, detour: 'divorced' }, ask: 'all', strict: 'strict' },
-        ] },
-      { id: 'fuse', name: 'The Broken Fuse', icon: '⚡', color: '#c27c0e', direction: 'forward', skip: false, settle: 0, folder: 'Plot/', onFall: 'keep',
-        starts: [{ tracker: 'rel', step: 3, color: 1 }],
-        steps: [
-          { name: 'Calm', entry: 'Fuse 1 · Calm' },
-          { name: 'Sparks', entry: 'Fuse 2 · Sparks' },
-          { name: 'Repair', entry: null, needs: [{ tracker: 'rel', step: 4, color: 4 }, { collection: 'stash', item: 'Tape', state: 'have', amount: 1, color: 6 }] },
-        ],
-        fork: [{ name: 'Success', entry: 'Fuse · Fixed for good', weight: 2 }, { name: 'Fail', entry: null, note: 'Maybe the toaster gets a little shock here?' }], forkBy: 'roll' },
-      { id: 'secret', name: "Kettle's Secret", icon: '🔒', color: '#7232e0', direction: 'forward', skip: false, settle: 0, folder: 'Plot/', onFall: 'keep',
-        starts: [{ tracker: 'fuse', step: 1, color: 3 }, { tracker: 'rel', step: 2, color: 2 }],
-        steps: [
-          { name: 'Hidden', entry: 'Secret 1 · Hidden' },
-          { name: 'Suspected', entry: null },
-          { name: 'Revealed', entry: null, needs: [{ collection: 'clues', count: 3, color: 5 }, { place: 'where', at: 'cellar', color: 4 }, { counter: 'trust', band: 'Trusting', min: 51, color: 1 }] },
-        ] },
-      { id: 'world', kind: 'state', name: 'World', icon: '🌦️', color: '#2a86b8', steps: [], starts: [], datesGrow: true, datesAsk: 'auto',
-        fields: [
-          { id: 'tod', type: 'cycle', name: 'Time of day', values: ['Morning', 'Noon', 'Afternoon', 'Evening', 'Night'], addsDay: true },
-          { id: 'day', type: 'day', name: 'Day', start: 1 },
-          { id: 'weather', type: 'choice', name: 'Weather', values: ['Sunny', 'Cloudy', 'Raining', 'Storm'] },
-        ],
-        dates: [
-          { id: 'bday', name: "Kettle's birthday", due: 6, by: 'you' },
-          { id: 'party', name: 'Party at the harbor', due: 4, by: 'ai', m: 29, q: 'In two days there\'s a huge party at the harbor. Wanna go?' },
-        ] },
-      { id: 'clues', kind: 'collection', name: 'Clues', icon: '🧩', color: '#23845a', folder: 'Plot/', steps: [], starts: [],
-        items: [
-          { name: 'Burnt cord', entry: 'Clue · Burnt cord' },
-          { name: 'Scorch mark', entry: null, needs: [{ tracker: 'fuse', branch: 'Fail', color: 3 }] },
-          { name: "Kettle's alibi", entry: 'Clue · Alibi' },
-          { name: 'Tape receipt', entry: null },
-          { name: 'Crumb trail', entry: 'Clue · Crumbs' },
-        ] },
-      { id: 'suspects', kind: 'collection', name: 'Suspects', icon: '🕵️', color: '#c99700', folder: 'Plot/', steps: [], starts: [],
-        states: [{ id: 'unknown', label: 'unknown', c: 'muted' }, { id: 'suspected', label: 'suspected', c: 'sig-med' }, { id: 'cleared', label: 'cleared', c: 'good' }, { id: 'guilty', label: 'guilty', c: 'bad' }],
-        items: [{ name: 'The Kettle', entry: null }, { name: 'The Fridge', entry: null }, { name: 'The Toaster', entry: null }] },
-      { id: 'where', kind: 'place', name: 'Where', icon: '📍', color: '#c2410c', steps: [], starts: [], pinHere: true, nearby: true, source: 'Places/',
-        keep: { entries: ['Judge · Where the scene is'], kinds: { 'Judge · Where the scene is': 'judge' } },
-        places: [
-          { id: 'kitchen', name: 'Kitchen', entries: ['Place · Kitchen'] },
-          { id: 'counter', name: 'Counter', parent: 'kitchen', entries: ['Place · Counter'], related: ['pantry'] },
-          { id: 'pantry', name: 'Pantry', parent: 'kitchen', entries: ['Place · Pantry'], related: ['counter'] },
-          { id: 'fusebox', name: 'Fuse box corner', parent: 'kitchen', entries: [] },
-          { id: 'cellar', name: 'Cellar', entries: ['Place · Cellar'] },
-          { id: 'garden', name: 'Garden', entries: ['Place · Garden'] },
-        ] },
-      { id: 'cast', kind: 'cast', name: 'Cast', icon: '🎭', color: '#b0306b', folder: 'Characters/', steps: [], starts: [], pinHere: true, setsPresent: false, director: true, keep: { entries: [], kinds: {} },
-        people: [
-          { id: 'kettle', name: 'Kettle', card: 'Kettle NPC test.png', entries: ['Kettle'], kinds: {}, hangouts: [{ place: 'where', at: 'counter' }], wants: '', plans: [] },
-          { id: 'spoon', name: 'Spoon', entries: [], kinds: {}, hangouts: [], wants: '', plans: [] },
-          { id: 'fridge', name: 'Old Fridge', entries: [], kinds: {}, hangouts: [], wants: '', plans: [], hidden: true },
-        ] },
-      { id: 'stash', kind: 'collection', name: 'Kitchen stash', icon: '🎒', color: '#2a86b8', folder: 'Plot/', steps: [], starts: [], amounts: true,
-        grows: true, growAsk: 'ask', growFolder: 'Items/', keep: { entries: ['Judge · Worth keeping'], kinds: { 'Judge · Worth keeping': 'judge' } },
-        states: [{ id: 'none', label: 'not yet', c: 'muted' }, { id: 'have', label: 'have', c: 'good' }, { id: 'used', label: 'used up', c: 'l5' }, { id: 'lost', label: 'lost', c: 'bad', strike: true }],
-        purse: [{ id: 'usd', unit: '$', before: true, start: 8 }],
-        items: [{ name: 'Tape', entry: 'Item · Duct tape', cost: { purse: 'usd', amount: 5 } }, { name: 'Spare fuse', entry: null, cost: { purse: 'usd', amount: 12 } }] },
-      { id: 'trust', kind: 'counter', name: 'Trust', icon: '🤝', color: '#2f8f6b', steps: [], starts: [], start: 30, min: 0, max: 100, unit: '',
-        meter: { who: 'Kettle → you', bands: [{ name: 'Wary', from: 0, c: 'b1', entries: ['Trust · Wary'], kinds: { 'Trust · Wary': 'guidance' } }, { name: 'Neutral', from: 21, c: 'b3', entries: [] }, { name: 'Trusting', from: 51, c: 'b4', entries: ['Trust · Trusting'], kinds: { 'Trust · Trusting': 'guidance' } }, { name: 'Devoted', from: 81, c: 'b5', entries: ['Trust · Devoted'], kinds: { 'Trust · Devoted': 'guidance' }, needs: [{ tracker: 'rel', step: 4, color: 3 }] }],
-          sizes: { slight: 2, clear: 5, big: 10 }, cap: 10, drift: false, rest: 30, every: 5, ask: 'low', twoEnded: false,
-          tries: [{ dir: 'gain', size: 'clear', q: 'I never told anyone, but the spoon drawer sticks because I broke it.', why: 'a shared secret' }, { dir: 'gain', size: 'slight', q: 'You\'re on time. Huh. Okay.', why: 'on time for once' }, { dir: 'loss', size: 'big', q: 'You promised you\'d keep the cellar shut. You didn\'t.', why: 'a broken promise' }] },
-        keep: { entries: ['Judge · What counts for Trust'], kinds: { 'Judge · What counts for Trust': 'judge' } } },
-      { id: 'bond', kind: 'counter', name: 'Toaster ↔ Kettle', icon: '⚔️', color: '#c27c0e', steps: [], starts: [], start: 0, min: -50, max: 50, unit: '',
-        meter: { who: 'two-ended', bands: [{ name: 'Enemies', from: -50, c: 'b1' }, { name: 'Rivals', from: -30, c: 'b2' }, { name: 'Even', from: -10, c: 'b3' }, { name: 'Friendly', from: 11, c: 'b4' }, { name: 'Close', from: 31, c: 'b5' }],
-          sizes: { slight: 2, clear: 5, big: 12 }, cap: 12, drift: true, rest: 0, every: 8, ask: 'low', twoEnded: true,
-          tries: [{ dir: 'gain', size: 'big', q: 'The toaster steps between Kettle and you: "Leave him alone, it was my idea."', why: 'took the other\'s side' }, { dir: 'loss', size: 'slight', q: '"Nice whistle, grandpa," the toaster mutters.', why: 'teasing' }] },
-        keep: { entries: ['Judge · Toaster and Kettle'], kinds: { 'Judge · Toaster and Kettle': 'judge' } } },
-      { id: 'facts', kind: 'collection', preset: 'flags', name: 'Facts', icon: '✅', color: '#23784e', folder: 'Plot/', steps: [], starts: [],
-        states: [{ id: 'no', label: 'no', c: 'muted' }, { id: 'yes', label: 'yes', c: 'good' }],
-        items: [{ name: 'Kettle knows about the fuse', entry: null, oneWay: true }, { name: 'Cellar door unlocked', entry: null }, { name: 'The toaster lied about the crumbs', entry: null, oneWay: true }, { name: 'Lights are on', entry: null }] },
-    ],
-  },
-};
+let boards = { 'Untitled board': { folders: [], applied: [], trackers: [] } };   // the standalone preview only — inside SillyTavern: HD.boards
 // templates saved with "Save as template" live in DeepLore's settings (all devices); the ones above are built in (cloud bug hunt, 2026-10-04 — before, a saved template was gone once the window closed)
 const BUILTIN_TEMPLATES = new Set(Object.keys(TEMPLATES));
 if (HD?.prefs?.templates && typeof HD.prefs.templates === 'object') for (const [n, v] of Object.entries(HD.prefs.templates)) if (!BUILTIN_TEMPLATES.has(n) && Array.isArray(v?.trackers)) TEMPLATES[n] = v;
 const saveTemplates = () => { const own = Object.fromEntries(Object.entries(TEMPLATES).filter(([n]) => !BUILTIN_TEMPLATES.has(n))); if (HD) (HD.prefs ||= {}).templates = own; HOST?.setPref?.('templates', clone(own)); };
 let templates = Object.keys(TEMPLATES);
-const chats = {
-  'branch test': { trust: 26, bond: -4, facts: { 'Lights are on': 'yes' }, world: { day: 1, vals: { tod: 'Morning', weather: 'Sunny' } }, where: 'counter', pend_stash: [{ name: 'Rusty key', m: 31, q: 'The toaster pries up the loose tile and pockets the rusty key underneath.', why: 'Plainly kept — pocketed, not just seen. A key counts as worth keeping.', conf: 'high', summary: 'A small rusty key found under a loose kitchen tile. Select when locks, doors or the key itself come up.', body: 'A small iron key, orange with rust, its bow worn smooth. The toaster found it under a loose tile by the fridge and kept it. What it opens is not known yet.' }], rel: 2, day: 6, fuse: null, secret: null, clues: { 'Burnt cord': 'uncovered' }, suspects: {}, stash: {}, cast: { kettle: { here: true } } },
-  'Claude test': { trust: 44, bond: -12, facts: { 'Kettle knows about the fuse': 'yes', 'The toaster lied about the crumbs': 'yes', 'Lights are on': 'yes' }, fork_rel_2: 'Confesses', world: { day: 3, vals: { tod: 'Afternoon', weather: 'Raining' } }, where: 'counter', pend_stash: [{ name: 'Rusty key', m: 31, q: 'The toaster pries up the loose tile and pockets the rusty key underneath.', why: 'Plainly kept — pocketed, not just seen. A key counts as worth keeping.', conf: 'high', summary: 'A small rusty key found under a loose kitchen tile. Select when locks, doors or the key itself come up.', body: 'A small iron key, orange with rust, its bow worn smooth. The toaster found it under a loose tile by the fridge and kept it. What it opens is not known yet.' }], rel: 4, day: 8, fuse: 2, fork_fuse: 'Success', secret: 1, clues: { 'Burnt cord': 'uncovered', "Kettle's alibi": 'lost', 'Crumb trail': 'uncovered' }, suspects: { 'The Kettle': 'suspected', 'The Fridge': 'cleared' }, stash: { Tape: 'have', '#Tape': 1, '$usd': 3 }, cast: { kettle: { here: true }, spoon: { here: true } } },
-};
-// a meter's history in each chat: [message, value] (mock-up; in play it comes from the chat's log)
-const MHIST = { 'branch test': { trust: [[14, 30], [20, 28], [33, 26]], bond: [[14, 0], [30, -4]] }, 'Claude test': { trust: [[2, 30], [5, 32], [8, 37], [10, 37], [12, 42], [13, 44]], bond: [[4, 0], [7, -4], [9, -9], [11, -14], [13, -12]] } };
-const MQUOTES = { 'Claude test': { trust: ['Thanks for waiting. I mean it.', 13], bond: ['The toaster hands Kettle the sugar without being asked.', 13] } };
-const FLAGQ = { 'Claude test': { 'Kettle knows about the fuse': [12, 'So you knew the whole time, Kettle.'], 'The toaster lied about the crumbs': [9, 'Fine — I made the crumbs. Happy?'], 'Lights are on': [11, 'The lights flicker back on.'] } };
-const TIMELINE = {
-  'branch test': [
-    { m: 14, t: 'rel', to: 0, who: 'start', why: 'Board applied to the chat.' },
-    { m: 15, t: 'rel', to: 1, who: 'auto', q: "Hi! I'm your new neighbour, I just moved in next door.", why: 'States plainly that they now live next door.', conf: 'high' },
-    { m: 18, t: 'rel', to: 2, who: 'auto', q: "I think we're friends now", why: 'Both treat each other as friends from here on.', conf: 'high' },
-    { m: 21, t: 'rel', to: 0, who: 'auto', q: 'We are not friends anymore, we are strangers again.', why: 'The friendship is ended outright.', conf: 'high' },
-    { m: 32, t: 'rel', to: 1, who: 'auto', q: 'Lets make up and be good neighbors again', why: 'They make up and agree to be neighbours.', conf: 'high' },
-    { m: 36, t: 'rel', to: 2, who: 'hand', why: 'Moved by hand on the board.' },
-    { m: 38, t: 'rel', to: 4, who: 'refused', q: "we're married", why: 'Married skips Sweethearts — stayed at Friends.' },
-  ],
-  'Claude test': [
-    { m: 1, t: 'rel', to: 0, who: 'start', why: 'Board applied to the chat.' },
-    { m: 2, t: 'rel', to: 2, who: 'hand', why: 'Set by hand for a test.' },
-    { m: 3, t: 'rel', to: 4, who: 'refused', q: "we're married now and nobody can tell us otherwise", why: 'Married skips Sweethearts — stayed at Friends.' },
-    { m: 6, t: 'rel', to: 3, who: 'auto', q: 'From now on we are sweethearts.', why: 'The speaker plainly declares that they are now sweethearts.', conf: 'high' },
-    { m: 6, t: 'fuse', to: 0, who: 'start', why: 'Started: Relationship reached Sweethearts.' },
-    { m: 9, t: 'fuse', to: 1, who: 'auto', q: 'every light in the kitchen flickers', why: 'The fuse visibly sparks.', conf: 'medium' },
-    { m: 9, t: 'secret', to: 0, who: 'start', why: 'Started: the fuse sparked and Relationship is past Friends.' },
-    { m: 11, t: 'secret', to: 1, who: 'auto', q: 'the kettle glances at the fuse box a little too quickly', why: 'A guilty glance is a hint, not proof — but the toaster now plainly suspects the kettle.', conf: 'low', asked: 'accepted' },
-    { m: 13, t: 'secret', to: 2, who: 'pending', q: "Fine, maybe I did open the letter that night — but only to check who it was from, I swear, nothing else happened and you can't prove otherwise. Anyway, the toast is burning, shouldn't you check on that instead of staring at me like I'm some kind of criminal? I'm a kettle. Kettles don't sabotage things.", why: 'Mara half-admits opening the letter, but denies the rest — it may or may not count as the secret being revealed.', conf: 'low', suggest: { n: 3, why: 'The argument is still going — the next few messages will likely show whether Mara confesses.' } },
-    { m: 12, t: 'rel', to: 4, who: 'auto', q: 'married at the town hall, the toaster and me', why: 'A wedding, one step after Sweethearts.', conf: 'high' },
-  ],
-};
+// a chat's place on the board, meter histories, quotes and the timeline: all from DeepLore inside SillyTavern (below);
+// the standalone preview starts empty (the old toy story was scrubbed for the public release, 2026-11-03)
+const chats = {};
+const MHIST = {};
+const MQUOTES = {};
+const FLAGQ = {};
+const TIMELINE = {};
 
 if (HD) {
   boards = HD.boards;
@@ -1892,10 +1776,11 @@ if (HD) {
 }
 
 // ── state ──────────────────────────────────────────────────────────────────
-let cur = HD ? HD.current : 'Toaster & Kettle';
+let cur = HD ? HD.current : 'Untitled board';
 let doc = clone(boards[cur]);
 let dirty = false;
-let chat = HD ? HD.chat : 'branch test';
+let chat = HD ? HD.chat : 'Example chat';
+if (!HD) { chats[chat] = {}; TIMELINE[chat] = []; }
 let tab = 'board';
 let sel = { kind: 'tracker', t: doc.trackers[0]?.id };   // was 'rel', the example data's id (bug hunt 2026-10-17)
 let tlSel = null;
@@ -1997,7 +1882,7 @@ const personIdx = c => (T(c.cast)?.people || []).findIndex(p => p.id === c.perso
 const pBag = (t, p) => ((chats[chat][t.id] ||= {})[p.id] ||= {});   // a person's state in this chat (the Cast tab and the browser checks write it)
 const HOW_WORDS = { saw: 'saw it', heard: 'overheard it', told: 'was told', found: 'found it out' };
 // the character cards to pick from (SillyTavern's list in the extension; a few examples here)
-const cardsList = () => HD?.cards || [{ name: 'Kettle NPC test', avatar: 'Kettle NPC test.png' }, { name: 'test bot 2', avatar: 'test bot 2.png' }, { name: 'test 3', avatar: 'test 3.png' }];
+const cardsList = () => HD?.cards || [];
 let peekPeople = new Set();   // hidden people Miinthe is peeking at (this window only)
 // state: time of day, day, weather… and a calendar of due dates. A due date keeps the AI from skipping past it.
 const FIELD_TYPES = { cycle: 'cycle — loops (time of day, weekdays, seasons)', day: 'day — counts the days', choice: 'choice — one of a list (weather, mood)' };
@@ -2071,33 +1956,7 @@ function normalizeEntries(d) {
   const fix = o => { if (!o) return; if (!Array.isArray(o.entries)) o.entries = o.entry ? [o.entry] : []; delete o.entry; };
   for (const t of d.trackers) { (t.steps || []).forEach(fix); (t.steps || []).forEach(st => (st.fork || []).forEach(fix)); (t.items || []).forEach(fix); }
 }
-const VAULT = [
-  ['Session · run A · the first night', 'Instance A/', 'What happened in run A.'], ['Session · run B · the fuse', 'Instance B/', 'What happened in run B so far.'], ['Found · Spare bolt', 'Instance B/', 'A bolt the toaster pocketed in run B.'],
-  ['Judge · Where the scene is', 'Judge/', 'We are only somewhere when the scene is actually there — talking about a place, or planning to go, does not move us.'],
-  ['Place · Kitchen', 'Places/', 'The kitchen as a whole — tiled floor, the window over the sink. Fallback when no spot is established.'], ['Place · Counter', 'Places/', 'The counter: crumbs, the toaster’s home, the kettle beside it.'],
-  ['Place · Pantry', 'Places/', 'Narrow shelves, jars, a single bulb.'], ['Place · Cellar', 'Places/', 'Damp stone steps, the old boiler, cobwebs.'], ['Place · Garden', 'Places/', 'Herb beds and a crooked fence outside the back door.'],
-  ['Trust · Wary', 'Characters/', 'Kettle keeps answers short, checks the door twice, never turns his back.'],
-  ['Trust · Trusting', 'Characters/', 'Kettle leaves the spoon drawer open, tells you where the spare key is, hums when you\'re around.'],
-  ['Trust · Devoted', 'Characters/', 'Kettle would boil over for you. Shares the fuse box secret without being asked.'],
-  ['Judge · What counts for Trust', 'Judge/', 'A broken promise is a big loss. A shared secret is a clear gain. Being on time for once is a slight gain. Politeness counts for nothing.'],
-  ['Judge · Toaster and Kettle', 'Judge/', 'Teasing is a slight loss. Covering for each other is a clear gain. Taking the other\'s side in front of you is big.'],
-  ['Judge · Worth keeping', 'Judge/', 'Kept: tools, spare parts, keys, money — things the toaster or kettle plainly keeps. Not kept: crumbs, food, anything only looked at.'],
-  ['Rung 1 · Strangers', 'Ladder/', 'Toaster and kettle at Strangers.'], ['Rung 2 · Neighbours', 'Ladder/', 'Toaster and kettle at Neighbours.'],
-  ['Rung 3 · Friends', 'Ladder/', 'Toaster and kettle at Friends.'], ['Rung 4 · Sweethearts', 'Ladder/', 'Toaster and kettle at Sweethearts.'],
-  ['Rung 5 · Married', 'Ladder/', 'Toaster and kettle at Married.'], ['Friends · Shared breakfast', 'Ladder/', 'They share toast every morning.'],
-  ['Friends · Inside jokes', 'Ladder/', 'The crumb-tray joke, the steam whistle bit.'], ['Detour · Feud', 'Ladder/', 'A feud over the last slice of bread.'],
-  ['Fuse 1 · Calm', 'Plot/', 'The fuse box hums quietly.'], ['Fuse 2 · Sparks', 'Plot/', 'Lights flicker, the box sparks.'],
-  ['Fuse · Fixed for good', 'Plot/', 'The tape holds; the kitchen is safe.'], ['Secret 1 · Hidden', 'Plot/', 'The kettle hides something about the fuse.'],
-  ['Clue · Burnt cord', 'Plot/', 'A cord with scorch marks behind the fridge.'], ['Clue · Alibi', 'Plot/', 'The kettle says it was boiling at the time.'],
-  ['Clue · Crumbs', 'Plot/', 'A crumb trail leads to the fuse box.'], ['The Kitchen', 'World/', 'The counter, the window, the fuse box.'],
-  ['Toaster', 'Characters/', 'Chrome, two slots, a crumb tray.'], ['Kettle', 'Characters/', 'Whistles when nervous.'],
-  ['Session · 2026-10-01 12-00', 'Sessions/', 'The kettle boiled over.'],
-  ['Breakup · Still next door', 'Ladder/', 'They broke up but still live next door.'], ['Divorce · The aftermath', 'Ladder/', 'Divorced, still neighbours, awkward breakfasts.'],
-  ['Day · Breakfast rush', 'World/', 'Toast, steam, a race for the counter.'], ['Day · Tea time', 'World/', 'The kettle\'s finest hour.'],
-  ['Item · Duct tape', 'Plot/', 'A roll of silver duct tape — fixes almost anything, for a while.'],
-  ['Married · How they act', 'Ladder/', 'Affectionate, calls the toaster “dear”, protective.'], ['Married · What counts', 'Ladder/', 'A wedding both accept — not a joke, not a dream.'],
-  ['Married · The town hall', 'Ladder/', 'The ceremony at the town hall.', 'era: future — DeepLore\'s field filter hides it in this chat'], ['Session · 2026-10-01 14-00', 'Sessions/', 'The fuse blew.'],
-].map(([title, folder, summary, hiddenBy]) => ({ title, folder, summary, hiddenBy }));
+const VAULT = [];   // the vault's entries — from DeepLore (HD.vault); the standalone preview has none
 let searchQ = '';
 const tl_closed = new Set();
 // tools
@@ -3989,7 +3848,7 @@ const EW = (() => {
       <div class="bc">${crumbs}</div><div class="vlist">${body}</div>`;
   }
   // the run stamp: in SillyTavern the chat's own character / instance, plus the date
-  const runFm = f => (HD ? String(HD.stamp || '').split('\n').filter(Boolean) : isRunFolder(f.folder) ? [`instance: ${runLetter().toLowerCase()}`, 'character: Toaster'] : []);
+  const runFm = f => (HD ? String(HD.stamp || '').split('\n').filter(Boolean) : isRunFolder(f.folder) ? [`instance: ${runLetter().toLowerCase()}`] : []);
   // Mero's marks on a draft she wrote: on unless Settings › New entries › Mark them is off
   const marksOn = () => HD?.newEntry?.mark !== false;
   const meroFrom = () => (st.loose ? (HD?.newEntry?.from || `“${chat}”`) : `"${chat}" · board ${cur} · ${st.label}`);
@@ -4234,7 +4093,7 @@ function nameDialog(title, help, def, ok) {
     inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); s.querySelector('#dlg-ok').click(); } if (e.key === 'Escape') { e.preventDefault(); closeDialog(); } };
   });
 }
-const TARGETS = ['test bot 1 (character)', 'branch test', 'branch test - Branch #1', 'Claude test', 'Dragon (character)'];
+const TARGETS = [];   // the characters and chats to apply a board to — HD.targets
 function applyDialog(name, ok) {
   const on = new Set(boards[name]?.applied || []);
   dialog(`<h2>Apply "${esc(name)}" to…</h2><p class="note">A character: every new chat with it starts on this board. A chat: just that chat. Each chat keeps its own place on the board.</p>
@@ -4256,24 +4115,16 @@ function openDialog() {
     });
   });
 }
-const FOLDERS = ['Ladder/', 'Plot/', 'World/', 'The Kitchen/', 'Sessions/', 'Characters/', 'Places/', 'Judge/', 'Instance {run}/'];
-// Miinthe's run letters: a run folder carries the letter in its name ("Instance B"); the board stores it as a pattern
+const FOLDERS = [];   // the vault's folders — from DeepLore (HD.vault)
+// run letters: a run folder carries the letter in its name ("Instance B"); the board stores it as a pattern
 // and reads the current run's folder. Play-born entries it writes there get instance: + character: stamps.
-const RUNS = { 'Claude test': 'B', 'branch test': 'A' };
+const RUNS = {};   // this chat's run — HD.run
 const runLetter = () => RUNS[chat] || RUNS[play?.prevChat] || 'A';
 const isRunFolder = f => /\{run\}/.test(f);
 const realFolder = f => f.replace('{run}', runLetter());
 const folderLabel = f => (isRunFolder(f) ? `🔁 ${f.replace('{run}/', '').trim()} (this run: ${runLetter()})` : f);
 const inFolders = (folder, list = doc.folders) => list.some(f => realFolder(f) === folder);
-const TREE = { name: 'Lorebooks', kids: [
-  { name: '00 Inbox', kids: [] },
-  { name: "04 Corvin; The Dragon's Fated Mate", kids: [{ name: 'base', kids: [{ name: 'Places', kids: [{ name: 'The City' }, { name: 'The Palace' }, { name: 'The Realm' }] }, { name: 'People' }, { name: 'The Story' }] }, { name: 'Sessions' }] },
-  { name: '10 Toaster & Kettle', kids: [
-    { name: 'Ladder', value: 'Ladder/' }, { name: 'Plot', value: 'Plot/' }, { name: 'World', value: 'World/' }, { name: 'Places', value: 'Places/' }, { name: 'Judge', value: 'Judge/' },
-    { name: 'Characters', value: 'Characters/' }, { name: 'Sessions', value: 'Sessions/' }, { name: 'The Kitchen', value: 'The Kitchen/' },
-    { name: 'Runs', kids: [{ name: 'Instance — this run', value: 'Instance {run}/', run: true, behind: ['Instance A', 'Instance B'] }] },
-  ] },
-] };
+const TREE = { name: 'Vault', kids: [] };   // the vault's folder tree — HD.tree
 // Folders to pick from: the board's own (plus what is already set); a board that reads none yet
 // offers every folder of the vault, so the list is never empty (Miinthe, 2026-10-05).
 const folderChoices = (extra = []) => {
@@ -4389,7 +4240,7 @@ function tplStrip(o) {
 }
 const tplLine = t => `${t.name}${(t.steps || []).length ? ': ' + t.steps.map(x => x?.name ?? x).join(' → ') : ''}`;
 function newDialog() {
-  let pick = 'Simple love story';
+  let pick = templates[0] || '(blank)';   // the first starter template (or blank in the standalone preview)
   const draw = s => s.querySelectorAll('[data-tpl]').forEach(b => b.classList.toggle('on', b.dataset.tpl === pick));
   dialog(`<h2>New storyboard</h2><p class="note">Step 1 of 2 · start from a template</p>
     <div class="choices">${['(blank)', ...templates].map(n => { const d = n === '(blank)' ? 'an empty board' : TEMPLATES[n].trackers.map(tplLine).join(' · '); const c = `<button class="choice" data-tpl="${esc(n)}" title="${esc(d)}"><span><b>${esc(n)}</b><small>${esc(d)}</small></span></button>`; return `<div class="tplrow">${c}${n === '(blank)' || BUILTIN_TEMPLATES.has(n) ? '<span class="tplx-sp"></span>' : `<button class="btn tplx" data-tplx="${esc(n)}" title="Delete this template" aria-label="Delete the template ${esc(n)}">✕</button>`}</div>`; }).join('')}</div>
@@ -5243,7 +5094,7 @@ function createEntryDialogOld(o, t, label, draft) {
   const role0 = atPlace ? (ents(o).length ? 'often' : 'place') : null;
   const folders = folderChoices([t.folder, t.growFolder, t.source]);
   // the run stamp: in SillyTavern the chat's own character / instance (as Auto Lorebook stamps them), plus the date
-  const runFm = () => (HD ? [...String(HD.stamp || '').split('\n').filter(Boolean), 'date: (when it is written)'] : isRunFolder(f.folder) ? [`instance: ${runLetter().toLowerCase()}`, 'character: Toaster'] : []);
+  const runFm = () => (HD ? [...String(HD.stamp || '').split('\n').filter(Boolean), 'date: (when it is written)'] : isRunFolder(f.folder) ? [`instance: ${runLetter().toLowerCase()}`] : []);
   const f = { title: '', type: atPlace && role0 === 'place' ? 'location' : 'character', folder: folders[0] || '', keys: '', summary: '', body: '', kind: 'context', role: role0 };
   const fm = () => {
     const lines = ['---', `type: ${f.type}`];
@@ -6079,15 +5930,7 @@ function renderMail(el) {
   wireSw(el, 'm-unsure', on => { a.unsure = on; if (on && a.level === 'rarely') a.level = 'some'; touch(); });
   wireSw(el, 'm-suggest', on => { a.suggest = on; if (on) a.level = 'often'; touch(); });
 }
-const LINKS = {
-  'Rung 3 · Friends': ['Friends · Shared breakfast', 'Friends · Inside jokes', 'Toaster', 'Kettle'],
-  'Rung 5 · Married': ['Married · How they act', 'Married · The town hall', 'The Kitchen'],
-  'Place · Kitchen': ['Place · Counter', 'Place · Pantry', 'The Kitchen'],
-  'Place · Counter': ['Place · Kitchen', 'Toaster'],
-  'Fuse 2 · Sparks': ['Clue · Burnt cord', 'Kettle'],
-  'Clue · Burnt cord': ['Fuse 2 · Sparks', 'Toaster'],
-  'Toaster': ['Kettle', 'The Kitchen'], 'Kettle': ['Toaster', 'The Kitchen'],
-};
+const LINKS = {};   // which entries link to which — from DeepLore (HD.links)
 const linksOf = title => LINKS[title] || [];
 const backlinks = title => Object.keys(LINKS).filter(k => LINKS[k].includes(title));
 let readerBack = null;
@@ -6945,25 +6788,6 @@ const BARS = { high: '▮▮▮', medium: '▮▮▯', low: '▮▯▯' };
 const recheckSelect = (attr, sug) => `<select ${attr}>${[1, 2, 3, 5, 10].map(n => `<option value="${n}"${n === (sug || 3) ? ' selected' : ''}>${n}${n === sug ? ' (suggested)' : ''}</option>`).join('')}</select>`;
 const confPill = (c, css) => (c ? `<span class="conf ${c}" style="--who:${css}" title="${c} confidence"><span class="bars">${BARS[c]}</span>${c}</span>` : '');
 // history of places, state and collections — they get their own slim lanes on the timeline
-if (!HD) TIMELINE['Claude test'].push(   // the toy example only — inside SillyTavern the timeline is the chat's own
-  { m: 1, t: 'where', place: 'kitchen', who: 'start', why: 'Board applied — the first place.' },
-  { m: 4, t: 'where', place: 'counter', who: 'auto', q: 'She sets the toaster back on the counter and plugs it in.', why: 'The scene is now at the counter.', conf: 'high' },
-  { m: 8, t: 'where', place: 'garden', who: 'auto', q: 'They step out into the garden for some air.', why: 'Both go outside — the scene moves to the garden.', conf: 'high' },
-  { m: 12, t: 'where', place: 'counter', who: 'auto', q: 'Back inside, the kettle is already whistling on the counter.', why: 'Back in the kitchen, at the counter.', conf: 'medium' },
-  { m: 1, t: 'world', field: 'day', val: 1, who: 'start', why: 'Board applied — Day 1.' },
-  { m: 1, t: 'world', field: 'weather', val: 'Sunny', who: 'start', why: 'Board applied.' },
-  { m: 6, t: 'world', field: 'weather', val: 'Cloudy', who: 'auto', q: 'Clouds roll in over the garden fence.', why: 'Plainly cloudy now.', conf: 'high' },
-  { m: 9, t: 'world', field: 'day', val: 2, who: 'auto', q: 'The next morning, the toaster wakes before the kettle.', why: 'A new day.', conf: 'high' },
-  { m: 11, t: 'world', field: 'weather', val: 'Raining', who: 'auto', q: 'Rain starts drumming on the window.', why: 'It is raining.', conf: 'high' },
-  { m: 14, t: 'world', field: 'day', val: 3, who: 'hand', why: 'Set by hand.' },
-  { m: 29, t: 'world', date: 'party', who: 'auto', q: "In two days there's a huge party at the harbor. Wanna go?", why: 'A plain plan with a day — added to the calendar.', conf: 'high' },
-  { m: 3, t: 'stash', item: 'Tape', state: 'have', who: 'auto', q: 'She tucks the roll of tape into the drawer — for later.', why: 'Plainly kept.', conf: 'high' },
-  { m: 7, t: 'clues', item: 'Burnt cord', state: 'uncovered', who: 'auto', q: 'Behind the toaster, the cord is scorched black.', why: 'Seen plainly — uncovered.', conf: 'high' },
-  { m: 10, t: 'clues', item: "Kettle's alibi", state: 'lost', who: 'auto', q: "Turns out the kettle wasn't at the market after all.", why: 'The alibi falls apart.', conf: 'medium' },
-  { m: 13, t: 'clues', item: 'Crumb trail', state: 'uncovered', who: 'auto', q: 'A trail of crumbs leads from the counter to the fuse box.', why: 'Seen plainly — uncovered.', conf: 'high' },
-  { m: 5, t: 'suspects', item: 'The Kettle', state: 'suspected', who: 'auto', q: 'Why does the kettle keep looking at the fuse box?', why: 'A suspicion is voiced.', conf: 'medium' },
-  { m: 11, t: 'suspects', item: 'The Fridge', state: 'cleared', who: 'auto', q: 'The fridge was humming in the cellar the whole night.', why: 'An alibi that holds.', conf: 'high' },
-);
 const isLaneEv = e => e.person !== undefined || e.meter !== undefined || e.set !== undefined || e.place !== undefined || e.field !== undefined || e.date !== undefined || e.item !== undefined;
 const laneText = (e, t) => {
   if (e.person !== undefined) return e.ctext || e.person;   // 🎭 the Cast (2026-10-13)
@@ -6975,10 +6799,7 @@ const laneText = (e, t) => {
   if (e.item !== undefined) return `${e.item}: ${stateById(t, e.state)?.label ?? e.state}`;
   return '';
 };
-const CHAPTERS = {
-  'Claude test': [{ name: 'Getting close', from: 1, to: 6, c: 2 }, { name: 'The fuse arc', from: 6, to: 13, c: 1 }],
-  'branch test': [{ name: 'Neighbours', from: 14, to: 21, c: 5 }, { name: 'The fallout', from: 21, to: 38, c: 4 }],
-};
+const CHAPTERS = {};   // a chat's chapters — kept with the chat (HD)
 const tlOpen = new Set(), tlFull = new Set();
 const tlHidden = new Set();          // kinds switched off in the legend
 const shown = e => !tlHidden.has(e.who);
