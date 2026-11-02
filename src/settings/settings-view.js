@@ -105,6 +105,7 @@ const fx = {
     rebuild: () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(() => buildIndexWithReuse(), 500); },
     reindex: () => buildIndexWithReuse(),
     sync: () => setupSyncPolling(buildIndexWithReuse, buildIndexWithReuse),
+    drawer: () => import('../bar/icon-drawer.js').then(m => m.refreshDrawer()),   // the floating icon drawer (2026-11-02)
     debug: () => notifyDebugModeChanged(),
 };
 
@@ -933,6 +934,7 @@ async function act(name, btn) {
             redraw();
         });
         case 'previewJudge': return previewJudgePrompt();
+        case 'iconDrawer': { const { openDrawerPicker } = await import('../bar/icon-drawer.js'); return openDrawerPicker(); }
         case 'cleanupRun': { W?.close(); const { pickRunToClean } = await import('../run-cleanup.js'); return pickRunToClean(); }
         case 'scopeChat': ui.scope = 'chat'; return redraw();
         case 'openBoard': { W?.close(); const { openBoardWindow } = await import('../board-window.js'); return openBoardWindow(); }

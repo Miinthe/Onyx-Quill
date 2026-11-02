@@ -52,6 +52,13 @@ function items(n) {
         // world layer stage 5 (Miinthe, 2026-10-19: "how can I start a rumor from a scene or message") — only where the world is on
         window.__dleWorldRumorsOn?.() ? { label: 'Start a rumor from this…', icon: 'leak', sub: 'someone spreads it', onClick: () => window.__dleWorldRumorFrom?.(n) } : null,
         'sep',
+        // guided swipe + compare (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 3)
+        isNewestReply(n)
+            ? { label: 'Guided swipe…', icon: 'wand', sub: 'swipe with a direction', onClick: async () => (await import('./guided-swipe.js')).openGuide(n) }
+            : { label: 'Guided swipe…', icon: 'wand', sub: 'newest reply only', disabled: true },
+        (m.swipes?.length || 0) > 1
+            ? { label: 'Compare swipes', icon: 'eye', sub: `${m.swipes.length} swipes`, onClick: async () => (await import('./guided-swipe.js')).compareSwipes(n) }
+            : null,
         isNewestReply(n)
             ? { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'undoes its changes', onClick: async () => { const { reEvaluate } = await import('./reevaluate.js'); reEvaluate(); } }
             : { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'newest reply only', disabled: true },

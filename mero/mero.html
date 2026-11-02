@@ -186,7 +186,8 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 .seg button[aria-pressed="true"] { background: var(--dk-mero-soft); border-color: var(--dk-mero); color: var(--dk-ink); font-weight: 700; box-shadow: none; }
 .seg button:disabled { opacity: .45; }
 .seg.jobs { display: grid; grid-template-columns: 1fr 1fr; }
-/* the talk-kind filter stays one row (Miinthe, 2026-10-16: Feedback wrapped onto its own line): words only, buttons shrink */
+/* the talk-kind filter stays one row (Miinthe, 2026-10-16: Feedback wrapped onto its own line). Since Games joined, the words
+   were cut off ("Yappi…"): "All" in words, the kinds as their icons with the name as tooltip (Miinthe, 2026-11-02) */
 #sess-f { flex-wrap: nowrap; }
 #sess-f button { min-width: 0; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; }
 .sess { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-ink); text-align: left; }
@@ -206,6 +207,15 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 .note .n1 > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .note .n2 { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .note .n2 .btn { height: 22px; padding: 0 6px; font-size: var(--dk-fs-s); }
+/* 🚫 phrases to avoid — the slop guard (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 2) */
+.slop-add { display: flex; gap: 6px; flex-wrap: wrap; }
+.slop-add input { flex: 1 1 140px; min-width: 0; }
+.slop-add select { flex: none; height: 32px; border: 1px solid var(--dk-line); background: var(--dk-page); color: var(--dk-ink); border-radius: 8px; padding: 0 6px; font-size: var(--dk-fs-s); }
+.note.slop { --kc: var(--dk-bad); }
+.sl-m { height: 18px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--dk-bad); background: var(--dk-bad-soft); color: var(--dk-bad); font: 700 calc(10.5px * var(--fontScale, 1))/1 var(--dk-f-body); cursor: pointer; vertical-align: 1px; }
+.sl-m.less { border-color: var(--dk-wait); background: var(--dk-wait-soft); color: var(--dk-wait); }
+.note .hot { color: var(--dk-wait); }
+.slop-pre { font-size: var(--dk-fs-s); color: var(--dk-muted); background: var(--dk-desk); border: 1px solid var(--dk-line); border-radius: 8px; padding: 6px 8px; overflow-wrap: anywhere; }
 .ntext { cursor: text; }
 .ntext textarea { width: 100%; font: inherit; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 2px 4px; background: var(--dk-page); }
 .blur { filter: blur(5px); user-select: none; }
@@ -368,7 +378,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
       <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
       <div class="db">
         <input class="srch" id="sess-q" type="search" placeholder="Search talks" aria-label="Search talks">
-        <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="💭 Yapping">Yapping</button><button data-v="plan" aria-pressed="false" title="🗺 Planning">Planning</button><button data-v="fb" aria-pressed="false" title="✋ Feedback">Feedback</button><button data-v="game" aria-pressed="false" title="🎲 Games">Games</button></div>
+        <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="Yapping" aria-label="Yapping">💭</button><button data-v="plan" aria-pressed="false" title="Planning" aria-label="Planning">🗺</button><button data-v="fb" aria-pressed="false" title="Feedback" aria-label="Feedback">✋</button><button data-v="game" aria-pressed="false" title="Games" aria-label="Games">🎲</button></div>
         <div id="sess-moments" class="stack"></div>
         <div id="sess-list" class="stack"></div>
       </div>
@@ -382,6 +392,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
       <div class="db">
         <div class="nbooks" role="group" aria-label="Your notebooks"><span class="mini" title="Your own notebooks for this chat">Your notebooks</span><button class="btn" data-tool="notebook" title="Author’s notebook: your notes for this chat, sent to the writer"></button><button class="btn" data-tool="ai-notebook" title="AI notepad: notes the AI kept from its replies"></button><button class="btn" data-tool="scribe-history" title="Scribe history: the session notes, newest first"></button></div>
         <div id="notes-list" class="stack"></div>
+        <div id="slop-list" class="stack"></div>
       </div>
     </section>
     <section class="drawer" id="d-pitch" hidden aria-label="Pitches">
@@ -655,8 +666,31 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $$('[data-from]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.from) || cur; drawTalk(); drawSessions(); openD('d-sess'); });
     $$('[data-ned]').forEach(el => el.onclick = () => { if (el.classList.contains('blur')) return; const n = notes.find(x => x.id === el.dataset.ned); el.innerHTML = `<textarea rows="2" aria-label="Note text">${esc(n.text)}</textarea>`; const ta = el.querySelector('textarea'); ta.focus(); let fin = false; const done2 = ok => { if (fin) return; fin = true; if (ok && ta.value.trim() && ta.value.trim() !== n.text) HOST.updateNote(n.id, { text: ta.value.trim() }); else drawNotes(); }; ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done2(true); } if (e.key === 'Escape') done2(false); }; ta.onblur = () => done2(true); el.onclick = null; });
     drawNotesline();
+    drawSlop();
   }
   $('#new-note').onclick = () => { const n = HOST.addNote({ kind: 'steer', text: 'A new note — click to edit', last: 'pinned', scope: 'chat', on: false }); if (n) { toast('A new note, switched off — write it, then switch it on.'); } };
+
+  // 🚫 phrases to avoid — the slop guard (Miinthe, 2026-11-02): with her notes, because that's how they reach the writer
+  function drawSlop() {
+    const S = D.slop;
+    if (!S) { $('#slop-list').innerHTML = ''; return; }
+    const SC = { all: 'Everywhere', board: 'This story', char: 'This character' };
+    const opts = Object.entries(SC).filter(([v]) => v === 'all' || (v === 'board' && S.where.board) || (v === 'char' && S.where.charKey));
+    const row = p => `<div class="note slop"><div class="n1"><span>“${esc(p.t)}” <button class="sl-m${p.m === 'less' ? ' less' : ''}" data-slm="${p.id}" title="Tap to switch between banned and use less">${p.m === 'less' ? 'use less' : 'banned'}</button></span><button class="btn ghost" data-slrm="${p.id}" title="Remove" aria-label="Remove">${I('trash')}</button></div>
+      <div class="n2"><select aria-label="Where it applies" data-slsc="${p.id}">${Object.entries(SC).filter(([v]) => v === p.sc || opts.some(o => o[0] === v)).map(([v, x]) => `<option value="${v}"${v === p.sc ? ' selected' : ''}>${v === p.sc && v !== 'all' ? esc(p.kn) : x}</option>`).join('')}</select><span>${p.src === 'learned' ? 'learned' : 'added by you'}</span><span>${p.n ? `<b class="hot">${p.n}× lately</b>` : 'not used lately'}</span></div></div>`;
+    const add = `<div class="slop-add"><input class="dk-field" id="sl-in" placeholder="Add a phrase to avoid…" aria-label="New phrase to avoid"><select id="sl-sc" aria-label="Where it applies">${opts.map(([v, x]) => `<option value="${v}">${x}</option>`).join('')}</select><button class="btn" id="sl-add">Add</button></div>`;
+    const writer = `<div class="mini">What the writer gets now (only phrases it used lately):</div><div class="slop-pre">${S.writer.length ? S.writer.map(x => '🚫 ' + esc(x)).join('<br>') : 'Nothing: none of your phrases came up lately.'}</div>`;
+    const open = OPEN['notes-slop'] !== false;
+    $('#slop-list').innerHTML = `<button class="foldh" data-fold="notes-slop" aria-expanded="${open}"><span>${open ? '▾' : '▸'}</span> 🚫 Phrases to avoid <span class="cnt">${S.phrases.length}</span></button>`
+      + (open ? add + S.phrases.map(row).join('') + writer + fold('notes-fine', 'It’s fine: never suggested', S.fine.map(f => `<div class="note"><div class="n1"><span>“${esc(f.t)}”${f.sc !== 'all' ? ` <span class="mini">${esc(f.kn)}</span>` : ''}</span><button class="btn ghost" data-slunf="${esc(f.t)}" title="Let Mero suggest it again" aria-label="Suggest again">✕</button></div></div>`)) : '');
+    const addIt = () => { const v = $('#sl-in').value.trim(); if (!v) return; if (HOST.slopAdd(v, { m: 'ban', sc: $('#sl-sc').value })) toast(`“${v}” is on your list.`); };
+    $('#sl-add') && ($('#sl-add').onclick = addIt);
+    $('#sl-in') && ($('#sl-in').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addIt(); } });
+    $$('[data-slm]').forEach(b => b.onclick = () => HOST.slopUpdate(b.dataset.slm, { m: b.classList.contains('less') ? 'ban' : 'less' }));
+    $$('[data-slsc]').forEach(x => x.onchange = () => HOST.slopUpdate(x.dataset.slsc, { sc: x.value }));
+    $$('[data-slrm]').forEach(b => b.onclick = () => HOST.slopRemove(b.dataset.slrm));
+    $$('[data-slunf]').forEach(b => b.onclick = () => HOST.slopUnfine(b.dataset.slunf));
+  }
 
   // Mero's settings have one home: Settings › Mero (Miinthe, 2026-10-17 — "the mero setting button should open the general settings just on the mero tap").
   // Her own drawer copy is gone; the ☆ in the rail opens Settings there. Left here: the AI pick inside Pitches, for a first pitch with no AI set.
@@ -846,6 +880,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
           : r.kind === 'find' ? `<button class="btn p" data-ra="keep">Keep it</button><button class="btn" data-ra="refuse">Not worth keeping</button>`
           : r.kind === 'date' ? `<button class="btn p" data-ra="add">Add it</button><button class="btn" data-ra="skip">Leave it</button>`
           : r.kind === 'plan' ? `<button class="btn" data-ra="more" title="The timer starts again">⏳ More time</button><button class="btn" data-ra="redirect" title="Mero rewrites the rest to lead back from where the story is now — you review it">↩️ Redirect</button><button class="btn" data-ra="evolve" title="Mero rewrites the plan to follow where the story went — you review it">🌱 Evolve</button><button class="btn ghost" data-ra="abandon">🗑 Abandon</button>`
+          : r.kind === 'slop' ? `<button class="btn m2" data-ra="ban">Ban it</button><button class="btn" data-ra="less" title="Allowed, but only where it really fits">Use it less</button><button class="btn" data-ra="fine" title="Never asked again (good for a catchphrase)">It’s fine</button>`
           : r.kind === 'entry' ? `<button class="btn m2" data-ra="apply">${r.change?.find ? 'Change the entry' : 'Add to the entry'}</button><button class="btn" data-redit-btn>Edit first</button><button class="btn" data-ra="notcanon" title="A one-off — Mero won't ask about this line again">Not canon</button>` : ''}<button class="btn ghost" data-rask>${I('talks')}Ask</button></div>
         ${r.recheckWhy ? `<div class="mini">The helper suggests re-checking in ${r.recheck}: ${esc(r.recheckWhy)}</div>` : ''}</div>`;
     const groups = RQ_GROUP.map(([k, h, sub]) => { const l = R.waiting.filter(r => r.from === k); return l.length ? `<h4 class="rg rg-${k}"${sub ? ` title="${esc(sub)}"` : ''}>${h}</h4>` + l.map(one).join('') : ''; }).join('');
@@ -870,6 +905,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
         const ok = await HOST.answer(r.id, b.dataset.ra, Number(card.querySelector('[data-rn]')?.value) || null, ed ? { text: ed.value } : null);
         if (ok && ok.ok === false) { toast(ok.msg || 'Not done.'); refresh(); }
         else if (!ok) { toast('That question is no longer open.'); refresh(); }
+        else if (r.kind === 'slop') toast(b.dataset.ra === 'fine' ? `Okay, “${r.t}” is fine. I won’t bring it up again.` : `“${r.t}” is on your list${b.dataset.ra === 'less' ? ' as use less' : ''}. It’s with my notes.`);
         else if (r.kind === 'entry') toast(b.dataset.ra === 'apply' ? `Written into ${r.entry.title} — Undo is in Answered.` : 'Not canon — Mero won\'t ask about that line again.');
         else if (r.now && !(HOST.load().requests?.waiting || []).some(x => x.now)) toast('The reply goes on — with your answer already in place.');
       });

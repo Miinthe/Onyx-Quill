@@ -149,6 +149,11 @@ export function updateNote(id, patch) {
 }
 export function removeNote(id) { forEachNoteList((list, set) => { if (list.some(n => n.id === id)) set(list.filter(n => n.id !== id)); }); }
 
+// other parts add their own lines to the author's notes: the slop guard's 🚫 phrases, a guided swipe's 🧭 (2026-11-02)
+const writerSinks = new Set();
+/** fn(type) → [{ kind: 'dont'|'steer'|'fact', text }] for the reply being written. */
+export function addWriterSink(fn) { writerSinks.add(fn); return () => writerSinks.delete(fn); }
+
 /** The `[Author's notes]` block for the reply being written now (index.js, every generation). */
 export function authorNotesForGeneration(type = 'normal') {
     try {
@@ -158,6 +163,7 @@ export function authorNotesForGeneration(type = 'normal') {
         if (ini) list.unshift({ id: 'initiative', kind: 'steer', text: ini, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } });
         // 🪜 running plans: the current beat, as the plan says the writer sees it (pitches.js)
         for (const text of pitchSink?.writerLines?.() || []) list.push({ id: 'plan', kind: 'steer', text, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } });
+        for (const fn of writerSinks) { try { for (const x of fn(type) || []) list.push({ id: 'sink', kind: x.kind, text: x.text, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } }); } catch (err) { console.warn('[DLE] writer line skipped:', err?.message || err); } }
         return authorNotesBlock(list, replyCtx(type));
     } catch (err) { console.warn('[DLE] Mero notes skipped:', err?.message || err); return ''; }
 }

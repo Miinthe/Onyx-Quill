@@ -230,6 +230,8 @@ export const SECTIONS = [
             { id: 'ui-bar', label: 'Show the DeepLore bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },
             { id: 'ui-notes', label: 'My notes', tip: 'A notes button on the bar: your own notes, never sent to the AI', type: 'switch', key: 'notesEnabled' },
             { id: 'ui-barqr', label: 'Hide SillyTavern’s Quick Reply row', tip: 'While you have Quick Replies starred on the bar', type: 'switch', key: 'barHideStQr' },
+            { id: 'ui-drawer', label: 'Floating icon drawer', tip: 'Other extensions’ floating icons wait in a small tab on the bar instead of over your chat', type: 'seg', key: 'iconDrawer', opts: [['off', 'off'], ['phone', 'phone only'], ['always', 'always']], fx: 'drawer', old: 'Floating icons / floating buttons' },
+            { id: 'ui-drawerpick', label: 'Icons in the drawer', tip: 'Each floating icon on this screen, with a switch', type: 'btn', btn: 'Choose…', act: 'iconDrawer', dis: s => (s.iconDrawer || 'off') === 'off', disWhy: 'The drawer is off' },
         ] },
         { t: 'Notices', rows: [
             { id: 'ui-pop', label: 'Pop-ups', type: 'seg', key: 'noticeStyle', opts: [['summary', 'one per message'], ['each', 'every change']], old: 'Notice style' },

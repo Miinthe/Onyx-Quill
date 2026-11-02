@@ -19,7 +19,7 @@ import * as K from '../kit/kit.js';
 import { live, saveLiveState, notifyLive, sceneAway, setSceneAway } from '../board-live.js';
 import { boardStore, putBoard } from '../board-store.js';
 import { BOARD_KEY } from '../storyboard-pure.js';
-import { runningCasts, personNow, handChange, HOW_WORDS, MAX_PLANS, appearsOf, oddsOf } from '../cast-pure.js';
+import { runningCasts, personNow, handChange, HOW_WORDS, MAX_PLANS, appearsOf, oddsOf, castLines } from '../cast-pure.js';
 import { SPEAKS_WORDS, speaksOf, moveItem, addItem, setText, isMine } from '../cast-voice-pure.js';
 import { speakAs, cannotSpeak, npcSpeaking } from '../cast-voice.js';
 import { askOffscreen } from '../cast.js';
@@ -37,7 +37,7 @@ const peek = new Set();             // hidden people you are peeking at (until t
 const asking = new Set();           // "What has X been up to?" waiting for its answer
 let writing = null;                 // the round item you are writing a line for
 const drafts = new Map();           // what you typed in that box so far (survives a redraw)
-const folds = { round: true, people: true };
+const folds = { round: true, people: true, ties: true };
 let pending = false, scrollToSel = false, pressing = false;
 
 function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
@@ -74,7 +74,7 @@ function draw() {
     // Miinthe 2026-10-18: nobody twice — who is in the round carries their line there, People lists only the others
     const inRound = x => q.some(y => y.kind === 'npc' && y.cast === x.c.id && y.person === x.p.id);
     const rest = people.filter(x => !inRound(x));
-    root.append(roundFold(L, q, people, nameOf), peopleFold(L, rest, q, people.filter(x => x.n.here).length));
+    root.append(roundFold(L, q, people, nameOf), peopleFold(L, rest, q, people.filter(x => x.n.here).length), tiesFold(L, people));
     if (scrollToSel) { scrollToSel = false; root.querySelector('.dle-cv-tile.sel, .dle-cv-qi.sel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
 
@@ -321,6 +321,72 @@ function peopleFold(L, people, q, present) {
     else if (!openTile) body.push(el('div', 'dle-cv-none', 'Everyone is in this round.'));
     const f = K.fold({ title: 'People', summary: `Present: ${present}`, open: folds.people, body, onToggle: v => { folds.people = v; if (!v && sel) { sel = null; draw(); } } });   // closing People lets go of the opened person (Miinthe, 2026-10-16)
     f.classList.add('dle-cv-people');
+    return f;
+}
+
+// ── Ties (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 5) ─────────────────────
+// How each Cast person feels about the others, the main character and {{user}}: a few words, ↗ warming / ↘ cooling.
+// The director writes them when the scene shows it; tap a line for the quote; ✎ edit · 📌 the AI leaves it · ✕ remove.
+const openQuote = new Set();
+function tiesFold(L, people) {
+    const body = [];
+    const targets = x => [...people.filter(y => y.k !== x.k).map(y => y.p.name), mainName(), userName()].filter((v, k, a) => v && a.indexOf(v) === k);
+    let count = 0;
+    for (const x of people) {
+        const { c, p, k, n } = x, veiled = !!p.hidden && !peek.has(k);
+        const sec = el('div', 'dle-cv-ties');
+        const h = el('div', 'dle-cv-tieh');
+        h.append(el('span', n.here ? 'dle-cv-dot here' : 'dle-cv-dot'), el('b', '', esc(p.name)), el('span', 'dle-cv-mini', n.here ? 'in the scene' : 'not here'));
+        sec.append(h);
+        const set = list => change(c.id, p.id, 'ties', list);
+        if (veiled) sec.append(veil(`${n.ties.length} tie${n.ties.length === 1 ? '' : 's'}`));
+        else {
+            n.ties.forEach((t, j) => {
+                count++;
+                const r = el('div', 'dle-cv-tie');
+                const line = el('button', 'dle-cv-tiel'); line.type = 'button';
+                line.innerHTML = `→ <span class="${t.to === userName() ? 'dle-cv-tu' : t.to === mainName() ? 'dle-cv-tm' : ''}">${esc(t.to)}</span>: <b>${esc(t.w)}</b>${t.tr ? ` <span class="dle-cv-tr ${t.tr}" title="${t.tr === 'up' ? 'warming' : 'cooling'}">${t.tr === 'up' ? '↗' : '↘'}</span>` : ''}${t.pin ? ' <span class="dle-cv-pinned" title="Pinned: the AI leaves it">📌</span>' : ''}`;
+                line.title = t.q ? 'Tap for the line it came from' : 'Set by hand';
+                line.addEventListener('click', () => { const id = `${k}|${t.to}`; if (openQuote.has(id)) openQuote.delete(id); else openQuote.add(id); draw(); });
+                const ed = K.iconButton({ icon: 'edit', title: 'Edit this tie', onClick: () => {
+                    const i = el('input', 'dk-field'); i.value = t.w; i.setAttribute('aria-label', `How ${p.name} feels about ${t.to}`);
+                    let done = false;
+                    const save = () => { if (done) return; done = true; const v = i.value.trim(); i.blur(); if (v && v !== t.w) set(n.ties.map((y, m) => (m === j ? { ...y, w: v, pin: true } : y))); setTimeout(render, 0); };
+                    i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') { done = true; i.blur(); setTimeout(render, 0); } });
+                    i.addEventListener('blur', save);
+                    line.replaceWith(i); i.focus(); i.select();
+                } });
+                const pin = K.iconButton({ icon: 'pinI', on: t.pin, title: t.pin ? 'Unpin: the AI may change it again' : 'Pin: the AI leaves it as it is', onClick: () => set(n.ties.map((y, m) => (m === j ? { ...y, pin: !y.pin } : y))) });
+                pin.setAttribute('aria-pressed', String(t.pin));
+                const rm = K.iconButton({ icon: 'close', title: 'Remove this tie', onClick: () => set(n.ties.filter((_, m) => m !== j)) });
+                r.append(line, ed, pin, rm);
+                sec.append(r);
+                if (openQuote.has(`${k}|${t.to}`)) sec.append(el('div', 'dle-cv-tq', t.q ? `“${esc(t.q)}”${t.i != null ? ` · #${t.i}` : ''}` : 'Set by hand.'));
+            });
+            if (!n.ties.length) sec.append(el('div', 'dle-cv-none', 'No ties yet.'));
+            const add = K.button({ label: 'Tie', icon: 'plus', kind: 'quiet' });
+            add.classList.add('dle-cv-addtie');
+            add.addEventListener('click', () => {
+                const r = el('div', 'dle-cv-erow');
+                const who = el('select', 'dk-field'); who.setAttribute('aria-label', 'Toward whom');
+                for (const nm of targets(x)) { const o = el('option'); o.value = nm; o.textContent = nm; who.append(o); }
+                const i = el('input', 'dk-field'); i.placeholder = 'How they feel, in a few words'; i.setAttribute('aria-label', 'How they feel');
+                let saved = false;
+                const save = () => { const v = i.value.trim(); if (!v || saved) return; saved = true; const list = n.ties.filter(y => y.to.toLowerCase() !== who.value.toLowerCase()); set([...list, { to: who.value, w: v, tr: '', q: '', i: null, pin: true }]); };
+                i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); i.blur(); } });
+                r.addEventListener('focusout', () => setTimeout(() => { if (r.contains(document.activeElement)) return; if (i.value.trim()) save(); else { r.remove(); add.hidden = false; } if (pending) render(); }));
+                r.append(who, i); add.hidden = true; add.before(r); i.focus();
+            });
+            sec.append(add);
+        }
+        body.push(sec);
+    }
+    // what the writer gets this turn: ties of people in the scene only
+    const told = castLines(L.board, L.state).filter(l => / feels: /.test(l));
+    body.push(el('div', 'dle-cv-tiew', `<b>The writer gets</b> ${told.length ? told.map(esc).join(' ') : 'nothing: nobody in the scene has ties yet.'}`));
+    const f = K.fold({ title: 'Ties', summary: `${count} tie${count === 1 ? '' : 's'}`, open: folds.ties, body, onToggle: v => { folds.ties = v; } });
+    f.classList.add('dle-cv-tiesf');
+    f.title = 'How Cast people feel about each other, the main character and you. The director fills them in when the scene shows it.';
     return f;
 }
 

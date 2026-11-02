@@ -195,6 +195,8 @@ export const defaultSettings = {
     dkTheme: 'follow',                     // overhaul: DeepLore's look — 'follow' SillyTavern's theme, or always 'light' / 'dark'
     barShow: true,                         // overhaul: the DeepLore bar above the message box
     barHideStQr: true,                     // overhaul: SillyTavern's own Quick Reply row steps aside while the bar holds starred ones                          // overhaul: the shared parts' "Don't ask me again" answers (per kind of removal)
+    iconDrawer: 'off',                     // floating icon drawer (Miinthe, 2026-11-02): 'off' | 'phone' | 'always'
+    iconDrawerOff: [],                     // the icons switched off in it (their keys: '#id', '.class' or 't:title')
     barHot: [],                            // overhaul 2a: the bar's starred quick replies, [{ set, label }] (SillyTavern's own Quick Replies)
     barDraft: '',                          // overhaul 2a: the bar's saved reply draft (kept with the account, so it follows her to the phone)
     drawerCompactTabs: false,              // false = icon + text (default), true = icon-only
@@ -420,7 +422,8 @@ export const settingsConstraints = {
     storyTrackerConnectionMode: { enum: ['profile'] },   // LOCAL PATCH (Miinthe, 2026-10-03)
     noticeStyle: { enum: ['summary', 'each'] },   // LOCAL PATCH (Miinthe, 2026-10-13)
     newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
-    runCleanupMode: { enum: ['trash', 'delete'] },       // run cleanup (2026-10-27)
+    runCleanupMode: { enum: ['trash', 'delete'] },
+    iconDrawer: { enum: ['off', 'phone', 'always'] },   // floating icon drawer (2026-11-02)       // run cleanup (2026-10-27)
     meroConnectionMode: { enum: ['profile'] },
     worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an

@@ -355,6 +355,8 @@ export function normalizeState(raw, board) {
                 ...(arr(v.rolled).length ? { rolled: arr(v.rolled).map(String).slice(-12) } : {}),
                 // what they did while away (cast-pure offscreenChanges) — was dropped here, so the Cast tab never showed it (found 2026-10-18)
                 ...(arr(v.offscreen).length ? { offscreen: arr(v.offscreen).filter(x => isObj(x) && x.text).map(x => ({ text: String(x.text), ...(Number.isFinite(x.from) ? { from: x.from } : {}), ...(Number.isFinite(x.to) ? { to: x.to } : {}) })) } : {}),
+                // ties (2026-11-02): how they feel about someone — cast-pure.js normTie keeps the shape
+                ...(arr(v.ties).length ? { ties: arr(v.ties).filter(x => isObj(x) && x.to && x.w).map(x => ({ to: String(x.to), w: String(x.w), ...(x.tr === 'up' || x.tr === 'down' ? { tr: x.tr } : {}), ...(x.q ? { q: String(x.q) } : {}), ...(Number.isFinite(x.i) ? { i: x.i } : {}), ...(x.pin === true ? { pin: true } : {}) })) } : {}),
                 ...(arr(v.knows).length ? { knows: arr(v.knows).filter(k => isObj(k) && k.fact).map(k => ({ id: String(k.id ?? ''), fact: String(k.fact), how: String(k.how || 'saw'), ...(k.quote ? { quote: String(k.quote) } : {}), ...(Number.isFinite(k.i) ? { i: k.i } : {}) })) } : {}),
             }]));
         }

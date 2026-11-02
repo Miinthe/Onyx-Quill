@@ -62,6 +62,7 @@ export function resultText(choice, n) {
         accept: 'Accepted', deny: 'Denied', wait: `Re-check in ${n || 3}`, keep: 'Kept', refuse: 'Not kept', add: 'Added', skip: 'Left out',
         apply: 'Written into the entry', notcanon: 'Not canon', auto: 'Applied on its own', undone: 'Undone',
         dropped: 'Dropped — the reply it held was stopped',
+        ban: 'Banned', less: 'Use it less', fine: 'It’s fine',   // the slop guard (slop.js)
         abandon: 'Plan abandoned', more: 'More time', redirect: 'Redirect — review it in 💡', evolve: 'Evolve — review it in 💡',   // 🪜 plans (pitches.js)
     }[choice] || choice;
 }

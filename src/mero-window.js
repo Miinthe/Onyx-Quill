@@ -24,6 +24,7 @@ import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequest
 import { lookAtLore, undoEntry, meroLooking, onLookChanged, initMeroLore } from './mero-lore.js';   // ☆ entry ideas
 import * as P from './pitches.js';   // 💡 pitches (step 4, 2026-10-14)
 import { fitHeight, gapCards } from './panel/mero-view-pure.js';   // overhaul (side panel v13)
+import { slopList, addPhrase, updatePhrase, removePhrase, unFine, onSlopChanged } from './slop.js';
 
 let frame = null, popped = false, float = null;
 const clone = o => JSON.parse(JSON.stringify(o ?? null));
@@ -40,6 +41,7 @@ function load() {
         profiles: (extension_settings?.connectionManager?.profiles || []).map(p => ({ id: p.id, name: p.name || p.id })), profileId: getSettings().meroProfileId || '',
         side: getSettings().drawerSide === 'left' ? 'left' : 'right',   // her rail follows the panel's side (v13)
         gaps: gapsView(),
+        slop: slopList(),   // the slop guard's phrase list, with her notes (2026-11-02)
         // who a pitch may focus on besides the Cast: the main character and Miinthe's persona (Miinthe 2026-10-18)
         people: { main: getContext()?.groupId ? '' : (getContext()?.name2 || ''), user: getContext()?.name1 || '' },
     });
@@ -187,6 +189,8 @@ window.__dleMeroHost = {
     openSettings: async section => { try { const { openSettingsView } = await import('./settings/settings-view.js'); openSettingsView({ section }); } catch (err) { console.warn('[DLE] settings did not open', err); } },
     setConnection: id => { const s = getSettings(); s.meroConnectionMode = 'profile'; s.meroProfileId = String(id || ''); saveSettingsDebounced(); refresh(); },
     answer: (id, choice, n, extra) => answerRequest(id, choice, n, extra),
+    // 🚫 phrases to avoid (the slop guard, 2026-11-02)
+    slopAdd: (t, o) => addPhrase(t, o), slopUpdate: (id, patch) => updatePhrase(id, patch), slopRemove: id => removePhrase(id), slopUnfine: t => unFine(t),
     gap: (id, what) => { const r = gapAction(id, what); refresh(); return r; },
     lookLore: () => lookAtLore({ force: true }),
     undoEntry: id => undoEntry(id),
@@ -266,6 +270,7 @@ function updateMailSignal() {
 /** Wire once: redraw on every change, on chat switch; mount when the tab opens. */
 export function initMeroTab() {
     onMeroChanged(refresh);
+    onSlopChanged(refresh);
     P.onPitchesChanged(refresh);
     P.initPitches();
     initRequests();

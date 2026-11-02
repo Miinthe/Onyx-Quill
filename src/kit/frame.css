@@ -154,3 +154,20 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .dle-pickbar button { border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; padding: 3px 10px; cursor: pointer; }
 body.dle-picking .dle-pick-hi { outline: 2px dashed var(--dk-mero, #ff79b0) !important; outline-offset: 2px; cursor: copy !important; }
 body.dle-picking-over #deeplore-panel { visibility: hidden !important; }
+
+/* the floating icon drawer (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/Kj4iETYq5q3pXYrTWEj2nq): other
+   extensions' floating icons wait in a low tab on top of the bar, at its left end (the right is the swipe button) */
+.dle-docked { visibility: hidden !important; pointer-events: none !important; }
+#dle-bar.dle-has-drawer .dle-bar-bubble { left: 70px; }
+.dle-idrawer { position: absolute; left: 12px; bottom: 100%; z-index: 5; }
+.dle-idr-tab { display: flex; align-items: center; justify-content: center; gap: 5px; height: 15px; min-width: 42px; padding: 0 9px; border: 1px solid var(--dk-accent); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--dk-accent-soft); color: var(--dk-accent-ink); font: 700 10px/1 var(--dk-f-body); cursor: pointer; }
+.dle-idr-chev { font-size: 9px; }
+.dle-idr-badge { min-width: 14px; height: 13px; padding: 0 4px; border-radius: 999px; background: var(--dk-wait); color: var(--dk-on-accent); font: 700 9.5px/13px var(--dk-f-body); text-align: center; }
+.dle-idr-fan { position: fixed; z-index: 4000; display: flex; gap: 6px; padding: 6px; border-radius: 12px; background: var(--dk-page); border: 1px solid var(--dk-line-strong); box-shadow: 0 10px 28px rgba(0, 0, 0, .45); }
+.dle-idr-fan[hidden] { display: none; }
+.dle-idr-it { display: flex; align-items: center; justify-content: center; padding: 4px; border: 0; border-radius: 10px; background: transparent; color: var(--dk-ink); font: var(--dk-fs-s)/1.2 var(--dk-f-body); cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.dle-idr-it:hover, .dle-idr-it:focus-visible { background: var(--dk-accent-soft); outline: none; }
+.dle-idr-ic { position: relative; width: 40px; height: 40px; padding: 8px; border-radius: 50%; border: 1px solid var(--dk-line-strong); background: var(--dk-menu); display: grid; place-items: center; font-size: 18px; }
+.dle-idr-ic > svg, .dle-idr-ic > img { width: 100%; height: 100%; }
+.dle-idr-ic .dle-idr-badge { position: absolute; top: -4px; right: -6px; }
+.dle-idr-pick { display: flex; flex-direction: column; gap: 8px; }

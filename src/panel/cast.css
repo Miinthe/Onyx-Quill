@@ -94,3 +94,23 @@ button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-
 @media (hover: none) { .dle-cv-fav { opacity: .55; } .dle-cv-fav.on { opacity: 1; } }
 .dle-cv-tile.wide .dle-cv-fav { position: static; order: 9; }
 .dle-cv-tile > .dle-cv-fav { font-size: 21px; }   /* beats the kit's button font size */
+
+/* Ties (Miinthe, 2026-11-02): how Cast people feel about each other, the main character and {{user}} — lowkey, words only */
+.dle-cv-ties { display: grid; gap: 2px; padding: 4px 4px 8px; border-bottom: 1px dashed var(--dk-line); }
+.dle-cv-ties:last-of-type { border-bottom: 0; }
+.dle-cv-tieh { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dle-cv-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; border: 1px solid var(--dk-muted); }
+.dle-cv-dot.here { background: var(--dk-good); border-color: var(--dk-good); }
+.dle-cv-tie { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.dle-cv-tie .dk-ib { flex: none; width: 24px; height: 24px; }
+.dle-cv-tie > input.dk-field { flex: 1; min-width: 0; height: 28px; }
+.dle-cv-tiel { all: unset; box-sizing: border-box; flex: 1; min-width: 0; padding: 3px 6px; border-radius: 6px; font-size: var(--dk-fs); overflow-wrap: anywhere; cursor: pointer; }
+.dle-cv-tiel:hover, .dle-cv-tiel:focus-visible { background: var(--dk-accent-soft); outline: none; }
+.dle-cv-tu { color: var(--dk-mero); font-weight: 700; }
+.dle-cv-tm { color: var(--dk-accent-ink); font-weight: 700; }
+.dle-cv-tr.up { color: var(--dk-good); } .dle-cv-tr.down { color: var(--dk-bad); }
+.dle-cv-pinned { font-size: var(--dk-fs-s); }
+.dle-cv-tq { margin: 0 0 2px 18px; font-size: var(--dk-fs-s); font-style: italic; color: var(--dk-muted); overflow-wrap: anywhere; }
+.dle-cv-ties > .dk-btn { justify-self: start; }
+.dle-cv-tiew { margin: 6px 4px 2px; padding: 6px 8px; border: 1px solid var(--dk-line); border-radius: 8px; font-size: var(--dk-fs-s); color: var(--dk-muted); overflow-wrap: anywhere; }
+.dle-cv-tiew b { color: var(--dk-ink); }

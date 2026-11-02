@@ -115,7 +115,10 @@ import { initNotes } from './src/notes.js';                // My notes (Miinthe,
 import { initWorld, worldWriterLines } from './src/world/world.js';          // the world layer (Miinthe, 2026-10-19)
 import { initRunCleanup } from './src/run-cleanup.js';                       // cleaning up a run (Miinthe, 2026-10-27)
 import { initRegenWatch, keepForDelete } from './src/regen.js';   // regenerate keeps hand + world changes (2026-10-19)
-import { initBar } from './src/bar/bar.js';               // overhaul 2a: the DeepLore bar above the message box
+import { initBar } from './src/bar/bar.js';
+import { initIconDrawer } from './src/bar/icon-drawer.js';   // floating icon drawer on the bar (Miinthe, 2026-11-02)
+import { initSlop } from './src/slop.js';
+import { initGuidedSwipe } from './src/guided-swipe.js';   // guided swipe: a direction for a reply's swipes (Miinthe, 2026-11-02)   // the slop guard: phrase list, learning, underlines, rewrite (Miinthe, 2026-11-02)               // overhaul 2a: the DeepLore bar above the message box
 import { initReplyMenu } from './src/reply-menu.js';      // overhaul 2a: one DeepLore ⋯ on each reply
 
 // ============================================================================
@@ -2043,6 +2046,9 @@ async function _doInit() {
         registerCharacterCommands();   // LOCAL PATCH (Miinthe, 2026-10-04): characters own their folders (WIP commands)
         try { initMeroTab(); } catch (err) { console.warn('[DLE] Mero tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
         try { initBar(); } catch (err) { console.warn('[DLE] bar skipped:', err?.message || err); }   // overhaul 2a (2026-10-15)
+        try { initIconDrawer(); } catch (err) { console.warn('[DLE] icon drawer skipped:', err?.message || err); }   // 2026-11-02
+        try { initSlop(); } catch (err) { console.warn('[DLE] slop guard skipped:', err?.message || err); }   // 2026-11-02
+        try { initGuidedSwipe(); } catch (err) { console.warn('[DLE] guided swipe skipped:', err?.message || err); }   // 2026-11-02
         try { initNotes(); } catch (err) { console.warn('[DLE] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
         try { initRegenWatch(); } catch (err) { console.warn('[DLE] regenerate watch skipped:', err?.message || err); }
         try { initWorld(); } catch (err) { console.warn('[DLE] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)

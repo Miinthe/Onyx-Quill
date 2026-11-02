@@ -6703,3 +6703,26 @@ body.dle-board-open { overflow: hidden; }
 .dle-rc-run { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; text-align: left; padding: 8px 10px; border: 1px solid var(--dk-line); border-radius: 9px; background: var(--dk-menu); color: var(--dk-ink); }
 .dle-rc-run:hover { border-color: var(--dk-accent); }
 .dle-rc-run .dle-rc-mini { margin-left: auto; }
+
+/* the slop guard (Miinthe, 2026-11-02): a listed phrase in the chat, the rewrite chip on a selection, the before/after */
+.mes_text .dle-slop { text-decoration: underline wavy #e2b04f; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; border-radius: 3px; }
+.mes_text .dle-slop.less { text-decoration-style: dotted; }
+.mes_text .dle-slop:hover { background: rgba(226, 176, 79, .18); }
+.dle-rw-chip { position: fixed; z-index: 4000; height: 28px; padding: 0 12px; border: 1px solid var(--dk-accent); border-radius: 999px; background: var(--dk-page); color: var(--dk-accent-ink); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); box-shadow: 0 6px 18px rgba(0, 0, 0, .4); cursor: pointer; }
+.dle-rw { display: flex; flex-direction: column; gap: 8px; }
+.dle-rw-was, .dle-rw-now { padding: 8px 10px; border-radius: 8px; font-size: var(--dk-fs); white-space: pre-wrap; overflow-wrap: anywhere; }
+.dle-rw-was { background: var(--dk-bad-soft); color: var(--dk-muted); text-decoration: line-through; }
+.dle-rw-now { background: var(--dk-good-soft); color: var(--dk-ink); outline: none; }
+.dle-rw-now:focus { box-shadow: 0 0 0 2px var(--dk-good); }
+
+/* guided swipe (Miinthe, 2026-11-02): the direction for this reply's swipes, above the message box; compare swipes */
+.dle-guide-chip { order: -2; flex: 0 0 calc(100% - 12px); display: flex; align-items: center; gap: 6px; margin: 4px 6px 0; padding: 3px 4px 3px 10px; border: 1px solid var(--dk-accent); border-radius: 999px; background: var(--dk-accent-soft); color: var(--dk-accent-ink); font: var(--dk-fs-s)/1.3 var(--dk-f-body); min-width: 0; }
+.dle-guide-chip .dle-guide-t { flex: 1; min-width: 0; color: var(--dk-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dle-guide-chip button { flex: none; border: 0; background: transparent; color: var(--dk-accent-ink); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+.dle-guide-chip button:hover, .dle-guide-chip button:focus-visible { background: var(--dk-selected); outline: none; }
+.dle-cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.dle-cmp-one { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-menu); min-width: 0; }
+.dle-cmp-one.on { border-color: var(--dk-accent); }
+.dle-cmp-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dle-cmp-tag { font-size: var(--dk-fs-s); padding: 1px 8px; border-radius: 999px; background: var(--dk-accent-soft); color: var(--dk-accent-ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dle-cmp-text { font-size: var(--dk-fs); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 40vh; overflow-y: auto; }

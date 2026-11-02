@@ -83,8 +83,9 @@ export async function runDirector(chatMessages, type, signal) {
             return i === -1 ? m : { ...m, _i: i };
         });
     if (!messages.length) return applied;
-    const boardLines = (() => { try { return liveWriterLines().filter(l => !/^IN THE SCENE:|^JUST ARRIVED:|\(acts on this, never says it outright\)| knows: |'s own messages — never write them/.test(l)); } catch { return []; } })();
-    const user = directorUser(L0.board, L0.state, messages, { cardText, boardLines, placeName: h => placeOf(trackerOf(L0.board, h.place), h.at)?.name ?? null, nowI: at });
+    const boardLines = (() => { try { return liveWriterLines().filter(l => !/^IN THE SCENE:|^JUST ARRIVED:|\(acts on this, never says it outright\)| knows: | feels: |'s own messages — never write them/.test(l)); } catch { return []; } })();
+    const names = { mainName: getContext()?.groupId ? '' : (getContext()?.name2 || ''), userName: getContext()?.name1 || '' };   // ties (2026-11-02)
+    const user = directorUser(L0.board, L0.state, messages, { cardText, boardLines, placeName: h => placeOf(trackerOf(L0.board, h.place), h.at)?.name ?? null, nowI: at, ...names });
     if (!user) return applied;
     let answer = { people: [], away: [] };
     try {
@@ -101,7 +102,7 @@ export async function runDirector(chatMessages, type, signal) {
     // re-read: the story helper or Miinthe may have changed someone meanwhile
     const L = live();
     if (!L) return applied;
-    const { changes, rejected, wishes, leaves } = validateDirector(answer.people, L.board, L.state, messages);
+    const { changes, rejected, wishes, leaves } = validateDirector(answer.people, L.board, L.state, messages, names);
     if (leaves.length && !replaying()) chat_metadata[LEAVES_KEY] = { at, list: leaves };
     if (rejected.length) console.debug('[DLE] cast director answers not applied:', rejected);
     // a plan sends someone looking (step 2) — not while a regenerate replays the round: that redoes it, nobody new joins

@@ -43,6 +43,23 @@ export const KNOWS_TOLD = 6;
 export const LEARNS_PER_TURN = 3;
 /** What a learned fact is about; "everyday" ones are dropped (live 2026-10-13: told not to, the director still kept "Miinthe made tea"). */
 export const FACT_KINDS = ['secret', 'clue', 'promise', 'lie', 'feelings', 'danger', 'plan', 'everyday'];
+/**
+ * TIES (Miinthe, 2026-11-02 — "some lowkey cast relationship board that includes towards user and main lead"; mock-up
+ * https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 5): how a Cast person feels about someone — another Cast
+ * person, the main character or {{user}} — in a few words, no meters: { to, w ("distrusts, but follows anyway"),
+ * tr: '' | 'up' (warming) | 'down' (cooling), q (the quote it came from), i, pin (Miinthe set it: the AI leaves it) }.
+ * The main character ↔ {{user}} story is the board's: a tie always belongs to a Cast person. The director writes them
+ * only when the scene shows it (a word-for-word quote); the writer gets them for people in the scene only.
+ */
+export const MAX_TIES = 8;
+export const TIES_PER_TURN = 3;
+const TREND = { warmer: 'up', cooler: 'down' };
+export function normTie(t) {
+    if (!isObj(t)) return null;
+    const to = String(t.to ?? '').trim().slice(0, 60), w = clip(t.w, 80);
+    if (!to || !w) return null;
+    return { to, w, tr: t.tr === 'up' || t.tr === 'down' ? t.tr : '', q: t.q ? clip(t.q, 200) : '', i: Number.isFinite(t.i) ? t.i : null, pin: t.pin === true };
+}
 
 // ── reading ─────────────────────────────────────────────────────────────────
 
@@ -59,6 +76,7 @@ export function personNow(st, cast, p) {
         plans: Array.isArray(raw.plans) ? raw.plans : arr(p.plans).map((text, k) => ({ id: `b${k}`, text })),
         thoughts: isObj(raw.thoughts) && raw.thoughts.text ? raw.thoughts : null,
         knows: arr(raw.knows),
+        ties: arr(raw.ties).map(normTie).filter(Boolean),
         // 🔇 muted in this chat (Miinthe 2026-10-18): they never step in, offer, turn up or get thought for by themselves —
         // + and Speak now still bring them in
         muted: raw.muted === true,
@@ -443,11 +461,12 @@ For each of them:
 - "leave": true if they would now walk out of the scene of their own accord — a plan takes them elsewhere, they are upset, bored or done here. They will say so in their own message before they go; never make anyone vanish. "leaveWhy": a few words why (or null). Most turns: false.
 - "speak": true if they would want to say something themselves right after the next reply — a plan says it's time, they are spoken to, something touches them; else false. "speakWhy": a few words why (or null).
 - "left": if the newest messages plainly show them leaving the scene, the line that shows it, copied WORD FOR WORD; otherwise null. Then give no plans or thoughts for the scene they left.
+- "ties": how they feel about someone — another person listed, the main character or the author's character (both named at the top). Give one whenever the newest messages show a feeling toward someone that their "Ties" don't say yet or say differently: anger, a grudge, trust, warmth, fear, a debt, jealousy. Nothing shown, nothing new: []. Each: {"to": that person's name, "feel": a few plain words ("distrusts, but follows anyway", "owes her a favor", "old friends, a little tense"), "trend": "warmer", "cooler" or "same", "quote": the line that shows it, copied WORD FOR WORD}. Only this person's own feelings. Leave out ties marked (pinned). Most turns: [].
 - "why": a few words on what in the newest messages changed something (or "nothing new").
 
 People listed under AWAY are not in the scene, but their lives go on off-screen: they live nearby and know where to find the others. For each, answer in "away": {"person", "comes": true or false, "why": a few words}. "comes": true when their plan or what they want would bring them here now — the plan is pressing ("today", "at once"), or the moment is an opening for it (a quiet moment, someone alone). Nobody needs to send for them. A plan that can wait, waits. When someone comes, also give "did": two or three short clauses of what they did before coming (true to their plans).
 
-Answer with JSON only: {"people": [{"person": "...", "thoughts": "...", "plans": [{"id": "..." or null, "text": "...", "status": "keep" | "new" | "done" | "dropped"}], "wants": null, "learned": [], "left": null, "speak": false, "speakWhy": null, "leave": false, "leaveWhy": null, "why": "..."}], "away": [{"person": "...", "comes": false, "why": "...", "did": null}]}`;
+Answer with JSON only: {"people": [{"person": "...", "thoughts": "...", "plans": [{"id": "..." or null, "text": "...", "status": "keep" | "new" | "done" | "dropped"}], "wants": null, "learned": [], "ties": [], "left": null, "speak": false, "speakWhy": null, "leave": false, "leaveWhy": null, "why": "..."}], "away": [{"person": "...", "comes": false, "why": "...", "did": null}]}`;
 
 export const DIRECTOR_SCHEMA = {
     name: 'cast_director',
@@ -458,7 +477,8 @@ export const DIRECTOR_SCHEMA = {
         wants: { type: ['string', 'null'] }, why: { type: 'string' },
         left: { type: ['string', 'null'] }, speak: { type: 'boolean' }, speakWhy: { type: ['string', 'null'] }, leave: { type: 'boolean' }, leaveWhy: { type: ['string', 'null'] },
         learned: { type: 'array', items: { type: 'object', properties: { fact: { type: 'string' }, how: { type: 'string', enum: HOW }, kind: { type: 'string', enum: FACT_KINDS }, quote: { type: 'string' } }, required: ['fact', 'how', 'kind', 'quote'] } },
-    }, required: ['person', 'thoughts', 'plans', 'speak'] } },
+        ties: { type: 'array', items: { type: 'object', properties: { to: { type: 'string' }, feel: { type: 'string' }, trend: { type: 'string', enum: ['warmer', 'cooler', 'same'] }, quote: { type: 'string' } }, required: ['to', 'feel', 'quote'] } },
+    }, required: ['person', 'thoughts', 'plans', 'speak', 'ties'] } },
     away: { type: 'array', items: { type: 'object', properties: { person: { type: 'string' }, comes: { type: 'boolean' }, why: { type: ['string', 'null'] }, did: { type: ['string', 'null'] } }, required: ['person', 'comes'] } } }, required: ['people'] },
 };
 
@@ -466,10 +486,12 @@ export const DIRECTOR_SCHEMA = {
  * The director's user message. `cardText(p)` → the character card's description (+ personality), `boardLines` → the
  * board as the writer sees it, `messages` → the newest messages ({ name, mes }).
  */
-export function directorUser(board, st, messages, { cardText = () => '', boardLines = [], placeName = () => null, nowI = null } = {}) {
+export function directorUser(board, st, messages, { cardText = () => '', boardLines = [], placeName = () => null, nowI = null, mainName = '', userName = '' } = {}) {
     const here = presentPeople(board, st), away = awayCandidates(board, st, nowI);
     if (!here.length && !away.length) return '';
-    const lines = [here.length ? 'IN THE SCENE' : 'IN THE SCENE: none of these people'];
+    const lines = [];
+    if (mainName || userName) lines.push(`THE MAIN CHARACTER: ${mainName || '(none)'} · THE AUTHOR'S CHARACTER: ${userName || '(unnamed)'}`, '');
+    lines.push(here.length ? 'IN THE SCENE' : 'IN THE SCENE: none of these people');
     for (const { cast, p, now } of here) {
         lines.push('', `## ${p.name}`);
         const card = clip(cardText(p), 1500);
@@ -481,6 +503,7 @@ export function directorUser(board, st, messages, { cardText = () => '', boardLi
         lines.push(`Wants: ${now.wants || '(not set — leave it null)'}`);
         lines.push(`Plans: ${now.plans.length ? now.plans.map(x => `[${x.id}] ${x.text}`).join(' · ') : '(none yet)'}`);
         lines.push(`Knows: ${now.knows.length ? now.knows.slice(-12).map(k => `${k.fact} (${HOW_WORDS[k.how] || k.how})`).join('; ') : '(nothing special yet)'}`);
+        if (now.ties.length) lines.push(`Ties: ${now.ties.map(t => `→ ${t.to}: ${t.w}${t.pin ? ' (pinned)' : ''}`).join(' · ')}`);
         if (now.thoughts) lines.push(`Last thought: ${now.thoughts.text}`);
         const off = arr(st?.cast?.[cast.id]?.[p.id]?.offscreen).slice(-2);
         if (off.length) lines.push(`Off-screen before: ${off.map(x => x.text).join(' / ')}`);
@@ -544,7 +567,7 @@ export function validateComes(away, board, st, nowI = null) {
  * from `messages`, nothing already known, at most three a turn). Untrusted: unknown people, people not in the scene and
  * empty texts are dropped.
  */
-export function validateDirector(people, board, st, messages = []) {
+export function validateDirector(people, board, st, messages = [], { mainName = '', userName = '' } = {}) {
     const changes = [], rejected = [], wishes = [], leaves = [];   // wishes: who wants to speak after the reply; leaves: who wants to walk out (they say so first)
     const here = presentPeople(board, st);
     const done = new Set();
@@ -590,6 +613,29 @@ export function validateDirector(people, board, st, messages = []) {
             changes.push(...k.changes.map(c => ({ ...c, who: 'director' })));
             rejected.push(...k.rejected);
         }
+        // ties (2026-11-02): to someone the story has, shown by a word-for-word line; a pinned one stays as Miinthe set it
+        if (arr(d?.ties).length) {
+            const names = [...runningCasts(board, st).flatMap(c2 => arr(c2.people).map(x => x.name)).filter(nm => low(nm) !== low(p.name)), mainName, userName].filter(Boolean);
+            const list = now.ties.map(x => ({ ...x })), said = [];
+            let firstQuote = null;
+            for (const t of arr(d.ties).slice(0, TIES_PER_TURN)) {
+                const want = low(t?.to), to = names.find(nm => low(nm) === want) || names.find(nm => low(nm).split(/\s+/)[0] === want.split(/\s+/)[0]);
+                const w = clip(t?.feel, 80), quote = String(t?.quote ?? '').trim();
+                if (!to || !w) { rejected.push({ what: `${p.name} → ${t?.to ?? '?'}`, reason: to ? 'no feeling given' : 'nobody by that name' }); continue; }
+                const mi = quote ? findQuoteMatch(quote, messages) : -1;
+                if (mi === -1) { rejected.push({ what: `${p.name} → ${to}`, reason: 'quote not found in the messages' }); continue; }
+                const old = list.find(x => low(x.to) === low(to));
+                if (old?.pin) continue;
+                const tr = TREND[low(t?.trend)] || '';
+                if (old && sameText(old.w, w) && !tr) continue;
+                const tie = { to, w, tr, q: clip(quote, 200), i: Number.isFinite(messages[mi]?._i) ? messages[mi]._i : null, pin: false };
+                if (old) Object.assign(old, tie); else list.push(tie);
+                said.push(`${to}: ${w}`); firstQuote ||= quote;
+            }
+            // the newest ones kept when there are too many (pinned ones always)
+            while (list.length > MAX_TIES) { const k = list.findIndex(x => !x.pin); if (k === -1) break; list.splice(k, 1); }
+            if (said.length) changes.push({ ...base, field: 'ties', from: now.ties, to: list, said, quote: firstQuote });
+        }
         const learned = arr(d?.learned).filter(x => low(x?.kind) !== 'everyday');
         if (arr(d?.learned).length > learned.length) rejected.push({ what: `${p.name}: ${arr(d.learned).length - learned.length} everyday fact(s)`, reason: 'everyday — not worth knowing' });
         if (learned.length) {
@@ -614,6 +660,7 @@ export function castLines(board, st) {
     for (const { p, now } of here) {
         const name = p.name.toUpperCase();
         if (now.plans.length) out.push(`${name} (acts on this, never says it outright): ${now.plans.map(x => x.text.replace(/[.\s]+$/, '')).join('; ')}.`);
+        if (now.ties.length) out.push(`${name} feels: ${now.ties.map(t => `about ${t.to}: ${t.w.replace(/[.\s]+$/, '')}${t.tr === 'up' ? ' (warming)' : t.tr === 'down' ? ' (cooling)' : ''}`).join('; ')}.`);
         if (now.knows.length) out.push(`${name} knows: ${now.knows.slice(-KNOWS_TOLD).map(k => `${k.fact.replace(/[.\s]+$/, '')} (${HOW_WORDS[k.how] || k.how})`).join('; ')}. Anything else, ${p.name} doesn't know.`);
         // step 3: someone who speaks in their own messages isn't voiced by the writer (live 2026-10-13: asked a question,
         // the main character answered AS Kettle). "Call only" people stay the writer's to voice until called.
@@ -655,7 +702,7 @@ export function describeCastChange(board, ch) {
     if (ch.field === 'here' && ch.to && ch.arrive === 'plan') return `${n} comes looking for you${p?.hidden ? '' : ch.reason ? ` — ${ch.reason}` : ''}`;
     if (ch.field === 'here') return `${n} ${ch.to ? 'comes into the scene' : 'leaves the scene'}`;
     if (ch.field === 'muted') return ch.to ? `${n} is muted: quiet until you bring them in` : `${n} is unmuted`;
-    if (p?.hidden) return ch.field === 'offscreen' ? `${n} was busy while away (hidden)` : ch.field === 'knows' ? `${n} learned something (hidden)` : ch.field === 'plans' ? `${n}'s plans changed (hidden)` : ch.field === 'wants' ? `${n} wants something new (hidden)` : `${n} (hidden)`;
+    if (p?.hidden) return ch.field === 'ties' ? `${n}'s feelings about someone changed (hidden)` : ch.field === 'offscreen' ? `${n} was busy while away (hidden)` : ch.field === 'knows' ? `${n} learned something (hidden)` : ch.field === 'plans' ? `${n}'s plans changed (hidden)` : ch.field === 'wants' ? `${n} wants something new (hidden)` : `${n} (hidden)`;
     if (ch.field === 'knows') return `${n} now knows: ${ch.add?.fact} (${HOW_WORDS[ch.add?.how] || ch.add?.how})`;
     if (ch.field === 'plans') {
         const parts = [...arr(ch.added).map(t => `new plan: ${t}`), ...arr(ch.ended).map(e => `${e.status === 'done' ? 'done' : 'dropped'}: ${e.text}`)];
@@ -663,6 +710,7 @@ export function describeCastChange(board, ch) {
     }
     if (ch.field === 'wants') return `${n} now wants: ${ch.to}`;
     if (ch.field === 'thoughts') return `${n} thinks: ${ch.to?.text ?? ''}`;
+    if (ch.field === 'ties') return arr(ch.said).length ? `${n} → ${arr(ch.said).join(' · ')}` : `${n}: ties changed`;
     if (ch.field === 'offscreen') return `${n}, while away: ${arr(ch.to).at(-1)?.text ?? ''}`;
     return n;
 }
