@@ -2,9 +2,9 @@
 
 My notes is a place for your own notes: OOC prompts, plot notes, names you made up, anything you want at hand. **They are never sent to the AI.** Open it with the **My notes** button on the [[DeepLore Bar]] (press it again to close).
 
-On a PC it floats over the side of the chat and ends above the message box, so you can keep typing while it is open; ⋯ → **Move to the left** / **Move to the right** picks the side (remembered). On a phone it covers the screen.
+On a PC it is one of DeepLore's panels: it fills the side of the chat like the side panel, and when it shares a side with the side panel or World they become tabs at the bottom (see [[Drawer|Side Panel]] › Panel tabs). Pick the side with ⋯ → **Move to the left** / **Move to the right**, by right-clicking its lock, or by dragging its tab (remembered). On a phone it covers the screen.
 
-**The lock** (🔒 in the window's header): unlocked, a click anywhere outside the window closes it. Locked, it stays open whatever you do (other chats, a reload) until you close it with the notes button or ✕. The notes button on the bar always opens and closes it. SillyTavern's own panels (AI response configuration, characters …) open over the notes, and the notes sit over DeepLore's side panel when both are on the same side.
+**The lock** (🔒 in the header, yellow when locked): unlocked, a click into the chat closes it (a click in the other DeepLore panels doesn't). Locked, it stays open whatever you do (other chats, a reload) until you close it with the notes button or ✕. The notes button on the bar opens it unlocked; right-click the button while it is open to lock or unlock it. Closing it clears the lock. SillyTavern's own panels (AI response configuration, characters …) open over the notes.
 
 Don't want it? **Settings › Interface › The bar › My notes** switches the button off. Your notes stay saved and come back when you switch it on again.
 

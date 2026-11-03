@@ -26,7 +26,7 @@
 .dle-nt-grp .gh .fold { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; border: 0; background: transparent; color: var(--dk-muted); font: 400 var(--dk-fs-xs) var(--dk-f-mono); }
 .dle-nt-grp .gh .fold .dk-i { width: 14px; height: 14px; transform: rotate(-90deg); transition: transform .15s; }
 .dle-nt-grp .gh .fold[aria-expanded="true"] .dk-i { transform: none; }
-.dle-nt-grp .empty { padding: 6px 8px; border: 1px dashed var(--dk-line); border-radius: 8px; font-size: var(--dk-fs-s); color: var(--dk-muted); }
+.dle-nt-grp .empty { padding: 6px 8px; border: 1px dashed var(--dk-line-strong); border-radius: 10px; font-size: var(--dk-fs-s); color: var(--dk-muted); }
 
 .dle-nt-card { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 7px 8px 8px 12px; border: 1px solid var(--dk-line); border-radius: 9px; background: var(--dk-desk); cursor: pointer; }
 .dle-nt-card::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 2px 2px 0; background: var(--sc); }
@@ -65,7 +65,7 @@
 .dle-nt-ed .seg button.on { border-color: var(--sc); background: color-mix(in oklab, var(--sc) 16%, var(--dk-desk)); }
 .dle-nt-ed .seg button:disabled { opacity: .45; cursor: default; }
 .dle-nt-ed .btns { display: flex; flex-wrap: wrap; gap: 6px; }
-.dle-nt-ed .btns .dk-btn { height: 32px; }
+.dle-nt-ed .btns .dk-btn { height: 28px; }   /* 1/2 buttons 28 px (coherence 2026-11-03) */
 .dle-nt-ed .dk-danger.sure { background: var(--dk-bad-soft); border-color: var(--dk-bad); }
 .dle-nt-ed .ih { font: 700 var(--dk-fs-l)/1.3 var(--dk-f-display); }
 
@@ -83,3 +83,9 @@
 @media (prefers-reduced-motion: reduce) { .dle-nt-grp .gh .fold .dk-i { transition: none; } }
 /* the formatting on where the cursor is (Miinthe, 2026-10-19) */
 .dle-notes [data-fmt].on { color: var(--dk-accent-ink); background: color-mix(in oklab, var(--dk-accent) 22%, var(--dk-page)); border-color: var(--dk-accent); }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 5 the title field: 30 px like every field, its text stays bold */
+.dle-nt-ed input:not([type="search"]):not([type="checkbox"]) { min-height: 30px; height: 30px; }
+/* 10 cards corners 10 */
+.dle-nt-card, .dle-nt-ed .seg button { border-radius: 10px; }

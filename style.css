@@ -6629,7 +6629,7 @@ body.dle-board-open { overflow: hidden; }
 }
 
 /* LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆'s glow on the side panel's tab — a big moment, want to talk about it? */
-#dle-tab-mero.dle-mero-glow { box-shadow: 0 0 0 2px #ff79b0, 0 0 12px #ff79b0; border-radius: 8px; }
+#dle-tab-mero.dle-mero-glow { box-shadow: 0 0 0 2px var(--dk-mero), 0 0 12px var(--dk-mero); border-radius: 8px; }
 
 /* LOCAL PATCH (Miinthe, 2026-10-13) — the 🎭 Cast tab (src/cast-tab.js): a working look until the UI tidy-up */
 #dle-panel-cast .dle-cast-mount { display: flex; flex-direction: column; gap: 10px; padding: 6px 2px; }

@@ -17,7 +17,9 @@ import { onTrackersChanged, notifyTrackersView } from '../trackers.js';
 import { regenDeleteNow } from '../regen.js';
 import { icon as I } from '../kit/icons.js';
 import * as K from '../kit/kit.js';
-import { worldOf, railSections, sectionTitle, openingSection, panelSide, normStore, pruneTo, freshPosts, markSeen } from './world-pure.js';
+import { worldOf, railSections, sectionTitle, openingSection, normStore, pruneTo, freshPosts, markSeen } from './world-pure.js';
+import { sidesFrom } from '../dock/dock-pure.js';
+import { saveSettingsDebounced } from '../../../../../../script.js';
 import { hookMessages, renderMessages, onMessagesClick, onMessagesKey, unreadMessages, deliverLetters, resetMessagesView, mainWriterLines, maybeTick, firePlans, continueThreads, fireAsks, onMessagesInput, nameOfKey } from './messages.js';
 import { hookRumors, rumorTick, openRumorFrom } from './rumors.js';
 import { hookFeed, renderChatter, renderNews, renderPeople, onFeedClick, onFeedKey, feedTick, resetFeedView, tagPeople, pulse } from './feed.js';
@@ -129,8 +131,11 @@ export function openWorld() {
     win = document.createElement('section');
     win.className = 'dle-world dk';
     win.setAttribute('aria-label', 'World');
-    win.innerHTML = '<div class="dle-wd-main"><div class="dle-wd-head"><h2><span class="g"></span><span class="t"></span></h2></div><div class="dle-wd-body"></div></div><nav class="dle-wd-rail" aria-label="World sections"></nav>';
-    win.querySelector('.dle-wd-head').append(K.iconButton({ icon: 'close', title: 'Close', onClick: () => closeWorld() }));
+    // the header across the top, the rail and the body under it (panel tabs, 2026-11-03: one look with the side panel)
+    win.innerHTML = '<div class="dle-wd-head"><h2><span class="g"></span><span class="t"></span></h2></div><div class="dle-wd-split"><div class="dle-wd-main"><div class="dle-wd-body"></div></div><nav class="dle-wd-rail" aria-label="World sections"></nav></div>';
+    const lockB = K.iconButton({ icon: 'unlock', title: 'Lock open', onClick: () => setWorldLocked(!locked()) });
+    lockB.dataset.lock = '';
+    win.querySelector('.dle-wd-head').append(...(phone() ? [] : [lockB]), K.iconButton({ icon: 'close', title: 'Close', onClick: () => closeWorld() }));
     win.addEventListener('click', onClick);
     // @-tagging (Miinthe, 2026-10-19): typing @ in any writing box suggests the matching names
     win.addEventListener('input', e => { if (e.target.matches?.('[data-tagbox]')) tagSuggest(e.target); });
@@ -149,12 +154,44 @@ export function openWorld() {
     win.addEventListener('keydown', e => { const b = win.querySelector('.dle-wd-body'); if (section === 'msgs') onMessagesKey(e, b, worldHere()); else onFeedKey(e, b, worldHere()); });
     // the same layer as My notes: over DeepLore's side panel, under SillyTavern's own panels while one is open
     (document.getElementById('top-settings-holder') || document.body).append(win);
-    watch(); fit(); render();
+    watch(); fit(); render(); drawLock();
+    document.addEventListener('pointerdown', outside, true);
     changed();
+}
+
+// ── the lock (panel tabs, Miinthe 2026-11-03: World works like My notes now) ───────
+// Unlocked: a click outside it closes it (not one in DeepLore's other panels or their tabs). Locked: it stays.
+// Right-click the bar's globe (while open): lock / unlock. Closing clears the lock. No lock on a phone.
+const locked = () => !phone() && getSettings().worldLocked === true;
+export function setWorldLocked(on) {
+    if (getSettings().worldLocked !== !!on) { getSettings().worldLocked = !!on; saveSettingsDebounced(); }
+    drawLock(); changed();
+}
+/** Right-click on the bar's globe: open → lock or unlock; closed → nothing (Miinthe: "only when the panel is open"). */
+export function toggleWorldLock() {
+    if (phone() || !win) return;
+    setWorldLocked(!locked());
+}
+function drawLock() {
+    const b = win?.querySelector('[data-lock]');
+    if (!b) return;
+    const on = locked();
+    b.innerHTML = I(on ? 'lock' : 'unlock');
+    b.title = (on ? 'Unlock (a click outside will close it)' : 'Lock open') + ' · right-click: move to the other side';
+    b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('on', on);
+}
+function outside(e) {
+    if (!win || locked() || win.contains(e.target)) return;
+    // DeepLore's other panels, the tabs, its bar buttons for the panels, menus, notices and pop-ups don't count
+    if (e.target.closest?.('#deeplore-panel, .dle-notes, .dle-dock-tabs, .dle-dock-drop, #dle-bar [data-b="world"], #dle-bar [data-b="notes"], #dle-bar [data-b="panel"], .dk-menu, .dk-notices, .dk-scrim, dialog[open], .popup, #dle-mero-float, .dle-pickbar')) return;
+    closeWorld();
 }
 
 export function closeWorld() {
     if (!win) return;
+    document.removeEventListener('pointerdown', outside, true);
+    if (getSettings().worldLocked === true) { getSettings().worldLocked = false; saveSettingsDebounced(); }   // closing clears the lock
     stackWatch?.disconnect(); stackWatch = null;
     sideWatch?.disconnect(); sideWatch = null;
     win.remove(); win = null;
@@ -285,16 +322,20 @@ function watch() {
     const p = document.getElementById('deeplore-panel');
     if (p) { sideWatch = new MutationObserver(fit); sideWatch.observe(p, { attributes: true, attributeFilter: ['class'] }); }
 }
+/** The panel tabs moved it to the other side (src/dock/dock.js): the rail and the classes follow. */
+export function refitWorld() { fit(); }
 /** The side opposite DeepLore's panel; PC: ends just above the message box, phone: the whole screen under the top bar. */
 function fit() {
     if (!win) return;
     const ph = phone();
     win.classList.toggle('phone', ph);
-    win.classList.toggle('left', panelSide(drawerSide()) === 'left');
-    win.classList.toggle('right', panelSide(drawerSide()) === 'right');
+    const side = sidesFrom({ ...getSettings(), drawerSide: drawerSide() }).world;
+    win.classList.toggle('left', side === 'left');
+    win.classList.toggle('right', side === 'right');
+    if (win.classList.contains('dle-dock-panel')) return;   // PC: the panel tabs place it (src/dock/dock.js)
     // room beside the chat (SillyTavern's chat column, #sheld) → docked like DeepLore's side panel; else a floating card
     const sh = document.getElementById('sheld')?.getBoundingClientRect();
-    const room = sh ? (panelSide(drawerSide()) === 'left' ? sh.left : window.innerWidth - sh.right) : 0;
+    const room = sh ? (side === 'left' ? sh.left : window.innerWidth - sh.right) : 0;
     const docked = !ph && room >= 300;
     win.classList.toggle('docked', docked);
     const f = document.getElementById('send_form');
@@ -366,6 +407,8 @@ function afterReply() {
 }
 
 export function initWorld() {
+    // World never reopens after a reload: a lock left on from before would make the next click open it locked (bug hunt)
+    if (getSettings().worldLocked === true) { getSettings().worldLocked = false; saveSettingsDebounced(); }
     setWorldSink(worldForMero());
     // the reply menu's "Start a rumor from this…" (reply-menu.js asks through these, no import loop)
     window.__dleWorldRumorsOn = () => !!worldHere()?.sections?.feed;

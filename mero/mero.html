@@ -108,7 +108,7 @@ button { cursor: pointer; }
 .askc.done .got { color: var(--dk-muted); font-size: var(--dk-fs-s); }
 .askc.done .got b { color: var(--dk-ink); font-weight: 600; }
 .pc .popen, .tpc .popen { font-size: var(--dk-fs-s); color: var(--dk-muted); font-style: italic; }
-.sess .badges { color: var(--dk-ink); font-weight: 600; }
+.sess .badges { flex: none; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); color: var(--dk-muted); font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); }   /* 9 one count look */
 .m.sys { align-self: center; padding: 0; background: none; font-size: var(--dk-fs-s); color: var(--dk-muted); }
 .m .pnos { display: block; margin-top: 4px; font-size: var(--dk-fs-s); font-weight: 700; color: var(--dk-mero); }
 .m .pnos button { border: 0; background: none; color: inherit; text-decoration: underline dotted; padding: 0; font: inherit; }
@@ -127,7 +127,7 @@ button { cursor: pointer; }
 .q { font-style: italic; color: var(--dk-muted); font-size: var(--dk-fs-s); border-left: 2px solid var(--dk-line); padding-left: 8px; }
 
 /* buttons: line icon + word (v13) */
-.btn { height: 26px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); white-space: nowrap; }
+.btn { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); color: var(--dk-ink); font-size: var(--dk-fs); white-space: nowrap; }
 .btn:hover { background: var(--dk-menu); }
 .btn .dk-i { width: 14px; height: 14px; }
 .btn.p { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
@@ -140,7 +140,7 @@ button { cursor: pointer; }
 .busy { font-size: var(--dk-fs-s); color: var(--dk-mero); padding: 0 12px 6px; }
 .err { font-size: var(--dk-fs-s); color: var(--dk-bad); padding: 4px 12px; }
 .comp { border-top: 1px solid var(--dk-line); padding: 8px; display: grid; gap: 6px; }
-.grow { width: 100%; resize: none; overflow: hidden; min-height: 32px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 5px 8px; background: var(--dk-page); color: var(--dk-ink); font: inherit; }
+.grow { width: 100%; resize: none; overflow: hidden; min-height: 30px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 5px 8px; background: var(--dk-page); color: var(--dk-ink); font: inherit; }
 .comp textarea { min-height: 38px; border-radius: 10px; padding: 8px 10px; }
 .grow:focus, .field:focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
 .grow::placeholder, .field::placeholder { color: var(--dk-muted); }
@@ -171,7 +171,12 @@ button { cursor: pointer; }
 
 .sessrow { display: flex; align-items: stretch; gap: 2px; } .sessrow > .sess { flex: 1; min-width: 0; } .sessrow .sessdel { flex: none; align-self: center; opacity: .5; } .sessrow:hover .sessdel, .sessrow .sessdel:focus-visible { opacity: 1; }
 .sessask { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--dk-bad); border-radius: 8px; width: 100%; } .sessask .row { display: flex; flex-wrap: wrap; gap: 6px; }
-#p-focus { flex-wrap: wrap; } #p-focus .fadd { border-style: dashed; color: var(--dk-muted); }
+/* Focus: pick one or more → pills, as every "several at once" row (unification, 2026-11-03) */
+#p-focus { flex-wrap: wrap; gap: 5px; padding: 0; border: 0; background: none; }
+#p-focus > button { flex: none; height: 24px; padding: 0 9px; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-page); color: var(--dk-ink); font: var(--dk-fs-s)/1 var(--dk-f-body); }
+#p-focus > button:hover { border-color: var(--dk-line-strong); }
+#p-focus > button[aria-pressed="true"] { background: var(--dk-selected); border-color: var(--dk-accent); font-weight: 400; }
+#p-focus .fadd { border-style: dashed; color: var(--dk-muted); }
 #p-focus .fpick { flex: 1 1 100%; display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-page); }
 #p-focus .fpick input { height: 28px; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 6px; background: var(--dk-panel, transparent); color: var(--dk-ink); font: inherit; }
 #p-focus .flist { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
@@ -225,25 +230,29 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 }
 
 /* folds inside the drawers */
-.foldh { width: 100%; min-height: 32px; display: flex; gap: 8px; align-items: center; padding: 0 8px; border: 1px solid var(--dk-line); border-radius: 10px; background: transparent; text-align: left; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
+.foldh { width: 100%; min-height: 36px; display: flex; gap: 8px; align-items: center; padding: 0 8px 0 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: transparent; text-align: left; color: var(--dk-ink); cursor: pointer; }
+/* 8 one fold (coherence 2026-11-03): the label in capitals, the count, the arrow at the end — as the side panel's and Settings' */
 .foldh:hover { background: var(--dk-menu); }
-.foldh .cnt { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: 0; }
+.foldh .ft { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--dk-muted); }
+.foldh .cnt { min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); color: var(--dk-muted); font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); }
+.foldh .chev { flex: none; color: var(--dk-muted); transition: transform .15s; }
+.foldh[aria-expanded="false"] .chev { transform: rotate(-90deg); }
 .more { align-self: flex-start; font-size: var(--dk-fs-s); }
 
 /* talks drawer: a search, the kinds, rows */
 .srch { width: 100%; height: 30px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 0 10px; background: var(--dk-menu); color: var(--dk-ink); font-size: var(--dk-fs); }
 .seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); flex-wrap: wrap; }
-.seg button { flex: 1; height: 26px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
+.seg button { flex: 1; height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }   /* = kit .dk-seg */
 .seg button:hover { color: var(--dk-ink); }
 /* the picked one stands out (Miinthe, 2026-10-19: "contrast of what is selected is still barely visible") — Mero's pink, like the board's strong picks */
-.seg button[aria-pressed="true"] { background: var(--dk-mero-soft); border-color: var(--dk-mero); color: var(--dk-ink); font-weight: 700; box-shadow: none; }
+.seg button[aria-pressed="true"] { background: var(--dk-accent-soft); border-color: var(--dk-accent); color: var(--dk-ink); font-weight: 700; box-shadow: none; }
 .seg button:disabled { opacity: .45; }
 .seg.jobs { display: grid; grid-template-columns: 1fr 1fr; }
 /* the talk-kind filter stays one row (Miinthe, 2026-10-16: Feedback wrapped onto its own line). Since Games joined, the words
    were cut off ("Yappi…"): "All" in words, the kinds as their icons with the name as tooltip (Miinthe, 2026-11-02) */
 #sess-f { flex-wrap: nowrap; }
 #sess-f button { min-width: 0; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; }
-.sess { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-ink); text-align: left; }
+.sess { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--dk-ink); text-align: left; }
 .sess:hover { background: var(--dk-accent-soft); }
 .sess.on { background: var(--dk-selected); }
 .sess .lead { width: 22px; flex: none; display: grid; place-items: center; font-size: calc(15px * var(--fontScale, 1)); }
@@ -259,7 +268,7 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 .note .n1 { display: flex; gap: 6px; align-items: flex-start; }
 .note .n1 > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .note .n2 { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.note .n2 .btn { height: 22px; padding: 0 6px; font-size: var(--dk-fs-s); }
+.note .n2 .btn { height: 24px; min-width: 24px; padding: 0 6px; border-radius: 6px; font-size: var(--dk-fs-s); justify-content: center; }   /* 4 the small row buttons: 24 px, corners 6 (coherence) */
 /* 🚫 phrases to avoid — the slop guard (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 2) */
 .slop-add { display: flex; gap: 6px; flex-wrap: wrap; }
 .slop-add input { flex: 1 1 140px; min-width: 0; }
@@ -390,9 +399,48 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
 .wd-says > * { flex-shrink: 0; }
 .wd-foot { border-top: 1px solid var(--dk-line); padding: 8px 6px; display: flex; flex-direction: column; gap: 5px; }
 .wd-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; padding: 0 4px; }
+.wd-tl { display: flex; gap: 4px; }
+/* the on-screen keys in a drawer on a PC (Miinthe, 2026-11-03: "make the keyboard in wordle to be in a drawer on PC") — shut at
+   first there, you type anyway; ⌨ opens it (remembered in this browser). A phone keeps it open. */
+#wd-kb { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .2s ease; }
+#wd-kb > .wd-kin { min-height: 0; overflow: hidden; }
+.wd-foot.kb-shut #wd-kb { grid-template-rows: 0fr; }
+.wd-foot.kb-shut { gap: 0; }
+#wd-keys[aria-expanded="true"] { color: var(--dk-ink); background: var(--dk-page); }
+@media (prefers-reduced-motion: reduce) { #wd-kb { transition: none; } }
+#wd-left { white-space: nowrap; }
+.wd-type { align-self: center; border: 1px dashed var(--dk-line-strong); border-radius: 6px; background: none; color: var(--dk-muted); padding: 3px 8px; cursor: pointer; }
+.wd-type:hover { color: var(--dk-ink); border-color: var(--dk-mero); }
+#wd-talk[aria-pressed="false"] { color: var(--dk-muted); }
 .wd-kr { display: flex; gap: 4px; justify-content: center; }
 .wd-k { flex: 1 1 0; min-width: 0; max-width: 32px; height: 38px; border: 0; border-radius: 6px; padding: 0; background: var(--dk-line-strong); color: var(--dk-ink); font: 700 calc(12.5px * var(--fontScale, 1)) var(--dk-f-body); }
 .wd-k.wide { flex: 1.6 1 0; max-width: 52px; font-size: var(--dk-fs-xs); }
+
+/* 🎲 Four in a Row (2026-11-03): columns are buttons; her pieces gold, Mero's pink; the four that won get a ring */
+.wd-game .wd-ic.f4i { background: var(--dk-mero); }
+.f4 { flex: none; align-self: center; width: 100%; max-width: 250px; display: flex; flex-direction: column; gap: 3px; }
+.f4-nums, .f4-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.f4-nums span { text-align: center; font-size: var(--dk-fs-xs); color: var(--dk-muted); }
+.f4-nums span.hint { color: var(--dk-mero); font-weight: 700; }
+.f4-grid { padding: 5px; border-radius: 10px; background: var(--dk-line-strong); }
+.f4-col { display: grid; grid-template-rows: repeat(6, 1fr); gap: 3px; padding: 2px; border: 0; border-radius: 7px; background: none; cursor: pointer; overflow: hidden; }
+.f4-col:disabled { cursor: default; }
+.f4-col:hover:not(:disabled), .f4-col.hint { background: color-mix(in oklab, var(--dk-mero) 28%, transparent); }
+.f4-col.full { animation: wd-shake .3s; }
+.f4-c { aspect-ratio: 1; border-radius: 50%; background: var(--dk-page); }
+.f4-c.f4r, .f4-dot.f4r { background: var(--dk-wait); }
+.f4-c.f4m, .f4-dot.f4m { background: var(--dk-mero); }
+.f4-c.win { box-shadow: inset 0 0 0 3px var(--dk-ink); }
+.f4-c.new { animation: f4-drop .35s ease-in both; }
+.f4-c.new.late { animation-delay: .4s; }
+@keyframes f4-drop { from { transform: translateY(-500%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .f4-c.new, .f4-col.full { animation: none; } }
+.f4-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+.f4-key { text-align: center; }
+
+/* the scroll bar on the panel's outer edge when the panel is on the left (Miinthe, 2026-11-03) */
+body.pleft .msgs { direction: rtl; }
+body.pleft .msgs > * { direction: ltr; }
 
 /* "What Mero was told" */
 .told { position: absolute; right: 12px; top: 12px; width: min(440px, calc(100% - 24px)); max-height: calc(100% - 24px); background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 12px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; z-index: 30; overflow: hidden; resize: both; }
@@ -416,7 +464,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
       <div class="busy" id="busy" hidden>☆ Mero is writing…</div>
       <div class="err" id="err" hidden></div>
       <div class="wd-foot" id="wd-foot" hidden>
-        <div class="wd-tools"><button class="btn ghost" id="wd-hint">💡 Hint</button><span class="mini" id="wd-left"></span><button class="btn ghost" id="wd-new">↻ New word</button></div>
+        <div class="wd-tools"><span class="wd-tl"><button class="btn ghost" id="wd-hint">💡 Hint</button><button class="btn ghost" id="wd-talk" aria-pressed="true"></button><button class="btn ghost" id="wd-keys" aria-expanded="false" aria-controls="wd-kb" hidden>⌨</button></span><span class="mini" id="wd-left"></span><button class="btn ghost" id="wd-new">↻ New word</button></div>
         <div id="wd-kb"></div>
       </div>
       <div class="comp" id="comp">
@@ -565,7 +613,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const fold = (key, title, items, { limit = 5, empty = '' } = {}) => {
     if (!items.length) return empty ? `<h4>${title}</h4><p class="mini">${empty}</p>` : '';
     const open = OPEN[key] !== false, all = MORE[key], shown = all ? items : items.slice(0, limit), rest = items.length - shown.length;
-    return `<button class="foldh" data-fold="${key}" aria-expanded="${open}"><span>${open ? '▾' : '▸'}</span> ${title} <span class="cnt">${items.length}</span></button>`
+    return `<button class="foldh" data-fold="${key}" aria-expanded="${open}"><span class="ft">${title}</span><span class="cnt">${items.length}</span><span class="chev">▾</span></button>`
       + (open ? shown.join('') + (rest > 0 ? `<button class="btn ghost more" data-more="${key}">Show ${rest} more</button>` : all && items.length > limit ? `<button class="btn ghost more" data-more="${key}">Show fewer</button>` : '') : '');
   };
   document.addEventListener('click', e => {
@@ -839,10 +887,12 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   function drawGame(shake = false) {
     const g = cur.game;
     if (!g) {
-      $('#msgs').innerHTML = `<div class="wd-pick"><div class="mini">Pick a game</div><button class="wd-game" data-wdgo="wordle"><span class="wd-ic">W</span><b>Wordle</b><span class="mini">Guess the word in six tries. Mero watches.</span></button></div>`;
-      $$('[data-wdgo]').forEach(b => b.onclick = () => { wdIn[cur.id] = ''; HOST.gameStart(cur.id, b.dataset.wdgo); });
+      $('#msgs').innerHTML = `<div class="wd-pick"><div class="mini">Pick a game</div><button class="wd-game" data-wdgo="wordle"><span class="wd-ic">W</span><b>Wordle</b><span class="mini">Guess the word in six tries. Mero watches.</span></button><button class="wd-game" data-wdgo="four"><span class="wd-ic f4i">4</span><b>Four in a Row</b><span class="mini">Line up four before Mero does. She plays to win.</span></button></div>`;
+      $$('[data-wdgo]').forEach(b => b.onclick = () => { wdIn[cur.id] = ''; window.focus(); HOST.gameStart(cur.id, b.dataset.wdgo); });
       return;
     }
+    gameTools(g);
+    if (g.kind === 'four') { drawFour(g, shake); return; }
     const typed = wdIn[cur.id] || '', rank = { miss: 0, near: 1, hit: 2 }, keys = {};
     let rows = '';
     for (let r = 0; r < 6; r++) {
@@ -850,15 +900,87 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       if (s) s.forEach((x, i) => { if (!keys[w[i]] || rank[x] > rank[keys[w[i]]]) keys[w[i]] = x; });
       rows += `<div class="wd-row${shake && r === g.guesses.length ? ' wd-shake' : ''}">${[0, 1, 2, 3, 4].map(i => `<div class="wd-t${s ? ' ' + s[i] : show[i] ? ' f' : ''}">${esc(show[i] || '')}</div>`).join('')}</div>`;
     }
-    $('#msgs').innerHTML = `<div class="wd-board" role="img" aria-label="Wordle board: ${g.guesses.length} of 6 tries used">${rows}</div><div class="wd-says" id="wd-says">${cur.msgs.filter(m => m.who === 'mero').map(m => `<div class="m mer">${esc(m.t)}</div>`).join('')}</div>`;
+    $('#msgs').innerHTML = `<div class="wd-board" role="img" aria-label="Wordle board: ${g.guesses.length} of 6 tries used">${rows}</div><button class="wd-type mini" id="wd-type" hidden>⌨ Click here to type with your keyboard</button><div class="wd-says" id="wd-says">${cur.msgs.filter(m => m.who === 'mero').map(m => `<div class="m mer">${esc(m.t)}</div>`).join('')}</div>`;
     const says = $('#wd-says'); says.scrollTop = says.scrollHeight;
-    $('#wd-kb').innerHTML = WD_KEYS.map(r => `<div class="wd-kr">${[...r].map(k => `<button class="wd-k${k === '⏎' || k === '⌫' ? ' wide' : ''}${keys[k] ? ' ' + keys[k] : ''}" tabindex="-1" data-wdk="${k}" aria-label="${k === '⏎' ? 'Enter' : k === '⌫' ? 'Delete a letter' : k}">${k === '⏎' ? 'Enter' : k === '⌫' ? '⌫' : k.toUpperCase()}</button>`).join('')}</div>`).join('');
-    $$('[data-wdk]').forEach(b => { b.onmousedown = e => e.preventDefault(); b.onclick = () => wdPress(b.dataset.wdk); });   // the keys never take the focus
+    $('#wd-kb').innerHTML = '<div class="wd-kin">' + WD_KEYS.map(r => `<div class="wd-kr">${[...r].map(k => `<button class="wd-k${k === '⏎' || k === '⌫' ? ' wide' : ''}${keys[k] ? ' ' + keys[k] : ''}" tabindex="-1" data-wdk="${k}" aria-label="${k === '⏎' ? 'Enter' : k === '⌫' ? 'Delete a letter' : k}">${k === '⏎' ? 'Enter' : k === '⌫' ? '⌫' : k.toUpperCase()}</button>`).join('')}</div>`).join('') + '</div>';
+    // the keys never take the focus themselves — but the game does, so her PC keyboard types here from then on (Miinthe,
+    // 2026-11-03: "why cannot not type it in on PC" — a click on a key left the typing in SillyTavern's message box)
+    $$('[data-wdk]').forEach(b => { b.onmousedown = e => { e.preventDefault(); window.focus(); }; b.onclick = () => wdPress(b.dataset.wdk); });
+    wdTypeCue();
     const left = 6 - g.guesses.length;
     $('#wd-left').textContent = g.over === 'won' ? 'Got it!' : g.over === 'lost' ? `It was ${g.answer.toUpperCase()}` : `${left} ${left === 1 ? 'try' : 'tries'} left`;
+  }
+  /** The footer both games share: 💡 Hint, 💬/🔇, ↻ New. */
+  const kbOpen = () => { try { return localStorage.getItem('dle-wd-kb') === 'open'; } catch { return false; } };
+  function gameTools(g) {
+    // ⌨: the keys' drawer, a PC's Wordle only
+    const pcKeys = wdHover.matches && g.kind !== 'four', open = !pcKeys || kbOpen(), kb = $('#wd-keys');
+    kb.hidden = !pcKeys;
+    $('#wd-foot').classList.toggle('kb-shut', !open);
+    kb.setAttribute('aria-expanded', String(open));
+    kb.title = open ? 'Hide the on-screen keys (you can type)' : 'Show the on-screen keys';
+    kb.setAttribute('aria-label', kb.title);
     $('#wd-hint').disabled = !!g.over;
+    const talk = D.settings?.gameTalk !== false, tb = $('#wd-talk');
+    tb.textContent = talk ? '💬' : '🔇'; tb.setAttribute('aria-pressed', String(talk));
+    tb.title = talk ? 'Mero comments on the game. Click to keep her quiet (hints still work).' : 'Mero is quiet. Click to let her comment again.';
+    tb.setAttribute('aria-label', talk ? 'Mero comments: on' : 'Mero comments: off');
+    $('#wd-new').textContent = g.kind === 'four' ? '↻ New game' : '↻ New word';
     $('#wd-new').classList.toggle('m2', !!g.over); $('#wd-new').classList.toggle('ghost', !g.over);   // over: "another one?" in pink
   }
+  // 🎲 Four in a Row (2026-11-03): the host works the board out (src/games/four-pure.js); this draws it. Click a column, or 1–7.
+  const f4Hint = {}, f4Seen = {};   // talk id → the column a 💡 hint showed (until her next move) · the moves already drawn
+  const meroName = () => String(D.settings?.meroName || '').trim() || 'Mero';
+  let f4Drawn = '';   // what the board on screen shows — the same board isn't drawn again
+  function drawFour(g, full = -1) {
+    const n = g.moves.length, mine = g.turn === 'r' && !g.over, hint = mine ? f4Hint[cur.id] : undefined;
+    const says = cur.msgs.filter(m => m.who === 'mero').map(m => `<div class="m mer">${esc(m.t)}</div>`).join('');
+    // Miinthe, 2026-11-03: "sometimes the animation is lagging" — Mero starting to type and her line arriving each redrew the
+    // whole board, so a piece still falling jumped into place. Now only her lines and the footer change then.
+    const key = [cur.id, g.first, g.moves.join(), hint, full, meroName()].join('|');
+    if (key === f4Drawn && $('#msgs .f4')) {
+      const box = $('#wd-says'); if (box.innerHTML !== says) { box.innerHTML = says; box.scrollTop = box.scrollHeight; }
+      f4Foot(g, mine); return;
+    }
+    f4Drawn = key;
+    const fresh = n > (f4Seen[cur.id] ?? n);
+    f4Seen[cur.id] = n;
+    const last = g.placed[n - 1], prev = g.placed[n - 2], lastMero = g.cells[last] === 'm';
+    const anim = i => !fresh ? '' : i === last ? (lastMero && n >= 2 && g.cells[prev] === 'r' ? ' new late' : ' new') : i === prev && lastMero && g.cells[prev] === 'r' ? ' new' : '';
+    const four = new Set(g.four || []);
+    let colsHtml = '';
+    for (let c = 0; c < 7; c++) {
+      let cells = '';
+      for (let r = 0; r < 6; r++) { const i = r * 7 + c, p = g.cells[i]; cells += `<span class="f4-c${p !== '.' ? ' f4' + p : ''}${four.has(i) ? ' win' : ''}${p !== '.' ? anim(i) : ''}"></span>`; }
+      const isFull = g.cells[c] !== '.';
+      colsHtml += `<button class="f4-col${hint === c ? ' hint' : ''}${full === c ? ' full' : ''}" data-f4="${c}" tabindex="-1" aria-label="Column ${c + 1}"${!mine || isFull ? ' disabled' : ''}>${cells}</button>`;
+    }
+    const nums = [0, 1, 2, 3, 4, 5, 6].map(c => `<span${hint === c ? ' class="hint"' : ''}>${hint === c ? '▼' : c + 1}</span>`).join('');
+    $('#msgs').innerHTML = `<div class="f4" role="img" aria-label="Four in a Row board, ${n} pieces played"><div class="f4-nums" title="On a PC, keys 1–7 drop a piece">${nums}</div><div class="f4-grid">${colsHtml}</div><div class="f4-key mini"><span class="f4-dot f4r"></span>You · <span class="f4-dot f4m"></span>${esc(meroName())}</div></div><button class="wd-type mini" id="wd-type" hidden>⌨ Click here to play with your keyboard (1–7)</button><div class="wd-says" id="wd-says">${says}</div>`;
+    const box = $('#wd-says'); box.scrollTop = box.scrollHeight;
+    $$('[data-f4]').forEach(b => { b.onmousedown = e => { e.preventDefault(); window.focus(); }; b.onclick = () => f4Drop(+b.dataset.f4); });
+    $('#wd-kb').innerHTML = '';
+    f4Foot(g, mine);
+  }
+  function f4Foot(g, mine) {
+    wdTypeCue();
+    $('#wd-left').innerHTML = g.over === 'won' ? 'You won!' : g.over === 'lost' ? `${esc(meroName())} won` : g.over === 'draw' ? 'A draw' : 'Your turn';
+    $('#wd-hint').disabled = !!g.over || !mine;
+  }
+  function f4Drop(c) {
+    const g = cur?.game; if (g?.kind !== 'four' || g.over || g.turn !== 'r') return;
+    const hint = f4Hint[cur.id]; delete f4Hint[cur.id];   // before the drop: the host's change redraws at once
+    const r = HOST.gameDrop(cur.id, c);
+    if (!r.ok) { if (hint !== undefined) f4Hint[cur.id] = hint; if (r.why === 'full') drawFour(g, c); }
+  }
+  // a PC whose typing goes elsewhere (SillyTavern's message box): a small note under the board; a click brings it here
+  const wdHover = matchMedia('(hover: hover) and (pointer: fine)');
+  function wdTypeCue() {
+    const c = $('#wd-type'); if (!c) return;
+    c.hidden = !wdHover.matches || document.hasFocus() || !!cur?.game?.over;
+    c.onclick = () => { window.focus(); c.hidden = true; };
+  }
+  window.addEventListener('focus', wdTypeCue); window.addEventListener('blur', wdTypeCue);
   function wdPress(k) {
     const g = cur?.game; if (!g || g.over) return;
     let t = wdIn[cur.id] || '';
@@ -866,19 +988,30 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     else if (/^[a-z]$/.test(k)) { if (t.length < 5) t += k; }
     else if (k === '⏎') {
       if (t.length < 5) { drawGame(true); return; }
+      wdIn[cur.id] = '';                       // before the guess: the host's change redraws at once
       const r = HOST.gameGuess(cur.id, t);
-      if (!r.ok) { drawGame(true); return; }   // not a word: it doesn't count (Mero says so)
-      wdIn[cur.id] = ''; return;               // the host's change redraws
+      if (!r.ok) {                             // not a word: it doesn't count (Mero says so — or, kept quiet, the footer)
+        wdIn[cur.id] = t; drawGame(true);
+        if (r.why === 'word' && D.settings?.gameTalk === false) { $('#wd-left').textContent = 'Not in the word list'; }
+      }
+      return;
     }
     wdIn[cur.id] = t; drawGame();
   }
-  $('#wd-hint').onclick = () => { if (cur?.game && !cur.game.over) HOST.gameHint(cur.id); };
-  $('#wd-new').onclick = () => { if (!cur?.game) return; wdIn[cur.id] = ''; HOST.gameStart(cur.id, 'wordle'); };
+  $('#wd-hint').onclick = () => {
+    if (!cur?.game || cur.game.over) return;
+    const r = HOST.gameHint(cur.id);
+    if (cur.game.kind === 'four' && r?.ok) { f4Hint[cur.id] = r.col; drawGame(); }
+  };
+  $('#wd-keys').onclick = () => { try { localStorage.setItem('dle-wd-kb', kbOpen() ? 'shut' : 'open'); } catch { /* private mode */ } if (cur?.game) gameTools(cur.game); };
+  $('#wd-talk').onclick = () => { D.settings = HOST.settings({ gameTalk: D.settings?.gameTalk === false }); if (cur?.game) drawGame(); };
+  $('#wd-new').onclick = () => { if (!cur?.game) return; wdIn[cur.id] = ''; delete f4Hint[cur.id]; delete f4Seen[cur.id]; f4Drawn = ''; window.focus(); HOST.gameStart(cur.id, cur.game.kind); };
   document.addEventListener('keydown', e => {
     if (cur?.tag !== 'game' || !cur.game || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
     if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('button')) return;   // a focused button (Hint, New word) handles its own Enter
     if ($$('.drawer').some(d => !d.hidden) && !document.body.classList.contains('wide')) return;
+    if (cur.game.kind === 'four') { if (/^[1-7]$/.test(e.key)) { e.preventDefault(); f4Drop(+e.key - 1); } return; }
     if (e.key === 'Enter') { e.preventDefault(); wdPress('⏎'); }
     else if (e.key === 'Backspace') { e.preventDefault(); wdPress('⌫'); }
     else if (/^[a-zA-Z]$/.test(e.key)) wdPress(e.key.toLowerCase());
@@ -936,7 +1069,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     };
     const item = s => `<div class="sessrow"><button class="sess${s.id === cur?.id ? ' on' : ''}" data-s="${s.id}" title="${esc(TAG[s.tag][0])}"><span class="lead">${TAG[s.tag][0].split(' ')[0]}</span><span class="main"><span class="t">${esc(s.title)}</span><span class="s">${badges(s)}${s.summary ? esc(s.summary) + ' · ' : ''}${when(s)}</span></span></button><button class="ib sessdel" data-sdel="${s.id}" title="Delete this talk" aria-label="Delete this talk">${I('trash')}</button></div>`;
     const group = (st, label) => fold('sess-' + st, label, list.filter(s => s.state === st).map(item));
-    $('#sess-list').innerHTML = (group('open', 'Open') + group('resolved', 'Resolved — reopen any time') + group('archived', 'Archived')) || '<p class="mini">No talk yet.</p>';
+    $('#sess-list').innerHTML = (group('open', 'Open') + group('resolved', 'Resolved — reopen any time') + group('archived', 'Archived')) || '<div class="dk-empty"><b>No talks yet.</b><span>New starts one, 🎲 Play a game.</span></div>';
     drawMoments();
     $$('[data-s]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.s); drawTalk(); drawSessions(); if (!document.body.classList.contains('wide')) closeDrawers(); });
     $$('[data-sdel]').forEach(b => b.onclick = e => { e.stopPropagation(); askDelete((D.talks || []).find(t => t.id === b.dataset.sdel), b.closest('.sessrow')); });
@@ -977,7 +1110,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const add = `<div class="slop-add"><input class="dk-field" id="sl-in" placeholder="Add a phrase to avoid…" aria-label="New phrase to avoid"><select id="sl-sc" aria-label="Where it applies">${opts.map(([v, x]) => `<option value="${v}">${x}</option>`).join('')}</select><button class="btn" id="sl-add">Add</button></div>`;
     const writer = `<div class="mini">What the writer gets now (only phrases it used lately):</div><div class="slop-pre">${S.writer.length ? S.writer.map(x => '🚫 ' + esc(x)).join('<br>') : 'Nothing: none of your phrases came up lately.'}</div>`;
     const open = OPEN['notes-slop'] !== false;
-    $('#slop-list').innerHTML = `<button class="foldh" data-fold="notes-slop" aria-expanded="${open}"><span>${open ? '▾' : '▸'}</span> 🚫 Phrases to avoid <span class="cnt">${S.phrases.length}</span></button>`
+    $('#slop-list').innerHTML = `<button class="foldh" data-fold="notes-slop" aria-expanded="${open}"><span class="ft">🚫 Phrases to avoid</span><span class="cnt">${S.phrases.length}</span><span class="chev">▾</span></button>`
       + (open ? add + S.phrases.map(row).join('') + writer + fold('notes-fine', 'It’s fine: never suggested', S.fine.map(f => `<div class="note"><div class="n1"><span>“${esc(f.t)}”${f.sc !== 'all' ? ` <span class="mini">${esc(f.kn)}</span>` : ''}</span><button class="btn ghost" data-slunf="${esc(f.t)}" title="Let Mero suggest it again" aria-label="Suggest again">✕</button></div></div>`)) : '');
     const addIt = () => { const v = $('#sl-in').value.trim(); if (!v) return; if (HOST.slopAdd(v, { m: 'ban', sc: $('#sl-sc').value })) toast(`“${v}” is on your list.`); };
     $('#sl-add') && ($('#sl-add').onclick = addIt);
@@ -1205,7 +1338,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       <div class="row">${g.update ? `<button class="btn m2" data-ga="open" title="Open “${esc(g.entry)}” in Obsidian">Open it</button>` : `<button class="btn m2" data-ga="write" title="Opens Write a new entry with this filled in. Mero can draft it there.">Write it</button>`}<button class="btn" data-ga="done" title="Mark it as taken care of">Done</button><button class="btn" data-ga="hide" title="Hidden until it is flagged again">Hide</button><button class="btn ghost" data-ga="no" title="Gone for good, even if it is flagged again">No</button></div></div>`;
     const gapDone = g => `<div class="card done"><div class="ch">${esc(g.title)} <span class="pill">✓ taken care of</span></div><div class="mini">📚 a lore gap</div></div>`;
     const gaps = G.open.length ? `<h4 class="rg rg-mero" title="Found while replies were written: something the story needed that no entry had, or an entry that needs an update">📚 Lore gaps</h4>` + G.open.map(gapCard).join('') : '';
-    $('#req-list').innerHTML = ((groups + gaps) || '<p class="mini">Nothing open.</p>') + fold('req-done', 'Answered', [...R.answered.map(one), ...G.done.map(gapDone)]);
+    $('#req-list').innerHTML = ((groups + gaps) || '<div class="dk-empty"><b>Nothing open.</b><span>When Mero needs you, it shows here.</span></div>') + fold('req-done', 'Answered', [...R.answered.map(one), ...G.done.map(gapDone)]);
     $$('#req-list [data-gap]').forEach(card => card.querySelectorAll('[data-ga]').forEach(b => b.onclick = () => {
       const what = b.dataset.ga, r = HOST.gap(card.dataset.gap, what);
       if (r && r.ok === false) toast(r.msg || 'Not done.');
@@ -1381,7 +1514,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $('#p-out').innerHTML = pSec('p-out', 'Out in the story', list.filter(p => ['running', 'dir', 'skipped', 'draft', 'given', 'hidden', 'landed', 'played', 'fired', 'done', 'abandoned'].includes(p.st)));
     $('#p-kept').innerHTML = pSec('p-kept', '📌 Kept as ideas', list.filter(p => p.st === 'kept'));
     const taste = (D.notes || []).filter(n => n.taste);
-    $('#p-taste').innerHTML = taste.length ? `<button class="foldh" id="taste-h" aria-expanded="${tasteOpen}" title="Mero adds a line when you use a pitch or 👎 one. Pitches never go against a 🚫 Don't note."><span>${tasteOpen ? '▾' : '▸'}</span> Your taste <span class="cnt">${taste.length}</span></button>`
+    $('#p-taste').innerHTML = taste.length ? `<button class="foldh" id="taste-h" aria-expanded="${tasteOpen}" title="Mero adds a line when you use a pitch or 👎 one. Pitches never go against a 🚫 Don't note."><span class="ft">Your taste</span><span class="cnt">${taste.length}</span><span class="chev">▾</span></button>`
       + (tasteOpen ? `<div class="stack" style="gap:4px;margin-top:6px">${taste.map(n => `<div class="tn"><span>${n.taste === 'up' ? '👍' : '👎'}</span><span data-ted="${n.id}" title="Click to change">${esc(n.text)}</span><button data-trm="${n.id}" aria-label="Forget">✕</button></div>`).join('')}</div>` : '') : '';
     const th = $('#taste-h'); if (th) th.onclick = () => { tasteOpen = !tasteOpen; drawPitches(); };
     $$('[data-trm]').forEach(b => b.onclick = () => HOST.tasteEdit(b.dataset.trm, null));

@@ -108,11 +108,12 @@ import {
     clearChatIdb,
 } from './src/verdict/verdict-store.js';
 import { tr, trf } from './src/i18n/i18n.js';
-import { followTheme, configureTheme, repaintTheme } from './src/kit/theme.js';
+import { followTheme, configureTheme, repaintTheme, setAccent } from './src/kit/theme.js';
 import { initLegacySkin } from './src/kit/legacy-skin.js';
 import { configureKit } from './src/kit/kit.js';   // overhaul step 4: the shared parts read "Ask before removing" from settings
 import { initNotes } from './src/notes.js';                // My notes (Miinthe, 2026-10-18)
 import { initWorld, worldWriterLines } from './src/world/world.js';          // the world layer (Miinthe, 2026-10-19)
+import { initDock } from './src/dock/dock.js';                   // panel tabs (Miinthe, 2026-11-03)
 import { initRunCleanup } from './src/run-cleanup.js';                       // cleaning up a run (Miinthe, 2026-10-27)
 import { initRegenWatch, keepForDelete } from './src/regen.js';   // regenerate keeps hand + world changes (2026-10-19)
 import { initBar } from './src/bar/bar.js';
@@ -2069,7 +2070,7 @@ async function _doInit() {
         bindSettingsEvents(buildIndex);
         // overhaul step 4: Settings → Interface → Ask before removing (= the board's Edit ▸ Ask before removing) makes every removal ask
         // Settings › Interface › Look: follow SillyTavern's theme, or always light / dark
-        try { configureTheme({ scheme: () => { const v = getSettings().dkTheme; return v === 'light' || v === 'dark' ? v : null; } }); eventSource.on(event_types.SETTINGS_UPDATED, () => repaintTheme()); } catch (err) { console.warn('[DLE] theme choice not wired', err); }
+        try { configureTheme({ scheme: () => { const v = getSettings().dkTheme; return v === 'light' || v === 'dark' ? v : null; } }); eventSource.on(event_types.SETTINGS_UPDATED, () => { setAccent(getSettings().accentColor); repaintTheme(); }); setAccent(getSettings().accentColor); } catch (err) { console.warn('[DLE] theme choice not wired', err); }
         // "Don't ask me again" answers are kept with the settings (settings.kitNoAsk), so they survive a reload
         try { configureKit({ alwaysAsk: () => askBeforeRemoving(), get: k => getSettings().kitNoAsk?.[k], set: (k, v) => { const st = getSettings(); st.kitNoAsk = { ...(st.kitNoAsk || {}), [k]: v }; saveSettingsDebounced(); } }); } catch (err) { console.warn('[DLE] shared parts: ask-before-removing not wired', err); }
         registerSlashCommands();
@@ -2091,6 +2092,7 @@ async function _doInit() {
         try { initNotes(); } catch (err) { console.warn('[DLE] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
         try { initRegenWatch(); } catch (err) { console.warn('[DLE] regenerate watch skipped:', err?.message || err); }
         try { initWorld(); } catch (err) { console.warn('[DLE] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)
+        try { initDock(); } catch (err) { console.warn('[DLE] panel tabs skipped:', err?.message || err); }   // panel tabs (2026-11-03)
         try { initRunCleanup(); } catch (err) { console.warn('[DLE] Run cleanup skipped:', err?.message || err); }   // cleaning up a run (2026-10-27)
         try { initReplyMenu(); } catch (err) { console.warn('[DLE] reply menu skipped:', err?.message || err); }   // overhaul 2a
         try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast

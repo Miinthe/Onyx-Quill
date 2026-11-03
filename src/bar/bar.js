@@ -20,8 +20,9 @@ import { requestsHere, replyWaits, onRequestsChanged } from '../requests.js';
 import { meroGlow, onMeroChanged } from '../mero.js';
 import { panelButton, toggleHot, moveHot, isHot, hotButtons, qrTitle, draftStep } from './bar-pure.js';
 import * as K from '../kit/kit.js';
-import { toggleNotes, notesOpen, close as closeNotes } from '../notes.js';
-import { worldHere, worldOpen, toggleWorld, closeWorld, worldDots } from '../world/world.js';
+import { toggleNotes, toggleNotesLock, notesOpen, close as closeNotes } from '../notes.js';
+import { worldHere, worldOpen, toggleWorld, toggleWorldLock, closeWorld, worldDots } from '../world/world.js';
+import { dockBehind, dockShow, dockOn } from '../dock/dock.js';
 import { asGuide, guideActive, GUIDE_KEY } from '../guided-swipe-pure.js';
 import { openExtraRow, closeExtraRow, extraRowOpen, extraRowEl, placeExtraRow } from './extra-row.js';
 
@@ -227,12 +228,13 @@ function draw() {
     const book = db('book', 'book', 'DeepLore menu');
     // Settings › Interface › The bar › My notes: off → no button (and an open window closes); the notes stay in their file
     if (s.notesEnabled === false && notesOpen()) closeNotes();
-    const notesB = s.notesEnabled === false ? '' : db('notes', 'notebook', 'My notes (never sent to the AI)', '', notesOpen() ? ' on' : '');
+    const rc = st.phone ? '' : ' · right-click: lock / unlock';
+    const notesB = s.notesEnabled === false ? '' : db('notes', 'notebook', `My notes (never sent to the AI)${s.notesLocked === true ? ' — locked open' : ''}${rc}`, '', notesOpen() ? ' on' : '');
     // the world layer (2026-10-19): a globe only where this chat's board has it switched on
     const wOn = !!worldHere();
     if (!wOn && worldOpen()) closeWorld();
-    const worldB = wOn ? db('world', 'globe', 'World: chatter, news, messages, people', worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join(''), worldOpen() ? ' on' : '') : '';
-    const panelB = db('panel', pb.icon, pb.title, dot, pCls);
+    const worldB = wOn ? db('world', 'globe', `World: chatter, news, messages, people${rc}`, worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join(''), worldOpen() ? ' on' : '') : '';
+    const panelB = db('panel', pb.icon, pb.title + rc, dot, pCls);
     const draftDot = draftText ? '<span class="dle-dot draft"></span>' : '';
     // 🧭 Guided swipe (Miinthe, 2026-11-02: in the bar after Re-evaluate; the button holds the direction — lit while one is in force)
     const gd = asGuide(chat_metadata?.[GUIDE_KEY]), gOn = guideActive(gd, (getContext()?.chat || []).length - 1);
@@ -379,7 +381,8 @@ function onClick(e) {
     if (!b) return;
     switch (b.dataset.b) {
         case 'book': K.openMenu(b, bookItems()); break;
-        case 'panel': pressPanel(); break;
+        // panel tabs (2026-11-03): a panel waiting behind another tab comes to the front instead of closing
+        case 'panel': if (dockBehind('dl')) dockShow('dl'); else pressPanel(); break;
         case 'qrs': if (phone()) { mode = 'qr'; draw(); } else toggleQrRow(); break;
         case 'stars': openQrDrawer(b); break;
         case 'sp': mode = 'sp'; draw(); break;
@@ -389,8 +392,8 @@ function onClick(e) {
         case 'spell': if (spellHold === 'held') { spellHold = null; break; } import('../spell.js').then(m => m.fixSpelling(on => { b.classList.toggle('on', on); b.disabled = on; })); break;
         case 'ssend': simpleSend(); break;
         case 'draft': draft(); break;
-        case 'notes': toggleNotes(); break;
-        case 'world': toggleWorld(); break;
+        case 'notes': if (dockBehind('notes')) dockShow('notes'); else toggleNotes(); break;
+        case 'world': if (dockBehind('world')) dockShow('world'); else toggleWorld(); break;
     }
 }
 function onGrab(e) {
@@ -419,7 +422,16 @@ function mount() {
         bar.addEventListener('pointerdown', onGrab);
         bar.addEventListener('pointerdown', pressStart, true);
         // ✓ Fix spelling: right-click, or hold it on the phone → her word list (Miinthe, 2026-11-03)
-        bar.addEventListener('contextmenu', e => { if (e.target.closest('[data-b="spell"]')) { e.preventDefault(); openSpellWords(); } });
+        bar.addEventListener('contextmenu', e => {
+            if (e.target.closest('[data-b="spell"]')) { e.preventDefault(); openSpellWords(); return; }
+            // right-click on a panel's button locks it open, or unlocks it (Miinthe, 2026-11-03: "right click on the panels
+            // should lock them … like on the icon in the action bar"). The same as the 📖 menu's / the header's lock.
+            if (!dockOn()) return;   // phones and phone-narrow windows: no locks there
+            // only an open panel (Miinthe: "make right click lock only when the panel is open"); a closed one: nothing
+            if (e.target.closest('[data-b="panel"]')) { e.preventDefault(); if (panelOpen()) { pressLock(); soon(); } }
+            else if (e.target.closest('[data-b="notes"]')) { e.preventDefault(); toggleNotesLock(); soon(); }
+            else if (e.target.closest('[data-b="world"]')) { e.preventDefault(); toggleWorldLock(); soon(); }
+        });
         bar.addEventListener('pointerdown', e => {
             const b = e.target.closest('[data-b="spell"]');
             if (!b || e.pointerType === 'mouse') return;

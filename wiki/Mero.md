@@ -28,6 +28,7 @@ Mero can look things up before she answers: search and read your **lore**, open 
 - Afterwards her answer's header says **🔎 3 lookups**; click it to see what she looked at and what she found.
 - **🔎 lookups off** means her AI connection can't do lookups (some local models can't). Changed the connection? Reload the page and she tries again.
 - **🔎 no lookups this time** means the AI service was busy or slow; she answered without them, and tries again next time.
+- **🌐 The web**: when she needs a real-world fact (the official lore of a book, film or game your story is based on, a real place, a word), she can search the web and read a page. It uses the search service you set up in SillyTavern's **Web Search** extension (the extension doesn't need to be switched on for your chats — its search service just has to be set up). Your lore, board and chat always win over the web. Turn it off in Settings › Mero › **Searches the web**. Some sites (Fandom wikis, for one) refuse to be read this way; she then has only the search results and says so.
 - Without lookups she still sees the board's current state, where each tracker stands, the latest replies and the lore sent.
 
 ### Her questions
@@ -45,7 +46,14 @@ Hover a message (tap on a phone) for its buttons, in the message's own header:
 
 ### 🎲 Games
 
-A break from the story: in **Talks**, press **🎲 Play**. It opens a game picker; today there is **Wordle**. Guess the five-letter word in six tries, with the on-screen keys or your keyboard. Green means the right letter in the right spot, yellow means it's in the word but elsewhere. The game checks the letters itself, so the colors are always right, and a made-up word doesn't cost a try. Mero reacts after every guess (one short AI call each; without her AI she uses ready-made lines). **Hint** asks her for a clue that doesn't give the word away, and **New word** starts another round, as often as you like.
+A break from the story: in **Talks**, press **🎲 Play**. It opens a game picker with two games. In both, the game itself does the checking and the moves, so nothing can go wrong there; Mero only talks. Her lines are short AI calls with nothing of your story in them; without her AI she uses ready-made lines.
+
+- **Wordle**: guess the five-letter word in six tries, with your keyboard or the on-screen keys (on a PC they sit in a drawer: **⌨** next to Hint opens it, remembered; on a phone they are always there). Green means the right letter in the right spot, yellow means it's in the word but elsewhere. A made-up word doesn't cost a try. Mero reacts after every guess; the game counts the letters for her, so she doesn't get them wrong. **💡 Hint** asks her for a clue, and the clues step up slowly: first a rough category, then one loose association, and from the third hint on, one letter in its spot (picked by the game). A line that gives the word away is swapped for a ready-made one. **↻ New word** starts another round.
+- **Four in a Row**: drop pieces (yours gold, Mero's pink) and line up four before she does — across, down or diagonal. Click a column, or press **1–7** on a PC. The game makes Mero's moves: she takes a win, blocks yours and plays to win, but she can be beaten. Who starts swaps every game; when it's her, she opens in the middle. She speaks only when something happens (the start, a threat, a block, the end), so a game costs only a few small calls. **💡 Hint** marks the best column for you with ▼ (no AI call). **↻ New game** starts another.
+
+**💬 / 🔇** next to Hint: Mero's comments on or off (remembered). With 🔇 she stays quiet and no AI call is made; Wordle's hints still work.
+
+**Typing on a PC:** the game takes your keyboard as soon as you click anywhere in it (a key, the board, a column). If your typing is going to SillyTavern's message box instead, a small **⌨ Click here** note shows under the board.
 
 ## Her rail
 
@@ -75,10 +83,11 @@ Phrases the writer leans on too much ("her breath hitched", "a testament to"). F
 
 ## Pitches and plans
 
-Two ways to get a pitch:
+Three ways to get a pitch:
 
 - **Suggestions** (hands-off, "give me something with danger"): 💡 **Pitches** in her rail, or a reply's 📖 → **Pitch from here**.
 - **From a talk** (you're in control): plan it with her, then press **Pitch** under the talk. See below.
+- **Your own** (no Mero at all): **✏ My own** next to Pitch. See below.
 
 ### Suggestions
 
@@ -94,6 +103,16 @@ Pick the pitches you like, then:
 - 👎 **Not my thing**: Mero remembers. Pick a reason (too much, not like them, not now, wrong tone) or press **👎 Not my thing** without one; **Cancel** backs out.
 
 **New batch** throws the shown ones away and pitches again. **Set them all aside** puts the unused ones aside without counting them as 👎. Pitches left behind show as "N pitches dropped": **↩ Bring back** or **🗑 Delete them**. A pitch out in the story (played, landed, skipped) can always go with **🗑 Let it go**.
+
+### Your own pitches
+
+**✏ My own** in the 💡 drawer opens a small box. Nothing is sent to any AI, so it works while Mero is busy or has no connection.
+
+- **⚡ one-shot**: write the idea; it goes to your kept ideas. Pick it and send it out like any pitch (**Next reply**, **My line**, **Give to…**).
+- **🪜 plan**: say where it's heading, then one step per line (2 to 7). It waits in your kept ideas until you **Start the plan**.
+- **wait for a moment**: name the moment ("when they are alone in the garden"); it goes to the writer when that happens, or after a number of messages anyway. You can read it; it isn't blurred.
+
+Your own pitches show as ✏ yours and don't change what Mero learns about your taste.
 
 ### Pitches from a talk
 

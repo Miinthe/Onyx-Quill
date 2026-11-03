@@ -84,7 +84,23 @@ body.dle-bar-has-hot #qr--bar { display: none !important; }
 .dle-dq .mv:disabled { opacity: .3; cursor: default; }
 
 /* ── the side panel's header ─────────────────────────────────────────────── */
-#deeplore-panel.dle-framed .dle-ph { flex: none; height: 40px; display: flex; align-items: center; gap: 2px; padding: 0 6px; margin: -5px -5px 0; border-bottom: 1px solid var(--dk-line); border-radius: 10px 10px 0 0; background: var(--dk-menu); }
+/* flat: the header, the tabs and the body fill the panel edge to edge (Miinthe, 2026-11-03: "I liked it more when the side
+   panel header etc was actually filling out the whole space as I found that the old side panel look was bothering me") */
+#deeplore-panel.dle-framed { padding: 0 !important; }
+#deeplore-panel.dle-framed .dle-ph { flex: none; height: 40px; display: flex; align-items: center; gap: 2px; padding: 0 6px; margin: 0; border-bottom: 1px solid var(--dk-line); border-radius: 0; background: var(--dk-menu); }
+/* one inset for every tab: the boxes sit 10px in from the panel's edges, as in World and My notes (Miinthe, 2026-11-03: "every box
+   in the main side panel … the same wideness and on the same place … they are all different sizes" — they were 28 / 26 / 18).
+   Mero fills the panel edge to edge, her rail flush with the edge like World's ("the mero chat side menu the same size as the
+   world side menu"). */
+#deeplore-panel.dle-framed > .dle-drawer-inner { padding: 0 0 10px; scrollbar-gutter: stable; }
+/* ↑ room for the scroll bar always (Miinthe: "lore, filter and story might get a scrollbar at some point so why are they stretched
+   like that" — Cast scrolled, so its boxes were narrower than the tabs that didn't): every tab the same width, nothing jumps */
+#deeplore-panel.dle-framed #dle-drawer-tabs { padding-left: 0; padding-right: 0; }
+#deeplore-panel.dle-framed .dle-tab-panel { padding-left: 10px; padding-right: 10px; }
+#deeplore-panel.dle-framed .dle-lv { padding-left: 10px; padding-right: 10px; }
+#deeplore-panel.dle-framed #dle-panel-mero { padding: 0; }
+#deeplore-panel.dle-framed:has(#dle-panel-mero.active) > .dle-drawer-inner, #deeplore-panel.dle-framed:has(#dle-panel-mero.active) #dle-drawer-tabs { padding-bottom: 0; }
+#deeplore-panel.dle-framed > .dle-tab-bar.dle-tabs5 { flex: none; margin: 0; }   /* under the header, outside the scrolling part */
 .dle-ph .dle-statusbtn { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--dk-ink); font: 700 var(--dk-fs)/1 var(--dk-f-body); text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; }
 .dle-ph .dle-statusbtn:hover, .dle-ph .dle-statusbtn[aria-expanded="true"] { background: var(--dk-page); }
 .dle-statusbtn .dle-st { flex: 0 1 auto; min-width: 2.5em; overflow: hidden; text-overflow: ellipsis; }
@@ -98,7 +114,8 @@ body.dle-bar-has-hot #qr--bar { display: none !important; }
 .dle-ph .dk-ib .dle-btn-goo { position: absolute; }
 .dle-ph .dk-ib { position: relative; }
 .dle-ph .dle-lock.on { color: var(--dk-wait); }
-.dle-ph .dle-close-ph { display: none; }
+/* ✕ on a PC too (panel tabs, 2026-11-03) */
+.dle-ph .dle-close-ph { display: inline-grid; }
 #deeplore-panel.dle-mobile .dle-ph .dle-lock { display: none; }
 #deeplore-panel.dle-mobile .dle-ph .dle-close-ph, #deeplore-panel.dle-overlay-mode .dle-ph .dle-close-ph { display: inline-grid; }
 #deeplore-panel.dle-framed .dle-drawer-controls[hidden], #deeplore-panel.dle-framed #dle-drawer-actions[hidden], #deeplore-panel.dle-framed .dle-zone-divider[hidden] { display: none !important; }
@@ -133,6 +150,8 @@ body.dle-bar-on #top-settings-holder .drawer-toggle:has(> #deeploreDrawerIcon) {
 .dle-tab .dle-li .dk-i { width: 1.05em; height: 1.05em; }
 
 /* ── the tab row (mock-up v13): five tabs, icon over word, then ⋯ ───────────────────────────────────────── */
+/* the tab row stays put while a tab scrolls (Miinthe, 2026-11-03: "the scrollbar in cast … also moved the top bar") */
+#deeplore-panel.dle-framed .dle-tab-bar.dle-tabs5 { position: sticky; top: 0; z-index: 6; background: var(--SmartThemeBlurTintColor, var(--dk-page)); backdrop-filter: blur(var(--SmartThemeBlurStrength, 8px)); }
 #deeplore-panel.dle-framed .dle-tab-bar.dle-tabs5 { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) 44px; gap: 0; padding: 0; overflow: visible !important; border-bottom: 1px solid var(--dk-line); flex-wrap: nowrap; }
 #deeplore-panel.dle-framed .dle-tabs5 .dle-tab { position: relative; height: 46px; min-width: 0; margin: 0; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--dk-muted); font: 700 var(--dk-fs-s)/1 var(--dk-f-body); box-shadow: none; }
 #deeplore-panel.dle-framed .dle-tabs5 .dle-tab[hidden] { display: none !important; }
@@ -184,3 +203,9 @@ body.dle-picking-over #deeplore-panel { visibility: hidden !important; }
 .dle-spellwords { display: flex; flex-direction: column; gap: 10px; }
 .dle-spellwords-add { display: flex; gap: 8px; }
 .dle-spellwords-add .dk-field { flex: 1; min-width: 0; }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 3 header icons 28 px (were 36) */
+@media (pointer: fine) { #deeplore-panel.dle-framed .dle-ph .dle-action-btn, #deeplore-panel.dle-framed .dle-ph .dk-ib { width: 28px; height: 28px; min-width: 28px; min-height: 28px; } }   /* a phone keeps its bigger touch size */
+/* 9 the tab counts: the framed little pill */
+#deeplore-panel.dle-framed .dle-tabs5 .dle-tab .dle-tab-badge:not(:empty) { min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid !important; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); color: var(--dk-muted); font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); }

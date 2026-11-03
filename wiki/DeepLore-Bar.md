@@ -14,6 +14,8 @@ From left to right (the buttons that open something first, in a fixed order; the
 - **Side-panel button**: opens the [[Drawer|side panel]]; press it again to close it. It also carries Mero's signal (see below).
 - **My notes**: your own notes, never sent to the AI (switch it off in Settings › Interface › The bar). See [[My Notes]].
 - **🌐 World**: only where the board's world layer is on.
+
+These three open DeepLore's panels. Right-click one while its panel is open to lock or unlock it (a closed one ignores the right-click). If the panel is open but waiting behind another tab, a click brings it to the front. See [[Drawer|Side Panel]] › Panel tabs.
 - **⚡ All quick replies**: opens every Quick Reply of the sets SillyTavern has on here (global ones, this chat's and this character's) as an extra row on top of the bar, in the bar's own look; tap one to run it. **📌** at the end of the row turns it into the chooser: which ones sit on the bar (☆ / ★) and in what order; **Done** goes back. With no set on here, it says so.
 - **Your starred Quick Replies**: right after ⚡, one button each. A star belongs to its set, so it only shows in chats where that set is on.
 - **Re-evaluate and swipe**: undo what the newest reply changed on the board, ask again, and write a new swipe.

@@ -27,7 +27,7 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 - **Multi-vault support:** connect multiple Obsidian vaults at once with content-hash dedup.
 - **Lore upkeep:** [[Mero]] checks the lore against the latest replies and brings entry changes to her Requests (with your sign-off, or on her own with an Undo).
 - **Storyboards and the Cast:** plan your story on a board; a helper AI moves the trackers as the story goes, and NPCs can speak for themselves. See [[Storyboards]] and [[Cast]].
-- **Mero ☆:** a co-writer to talk with about the story. She looks things up (lore, the board, the whole chat, the Cast), asks with clickable question cards, and turns what you planned together into pitches and plans. Also notes, a phrase list against the writer's repeated phrases (the slop guard), and 🎲 Wordle for a break. See [[Mero]].
+- **Mero ☆:** a co-writer to talk with about the story. She looks things up (lore, the board, the whole chat, the Cast), asks with clickable question cards, and turns what you planned together into pitches and plans. Also notes, a phrase list against the writer's repeated phrases (the slop guard), and 🎲 games for a break (Wordle, Four in a Row). See [[Mero]].
 - **Guided swipe:** swipe the newest reply with a direction ("colder, fewer words") that stays for that reply's swipes; compare swipes side by side. See [[DeepLore Bar]].
 - **Run cleanup:** delete a run's last chat and DeepLore offers to move that run's files into a trash folder in your vault (or delete them). See [[Settings Reference]].
 - **Per-chat pin and block:** override entry selection per chat. Force-include or exclude specific entries.

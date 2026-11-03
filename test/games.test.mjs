@@ -6,8 +6,8 @@
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { ANSWERS, GUESSES } from '../src/games/wordle-words.js';
-import { score, keyColors, isWord, pickAnswer, newGame, guess, normGame, board, linePrompt, safeLine, stockLine, TRIES } from '../src/games/wordle-pure.js';
-import { normTalk, TAGS } from '../src/mero-pure.js';
+import { score, keyColors, isWord, pickAnswer, newGame, guess, normGame, board, linePrompt, safeLine, stockLine, readGuess, hintLetter, TRIES } from '../src/games/wordle-pure.js';
+import { normTalk, TAGS, asStore } from '../src/mero-pure.js';
 
 const G = (answer, guesses = []) => normGame({ kind: 'wordle', answer, guesses });
 
@@ -74,7 +74,7 @@ test('Mero is not told the word while the game runs — only for a hint and at t
     for (const what of ['start', 'guess', 'notword']) assert(!linePrompt(g, what, { word: 'qzxvw' }).user.toLowerCase().includes('ghost'), what);
     assert(linePrompt({ ...g, hints: 1 }, 'hint').user.includes('GHOST'));
     assert(linePrompt(guess(g, 'ghost').game, 'won').user.includes('GHOST'));
-    assert(board(g).includes('ABOUT → --G-G'));
+    assert(board(g).includes('ABOUT — 2 green, 0 yellow, 3 gray; right spot: O (3rd), T (5th)'));
 });
 
 test('her names are used: no name set, no name; her own name kept', () => {
@@ -98,7 +98,7 @@ test('ready-made lines exist for every moment and never leak the word mid-game',
         g = guess(g, w).game;
         assert(!stockLine(g, 'guess').toLowerCase().includes('ghost'));
     }
-    assert(stockLine({ ...g, hints: 2 }, 'hint').includes('“G”'));
+    assert(stockLine({ ...g, hints: 3 }, 'hint').includes('every letter'));   // ABOUT gave the O, GHAST the rest: nothing left to give
     assert(stockLine(guess(g, 'ghost').game, 'won').includes('Five'));
 });
 
@@ -108,6 +108,46 @@ test('a game survives the talk store; junk is dropped', () => {
     assertEqual(t.tag, 'game'); assertEqual(t.game.guesses.join(), 'about,smile'); assertEqual(t.game.hints, 1);
     assert(!('game' in normTalk({ tag: 'yap', game: { kind: 'chess' } })));
     assertEqual(normGame({ kind: 'wordle', answer: 'ghost', guesses: ['ghost', 'about'] }).over, 'won');
+});
+
+test('Mero gets each guess counted for her — the VIRAL/MARRY miscount (2026-11-03)', () => {
+    assertEqual(readGuess('viral', 'marry'), 'VIRAL — 1 green, 1 yellow, 3 gray; right spot: R (3rd); in the word but elsewhere: A; not in the word: V, I, L');
+    // a letter gray only because the word has fewer of it is not "not in the word"
+    assertEqual(readGuess('geese', 'crane'), 'GEESE — 1 green, 0 yellow, 4 gray; right spot: E (5th); not in the word: G, S');
+    const p = linePrompt(G('marry', ['horse', 'viral', 'narky']), 'guess').user;
+    assert(p.includes('Greens went from 1 on the guess before to 3 now'));
+    assert(!/[GY-]{5}/.test(p.replace(/—/g, '')), 'no G/Y code left');
+});
+
+test('hints step up: category, then association, then one letter the game picks', () => {
+    const g = G('marry', ['horse']);
+    const h = n => linePrompt({ ...g, hints: n }, 'hint').user;
+    assert(h(1).includes('broad category') && !h(1).includes('letter is'));
+    assert(h(2).includes('closer than a category') && !h(2).includes('letter is'));
+    assert(h(3).includes('the 1st letter is M'));
+    assertEqual(hintLetter(G('marry', ['mardy'])).spot, '4th');   // M A R green: the first spot still open
+    assertEqual(hintLetter(G('ghost', ['ghost'])), null);
+    assert(stockLine({ ...g, hints: 3 }, 'hint').includes('“M”'));
+});
+
+test('a line that spells the word out or adds an ending is swapped too', () => {
+    const g = G('ghost');
+    for (const t of ['GHOSTS everywhere!', 'G-H-O-S-T?', 'g h o s t', 'ghostly vibes']) assert(!safeLine(t, g, 'hint', () => 0).toLowerCase().includes('g'.concat('host')), t);
+    assertEqual(safeLine('Spooky stuff, right?', g, 'hint'), 'Spooky stuff, right?');
+});
+
+test('the comments switch defaults on and keeps off', () => {
+    assertEqual(asStore(null).settings.gameTalk, true);
+    assertEqual(asStore({ settings: { gameTalk: false } }).settings.gameTalk, false);
+});
+
+test('bug hunt 2026-11-03: harmless lines kept, hints never early or repeated', () => {
+    const g = G('there', ['about']);
+    for (const t of ['Ooh, the red letters!', 'the rest stop', 'whereas this one…']) assertEqual(safeLine(t, g, 'hint', () => 0), t, t);
+    for (const t of ['THERE it is', 'T-H-E-R-E', 't h e r e', 'theres more']) assert(safeLine(t, g, 'hint', () => 0) !== t, t);
+    assert(!/letter is/.test(stockLine({ ...g, hints: 2 }, 'hint')), 'no letter at hint 2 without AI');
+    const spots = [3, 4, 5].map(n => hintLetter({ ...g, hints: n }).spot);
+    assertEqual(new Set(spots).size, 3);
 });
 
 summary('games');

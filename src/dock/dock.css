@@ -1,0 +1,62 @@
+/* Panel tabs (2026-11-03; mock-up https://claude.ai/artifact/2rcyY7N1UDEvsMcWG1KLEK v6) — src/dock/dock.js. PC only
+   (body.dle-dock-on). Colors: the kit's --dk-* tokens; the frame copies DeepLore's side panel (--dle-dock-*). */
+
+/* a panel waiting behind another tab on its side */
+body.dle-dock-on .dle-dock-behind { visibility: hidden !important; pointer-events: none !important; }
+
+/* ── My notes and World: the side panel's frame, flat — the header and the body fill the panel edge to edge (Miinthe: "I liked it
+   more when the side panel header etc was actually filling out the whole space") ── */
+body.dle-dock-on .dle-notes.dle-dock-panel, body.dle-dock-on .dle-world.dle-dock-panel {
+    position: fixed; padding: 0; border: 0; border-top: var(--dle-dock-top, 1px solid var(--dk-line)); border-radius: 0; box-shadow: none;
+    background: var(--dle-dock-bg, var(--dk-page)); backdrop-filter: var(--dle-dock-blur, none); overflow: hidden;
+}
+body.dle-dock-on .dle-dock-panel .dle-nt-head, body.dle-dock-on .dle-dock-panel .dle-wd-head {
+    flex: none; height: 40px; margin: 0; padding: 0 6px 0 12px; border-bottom: 1px solid var(--dk-line); border-radius: 0; background: var(--dk-menu);
+}
+
+/* the locks: yellow when locked, the same on all three panels (Miinthe: "notes and world have yellow locks … deeplore's lock
+   is lavender") */
+.dle-notes .dle-nt-head [data-lock].on, .dle-world .dle-wd-head [data-lock].on, #deeplore-panel .dle-ph .dle-lock.on { color: var(--dk-wait); }
+
+/* room for the scroll bar always, as in the side panel (every view the same width, nothing jumps when one appears) */
+.dle-notes .dle-nt-body, .dle-world .dle-wd-body, .dle-world .dle-wd-list, .dle-world .dle-wd-thread, .dle-world .dle-wd-art, .dle-world .dle-wd-gform { scrollbar-gutter: stable; }
+/* Messages: the body never scrolls there (its list does), so no room for a scroll bar it won't have — else it is counted twice */
+.dle-world .dle-wd-body.msgs, .dle-world .dle-wd-body:has(> .dle-wd-art) { scrollbar-gutter: auto; }
+body.dle-dock-on .dle-world.dle-dock-left .dle-wd-body.msgs > .dle-wd-as { padding-left: 20px; }   /* "Writing as" where it is in Chatter (there the body's scroll room is on its left) */
+/* World's scrolling parts all 10px in from the sides (Miinthe: World's "are also all over the place" — they were 10 / 6 / 12 / 12) */
+.dle-world .dle-wd-list, .dle-world .dle-wd-thread, .dle-world .dle-wd-art, .dle-world .dle-wd-gform { padding-left: 10px; padding-right: 10px; }
+
+/* the scroll bar on the panel's outer edge: left on the left, right on the right (Miinthe, 2026-11-03) */
+/* (not an open conversation, .dle-wd-thread: there the flip would also flip which side the messages sit on) */
+body.dle-dock-on #deeplore-panel.dle-left .dle-drawer-inner, body.dle-dock-on .dle-notes.dle-dock-left .dle-nt-body, body.dle-dock-on .dle-world.dle-dock-left :is(.dle-wd-body, .dle-wd-list, .dle-wd-art, .dle-wd-gform) { direction: rtl; }
+body.dle-dock-on #deeplore-panel.dle-left .dle-drawer-inner > *, body.dle-dock-on .dle-notes.dle-dock-left .dle-nt-body > *, body.dle-dock-on .dle-world.dle-dock-left :is(.dle-wd-body, .dle-wd-list, .dle-wd-art, .dle-wd-gform) > * { direction: ltr; }
+/* World's lists sit inside its body: the body's "children read left-to-right" would win, so say it once more, closer */
+body.dle-dock-on .dle-world.dle-dock-left .dle-wd-body > :is(.dle-wd-list, .dle-wd-art, .dle-wd-gform) { direction: rtl; }
+body.dle-dock-on .dle-world.dle-dock-left .dle-wd-body > :is(.dle-wd-list, .dle-wd-art, .dle-wd-gform) > * { direction: ltr; }
+body.dle-dock-on .dle-world.dle-dock-left .dle-wd-body > .dle-wd-asmenu { left: 0; }   /* absolutely placed: would jump to the right edge */
+
+/* ── the strip at the bottom: full width, flush with the bottom edge; the tabs share it ── */
+.dle-dock-tabs { flex: none; display: flex; height: 42px; margin: 0; border-top: 1px solid var(--dk-line); background: var(--dk-menu); }
+body:not(.dle-dock-on) .dle-dock-tabs { display: none; }
+.dle-dt { position: relative; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 0 5px 0 10px;
+    border: 1px solid transparent; border-top: 0; border-bottom: 0; background: none; color: var(--dk-muted); cursor: pointer; user-select: none; touch-action: none;
+    font: 700 var(--dk-fs-s)/1 var(--dk-f-body); }
+.dle-dt:hover { color: var(--dk-ink); background: color-mix(in oklab, var(--dk-ink) 4%, transparent); }
+.dle-dt > .dk-i:first-child { width: 15px; height: 15px; flex: none; color: var(--dk-muted); }
+.dle-dt .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the shown tab opens up into its panel */
+.dle-dt.on { margin-top: -1px; background: var(--dle-dock-bg, var(--dk-page)); border-color: var(--dk-line); color: var(--dk-ink); }
+.dle-dt.on:first-child { border-left-color: transparent; }
+.dle-dt.on:last-child { border-right-color: transparent; }
+.dle-dt:not(.on) + .dle-dt:not(.on) { box-shadow: inset 1px 0 0 var(--dk-line); }
+.dle-dt.on > .dk-i:first-child { color: var(--tc, var(--dk-accent)); }
+.dle-dt .lk { display: grid; color: var(--dk-wait); } .dle-dt .lk .dk-i { width: 12px; height: 12px; }
+.dle-dt .x { flex: none; width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--dk-muted); cursor: pointer; }
+.dle-dt .x .dk-i { width: 13px; height: 13px; }
+.dle-dt .x:hover { background: color-mix(in oklab, var(--dk-ink) 10%, transparent); color: var(--dk-ink); }
+.dle-dt:focus-visible { outline: 2px solid var(--dk-accent); outline-offset: -2px; }
+.dle-dt.dragging { opacity: .35; }
+/* dragging a tab across: the tab under the pointer, and the other side lit up */
+.dle-dt-ghost { position: fixed; z-index: 32000; height: 36px; pointer-events: none; opacity: .95; background: var(--dk-menu); border: 1px solid var(--dk-line-strong); border-radius: 9px; box-shadow: var(--dk-shadow); color: var(--dk-ink); }
+.dle-dock-drop { position: fixed; z-index: 31999; display: grid; place-items: center; pointer-events: none; border: 2px dashed var(--dk-accent); background: color-mix(in oklab, var(--dk-accent) 12%, transparent); color: var(--dk-accent-ink); font: 700 var(--dk-fs-l) var(--dk-f-display); }
+.dle-dock-drop.hot { background: color-mix(in oklab, var(--dk-accent) 26%, transparent); }

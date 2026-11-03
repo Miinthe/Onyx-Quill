@@ -56,14 +56,13 @@ test('light text = a dark DeepLore, dark text = a light DeepLore', () => {
     assertEqual(palette({}).scheme, palette(ST_FALLBACK).scheme);
 });
 
-test('the theme shows: different themes give different backgrounds and accents, the same theme the same', () => {
+test('the theme shows: different themes give different backgrounds; the accent is DeepLore\'s own (2026-11-03)', () => {
     const a = palette(THEMES.Azure).vars, c = palette(THEMES.Cappuccino).vars, cm = palette(THEMES['Celestial Macaron']).vars;
     assert(a['--dk-page'] !== c['--dk-page'] && c['--dk-page'] !== cm['--dk-page'], 'backgrounds differ');
-    assert(a['--dk-accent'] !== c['--dk-accent'], 'accents differ');
     assertEqual(palette(THEMES.Azure).vars, a);
-    // a hand change to one color moves DeepLore with it
+    // the theme's quote color no longer moves the accent (Miinthe: one accent color you pick)
     const own = { ...THEMES.Cappuccino, quote: 'rgba(40, 200, 120, 1)' };
-    assert(palette(own).vars['--dk-accent'] !== c['--dk-accent'], 'changed quote color → changed accent');
+    assertEqual(palette(own).vars['--dk-accent'], c['--dk-accent'], 'quote color leaves the accent');
 });
 
 test('a see-through tint is laid over a solid color, never left see-through', () => {
@@ -71,11 +70,13 @@ test('a see-through tint is laid over a solid color, never left see-through', ()
     assert(/^#[0-9a-f]{6}$/.test(v['--dk-page']), 'solid');
 });
 
-test('Mero\'s color is one setting: it changes Mero and nothing else', () => {
-    const a = palette(THEMES.Azure).vars, b = palette(THEMES.Azure, { mero: '#3aa0ff' }).vars;
-    assert(a['--dk-mero'] !== b['--dk-mero'], 'Mero changed');
-    for (const k of Object.keys(a)) if (!k.includes('mero')) assertEqual(b[k], a[k], k);
-    assertEqual(palette(THEMES.Azure, { mero: 'not a color' }).vars['--dk-mero'], palette(THEMES.Azure, { mero: MERO_DEFAULT }).vars['--dk-mero']);
+test('one accent (2026-11-03): her pick changes the accent and Mero together, and nothing else; default Mero\'s pink', () => {
+    const a = palette(THEMES.Azure).vars, b = palette({ ...THEMES.Azure, pick: '#3aa0ff' }).vars;
+    for (const k of ['--dk-accent', '--dk-mero', '--dk-accent-soft', '--dk-selected']) assert(a[k] !== b[k], k + ' changed');
+    assertEqual(b['--dk-accent'], b['--dk-mero'], 'one color');
+    for (const k of Object.keys(a)) if (!/accent|mero|selected/.test(k)) assertEqual(b[k], a[k], k);
+    assertEqual(a['--dk-accent'], palette(THEMES.Azure, { mero: MERO_DEFAULT }).vars['--dk-mero'], 'default = Mero pink');
+    assertEqual(palette({ ...THEMES.Azure, pick: 'not a color' }).vars['--dk-accent'], a['--dk-accent'], 'junk → default');
 });
 
 test('the icon picker keeps the board\'s groups; search finds words and the emoji itself, each once', () => {

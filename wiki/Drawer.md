@@ -15,7 +15,10 @@ Along the top of the panel:
 - **Scribe**: write session notes now.
 - **New lore**: the AI suggests entries from the chat.
 - **New run**: a fresh chat as the next run, with the same folders.
-- **Lock** (PC only): keeps the panel open, even under SillyTavern's own panels, until you unlock it. A locked panel comes back open after a reload. Phones have no lock; there a ✕ closes the panel.
+- **Lock** (PC only): keeps the panel open, even under SillyTavern's own panels, until you unlock it. A locked panel comes back open after a reload. Yellow when locked. **Right-click** it to move the panel to the other side. Phones have no lock.
+- **✕**: closes the panel (a locked one unlocks as it closes).
+
+The header and the tab row run across the whole width of the panel. The tab row stays under the header while a tab scrolls, and the scroll bar sits on the panel's outer edge (left on the left, right on the right).
 
 ### Ready: numbers and health
 
@@ -74,8 +77,23 @@ The last tab button holds the tools:
 
 ---
 
+## Panel tabs (PC)
+
+The side panel, [[My Notes]] and World (where the board's world layer is on) are DeepLore's three panels. Each one sits on the left or the right of the chat, and you choose which (remembered per panel). They share one look: the same width as the side panel, the same header across the top.
+
+- **Panels on the same side become tabs** in a row at the bottom of that side. One shows; the others wait behind it. Click a tab to show it, **✕** on a tab to close that panel. A small yellow lock on a tab shows which ones are locked.
+- **A panel alone on its side** has no tab row.
+- **Move a panel to the other side:** drag its tab across (the other side lights up), right-click its tab → **Move to the left / right**, or right-click the lock in its header (the way for a panel that's alone).
+- **Right-click a tab** for **Lock open / Unlock**, **Move**, **Close**, and for the whole row **Lock all**, **Unlock all** and **Close all**.
+- **Locks:** a locked panel stays open. An unlocked one closes when you click into the chat — but not when you click in one of the other DeepLore panels. Left-click a panel's button on the [[DeepLore Bar]] to open it (unlocked); right-click the button of an open panel to lock or unlock it. Closing a panel clears its lock.
+- **A panel waiting behind another tab:** its bar button brings it to the front instead of closing it.
+
+Phones keep one panel at a time over the chat, without tabs.
+
+---
+
 ## Good to know
 
-- **Left or right:** ⋯ → **Move the side panel to the left** (or right). It is remembered, and Mero's rail follows to the outer edge.
+- **Left or right:** right-click the header's lock, or ⋯ → **Move the side panel to the left** (or right). It is remembered, and Mero's rail follows to the outer edge.
 - **Keyboard** (when the panel has focus and you are not typing): `r` refresh, `s` scribe, `n` new lore, `g` graph.
 - **Every reply** has a DeepLore button (📖) next to SillyTavern's own message buttons, with **Why these entries**, **What this changed** and more. See [[DeepLore Bar]].

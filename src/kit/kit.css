@@ -105,9 +105,11 @@
     font: 700 calc(10px * var(--fontScale, 1))/1 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted);
 }
 .dk-seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--dk-line); border-radius: 8px; background: var(--dk-menu); }
-.dk-seg button { flex: 1; height: 26px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
+.dk-seg button { flex: 1; height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--dk-muted); font-size: var(--dk-fs); white-space: nowrap; }
 .dk-seg button:hover { color: var(--dk-ink); }
-.dk-seg button[aria-pressed="true"] { background: var(--dk-page); color: var(--dk-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+/* one look everywhere (Miinthe, 2026-11-03, unification: "a bar = pick one, pills = tags"): the choice in the accent color, as the pills
+   and Mero's bar show it — the side panel, settings, Mero, the board and World all draw their bars like this */
+.dk-seg button[aria-pressed="true"] { background: var(--dk-accent-soft); border-color: var(--dk-accent); color: var(--dk-ink); font-weight: 700; box-shadow: none; }
 
 /* ── switch (on/off) ─────────────────────────────────────────────────────── */
 .dk-switch { width: 34px; height: 20px; flex: none; position: relative; padding: 0; border: 0; border-radius: 999px; background: var(--dk-line-strong); cursor: pointer; }
@@ -185,7 +187,7 @@ textarea.dk-field { resize: vertical; }
 .dk-win.dk-wide { width: min(820px, 100%); }
 .dk-win.dk-small { width: min(400px, 100%); }
 .dk-whead { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 10px 10px 16px; border-bottom: 1px solid var(--dk-line); }
-.dk-whead h2 { flex: 1; min-width: 0; margin: 0; font: 700 calc(17px * var(--fontScale, 1))/1.2 var(--dk-f-display); color: var(--dk-ink); overflow-wrap: anywhere; }
+.dk-whead h2 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); color: var(--dk-ink); overflow-wrap: anywhere; }
 .dk-wbody { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .dk-wbody > * { flex-shrink: 0; }
 /* the footer stays in view however long the window gets (Add window decision, 2026-10-15) */
@@ -286,3 +288,16 @@ body:has(.dk-scrim) .dk-notices { top: 12px; transform: translateX(-50%); }
 @media (prefers-reduced-motion: reduce) {
     .dk-switch::after, .dk-fh .dk-chev { transition: none; }
 }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 6 titles: one letter spacing everywhere (SillyTavern's own h2 spacing leaked into the windows on its page) */
+.dk :is(h1, h2, h3), .dk-win :is(h1, h2, h3) { letter-spacing: normal; }
+/* 11 one empty state: dashed box, a short bold line, a hint */
+.dk-empty { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px dashed var(--dk-line-strong); border-radius: 10px; font-size: var(--dk-fs-s); color: var(--dk-muted); text-align: left; }
+.dk-empty b { color: var(--dk-ink); font-size: var(--dk-fs); }
+/* 9 one count: the framed little pill (.dk-n) */
+.dk-count { flex: none; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid var(--dk-line); border-radius: 999px; background: var(--dk-menu); font: 700 var(--dk-fs-xs)/1 var(--dk-f-body); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+/* 4 one small icon button (in rows and cards): 24 px, corners 6, no frame until pointed at */
+.dk-ib.dk-ib-s, .dk-isb { width: 24px; height: 24px; border-radius: 6px; }
+/* 8 one fold header: 36 px everywhere */
+.dk-fh { min-height: 36px; }

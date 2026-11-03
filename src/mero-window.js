@@ -18,11 +18,14 @@ import {
     boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
     meroGlow, seeGlow, pickContext, cancelPick, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
-    startGame, gameGuess, gameHint, meroWorking, redoMero, swipeMero, deleteMsg, editMsg, answerTalkAsks,
+    startGame, gameGuess, gameDrop, gameHint, meroWorking, redoMero, swipeMero, deleteMsg, editMsg, answerTalkAsks,
 } from './mero.js';
 import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequests } from './requests.js';   // 📬 (step 3)
 import { lookAtLore, undoEntry, meroLooking, onLookChanged, initMeroLore } from './mero-lore.js';   // ☆ entry ideas
 import * as P from './pitches.js';   // 💡 pitches (step 4, 2026-10-14)
+import { replay as fourBoard } from './games/four-pure.js';
+/** Four in a Row: the window gets the board worked out (cells, whose turn, the end, the winning four) — it only draws. */
+const withBoard = t => (t?.game?.kind === 'four' ? { ...t, game: { ...t.game, ...fourBoard(t.game) } } : t);
 import { fitHeight, gapCards } from './panel/mero-view-pure.js';   // overhaul (side panel v13)
 import { slopList, addPhrase, updatePhrase, removePhrase, unFine, onSlopChanged } from './slop.js';
 
@@ -35,7 +38,7 @@ function load() {
     let trackers = [];
     try { trackers = [...getTrackers().map(t => t.name), ...(live()?.board.trackers || []).map(t => t.name)]; } catch { /* no board */ }
     return clone({
-        where: meroWhere(), talks: meroTalks(), notes: meroNotes(), settings: meroSettings(), busy: meroBusy(), busyIn: meroBusyIn(),
+        where: meroWhere(), talks: meroTalks().map(withBoard), notes: meroNotes(), settings: meroSettings(), busy: meroBusy(), busyIn: meroBusyIn(),
         connection: meroConnectionName(), trackers: [...new Set(trackers)], popped, working: meroWorking(), lastIndex: (getContext()?.chat || []).length - 1,
         requests: requestsHere(), holding: replyWaits(), looking: meroLooking(), glow: meroGlow(), pitches: P.pitchesView(),
         profiles: (extension_settings?.connectionManager?.profiles || []).map(p => ({ id: p.id, name: p.name || p.id })), profileId: getSettings().meroProfileId || '',
@@ -120,6 +123,10 @@ export function fitMount() {
     const inner = scroller.clientHeight - (parseFloat(cs.paddingTop) || 0);
     const top = mr.top - sr.top - (parseFloat(cs.paddingTop) || 0) - (scroller.clientTop || 0) + scroller.scrollTop;
     mount.style.height = fitHeight({ scrollerHeight: inner, top, padBottom: parseFloat(cs.paddingBottom) || 0 }) + 'px';
+    // whatever still sticks out below (the tab zone's own bottom padding, 8px): taken off too — it showed as a scroll bar
+    // with nothing to scroll (Miinthe, 2026-11-03: "in the side panel (mero chat) is also a mystery scroll bar")
+    const over = scroller.scrollHeight - scroller.clientHeight;
+    if (over > 0) mount.style.height = Math.max(300, mount.offsetHeight - over) + 'px';
     if (scroller.scrollTop) scroller.scrollTop = 0;
 }
 addEventListener('resize', () => fitMount());
@@ -172,7 +179,7 @@ window.__dleMeroHost = {
     pickContext: async () => { const v = await pickContext(); const tab = document.getElementById('dle-tab-mero'); if (v && tab && !tab.classList.contains('active')) tab.click(); return v ? clone(v) : null; },
     where: id => whereAreWe(id),
     newTalk: tag => clone(newTalk(tag)),
-    gameStart: (id, kind) => startGame(id, kind), gameGuess: (id, word) => gameGuess(id, word), gameHint: id => gameHint(id),   // 🎲 (2026-10-27)
+    gameStart: (id, kind) => startGame(id, kind), gameGuess: (id, word) => gameGuess(id, word), gameDrop: (id, c) => gameDrop(id, c), gameHint: id => gameHint(id),   // 🎲 (2026-10-27; Four in a Row 2026-11-03)
     updateTalk: (id, patch) => updateTalk(id, patch),
     deleteTalk: (id, what) => deleteTalk(id, what),
     keepCard: (id, k, c, f) => keepCard(id, k, c, f),

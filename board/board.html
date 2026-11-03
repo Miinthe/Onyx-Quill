@@ -113,7 +113,7 @@ button { cursor: pointer; }
 .side .wdial .seg2 button { padding: 2px 6px; font-size: 11.5px; }
 .side .wmix { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-top: 1px dashed var(--line); }
 .side .wmixr { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; } .side .wmixr small { color: var(--muted); }
-.side .wsu-note { padding: 8px 10px; border-radius: 8px; background: color-mix(in oklab, #ff79b0 12%, transparent); border-left: 3px solid #ff79b0; font-size: 12.5px; line-height: 1.45; }
+.side .wsu-note { padding: 8px 10px; border-radius: 8px; background: color-mix(in oklab, var(--mero) 12%, transparent); border-left: 3px solid var(--mero); font-size: 12.5px; line-height: 1.45; }
 .side .wqh { display: flex; align-items: center; gap: 8px; width: 100%; }
 .wprow.out { opacity: .6; } .wprow.out .wpn small { color: var(--muted); }
 .side .wqh .wmute { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
@@ -1477,10 +1477,11 @@ body.mode-link .board .v2t { cursor: crosshair; }
 .aw .asw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--page); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s; }
 .aw .asw[aria-checked="true"] { background: var(--accent); }
 .aw .asw[aria-checked="true"]::after { left: 18px; }
-.aw .aseg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; align-self: flex-start; }
-.aw .aseg button { border: 0; background: var(--page); padding: 3px 10px; font-size: 12.5px; color: var(--ink); }
-.aw .aseg button + button { border-left: 1px solid var(--line); }
-.aw .aseg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+/* = DeepLore's one bar (kit .dk-seg; unification 2026-11-03) */
+.aw .aseg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--menu); align-self: flex-start; }
+.aw .aseg button { height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 12.5px; color: var(--muted); }
+.aw .aseg button:hover { color: var(--ink); }
+.aw .aseg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 700; }
 .aw .bands { display: flex; flex-direction: column; gap: 4px; grid-column: 1 / -1; }
 .aw .bands div { display: grid; grid-template-columns: 10px minmax(0, 1fr) 44px 64px; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
 .aw .bands i { width: 10px; height: 10px; border-radius: 50%; }
@@ -1631,6 +1632,33 @@ body.mode-link .board .v2t { cursor: crosshair; }
   .linkmenu { left: 8px !important; right: 8px; width: auto; }
   .applpop { left: 8px !important; right: 8px; width: auto !important; }
 }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu): the board's controls in DeepLore's
+   one size; its text stays at the board's own reading size ── */
+/* 1/2 buttons: 28 px, corners 8, 13 px text — the menu bar and the tools too */
+.btn, .b2 { height: auto; min-height: 28px; padding: 3px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 8px; font-size: 13px; }
+.btn.issue, .b2.issue, .b2.sub { height: auto; min-height: 28px; }
+.b2.issue { display: block; padding: 5px 10px; }
+.menubar button, .tool { font-size: 13px; }
+.tool { height: 28px; border-radius: 8px; }
+/* 4 small icons: 24 px, corners 6 */
+.hcol .rexp { width: 24px; height: 24px; }
+/* 5 fields: 30 px, 13 px text */
+.search input { height: 30px; font-size: 13px; }
+/* 6 titles: the board's name is a window title (19 px); a card's name a panel title (15 px) */
+.page h1 { font-size: 19px; }
+.side h2 { font-size: 15px; }
+.side h2.lnh { font-size: 15px; }
+/* 10 cards: corners 10 */
+.board .thead.tcard { border-radius: 10px; }
+/* 7 small labels in capitals: 10.5 px, bold, the same spacing as everywhere */
+.side h3, .abody h4, .linkmenu .fam, .wov-card .wch b, .epick h5, .side .card h4 { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; }
+/* the more specific board rules: the size buttons, the toolbar's tools */
+@media (pointer: fine) { .tbsize .b2 { height: 28px; font-size: 13px; } }   /* a phone keeps its bigger touch size */
+/* the board's own small bars (.seg2: strictness, ask me at …) = DeepLore's one bar: the choice in the accent color */
+.side .seg2 button, .dialog .seg2 button { border: 1px solid transparent; font-size: 13px; }
+.side .seg2 button.on, .dialog .seg2 button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 700; box-shadow: none; }
+.tools .tool { border-radius: 8px; }
 </style>
 
 <div class="app">

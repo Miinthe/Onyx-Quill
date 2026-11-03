@@ -291,6 +291,7 @@ Colors, the bar, notices, removing things, and the graph. About the bar: [[DeepL
 | Setting | Default | What it does |
 |---|---|---|
 | **Colors** | follow SillyTavern | Follow SillyTavern’s theme (your own colors too), or keep DeepLore always light or dark. Choices: follow SillyTavern · light · dark. `dkTheme` |
+| **Accent color** | Mero pink | DeepLore’s own color: Mero, the active tab, main buttons, the choice in every bar, what is selected. Seven ready colors or your own (the color picker at the end). It is made readable on your theme by itself, in the side panel, Mero’s window, World, My notes and the board. `accentColor` |
 
 ### The bar
 

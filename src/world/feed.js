@@ -65,7 +65,7 @@ const kindOf = (w, key) => (key === USER ? 'user' : key === MAIN ? 'main' : Stri
 export function renderChatter(body, w) {
     const letters = w.look === 'letters', me = currentMe();
     const list = feedView(H.store(), filter, k => kindOf(w, k));
-    let h = asRowHtml() + `<div class="dle-wd-feed"><div class="dle-wd-fchips">${[['all', 'All'], ['news', 'News'], ['rumor', '◌ Rumors'], ['cast', 'Posts']].map(([v, l]) => `<button type="button" class="dk-chip${filter === v ? ' on' : ''}" data-ff="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`;
+    let h = asRowHtml() + `<div class="dle-wd-feed"><div class="dk-seg dle-wd-fseg" role="group" aria-label="Show">${[['all', 'All'], ['news', 'News'], ['rumor', '◌ Rumors'], ['cast', 'Posts']].map(([v, l]) => `<button type="button" data-ff="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`;
     h += `<div class="dle-wd-postbox"><button type="button" class="dk-ib" data-photo title="Attach a photo (described)" aria-label="Attach a photo">📷</button><textarea class="dk-field" rows="1" data-post-ta data-tagbox placeholder="${letters ? 'Pin a note to the board as' : 'Post as'} ${esc(nameOf(me))}…" aria-label="New post"></textarea><button type="button" class="dk-btn dk-primary" data-post>${letters ? 'Pin it' : 'Post'}</button></div>`;
     if (feedBusy) h += '<div class="dle-wd-hint">The world is posting…</div>';
     if (!list.length) h += `<div class="dle-wd-empty"><b>${letters ? 'Nothing pinned to the board yet.' : 'No chatter yet.'}</b><span>Posts come as the story moves (your "how alive" mix on the board). Post something yourself, and someone may answer.</span></div>`;

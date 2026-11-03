@@ -9,7 +9,7 @@
  *     [[KIND]] no longer changes it), state: 'open'|'resolved'|'archived', created, updated, summary,
  *     msgs: [{ who: 'miinthe'|'mero', t, at, ctx?, cards?, pitchNos?, planNos?, steps? (Mero's lookups for this answer),
  *              sw? + swi? (↻ redo: every version of Mero's LAST answer, until Miinthe writes again) }],
- *     game? (a 🎲 Games talk: games/wordle-pure.js) }
+ *     game? (a 🎲 Games talk: games/games-pure.js — Wordle, Four in a Row) }
  * NOTES — one list, each:
  *   { id, kind: 'dont'|'steer'|'idea'|'fact', text, story (true: the writer gets it; false: only Mero),
  *     last: 'flash'|'sticky'|'pinned', until: { replies?: n }, scope: 'chat'|'run'|'char'|'board',
@@ -32,7 +32,7 @@ export const SCOPES = ['chat', 'run', 'char', 'board'];
 import { normSteps } from './mero-tools-pure.js';
 import { ASK_FORMAT, takeAsks, normAsks, withAsked } from './ask-pure.js';
 import { meroNames, named, nameRule } from './mero-names-pure.js';
-import { normGame } from './games/wordle-pure.js';
+import { normGame } from './games/games-pure.js';
 
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
@@ -143,6 +143,7 @@ export function asStore(raw) {
             // "entry changes" setting — off became Off duty, "apply on their own" became no sign-off.
             job: JOBS.includes(st.job) ? st.job : st.entryChanges === 'off' ? 'off' : 'part',
             signoff: typeof st.signoff === 'boolean' ? st.signoff : st.entryChanges !== 'auto',
+            gameTalk: st.gameTalk !== false,   // 🎲 Mero comments on the games (Miinthe, 2026-11-03: off if you like — hints still come); switched in the game itself
             web: st.web !== false,   // 🌐 she may search the web when she needs to (2026-11-03; needs a search set up in SillyTavern — mero-web.js)
         },
     };

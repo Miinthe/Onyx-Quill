@@ -455,7 +455,7 @@ export function mountLoreView(panel) {
             injectedKeys,
         });
         if (!groups.length) {
-            const e = h('div', 'dle-lv-empty', trace ? '<p>Nothing was left out of the last reply.</p>' : '<p>Nothing yet.</p>');
+            const e = h('div', 'dle-lv-empty dk-empty', trace ? '<b>Nothing was left out of the last reply.</b>' : '<b>Nothing yet.</b><span>Send a message: what lore went in shows here.</span>');
             if (!trace) e.title = 'After a reply, the entries that matched but did not go in show here, by reason';
             body.append(e);
             return;

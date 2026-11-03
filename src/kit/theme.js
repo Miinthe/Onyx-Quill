@@ -29,7 +29,13 @@ export function readStTheme(src = stDocument()) {
 
 function paint(doc) {
     const src = stDocument();
-    const { scheme, vars } = palette(readStTheme(src), { mero: meroColor, scheme: schemeOf() });
+    // the forced light / dark (Settings › Interface › Look) is known on SillyTavern's page; it is written there as
+    // --dle-scheme-pick, so DeepLore's windows in iframes (Mero, the board) follow it too (bug hunt 2026-11-03: Mero stayed dark)
+    const own = schemeOf(), stRoot = src.documentElement;
+    if (doc === src) { const want = own === 'light' || own === 'dark' ? own : ''; if (stRoot.style.getPropertyValue('--dle-scheme-pick') !== want) { if (want) stRoot.style.setProperty('--dle-scheme-pick', want); else stRoot.style.removeProperty('--dle-scheme-pick'); } }
+    const picked = stRoot.style.getPropertyValue('--dle-scheme-pick').trim();
+    const forced = own === 'light' || own === 'dark' ? own : picked === 'light' || picked === 'dark' ? picked : null;
+    const { scheme, vars } = palette(readStTheme(src), { mero: meroColor, scheme: forced });
     const root = doc.documentElement;
     for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
     root.dataset.dkScheme = scheme;
@@ -101,6 +107,17 @@ export function followTheme(doc = document, opts = {}) {
 export function configureTheme({ scheme } = {}) { if (scheme) schemeOf = scheme; repaintAll(); }
 /** Redraw every followed page now (e.g. after a setting changed). */
 export const repaintTheme = () => repaintAll();
+
+/**
+ * DeepLore's accent (Settings › Interface › Look › Accent color): written onto SillyTavern's page as --dle-accent-pick,
+ * where every DeepLore page (iframes too) reads its colors from; '' = the default (Mero's pink).
+ */
+export function setAccent(color) {
+    const root = stDocument().documentElement, v = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? color : '';
+    if (root.style.getPropertyValue('--dle-accent-pick') === v) return;
+    if (v) root.style.setProperty('--dle-accent-pick', v); else root.style.removeProperty('--dle-accent-pick');
+    repaintAll();
+}
 
 /** Mero's color (an appearance option later). Repaints every followed page. */
 export function setMeroColor(color) {

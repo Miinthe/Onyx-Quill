@@ -193,6 +193,7 @@ export const defaultSettings = {
     notesKeepOpen: false,                  // My notes: was open while locked → opens again after a reload
     kitNoAsk: {},                          // overhaul: the shared parts' "Don't ask me again" answers (per kind of removal)
     dkTheme: 'follow',                     // overhaul: DeepLore's look — 'follow' SillyTavern's theme, or always 'light' / 'dark'
+    accentColor: '',                       // DeepLore's one accent color ('' = Mero's pink), Settings › Interface › Look (2026-11-03)
     barShow: true,                         // overhaul: the DeepLore bar above the message box
     barReev: true, barGuide: true, barSpell: true, barSsend: true, barDraftBtn: true,   // the bar's action buttons, each on or off (Miinthe, 2026-11-03)
     spellWords: [],                        // ✓ Fix spelling: her own words — never "fixed", and what a near miss gets fixed to (Miinthe, 2026-11-03)

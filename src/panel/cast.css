@@ -114,3 +114,8 @@ button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-
 .dle-cv-ties > .dk-btn { justify-self: start; }
 .dle-cv-tiew { margin: 6px 4px 2px; padding: 6px 8px; border: 1px solid var(--dk-line); border-radius: 8px; font-size: var(--dk-fs-s); color: var(--dk-muted); overflow-wrap: anywhere; }
 .dle-cv-tiew b { color: var(--dk-ink); }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 4 small icons 24 px; 12 rows corners 8 */
+.dle-cv .dle-cv-grip { width: 24px; height: 24px; }
+.dle-cv-open { border-radius: 8px; }

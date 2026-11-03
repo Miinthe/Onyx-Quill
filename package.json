@@ -75,7 +75,7 @@
     "test:filters-view": "node test/filters-view.test.mjs",
     "test:mero-view": "node test/mero-view.test.mjs",
     "test:world-discretion": "node test/world-discretion.test.mjs",
-    "test:games": "node test/games.test.mjs",
+    "test:games": "node test/games.test.mjs && node test/games-four.test.mjs && node test/dock.test.mjs",
     "test:run-cleanup": "node test/run-cleanup.test.mjs",
     "test:icon-drawer": "node test/icon-drawer.test.mjs",
     "test:slop": "node test/slop.test.mjs",

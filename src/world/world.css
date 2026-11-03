@@ -4,10 +4,13 @@
     /* z-index: set by world.js — over DeepLore's side panel, under SillyTavern's own panels while one is open */
     --w: var(--dk-good); --w-soft: var(--dk-good-soft);
     position: fixed; z-index: 1001; top: calc(var(--topBarBlockSize, 50px) + 10px); bottom: 120px; left: 12px;
-    width: min(380px, calc(100vw - 24px)); display: flex; flex-direction: row-reverse;   /* the rail on the outer edge, like Mero's */
+    width: min(380px, calc(100vw - 24px)); display: flex; flex-direction: column;   /* the header, then the rail and the body (.dle-wd-split) */
     background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 12px; box-shadow: var(--dk-shadow); overflow: hidden;
 }
-.dle-world.right { left: auto; right: 12px; flex-direction: row; }
+.dle-world.right { left: auto; right: 12px; }
+/* the rail on the outer edge, like Mero's */
+.dle-wd-split { flex: 1; min-height: 0; display: flex; flex-direction: row-reverse; }
+.dle-world.right .dle-wd-split { flex-direction: row; }
 /* docked (Miinthe, 2026-10-19, screenshot): when there is room beside the chat, fill that side the way DeepLore's side panel
    and SillyTavern's own side panels do — flush to the edge, top bar to bottom, as wide as the space next to the chat */
 .dle-world.docked { top: var(--topBarBlockSize, 50px); bottom: 0 !important; left: 0; width: calc((100dvw - var(--sheldWidth, 50vw) - 2px) / 2);
@@ -15,6 +18,7 @@
 .dle-world.docked.right { left: auto; right: 0; border-width: 0 0 0 1px; }
 /* phone: the screen under SillyTavern's top bar; the rail runs along the bottom */
 .dle-world.phone { inset: var(--topBarBlockSize, 50px) 0 auto 0; width: auto; height: calc(100dvh - var(--topBarBlockSize, 50px)); border-radius: 0; border: 0; flex-direction: column; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dle-world.phone .dle-wd-split { flex-direction: column; }
 .dle-world [hidden] { display: none !important; }
 
 .dle-wd-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -120,7 +124,7 @@
 .dle-wd-thread.letters .bub .sal { margin-bottom: 4px; } .dle-wd-thread.letters .bub .sig { text-align: right; margin-top: 6px; }
 .dle-wd-thread.letters .meta .seal { width: 9px; height: 9px; border-radius: 50%; background: #a8433a; }
 .dle-wd-compose { flex: none; display: flex; gap: 6px; align-items: flex-end; padding: 8px; border-top: 1px solid var(--dk-line); }
-.dle-wd-compose textarea { flex: 1; min-width: 0; min-height: 36px; max-height: 120px; resize: vertical; }
+.dle-wd-compose textarea { flex: 1; min-width: 0; min-height: 30px; max-height: 120px; resize: vertical; font-size: var(--dk-fs-s); padding-top: 6px; padding-bottom: 6px; }   /* as the post box: smaller text, one line */
 .dle-wd-compose .send { flex: none; height: 36px; min-width: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 10px; border: 0; border-radius: 18px; background: var(--w); color: var(--dk-on-mero, #101216); font: inherit; font-weight: 700; cursor: pointer; }
 .dle-wd-compose .send.seal { border-radius: 8px; background: #a8433a; color: #fff; }
 .dle-wd-body.msgs > .dle-wd-empty { margin: 10px; }
@@ -176,9 +180,10 @@
 /* ── the feed: Chatter, News, People (stage 4, 2026-10-19) ── */
 .dle-wd-body:has(> .dle-wd-feed), .dle-wd-body:has(> .dle-wd-news), .dle-wd-body:has(> .dle-wd-ppl) { padding: 0; gap: 0; }
 .dle-wd-feed, .dle-wd-news, .dle-wd-ppl { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 14px; }
-.dle-wd-fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* the feed filter is a bar now (.dk-seg.dle-wd-fseg, unification 2026-11-03) */
 .dle-wd-postbox { display: flex; gap: 6px; align-items: flex-end; padding: 8px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); }
-.dle-wd-postbox textarea { flex: 1; min-width: 0; min-height: 34px; resize: vertical; }
+.dle-wd-postbox textarea { flex: 1; min-width: 0; min-height: 30px; resize: vertical; font-size: var(--dk-fs-s); padding-top: 6px; padding-bottom: 6px; }
+/* ↑ smaller text, so "Post as …" fits on one line beside 📷 and Post (Miinthe, 2026-11-03: "it cramps into two lines") */
 .dle-wd-hint { font-size: var(--dk-fs-xs); color: var(--dk-muted); padding: 0 2px; }
 .dle-wd-post { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 3px 10px; padding: 10px; border: 1px solid var(--dk-line); border-radius: 10px; background: var(--dk-desk); }
 .dle-wd-post > .av { grid-row: 1 / 7; width: 36px; height: 36px; }
@@ -294,3 +299,16 @@
 .dle-wd-row .nm .pin { color: var(--dk-wait); margin-right: 4px; font-size: .9em; }
 
 .dle-wd-newchat { width: 100%; box-sizing: border-box; margin: 0 0 8px; }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 1 buttons 28 px */
+.dle-wd-addstory { height: 28px; padding: 0 10px; border-radius: 8px; font-size: var(--dk-fs); }
+/* 12 rows corners 8 */
+.dle-wd-row { border-radius: 8px; }
+/* 4 the ⋯ on a post: a 24 px small icon button */
+.dle-wd-post [data-pmore] { width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 6px; }
+.dle-wd-post [data-pmore]:hover { background: var(--dk-menu); }
+/* 5 fields 30 px */
+.dle-world select.dk-field, .dle-world .dle-wd-newchat { min-height: 30px; height: 30px; }
+/* 11 the empty box: as everywhere */
+.dle-wd-empty { padding: 12px 14px; border-color: var(--dk-line-strong); }

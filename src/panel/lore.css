@@ -98,7 +98,9 @@
 .dle-lv-ck.on, .dle-lv-ck.part { background: var(--dk-accent); border-color: var(--dk-accent); }
 
 /* empty lists */
-.dle-lv-empty { padding: 14px 8px; text-align: center; color: var(--dk-muted); display: grid; gap: 8px; justify-items: center; }
+.dle-lv-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; border: 1px dashed var(--dk-line-strong); border-radius: 10px; font-size: var(--dk-fs-s); color: var(--dk-muted); text-align: left; }   /* = kit .dk-empty (coherence 2026-11-03) */
+.dle-lv-empty b { color: var(--dk-ink); font-size: var(--dk-fs); }
+.dle-lv-empty.dk-empty { gap: 4px; }
 .dle-lv-empty p { margin: 0; }
 
 /* the folder picker window */

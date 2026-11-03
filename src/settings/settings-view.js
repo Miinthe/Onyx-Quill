@@ -107,6 +107,7 @@ const fx = {
     sync: () => setupSyncPolling(buildIndexWithReuse, buildIndexWithReuse),
     drawer: () => import('../bar/icon-drawer.js').then(m => m.refreshDrawer()),   // the floating icon drawer (2026-11-02)
     debug: () => notifyDebugModeChanged(),
+    accent: () => import('../kit/theme.js').then(m => m.setAccent(getSettings().accentColor)),   // the one accent (2026-11-03)
 };
 
 /** Text rows: today's rules for empty / tidy values. → the value to store, or undefined to refuse. */
@@ -193,6 +194,20 @@ function control(row, s) {
         c = el('textarea', 'dk-field dle-st-area');
         c.rows = 3; c.value = v ?? ''; c.disabled = off; c.spellcheck = false;
         c.addEventListener('change', () => commit(row, c.value));
+    } else if (row.type === 'color') {
+        // ready colors as round swatches, and your own in the color picker (as on the board)
+        c = el('div', 'dle-st-colors');
+        const cur = String(v || '');
+        for (const [val, name, shown] of row.opts) {
+            const b = el('button', 'dle-st-sw' + (cur === val ? ' on' : ''));
+            b.type = 'button'; b.style.background = shown || val; b.title = name; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', String(cur === val));
+            b.addEventListener('click', () => commit(row, val));
+            c.append(b);
+        }
+        const own = el('input', 'dle-st-own' + (cur && !row.opts.some(o => o[0] === cur) ? ' on' : ''));
+        own.type = 'color'; own.value = /^#[0-9a-f]{6}$/i.test(cur) ? cur : '#ff4f98'; own.title = 'Your own color'; own.setAttribute('aria-label', 'Your own color');
+        own.addEventListener('change', () => commit(row, own.value.toLowerCase()));
+        c.append(own);
     } else if (row.type === 'btn') {
         c = K.button({ label: row.btn, title: row.tip || row.label, onClick: () => act(row.act, c) });
     }

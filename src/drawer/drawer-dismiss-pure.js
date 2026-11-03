@@ -42,6 +42,8 @@ export function shouldBailDrawerDismiss(target, panel, doc = (typeof document !=
     // Overhaul 2a (2026-10-15): DeepLore's own bar, menus, windows, pickers and notices belong to the panel too —
     // a tap on the bar's side-panel button must not open and then close the panel in the same tap (phone).
     if (target.closest('#dle-bar, .dk-menu, .dk-scrim, .dk-epick, .dk-swpick, .dk-notices')) return true;
+    // Panel tabs (2026-11-03): My notes, World and the tabs are DeepLore's panels too — a click there leaves this one be.
+    if (target.closest('.dle-notes, .dle-world, .dle-dock-tabs, .dle-dock-drop')) return true;
     // Defense in depth: if any dialog is open anywhere on the page and contains
     // the click target, bail. Catches cases where a popup root lacks .popup
     // (custom dialogs from third-party extensions, polyfilled <dialog>).

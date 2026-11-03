@@ -332,7 +332,7 @@ function newNote() {
 function moreItems() {
     return [
         { label: 'Bring over Notebook notes', icon: 'import', sub: 'pick which ones, and where each shows', onClick: startImport },
-        phone() ? null : { label: left() ? 'Move to the right' : 'Move to the left', icon: left() ? 'panel' : 'panelL', onClick: () => { getSettings().notesSide = left() ? 'right' : 'left'; saveSettingsDebounced(); fit(); } },
+        phone() ? null : { label: left() ? 'Move to the right' : 'Move to the left', icon: left() ? 'panel' : 'panelL', onClick: () => { getSettings().notesSide = left() ? 'right' : 'left'; saveSettingsDebounced(); fit(); changed(); } },
         { label: `Sort: ${sort === 'new' ? 'newest first' : 'A to Z'}`, icon: 'group', sub: 'tap to switch', onClick: () => { sort = sort === 'new' ? 'az' : 'new'; render(); } },
     ].filter(Boolean);
 }
@@ -412,12 +412,14 @@ function setLocked(on) {
     keepOpen(!!win);
     drawLock();   // no notice: the lock icon says it (Miinthe: "remove the popup notifications when I lock or unlock")
 }
+/** The panel tabs' Lock / Unlock (src/dock/dock.js). */
+export function setNotesLocked(on) { setLocked(!!on); changed(); }
 function drawLock() {
     const b = win?.querySelector('[data-lock]');
     if (!b) return;
     const on = locked();
     b.innerHTML = I(on ? 'lock' : 'unlock');
-    b.title = on ? 'Unlock (a click outside will close it)' : 'Lock open';
+    b.title = (on ? 'Unlock (a click outside will close it)' : 'Lock open') + ' · right-click: move to the other side';
     b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', String(on));
     b.classList.toggle('on', on);
 }
@@ -429,7 +431,8 @@ function keepOpen(open) {
 function outside(e) {
     if (!win || locked() || win.contains(e.target)) return;
     // the bar button toggles by itself; menus, notices (Undo) and pop-ups opened from the window don't count
-    if (e.target.closest?.('#dle-bar [data-b="notes"], .dk-menu, .dk-notices, .dk-scrim, dialog[open]')) return;
+    // panel tabs (2026-11-03): DeepLore's other panels, the tabs and the bar's panel buttons don't count either
+    if (e.target.closest?.('#dle-bar [data-b="notes"], #dle-bar [data-b="world"], #dle-bar [data-b="panel"], #deeplore-panel, .dle-world, .dle-dock-tabs, .dle-dock-drop, .dk-menu, .dk-notices, .dk-scrim, dialog[open], .popup, #dle-mero-float, .dle-pickbar')) return;
     close();
 }
 
@@ -447,11 +450,14 @@ function watchStack() {
     stackWatch.observe(h, { attributes: true, attributeFilter: ['class'], subtree: true });
 }
 
+/** The panel tabs moved it to the other side (src/dock/dock.js). */
+export function refitNotes() { fit(); }
 /** PC: the whole height (Miinthe, 2026-10-19: "the note panel does not reach all the way down"); phone: the screen under the top bar. */
 function fit() {
     if (!win) return;
     win.classList.toggle('phone', phone());
     win.classList.toggle('left', left());
+    if (win.classList.contains('dle-dock-panel')) return;   // PC: the panel tabs place it (src/dock/dock.js)
     win.style.bottom = phone() ? '' : '12px';
 }
 window.addEventListener('resize', () => fit());
@@ -464,10 +470,18 @@ export function close() {
     document.removeEventListener('pointerdown', outside, true);
     stackWatch?.disconnect(); stackWatch = null;
     keepOpen(false);
+    // closing clears the lock: a click on the bar button opens it unlocked, a right-click locked (Miinthe, 2026-11-03:
+    // "clicking left click on the notes lockes it immedieatly")
+    if (getSettings().notesLocked === true) { getSettings().notesLocked = false; saveSettingsDebounced(); }
     win.remove(); win = null;
     changed();
 }
 export function toggleNotes() { if (win) close(); else openNotes(); }
+/** Right-click on the bar's My notes button (Miinthe, 2026-11-03): open → lock or unlock; closed → nothing. Not on a phone. */
+export function toggleNotesLock() {
+    if (phone() || !win) return;   // only while open (Miinthe, 2026-11-03: "make right click lock only when the panel is open")
+    setLocked(!locked()); changed();
+}
 
 /** Wire once (index.js init): a chat change redraws the window for the new place. */
 export function initNotes() {

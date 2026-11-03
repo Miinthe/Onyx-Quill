@@ -8,7 +8,7 @@ For the core matching pipeline, see [[Pipeline]]. For AI search specifics, see [
 
 ## The side panel
 
-DeepLore's side panel shows what DeepLore is doing, live. See [[Drawer|Side Panel]] for full details.
+DeepLore's side panel shows what DeepLore is doing, live. See [[Drawer|Side Panel]] for full details. On a PC, the side panel, My notes and World can each sit on the left or the right; panels on the same side become tabs at the bottom, each with its own lock. One accent color, yours to pick (Settings › Interface › Look), runs through all of DeepLore.
 
 | Part | What it does |
 |---------|-------------|
@@ -47,7 +47,7 @@ NPCs set up on the board, each with their own character card. They come and go, 
 
 ## Mero ☆
 
-Your co-writer, in the side panel's Mero tab. Talk with her about the story (she looks things up in your lore, the board, the whole chat and the Cast, and asks with question cards), turn what you planned together into pitches and plans, ask for suggestions, and answer her requests (including the lore gaps saved in a chat). Redo, edit and delete messages in a talk. See [[Mero]].
+Your co-writer, in the side panel's Mero tab. Talk with her about the story (she looks things up in your lore, the board, the whole chat and the Cast, and asks with question cards), turn what you planned together into pitches and plans, ask for suggestions, and answer her requests (including the lore gaps saved in a chat). Redo, edit and delete messages in a talk. And 🎲 games for a break: Wordle and Four in a Row. See [[Mero]].
 
 ---
 

@@ -190,3 +190,15 @@ table.dle-st-jobs { width: 100%; border-collapse: collapse; font-size: var(--dk-
 @media (prefers-reduced-motion: reduce) {
     .dle-st-r.flash, tr.flash, .dle-st-fine.flash { animation: none; background: var(--dk-accent-soft); }
 }
+
+/* Accent color (2026-11-03): ready colors as round swatches + your own */
+.dle-st-colors { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dle-st-sw { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25); cursor: pointer; }
+.dle-st-sw.on, .dle-st-own.on { border-color: var(--dk-ink); }
+.dle-st-own { width: 30px; height: 24px; padding: 0 2px; border: 2px solid var(--dk-line); border-radius: 7px; background: var(--dk-page); cursor: pointer; }
+
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — the 12 families of https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu) ── */
+/* 8 folds 36 px; 6 the window's title at the panel level (15 px) */
+.dle-st .dk-fh, .dk-win .dk-fh { min-height: 36px; }
+/* 1 the header's toggles: 28 px buttons */
+@media (pointer: fine) { .dle-st-toggle, .dle-st .dk-btn { height: 28px; } }   /* a phone keeps its bigger touch size */

@@ -54,13 +54,17 @@ export function initPanelFrame($drawer) {
     lock.addEventListener('click', () => { panel.querySelector('#dle-drawer-pin')?.click(); drawLock(); });
     const close = K.iconButton({ icon: 'close', title: 'Close the side panel' });
     close.classList.add('dle-close-ph');
-    close.addEventListener('click', () => panel.querySelector('#dle-drawer-close')?.click());
+    close.addEventListener('click', () => {
+        // a PC too (Miinthe, 2026-11-03: "deeplore side panel has no X to close it"); closing clears the lock
+        if (panel.classList.contains('pinnedOpen') && !panel.classList.contains('dle-mobile')) lock.click();
+        if (panel.classList.contains('openDrawer')) panel.querySelector('#dle-drawer-close')?.click();
+    });
     ph.append(lock, close);
     function drawLock() {
         const on = panel.classList.contains('pinnedOpen');
         lock.classList.toggle('on', on);
         lock.innerHTML = I(on ? 'lock' : 'unlock');
-        const t = on ? 'Locked open: stays until you unlock it, even under SillyTavern’s own panels. Click to unlock' : 'Lock the side panel open';
+        const t = (on ? 'Locked open: stays until you unlock it, even under SillyTavern’s own panels. Click to unlock' : 'Lock the side panel open') + ' · right-click: move to the other side';
         lock.title = t; lock.setAttribute('aria-label', t); lock.setAttribute('aria-pressed', String(on));
     }
     drawLock();
@@ -131,6 +135,9 @@ export function initPanelFrame($drawer) {
         for (const id of ['browse', 'changes', 'tools']) { const t = bar.querySelector(`#dle-tab-${id}`); if (t) t.hidden = true; }
         bar.append(more);
         bar.classList.add('dle-tabs5');
+        // out of the scrolling part, right under the header: the scroll bar starts below the tabs and never takes their
+        // width (Miinthe, 2026-11-03: "the scrollbar in cast is moving the lore, filter etc tab … goes all the way up")
+        inner.parentElement.insertBefore(bar, inner);
     } else ph.insertBefore(more, lock);
 
     applySide(panel);
@@ -150,7 +157,7 @@ export function initPanelFrame($drawer) {
  * The press stops at <body>, before it reaches SillyTavern's handler on <html>; DeepLore's own "press outside"
  * checks listen earlier (capture) and are not affected.
  */
-const OWN = '#dle-bar, .dk-menu, .dk-scrim, .dk-epick, .dk-swpick, .dk-notices';
+const OWN = '#dle-bar, .dk-menu, .dk-scrim, .dk-epick, .dk-swpick, .dk-notices, .dle-notes, .dle-world, .dle-dock-drop';   // + My notes, World (panel tabs, 2026-11-03)
 let keeping = false;
 function keepOpenOnOwnClicks() {
     if (keeping) return;
@@ -200,5 +207,7 @@ function setSide(panel, side) {
     getSettings().drawerSide = side;
     saveSettingsDebounced();
     applySide(panel);
-    K.notify({ title: 'DeepLore', text: `Side panel moved to the ${side}.` });
+    window.dispatchEvent(new CustomEvent('dle-notes'));   // the panel tabs place My notes / World again
 }
+/** The panel tabs' "Move to the left / right" and drag (src/dock/dock.js). */
+export function setPanelSide(side) { const p = document.getElementById('deeplore-panel'); if (p) setSide(p, side === 'left' ? 'left' : 'right'); }

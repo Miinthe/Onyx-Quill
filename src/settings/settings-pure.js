@@ -223,6 +223,9 @@ export const SECTIONS = [
     { id: 'iface', name: 'Interface', icon: 'iface', grp: 'Look', lead: 'Colors, the bar, notices, removing things, and the graph.', cards: [
         { t: 'Look', rows: [
             { id: 'ui-theme', label: 'Colors', tip: 'Follow SillyTavern’s theme (your own colors too), or keep DeepLore always light or dark', type: 'seg', key: 'dkTheme', opts: [['follow', 'follow SillyTavern'], ['light', 'light'], ['dark', 'dark']] },
+            // one accent you pick (Miinthe, 2026-11-03): Mero, active tabs, main buttons, selected things; a few ready colors + your own
+            { id: 'ui-accent', label: 'Accent color', tip: 'DeepLore’s own color: Mero, the active tab, main buttons, what is selected. Made readable on your theme by itself', type: 'color', key: 'accentColor', fx: 'accent',
+                opts: [['', 'Mero pink (default)', '#ff4f98'], ['#ff6b6b', 'coral'], ['#f08a3c', 'orange'], ['#2bb3a6', 'teal'], ['#4c8dff', 'blue'], ['#8f95d8', 'lavender'], ['#a36bff', 'purple']] },
         ] },
         { t: 'The bar', rows: [
             { id: 'ui-bar', label: 'Show the DeepLore bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },

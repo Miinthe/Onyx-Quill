@@ -124,17 +124,17 @@ export function palette(st = {}, { mero = MERO_DEFAULT, scheme: forced = null } 
     const line = mix(mix(ink, page, 0.17), border, 0.8);
     const lineStrong = mix(ink, page, 0.32);
 
-    // The accent follows the theme's quote color, half-blended with DeepLore's blue (the approved mock-ups' mix),
-    // so a gray or very pale quote color still gives a clear accent.
-    const accent = ensureContrast(mix(get('quote'), A.accent, 0.5), page, 3);
-    const accentInk = ensureContrast(accent, page, 4.5);
-    const onAccent = contrast(C('#ffffff'), accent) >= contrast(C('#101216'), accent) ? C('#ffffff') : C('#101216');
-    const accentSoft = mix(accent, page, 0.16);
-    const selected = mix(accent, page, 0.3);
-
-    const meroBase = C(mero) || C(MERO_DEFAULT);
-    const meroC = ensureContrast(scheme === 'dark' ? mix(meroBase, C('#ffffff'), 0.85) : meroBase, page, 4.5);
+    // ONE accent (Miinthe, 2026-11-03: "instead of a mero color … give my mod a accent color which is changeable"): her pick, by
+    // default Mero's pink. Before, the accent followed the theme's quote color and Mero had a pink of her own.
+    const pickBase = C(st.pick) || C(mero) || C(MERO_DEFAULT);
+    const meroC = ensureContrast(scheme === 'dark' ? mix(pickBase, C('#ffffff'), 0.85) : pickBase, page, 4.5);
     const onMero = contrast(C('#ffffff'), meroC) >= contrast(C('#101216'), meroC) ? C('#ffffff') : C('#101216');
+    const accent = meroC, accentInk = meroC, onAccent = onMero;
+    // the soft and the selected tint: as strong as the pick allows while text on them stays readable — a very dark pick on a
+    // light page (or a very light one on a dark page) made selected rows hard to read (bug hunt 2026-11-03)
+    const shade = (w, minInk, minMuted) => { let c = mix(accent, page, w); while (w > 0.04 && (contrast(ink, c) < minInk || contrast(muted, c) < minMuted)) { w -= 0.02; c = mix(accent, page, w); } return c; };
+    const accentSoft = shade(0.16, 7, 4.5);
+    const selected = shade(0.3, 4.5, 3);
 
     const vars = {
         desk, page, menu, ink, muted, line, 'line-strong': lineStrong,
@@ -154,4 +154,7 @@ export function palette(st = {}, { mero = MERO_DEFAULT, scheme: forced = null } 
 export const ST_VARS = {
     text: '--SmartThemeBodyColor', em: '--SmartThemeEmColor', quote: '--SmartThemeQuoteColor',
     under: '--SmartThemeUnderlineColor', tint: '--SmartThemeBlurTintColor', border: '--SmartThemeBorderColor',
+    // DeepLore's own accent, picked in Settings › Interface › Look (written onto SillyTavern's page by theme.js setAccent,
+    // so DeepLore's windows in iframes read it the same way they read the theme)
+    pick: '--dle-accent-pick',
 };
