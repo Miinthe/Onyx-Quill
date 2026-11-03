@@ -112,7 +112,7 @@ Per-entry frontmatter fields and global settings that control when entries trigg
 | **Cooldown** | Skip an entry for N generations after it triggers |
 | **Warmup** | Require N keyword occurrences before first trigger |
 | **Re-injection cooldown** | Global setting to skip re-injecting recent entries |
-| **Injection dedup** | Strip entries already injected in recent generations |
+| **Entries sent again** | Shown in 📖 Why as "same as last turn" (the old skip setting was let go on 2026-11-03) |
 | **Entry decay and freshness** | Boost stale entries, penalize over-injected ones |
 | **Conditional gating** | `requires` and `excludes` dependency rules |
 | **Refine keys** | Secondary AND_ANY filter on top of primary keywords |

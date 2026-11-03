@@ -51,7 +51,7 @@ View a detailed trace of the last generation with `/dle-inspect`.
 - Refine-key blocks (entries where the primary key matched but no refine key did)
 - Contextual gating removals with per-field mismatch reasons
 - Folder filter info (entries removed by per-chat folder filter)
-- Strip-dedup removals (entries already in recent context)
+- Strip-dedup removals (entries already in recent context; only if the old skip setting was switched back on by hand)
 
 **When to use:** debug why an entry was or was not injected in the last generation. The inspector shows the full picture: what matched, what the AI picked, and what got filtered out.
 

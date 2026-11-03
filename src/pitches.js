@@ -25,6 +25,7 @@ import {
     fallbackDue, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, pitchLine, KINDS,
     parsePlans, startPlan, planLines, repliesSince, BEAT_SYSTEM, BEAT_SCHEMA, beatUser, beatDue, tickBeat, rewindPlan, timerDue,
     lingerPatch, rewritePrompt, parseRewrite, applyReview, talkPitchPrompt, parseTalkPitches, editedPitch,
+    usedDraft,
 } from './pitches-pure.js';
 import { addRequest, onAnswer } from './requests.js';
 
@@ -252,6 +253,8 @@ export function letGo(id) { const p = get(id); if (p?.noteId && p.st === 'dir') 
 export function notMine(ids, why = '') { let s = store(); for (const id of ids) { const p = s.list.find(x => x.id === id); if (p) taste(p, false, why); s = removePitch(s, id); } save(s); }
 export const back = () => save(dropPicking(store()));
 export const bringBackDropped = () => save(bringBack(store()));
+/** 🗑 The dropped pitches, gone for good (Miinthe, 2026-11-03: "I cannot delete those pitches"). Not a 👎. */
+export const forgetDropped = () => save({ ...store(), dropped: [] });
 export const peek = (id, on) => save(setPitch(store(), id, { peek: !!on }));
 
 /** The pitches handed to a 🗺 Planning talk ("💬 Talk about these") — the text Miinthe starts the talk with. */
@@ -282,6 +285,15 @@ export async function draftLine(id) {
         return { ok: true };
     } catch (err) { return { ok: false, error: err?.message || String(err) }; }
     finally { busy = null; changed(); }
+}
+
+/** 📝 The line Mero drafted, back into the message box (Miinthe, 2026-11-03: deleted from the box, "no way to reapply"). */
+export function putDraftBack(id) {
+    const p = get(id); if (!p?.draft) return { ok: false, error: 'There is no drafted line to put back.' };
+    const box = document.getElementById('send_textarea');
+    if (!box) return { ok: false, error: 'The message box is not there.' };
+    box.value = p.draft; box.dispatchEvent(new Event('input', { bubbles: true }));
+    return { ok: true };
 }
 
 // ── 🪜 plans ────────────────────────────────────────────────────────────────
@@ -412,8 +424,11 @@ function onSent(idx) {
     const s = store();
     const drafts = s.list.filter(p => p.st === 'draft' && p.made < idx);
     if (!drafts.length) return;
+    // played only when what she sent looks like the draft (Miinthe, 2026-11-03: a draft she never used was marked played);
+    // otherwise it goes back to her kept ideas
+    const sent = String(chatNow()[idx]?.mes || '');
     let s2 = s;
-    for (const p of drafts) s2 = setPitch(s2, p.id, { st: 'played', at: idx });
+    for (const p of drafts) s2 = setPitch(s2, p.id, usedDraft(p.draft, sent) ? { st: 'played', at: idx } : { st: 'kept', draft: '' });
     save(s2);
 }
 

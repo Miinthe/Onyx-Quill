@@ -65,6 +65,13 @@ test('each tool answers Mero and gives Miinthe a few words', () => {
     assert(r.text.includes('The trackers with steps: Interludes'), 'names what exists');
     assert(/has no trackers with steps — only: Cast \(cast\)/.test(runTool('open_tracker', { name: 'fuse' }, { board: { name: 'Toaster', trackers: [{ id: 'c', kind: 'cast', name: 'Cast' }] } }).text), 'a board without step trackers is still a board');
     assertEqual(runTool('open_tracker', { name: 'fuse' }, {}).text, 'There is no storyboard in this chat.');
+    // trackers without steps open too: what the writer is told about them (Miinthe, 2026-11-03)
+    const B2 = { board: { name: 'Toaster', trackers: [{ id: 'w', kind: 'place', name: 'Where' }, { id: 'c', kind: 'cast', name: 'Cast' }] }, boardLines: ['Where: Kitchen', 'Cast in the scene: Kettle, Spoon', 'Weather: rain'] };
+    r = runTool('open_tracker', { name: 'Where' }, B2);
+    assertEqual(r.text.split('\n').slice(0, 2), ['Where (place) — where the story stands now:', 'Where: Kitchen'], 'its own line first');
+    assert(/PLACE: Kitchen/.test(runTool('open_tracker', { name: 'Where' }, { ...B2, boardLines: ['[Where the story currently stands]', 'PLACE: Kitchen', '[End of story state]'] }).text), 'lines labeled by kind still come');
+    assert(/Kettle, Spoon/.test(runTool('open_tracker', { name: 'cast' }, B2).text), 'any capitals');
+    assert(/Nothing about it in this chat yet/.test(runTool('open_tracker', { name: 'Where' }, { ...B2, boardLines: [] }).text), 'nothing yet');
     r = runTool('read_messages', { from: 1, to: 50 }, DATA);
     assertEqual(r.text.split('\n\n').length, 2, 'clamped to the chat');
     assert(/There is no message/.test(runTool('read_messages', { from: 9 }, DATA).text));
@@ -247,7 +254,7 @@ test('"Anything to add?" goes along with the answers', () => {
 });
 
 test('a passing hiccup keeps lookups on; a refusal of tools switches them off', () => {
-    for (const e of [new Error('Request timed out (120s)'), new Error('Too Many Requests'), { message: 'x', status: 503 }, new Error('Failed to fetch'), new Error('Bad gateway')]) assert(passingError(e), String(e.message));
+    for (const e of [new Error('Request timed out (120s)'), new Error('Too Many Requests'), { message: 'x', status: 503 }, new Error('Failed to fetch'), new Error('Bad gateway'), new Error('Service is too busy. We advise users to temporarily switch to alternative LLM API service providers.')]) assert(passingError(e), String(e.message));
     for (const e of [new Error('Bad Request'), { message: 'x', status: 400 }, new Error('Jinja template error: tools not supported')]) assert(!passingError(e), String(e.message));
 });
 

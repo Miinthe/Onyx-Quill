@@ -22,11 +22,13 @@ Talks live with the character, so every chat and run of that character sees them
 
 ### She looks things up
 
-Mero can look things up before she answers: search and read your **lore**, open a **tracker** of the board, search and read the **whole chat** (not only the latest replies), and check someone in the **Cast**. She only reads; nothing she looks up changes anything.
+Mero can look things up before she answers: search and read your **lore**, open any **tracker** of the board (a step tracker with all its steps; a meter, collection, place, the state or the Cast with where it stands now), search and read the **whole chat** (not only the latest replies), and check someone in the **Cast**. She only reads; nothing she looks up changes anything.
 
 - While she works, each lookup shows as its own line under "Mero is typing…".
 - Afterwards her answer's header says **🔎 3 lookups**; click it to see what she looked at and what she found.
-- **🔎 lookups off** means her AI can't do lookups (some local models can't), so she answered only from what she was given. DeepSeek can.
+- **🔎 lookups off** means her AI connection can't do lookups (some local models can't). Changed the connection? Reload the page and she tries again.
+- **🔎 no lookups this time** means the AI service was busy or slow; she answered without them, and tries again next time.
+- Without lookups she still sees the board's current state, where each tracker stands, the latest replies and the lore sent.
 
 ### Her questions
 
@@ -37,7 +39,8 @@ When she needs to know something with a few clear answers, she asks with a **que
 Hover a message (tap on a phone) for its buttons, in the message's own header:
 
 - On Mero's answer: **↻** answers again (her last answer only). The old answer stays as a swipe: **◀ 1/2 ▶** flips between them. The swipes are gone as soon as you write again.
-- On your message: **✏** edits it. On your last message, **Save & ask again** removes what came after and lets Mero answer the new words.
+- On your message: its header shows your name (what Mero calls you, set in Settings › She calls you; empty: your persona's name). **✏** edits it. On your last message, **Save & ask again** removes what came after and lets Mero answer the new words.
+- On your last message when no answer came (the AI connection failed): **↻** sends it to Mero again, same words.
 - **🗑** deletes a message: it asks **Keep | Delete** first.
 
 ### 🎲 Games
@@ -84,13 +87,13 @@ Choose what you want (tap the summary line to change it): **Shape** (⚡ one-sho
 Pick the pitches you like, then:
 
 - **Next reply**: it goes to the writer with your next reply, hidden from the chat. For a plan, this is **Start the plan**.
-- **My line**: Mero drafts your next line from it, in your message box.
+- **My line**: Mero drafts your next line from it, in your message box. While it waits there: **Put it back in the box** (her line again, if you deleted it), **Take it back** (back to your kept ideas) or **🗑 Let it go**. It counts as played only if the message you send uses it.
 - **Give to…**: make it one of a Cast member's plans.
 - **Keep**: save it for later.
 - **More like it** and **Talk about it**.
-- 👎 **Not my thing**: Mero remembers. You can say why (too much, not like them, not now, wrong tone) or skip.
+- 👎 **Not my thing**: Mero remembers. Pick a reason (too much, not like them, not now, wrong tone) or press **👎 Not my thing** without one; **Cancel** backs out.
 
-**New batch** throws the shown ones away and pitches again. **Set them all aside** puts the unused ones aside without counting them as 👎.
+**New batch** throws the shown ones away and pitches again. **Set them all aside** puts the unused ones aside without counting them as 👎. Pitches left behind show as "N pitches dropped": **↩ Bring back** or **🗑 Delete them**. A pitch out in the story (played, landed, skipped) can always go with **🗑 Let it go**.
 
 ### Pitches from a talk
 

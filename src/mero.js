@@ -280,6 +280,8 @@ export function mentionResolve(tags) {
  * Resolves { label, text } or null (Esc, Cancel). A side panel lying over the chat steps aside while she picks.
  */
 let picking = null;
+/** Stop picking (Esc inside Mero's window, or 📎 again — the page's own Esc listener doesn't hear keys typed in her window). */
+export function cancelPick() { picking?.(null); }
 export function pickContext() {
     picking?.(null);
     return new Promise(resolve => {
@@ -345,6 +347,8 @@ function lookupData() {
         entries: vaultIndex || [],
         chat: chat.map((m, i) => ({ m, i })).filter(({ m }) => m && !m.is_system && typeof m.mes === 'string').map(({ m, i }) => ({ i, name: m.is_user ? (name1 || 'Miinthe') : m.name, text: splitOoc(m.mes).clean })),
         board: L?.board || null, state: L?.state || null,
+        // every tracker as the writer sees it (meters, collections, places, state…), for open_tracker on those (2026-11-03)
+        boardLines: (() => { try { return writerBlock(readActiveTrackers(), liveWriterLines()).split('\n').filter(Boolean); } catch { return []; } })(),
         entryText: title => String((vaultIndex || []).find(e => e.title === title)?.content || ''),
         castNames: cast.map(nameOf),
         castText: name => { const q = low(name); const hit = cast.find(m => low(nameOf(m)) === q) || cast.find(m => low(nameOf(m)).includes(q) || q.includes(low(nameOf(m)).split(/\s+/)[0])); return hit ? hit.text() : ''; },
@@ -425,7 +429,7 @@ async function answerInner(t, history, said, { opener }, conn) {
         ['🔎 Her lookups', lookups ? 'She can look things up (lore, board, chat, Cast) — what she looked up shows above her answer.' : 'Not with this connection — she sees only what is listed here.'],
     ] });
     try {
-        let raw = '', nolook = false;
+        let raw = '', nolook = false, lookSkip = false;
         if (lookups) {
             try { raw = (await answerWithLookups(system, messages, conn, steps, changed)).text; }
             catch (err) {
@@ -433,7 +437,7 @@ async function answerInner(t, history, said, { opener }, conn) {
                 console.warn('[DLE] Mero: lookups failed, answering without them:', err?.message || err);
                 // e.g. LM Studio: the model's template can't take tools (or, after a few lookups, tool results) — but a
                 // timeout / rate limit / server hiccup is not that: lookups stay on for the next answer
-                if (!passingError(err)) noTools.add(conn.profileId);
+                if (!passingError(err)) noTools.add(conn.profileId); else lookSkip = true;   // a hiccup: on again next answer
                 nolook = !steps.length;
                 steps.length = 0; raw = '';
             }
@@ -452,8 +456,9 @@ async function answerInner(t, history, said, { opener }, conn) {
         // notes only when asked (Miinthe 2026-10-26: "too quick to make notes") — everywhere now; in a fixing talk she asks first
         if (a.cards.length && !opener && !askedForNote(said)) a.cards = [];
         // her AI can't look things up: the reply's header says so instead of staying empty
-        if (!vault && (nolook || noTools.has(conn.profileId) || (conn.mode === 'profile' && !toolsPossible(conn.profileId)))) nolook = true;
-        const version = { t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(steps.length ? { steps: steps.map(x => keptStep(x.label, x.got)) } : {}), ...(nolook && !steps.length ? { nolook: true } : {}), ...(a.asks.length ? { asks: a.asks } : {}) };
+        if (!vault && !lookSkip && (nolook || noTools.has(conn.profileId) || (conn.mode === 'profile' && !toolsPossible(conn.profileId)))) nolook = true;
+        if (lookSkip) nolook = false;
+        const version = { t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(steps.length ? { steps: steps.map(x => keptStep(x.label, x.got)) } : {}), ...(nolook && !steps.length ? { nolook: true } : {}), ...(lookSkip && !steps.length ? { lookskip: true } : {}), ...(a.asks.length ? { asks: a.asks } : {}) };
         return { version, kind: a.kind, title: a.title, pitchAsked };
     } finally { working.delete(t.id); changed(); }
 }

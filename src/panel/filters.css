@@ -20,10 +20,11 @@
 .dle-fv-seg button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* label · value grid (folders, fields) */
-.dle-fv-kv { display: grid; grid-template-columns: fit-content(55%) minmax(0, 1fr);   /* labels as wide as they need, up to half (was 96px: "Character (sessi…") */ gap: 6px 10px; padding: 6px 8px; align-items: center; font-size: var(--dk-fs); }
+.dle-fv-kv { display: grid; grid-template-columns: fit-content(55%) minmax(0, 1fr);   /* labels as wide as they need, up to half (was 96px: "Character (sessi…") */ gap: 6px 10px; padding: 6px 8px; align-items: baseline;   /* a label sits on its first line of pills, not in the middle of two (Miinthe, 2026-11-03) */ font-size: var(--dk-fs); }
 .dle-fv-kv > span:nth-child(odd) { color: var(--dk-muted); font-size: var(--dk-fs-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dle-fv-chips, .dle-fv-val { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
-.dle-fv .dk-chip { height: 22px; padding: 0 8px; cursor: default; max-width: 100%; }
+.dle-fv .dk-chip { height: 22px; padding: 0 8px; cursor: default; max-width: 100%; min-width: 0; }
+.dle-fv-cl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dle-fv .dk-chip:hover { border-color: var(--dk-line); }
 .dle-fv .dk-chip .dk-x { cursor: pointer; }
 .dle-fv-set.dk-ib { width: 24px; height: 24px; }

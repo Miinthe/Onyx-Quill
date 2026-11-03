@@ -124,20 +124,13 @@ Global setting (not per-entry). Skips re-injecting an entry for N generations af
 
 ---
 
-## Injection deduplication
+## Entries sent again
 
-Global setting that prevents the same entries from being injected in consecutive generations. When enabled, entries injected within the last N generations (configurable lookback depth) are skipped.
+When the same entries fit the next reply too, they are sent again. DeepLore rebuilds its lore for every reply, so last reply's entries are not in the prompt any more; leaving them out would leave the writing AI without them. The **📖 Why these entries** window lists them as **"N same as last turn"**, next to the new and the dropped ones.
 
-**Setup:**
+To give other entries a turn, use **Give others a turn** and **Rest after sending** (Settings › Matching & budget › Variety).
 
-1. Check "Strip Duplicate Injections" in [[Settings Reference|Matching & Budget settings]].
-2. Set the "Lookback Depth" (default 2: checks last 2 generations).
-
-**Notes:**
-
-- Enabled by default with a lookback depth of 2.
-- Constants (`#lorebook-always`) are exempt and always inject.
-- Injection history is tracked per-chat in `chat_metadata.deeplore_injection_log`.
+**Earlier versions** had a setting "Skip what was just sent" (Strip Duplicate Injections, on by default with a lookback of 2) that left out entries sent in recent messages. It was let go on 2026-11-03: it could leave a reply with almost no lore. Updating switches it off (settings version 8).
 - The dedup key combines vault, title, position, depth, role, and a content hash, so the same entry at a different depth or role (or with edited content) isn't considered a duplicate. Two entries with the same title in different vaults are also kept distinct.
 - Distinct from re-injection cooldown: deduplication checks a sliding window of recent generations; re-injection cooldown counts generations since last injection.
 

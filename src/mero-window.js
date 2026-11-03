@@ -17,7 +17,7 @@ import {
     onMeroChanged, meroWhere, meroTalks, meroNotes, meroSettings, meroBusy, meroBusyIn, meroTold, newTalk, updateTalk, deleteTalk,
     boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
-    meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
+    meroGlow, seeGlow, pickContext, cancelPick, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
     startGame, gameGuess, gameHint, meroWorking, redoMero, swipeMero, deleteMsg, editMsg, answerTalkAsks,
 } from './mero.js';
 import { requestsHere, answerRequest, onRequestsChanged, replyWaits, initRequests } from './requests.js';   // 📬 (step 3)
@@ -168,6 +168,7 @@ window.__dleMeroHost = {
     editMsg: (id, k, text, again) => editMsg(id, k, text, { again: !!again }),
     answerAsks: (id, k, answers, opts = {}) => answerTalkAsks(id, k, answers, { skipped: !!opts.skipped, detail: opts.detail || '', talk: !!opts.talk }),   // ❓ question cards
     mentionList: () => clone(mentionList()), mentionResolve: tags => clone(mentionResolve(tags)),
+    cancelPick: () => cancelPick(),
     pickContext: async () => { const v = await pickContext(); const tab = document.getElementById('dle-tab-mero'); if (v && tab && !tab.classList.contains('active')) tab.click(); return v ? clone(v) : null; },
     where: id => whereAreWe(id),
     newTalk: tag => clone(newTalk(tag)),
@@ -203,8 +204,8 @@ window.__dleMeroHost = {
     momentsAside: keys => setMomentsAside(keys),
     talkMoments: async keys => { const r = await talkAboutMoments(keys); return r?.talk ? { ok: true, talk: clone(r.talk) } : r; },
     // 💡 pitches
-    pitch: opts => P.pitch(opts), pitchFromTalk: id => P.pitchFromTalk(id), pitchEdit: (id, f) => P.editPitch(id, f), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(),
-    pitchUse: id => P.useNextReply(id), pitchDraft: id => P.draftLine(id), pitchGive: (id, c, p) => P.giveTo(id, c, p), pitchTakeBack: id => P.takeBack(id),
+    pitch: opts => P.pitch(opts), pitchFromTalk: id => P.pitchFromTalk(id), pitchEdit: (id, f) => P.editPitch(id, f), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(), pitchForgetDropped: () => P.forgetDropped(),
+    pitchUse: id => P.useNextReply(id), pitchDraft: id => P.draftLine(id), pitchGive: (id, c, p) => P.giveTo(id, c, p), pitchTakeBack: id => P.takeBack(id), pitchPutBack: id => P.putDraftBack(id),
     pitchKeep: ids => P.keep(ids), pitchLetGo: id => P.letGo(id), pitchNo: (ids, why) => P.notMine(ids, why), pitchPeek: (id, on) => P.peek(id, on),
     pitchTalk: ids => P.talkOpener(ids), tasteEdit: (id, text) => P.editTaste(id, text),
     planStart: id => P.startPlanFor(id), planSet: (id, x) => P.planSet(id, x), planAbandon: id => P.abandonPlan(id), planLinger: id => P.lingerPlan(id),

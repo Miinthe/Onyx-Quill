@@ -59,7 +59,8 @@ button { cursor: pointer; }
 .mh > * { flex: none; white-space: nowrap; }
 .mh { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-height: 20px; margin: -2px 0 2px; font: 700 calc(11px * var(--fontScale, 1))/1.3 var(--dk-f-display); color: var(--dk-mero); }
 .mh .sp { flex: 1 1 0; min-width: 0; }
-.m.miinthe .mh { justify-content: flex-end; margin: 0 0 -2px; min-height: 0; }
+.m.miinthe .mh { margin: 0 0 2px; min-height: 0; color: inherit; }
+.m.miinthe .mh .me { opacity: .85; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 0; }
 .mh .look { border: 0; background: none; padding: 0 2px; color: var(--dk-muted); font: 600 var(--dk-fs-xs)/1.3 var(--dk-f-body); text-decoration: underline dotted; }
 .mh .nolook { color: var(--dk-muted); font: 600 var(--dk-fs-xs)/1.3 var(--dk-f-body); opacity: .8; cursor: help; }
 .mh .look:hover, .mh .look[aria-expanded="true"] { color: var(--dk-ink); }
@@ -356,7 +357,8 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
 .actbar .ah { display: flex; gap: 8px; align-items: center; font: 700 var(--dk-fs)/1.2 var(--dk-f-body); }
 .actbar .ah span { flex: 1; }
 .why { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: var(--dk-fs-s); }
-.why button { border: 1px solid var(--dk-line); background: var(--dk-page); border-radius: 999px; font-size: var(--dk-fs-s); padding: 0 8px; height: 22px; }
+.why > button { border: 1px solid var(--dk-line); background: var(--dk-page); border-radius: 999px; font-size: var(--dk-fs-s); padding: 0 8px; height: 22px; }
+.why .whyrow { display: flex; gap: 6px; flex-basis: 100%; margin-top: 4px; }
 .give { position: relative; display: inline-flex; }
 .givemenu { position: absolute; bottom: calc(100% + 4px); left: 0; z-index: 6; background: var(--dk-page); border: 1px solid var(--dk-line); border-radius: 9px; box-shadow: var(--dk-shadow); padding: 4px; display: grid; min-width: 170px; max-height: 220px; overflow-y: auto; }
 .givemenu button { border: 0; background: none; text-align: left; padding: 4px 8px; border-radius: 6px; font-size: var(--dk-fs); color: var(--dk-ink); }
@@ -495,7 +497,7 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
             <button class="btn" data-b="keep"></button>
           </div>
           <div class="row" id="act-more"><button class="btn" data-b="more" id="b-more"></button><button class="btn" data-b="talk" id="b-talk"></button><span class="sp" style="flex:1"></span><button class="btn ghost" data-b="no" title="Not my thing. Mero remembers" aria-label="Not my thing"></button></div>
-          <div class="why" id="act-why" hidden><span>👎 Why? (optional)</span><button data-why="too much">too much</button><button data-why="not like them">not like them</button><button data-why="not now">not now</button><button data-why="wrong tone">wrong tone</button><button data-why="">skip</button></div>
+          <div class="why" id="act-why" hidden><span>👎 Why? (optional)</span><button data-why="too much">too much</button><button data-why="not like them">not like them</button><button data-why="not now">not now</button><button data-why="wrong tone">wrong tone</button><span class="whyrow"><button class="btn" data-why="" title="No reason needed">👎 Not my thing</button><button class="btn ghost" data-whycancel>Cancel</button></span></div>
           <span class="mini" id="act-hint"></span>
         </div>
       </div>
@@ -593,6 +595,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const askSel = {};            // "talkid:k" → [{ picked: Set, own }] — her picks on question cards not sent yet
   let lastSig = '';             // talk + message count the talk was last drawn with (scroll to the bottom only on news)
   const lastMero = () => { for (let k = cur.msgs.length - 1; k >= 0; k--) if (cur.msgs[k].who === 'mero') return k; return -1; };
+  const myName = () => String(D.settings?.callMe || '').trim() || String(D.people?.user || '').trim() || 'Me';
   const lastRii = () => { for (let k = cur.msgs.length - 1; k >= 0; k--) if (cur.msgs[k].who === 'miinthe') return k; return -1; };
   function msgHtml(m, k) {
     const mine = m.who === 'miinthe', key = cur.id + ':' + k, busyNow = talkBusy() || !!PV().busy, armed = sure === key;
@@ -602,11 +605,15 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const del = armed
       ? `<button data-mkeep title="Keep it" aria-label="Keep the message">Keep</button><button data-mdelyes="${k}" class="sure" title="Delete this message for good" aria-label="Delete this message">Delete</button>`
       : `<button data-mdel="${k}" title="Delete this message" aria-label="Delete this message">${I('trash')}</button>`;
+    // ↻ on her last message when no answer came (Miinthe, 2026-11-03: "my provider just quit … I cannot resend it")
+    const resend = mine && k === cur.msgs.length - 1 && !busyNow && cur.tag !== 'game'
+      ? `<button data-mresend="${k}" title="No answer came — send it to Mero again" aria-label="Send again">${I('refresh')}</button>` : '';
     const acts = mine
-      ? `<span class="mact${armed ? ' sure' : ''}"><button data-medit="${k}" title="Edit your message" aria-label="Edit your message">${I('edit')}</button>${del}</span>`
+      ? `<span class="mact${armed ? ' sure' : ''}">${resend}<button data-medit="${k}" title="Edit your message" aria-label="Edit your message">${I('edit')}</button>${del}</span>`
       : `<span class="mact${armed ? ' sure' : ''}">${redoable ? `<button data-mredo="${k}" title="Answer again — this answer stays as a swipe until you write again" aria-label="Answer again">${I('refresh')}</button>` : ''}${del}</span>`;
-    const head = mine ? `<div class="mh">${acts}</div>`
-      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.nolook ? '<span class="nolook" title="Mero\'s AI connection can\'t do lookups (tool calls), so she answered only from what she was given. DeepSeek can; a local model in LM Studio often can\'t.">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
+    // her name on her messages (Miinthe, 2026-11-03: the header was empty) — what Mero calls her, else her persona's name
+    const head = mine ? `<div class="mh"><span class="me">${esc(myName())}</span><span class="sp"></span>${acts}</div>`
+      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.lookskip ? '<span class="nolook" title="The AI service was busy, so no lookups for this answer. Next time she tries again.">🔎 no lookups this time</span>' : m.nolook ? '<span class="nolook" title="Mero\'s AI connection can\'t look things up. She still sees the board, the latest replies and the entries sent.">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
     const looks = !mine && steps.length && lookOpen.has(key) ? `<div class="steps">${steps.map(x => `<span>${esc(x.label)}${x.got ? ` <span class="got">— ${esc(x.got)}</span>` : ''}</span>`).join('')}</div>` : '';
     const body = mine && editing?.k === k
       ? `<div class="edit"><textarea data-meditin aria-label="Your message">${esc(editing.text ?? m.t)}</textarea><div class="row"><button class="btn p" data-msave="0">Save</button>${k === lastRii() ? `<button class="btn m2" data-msave="1"${busyNow ? ' disabled' : ''} title="Mero answers the new words — her answers after it go">Save &amp; ask again</button>` : ''}<button class="btn ghost" data-mcancel>Cancel</button></div></div>`
@@ -635,6 +642,8 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       <textarea class="adet" data-adet rows="2" placeholder="Anything to add? Details, a twist, what you have in mind…" aria-label="Anything to add">${esc(sel.detail)}</textarea>
       <div class="row">${m.pcheck ? `<button class="btn m2" data-asend${busyNow ? ' disabled' : ''}>${I('pitch')}Write the pitch</button><button class="btn" data-atalk${busyNow ? ' disabled' : ''} title="Send your answers and keep planning with Mero — press Pitch when you're ready">${I('talks')}Keep talking</button><button class="btn ghost" data-askip${busyNow ? ' disabled' : ''} title="Write it up now — what is open stays open on the card">Skip, write it as is</button>` : `<button class="btn m2" data-asend${busyNow ? ' disabled' : ''}>${I('send')}Send answers</button>`}</div></div>`;
   }
+  // a pitch that is out in the story can always go (Miinthe, 2026-11-03: "now I have no way to delete it")
+  const letGoRow = a => `<div class="row"><span class="sp" style="flex:1"></span><button class="btn ghost" data-${a}="letgo" title="Remove this pitch">🗑 Let it go</button></div>`;
   // a 💡 pitch / 🪜 plan from this talk, with the drawer's own actions (one pitch, two places to click)
   function tpCard(p) {
     const plan = !!p.plan, can = PICKABLE.includes(p.st);
@@ -648,10 +657,10 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const body = (plan ? `<div><b>${esc(p.plan.goal || p.text)}</b></div>${planBody(p)}` : `<div>${esc(p.text)}</div>`) + (p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : '');
     const st = {
       dir: '<div class="pstate wait">✍️ Goes to the writer with your next reply — hidden from the chat.</div><div class="row"><button class="btn ghost" data-tpa="takeback">Take it back</button></div>',
-      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>`,
-      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at}.</div>`,
-      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div>',
-      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>`,
+      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>${letGoRow('tpa')}`,
+      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at}.</div>${letGoRow('tpa')}`,
+      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div><div class="row"><button class="btn ghost" data-tpa="putback" title="The line Mero wrote, into your message box again">Put it back in the box</button><button class="btn ghost" data-tpa="takeback">Take it back</button><button class="btn ghost" data-tpa="letgo">🗑 Let it go</button></div>',
+      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>${letGoRow('tpa')}`,
       given: `<div class="pstate cast">🎭 ${esc(p.gaveTo?.name || '')}'s plan now.</div><div class="row"><button class="btn ghost" data-tpa="takeback">Take it back</button></div>`,
     }[p.st] || '';
     const busyNow = !!PV().busy;
@@ -704,6 +713,13 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $$('[data-mlook]').forEach(b => b.onclick = () => { const key = cur.id + ':' + b.dataset.mlook; lookOpen.has(key) ? lookOpen.delete(key) : lookOpen.add(key); drawTalk(); });
     $$('[data-mswp]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.mswp.split(':').map(Number); HOST.swipe(cur.id, k, d); });
     $$('[data-mredo]').forEach(b => b.onclick = async () => { showErr(''); b.disabled = true; const r = await HOST.redo(cur.id, +b.dataset.mredo); if (!r.ok) showErr(r.error); });
+    $$('[data-mresend]').forEach(b => b.onclick = async () => {
+      const k = +b.dataset.mresend, m = cur.msgs[k];
+      if (!m || m.who !== 'miinthe') return;
+      showErr(''); b.disabled = true;
+      const r = HOST.editMsg(cur.id, k, m.t, true);   // the same words, asked again (as Save & ask again)
+      drawTalk(); const x = await r; if (!x.ok) showErr(x.error); else if (x.pitchError) toast(x.pitchError);
+    });
     // 🗑 asks first, with its own Delete / Keep — a double-click can't delete (Miinthe lost a message, 2026-11-02)
     $$('[data-mdel]').forEach(b => b.onclick = () => { const k = cur.id + ':' + b.dataset.mdel; sure = k; sureAt = Date.now(); drawTalk(); setTimeout(() => { if (sure === k) { sure = null; drawTalk(); } }, 5000); });
     $$('[data-mkeep]').forEach(b => b.onclick = () => { sure = null; drawTalk(); });
@@ -777,6 +793,8 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       else if (a === 'draft') { const r = await HOST.pitchDraft(id); toast(r.ok ? '📝 Your line is in the message box — change it, then send.' : r.error); }
       else if (a === 'no') { HOST.pitchNo([id], ''); toast('👎 Noted — pitches learn your taste.'); }
       else if (a === 'takeback') { HOST.pitchTakeBack(id); toast('Taken back — it\'s with the kept ideas.'); }
+      else if (a === 'letgo') { HOST.pitchLetGo(id); toast('Pitch removed.'); }
+      else if (a === 'putback') { const r = HOST.pitchPutBack(id); toast(r.ok ? '📝 Your line is back in the message box.' : r.error); }
     });
     // a running plan's own controls work here too (the same as in the drawer)
     $$('#msgs .tpc [data-pa]').forEach(b => b.onclick = () => {
@@ -1034,8 +1052,12 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   }, true);
   // 📎: then she clicks the thing itself — a chat message, a post or conversation in the world panel, a lore entry
   // (Miinthe, 2026-10-19: "I wouldn't do it with a list but rather, click add context and then click the actual thing")
+  // Esc (focus is in this window, so the page never hears it) or 📎 again stops picking (Miinthe, 2026-11-03)
+  const picking = () => $('#c-ctx').getAttribute('aria-pressed') === 'true';
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && picking()) { e.preventDefault(); e.stopPropagation(); HOST.cancelPick?.(); } }, true);
   $('#c-ctx').onclick = async () => {
     if (!HOST.pickContext) return;
+    if (picking()) { HOST.cancelPick?.(); return; }
     $('#c-ctx').setAttribute('aria-pressed', 'true');
     const c = await HOST.pickContext();
     $('#c-ctx').setAttribute('aria-pressed', 'false');
@@ -1221,7 +1243,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   $$('[data-close]').forEach(b => b.onclick = () => { closeDrawers(); goHome(); });
   document.addEventListener('click', e => { const l = e.target.closest('[data-story]'); if (l) HOST.openStory(l.dataset.story); });
   $('#pop-out').onclick = () => HOST.popToggle();
-  async function lookLore() { const r = await HOST.lookLore(); toast(!r.ok ? r.error : r.noEntries ? 'No entries were sent with the latest replies — nothing to check.' : r.found ? `Mero found ${r.found} thing${r.found > 1 ? 's' : ''} for your entries.` : 'Mero looked. Your entries have everything the latest replies show.'); refresh(); }
+  async function lookLore() { const r = await HOST.lookLore(); toast(!r.ok ? r.error : r.noEntries ? 'No lore was sent lately — nothing to check.' : r.found ? `Mero found ${r.found} thing${r.found > 1 ? 's' : ''} for your entries.` : 'Mero looked. Your entries have everything the latest replies show.'); refresh(); }
   $('#look-lore').onclick = () => lookLore();
   // your notebooks (v13: in her Notes): the same tools as the side panel's ⋯ → Notebooks
   $$('[data-tool]').forEach(b => b.onclick = () => { if (!HOST.tool?.(b.dataset.tool)) toast('That notebook isn’t available right now.'); });
@@ -1268,10 +1290,10 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const st = {
       fresh: p.kind === 'ask' ? '<span class="mini">A question — answer it in a talk.</span>' : '',
       dir: '<div class="pstate wait">✍️ Goes to the writer with your next reply — hidden from the chat.</div><div class="row"><button class="btn ghost" data-pa="takeback">Take it back</button></div>',
-      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>`,
-      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at} — pick it to try again, keep it or let it go.</div>`,
-      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div>',
-      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>`,
+      landed: `<div class="pstate good">✓ Landed at #${p.at}${p.quote ? `: <span class="q">“${esc(p.quote)}”</span>` : ''}</div>${letGoRow('pa')}`,
+      skipped: `<div class="pstate bad">✗ The writer skipped it at #${p.at} — pick it to try again, keep it or let it go.</div>${letGoRow('pa')}`,
+      draft: '<div class="pstate wait">📝 In your message box as a draft — change it, then send.</div><div class="row"><button class="btn ghost" data-pa="putback" title="The line Mero wrote, into your message box again">Put it back in the box</button><button class="btn ghost" data-pa="takeback">Take it back</button><button class="btn ghost" data-pa="letgo">🗑 Let it go</button></div>',
+      played: `<div class="pstate good">📝 You played it at #${p.at}.</div>${letGoRow('pa')}`,
       given: `<div class="pstate cast">🎭 ${esc(p.gaveTo?.name || '')}'s plan now — they work toward it in their own turns.</div><div class="row"><button class="btn ghost" data-pa="takeback">Take it back</button></div>`,
       kept: '',
     }[p.st] || '';
@@ -1335,7 +1357,8 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const po = $('#p-open'); if (po) po.onclick = () => { pView = 'pick'; pickSel.clear(); drawPitches(); };
     const dropped = V.dropped || [];
     $('#p-dropped').hidden = !dropped.length;
-    $('#p-dropped').innerHTML = dropped.length ? `<span>${dropped.length} pitch${dropped.length > 1 ? 'es' : ''} dropped.</span><button class="btn ghost" id="p-bring">↩ Bring back</button>` : '';
+    $('#p-dropped').innerHTML = dropped.length ? `<span>${dropped.length} pitch${dropped.length > 1 ? 'es' : ''} dropped.</span><button class="btn ghost" id="p-bring">↩ Bring back</button><button class="btn ghost" id="p-forget" title="Delete the dropped pitches for good">🗑 Delete ${dropped.length > 1 ? 'them' : 'it'}</button>` : '';
+    const pf = $('#p-forget'); if (pf) pf.onclick = () => { HOST.pitchForgetDropped(); toast('Dropped pitches deleted.'); };
     const pb = $('#p-bring'); if (pb) pb.onclick = () => { pView = 'pick'; pickSel.clear(); HOST.pitchBringBack(); drawPitches(); };
     $('#p-out').innerHTML = pSec('p-out', 'Out in the story', list.filter(p => ['running', 'dir', 'skipped', 'draft', 'given', 'hidden', 'landed', 'played', 'fired', 'done', 'abandoned'].includes(p.st)));
     $('#p-kept').innerHTML = pSec('p-kept', '📌 Kept as ideas', list.filter(p => p.st === 'kept'));
@@ -1360,6 +1383,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       const id = b.closest('[data-pid]').dataset.pid, a = b.dataset.pa;
       if (a === 'peek') HOST.pitchPeek(id, !pById(id)?.peek);
       else if (a === 'letgo') HOST.pitchLetGo(id);
+      else if (a === 'putback') { const r = HOST.pitchPutBack(id); toast(r.ok ? '📝 Your line is back in the message box.' : r.error); }
       else if (a === 'takeback') { HOST.pitchTakeBack(id); toast('Taken back — it\'s with the kept ideas.'); }
       else if (a === 'abandon') { HOST.planAbandon(id); toast('🗑 Plan abandoned.'); }
       else if (a === 'linger') { HOST.planLinger(id); toast('⏳ Lingering — this beat takes a few more replies.'); }
@@ -1413,6 +1437,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     }
     pickSel.clear(); drawPitches();
   });
+  $('#act-why [data-whycancel]').onclick = () => { askWhy = false; drawActbar(); };
   $$('#act-why [data-why]').forEach(b => b.onclick = () => { const ids = [...pickSel]; HOST.pitchNo(ids, b.dataset.why); pickSel.clear(); askWhy = false; toast('👎 Noted — pitches learn your taste.'); });
   $$('.pmenu [data-pk]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; HOST.pitchMenu({ [g.dataset.pk]: g.dataset.pk === 'n' ? +b.dataset.v : b.dataset.v }); }));
   $('#psum').onclick = () => { const mm = $('#p-more'); mm.hidden = !mm.hidden; $('#psum').setAttribute('aria-expanded', String(!mm.hidden)); $('#psum-x').textContent = mm.hidden ? 'change ▾' : 'done ▴'; };

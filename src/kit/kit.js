@@ -365,8 +365,11 @@ export function notify({ text, title, tone = '', undo, actions, timeout, doc = d
     if (form) { const top = form.getBoundingClientRect().top; if (top > 80) stack.style.setProperty('--dk-notice-top', `${Math.round(top - 8)}px`); else stack.style.removeProperty('--dk-notice-top'); }
     const wait = timeout ?? (undo ? 8000 : 4500);
     const arm = () => { clearTimeout(timer); timer = setTimeout(close, wait); };
-    n.addEventListener('pointerenter', () => clearTimeout(timer));
-    n.addEventListener('pointerleave', arm);
+    // a mouse over it holds it; a touch does not (a tap never "leaves", so the notice stayed for good — Miinthe, 2026-11-03:
+    // "cannot be clicked off"); a tap anywhere on it but its buttons closes it
+    n.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') clearTimeout(timer); });
+    n.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') arm(); });
+    n.addEventListener('click', e => { if (!e.target.closest('button')) close(); });
     n.addEventListener('focusin', () => clearTimeout(timer));
     arm();
     return close;

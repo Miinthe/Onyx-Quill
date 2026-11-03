@@ -12,6 +12,7 @@ import {
     asPitches, normMenu, addBatch, dropPicking, bringBack, setPitch, trimPitches, pitchPrompt, parsePitches, parseHidden, checkFrom,
     fallbackDue, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, takePitchCards, directionText, MAX_KEPT_LIST, MAX_TASTE,
     parsePlans, startPlan, planLines, repliesSince, beatDue, tickBeat, rewindPlan, timerDue, lingerPatch, rewritePrompt, parseRewrite, applyReview, normPitch,
+    usedDraft,
 } from '../src/pitches-pure.js';
 import { normNote, buildMeroPrompt, normTalk } from '../src/mero-pure.js';
 
@@ -225,6 +226,14 @@ test('pitches name the author from Mero\'s settings — never by the persona (Mi
     assert(plain.user.includes("the author's wish: more angst"));
     const set = pitchPrompt({}, { names: { you: 'Miinthe', me: 'Mero' } }, {});
     assert(set.system.startsWith("You are Mero ☆, Miinthe's co-writer") && set.system.includes('Call the author "Miinthe".'));
+});
+
+test('a 📝 draft counts as played only when the sent message used it (Miinthe, 2026-11-03)', () => {
+    const d = '*She sets the cup down and leans closer.* "Tell me about the fuse, Kettle."';
+    assert(usedDraft(d, d), 'sent as is');
+    assert(usedDraft(d, '*She puts the cup down, leaning closer.* "Kettle, tell me about that fuse."'), 'changed a little');
+    assert(!usedDraft(d, 'I go to bed.'), 'something else entirely');
+    assert(usedDraft('', 'anything'), 'no draft text: as before');
 });
 
 summary('Pitches');

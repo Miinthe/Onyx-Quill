@@ -145,7 +145,6 @@ Set for **Everywhere** here; a character or a chat can set its own budget (the m
 |---|---|---|
 | **Give others a turn** | off | An entry sent many times in a row steps back; one skipped a long time gets a boost. `decayEnabled` |
 | **Rest after sending** | 0 | Replies. An entry waits this many replies before it can be sent again. `reinjectionCooldown` |
-| **Skip what was just sent** | 2 | Messages back · 0 = off. Leave out entries already sent in this many recent messages. |
 | **Bring one back after** (More) | 5 | Replies skipped. `decayBoostThreshold` |
 | **Hold one back after** (More) | 2 | Times in a row. `decayPenaltyThreshold` |
 
@@ -352,4 +351,4 @@ For troubleshooting.
 
 | Setting | Default | What it does |
 |---|---|---|
-| **Reset all settings** | — | Every section back to the defaults. Your vaults, AI connections, prompt presets and your own prompts stay. Asks first. Button: **Reset all**. |
+| **Reset all settings** | — | Every switch, number and choice back to its default. **Nothing of yours is erased:** your vault and AI connections, your own and edited prompts, your words for Fix spelling, starred Quick Replies, your saved draft, character budgets, the graph layout and usage stats stay, and DeepLore stays on or off as it is. A warning lists this first. Boards, runs, lore, notes and Mero's talks are not settings and are never touched. Button: **Reset all**. |

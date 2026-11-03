@@ -55,7 +55,7 @@ onGenerate(chat)
   ├─ Contextual gating                Filter by era/location/scene/character + custom fields
   ├─ Re-injection cooldown            Skip entries injected within N generations
   ├─ applyRequiresExcludesGating()    Apply requires/excludes rules (iterative cascade)
-  ├─ Strip duplicate injections       Skip entries injected in recent generations
+  ├─ Strip duplicate injections       (off since 2026-11-03) Skip entries injected in recent generations
   │
   ├─ formatAndGroup(entries)          Budget limits + injection grouping
   │    ├─ sort by priority              Lower number = higher priority
@@ -205,9 +205,9 @@ After selection, entries with `requires` and `excludes` fields are evaluated:
 - Resolution is **iterative** (max 10 passes). Removing one entry can cascade to remove others that require it.
 - **Force-injected entries** (constants, seeds, bootstraps, pins) are exempt from requires/excludes. They are never removed by these rules. They do remain in the active set, so other entries' `excludes` rules still see them.
 
-### Strip duplicate injections
+### Strip duplicate injections (off since 2026-11-03)
 
-If "Strip Duplicate Injections" is enabled, entries injected in recent generations (within the lookback depth) are stripped before formatting. The dedup key is `title|position|depth|role|contentHash` so the same entry at a different depth is not considered a duplicate. Constants and other force-injected entries are exempt. Injection history is tracked per-chat in `chat_metadata.deeplore_injection_log`.
+Off by default and no longer in the settings window (settings version 8 switches it off — it left replies without lore that was not in the prompt any more; entries sent again now show in 📖 Why as "same as last turn"). If `stripDuplicateInjections` is set by hand, entries injected in recent generations (within the lookback depth) are stripped before formatting. The dedup key is `title|position|depth|role|contentHash` so the same entry at a different depth is not considered a duplicate. Constants and other force-injected entries are exempt. Injection history is tracked per-chat in `chat_metadata.deeplore_injection_log`.
 
 ### Budget and formatting
 

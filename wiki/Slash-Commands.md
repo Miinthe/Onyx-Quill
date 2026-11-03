@@ -94,7 +94,7 @@ Show a detailed trace of the last generation pipeline.
 - BM25 fuzzy search stats
 - Contextual gating removals with per-field mismatch detail
 - Cooldown removals, warmup failures, refine-key blocks
-- Strip-dedup removals (already in recent context)
+- Strip-dedup removals (already in recent context; only if the old skip setting was switched back on by hand)
 - Probability skips with the rolled value
 - Budget/max cuts
 - Folder filter info

@@ -33,7 +33,7 @@ export const TOOL_DEFS = [
         { query: { type: 'string', description: 'A name or a few words to look for' } }, ['query']),
     fn('read_lore', 'Read one lore entry in full, by its title (from search_lore or from what you were given).',
         { title: { type: 'string', description: 'The entry title' } }, ['title']),
-    fn('open_tracker', 'Open one tracker of the storyboard: each of its steps, which one is now, which are done and to come, and what each step is about.',
+    fn('open_tracker', 'Open one tracker of the storyboard: for a step tracker, each of its steps, which one is now, which are done and to come, and what each step is about; for any other tracker (a meter, a collection, a place, the state, the Cast), where it stands now.',
         { name: { type: 'string', description: 'The tracker\'s name, or one of its step names' } }, ['name']),
     fn('search_chat', 'Search the whole roleplay chat (not only the latest replies) for a word or a name. Returns the matching messages with their numbers and a short look.',
         { query: { type: 'string', description: 'Words to look for' } }, ['query']),
@@ -150,6 +150,19 @@ export function runTool(name, a = {}, data = {}) {
         const board = data.board, trackers = arr(board?.trackers).filter(t => t?.kind === 'steps' && arr(t.steps).length);
         let id = namedTrackers(a.name, board, 1)[0];
         if (!id) id = trackers.find(t => low(t.name).includes(low(a.name).trim()) && low(a.name).trim())?.id;
+        if (!id && board) {
+            // a tracker without steps (a meter, a collection, a place, the state, the Cast…): what the writer is told about it
+            // (Miinthe, 2026-11-03: Mero couldn't open "Where" or "Cast" — "her being able to see the board is kind of important")
+            const q = low(a.name).trim(), other = q && arr(board.trackers).find(t => t && !trackers.includes(t) && (low(t.name) === q || low(t.name).includes(q) || q.includes(low(t.name))));
+            if (other) {
+                // the writer's lines are labeled by kind (PLACE:, IN THE SCENE:), not by the tracker's name: the whole state, its own lines first
+                const all = arr(data.boardLines).filter(l => !/^\[(?:Where the story currently stands|End of story state)\]$/.test(str(l).trim()));
+                const own = all.filter(l => low(l).includes(low(other.name)));
+                const lines = [...own, ...all.filter(l => !own.includes(l))];
+                const body = lines.join('\n');
+                return { text: `${other.name} (${other.kind || 'tracker'}) — where the story stands now:\n${body ? body.slice(0, 4000) : 'Nothing about it in this chat yet.'}`, got: lines.length ? clip(lines[0], 60) : 'empty' };
+            }
+        }
         if (!id) {
             const others = arr(board?.trackers).filter(t => t && !trackers.includes(t)).map(t => `${t.name} (${t.kind || 'other'})`);
             const text = !board ? 'There is no storyboard in this chat.'
@@ -190,7 +203,8 @@ export function runTool(name, a = {}, data = {}) {
  */
 export function passingError(err) {
     const m = String(err?.message || err || '') + ' ' + String(err?.status ?? err?.cause?.status ?? '');
-    return /timed? ?out|timeout|\b429\b|rate.?limit|too many requests|\b5\d\d\b|bad gateway|unavailable|overloaded|network|failed to fetch|fetch failed|ECONN|socket|aborted/i.test(m);
+    // "Service is too busy" (DeepSeek, Miinthe 2026-11-03: it switched lookups off for the whole session)
+    return /timed? ?out|timeout|\b429\b|rate.?limit|too many requests|\b5\d\d\b|bad gateway|unavailable|overloaded|too busy|\bbusy\b|capacity|try again|server error|network|failed to fetch|fetch failed|ECONN|socket|aborted/i.test(m);
 }
 
 /** What a reply keeps of its lookups (shown when Miinthe opens the header): the line and the few words of what came back. */

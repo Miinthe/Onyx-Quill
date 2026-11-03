@@ -35,6 +35,9 @@ function el(tag, cls, text) {
 function plainChip(o) {
     const c = K.chip(o);
     c.removeAttribute('role'); c.removeAttribute('tabindex');
+    // the label in its own span, so a long value ends in "…" inside the box (Miinthe, 2026-11-03: the pills hung over it)
+    const t = [...c.childNodes].find(n => n.nodeType === 3);
+    if (t) { const s = document.createElement('span'); s.className = 'dle-fv-cl'; t.replaceWith(s); s.append(t); }
     return c;
 }
 function runCommand(cmd) {

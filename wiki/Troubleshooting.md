@@ -57,7 +57,6 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 - **Check:** Per-chat blocks. Run `/dle-pins` to see if the entry is blocked.
 - **Check:** Per-entry cooldown.
 - **Check:** Re-injection cooldown. The entry may be skipped because it injected recently.
-- **Check:** Strip-dedup. The entry may be deduped against recent generations.
 - **Check:** Folder filter. The entry may live outside the active folder set.
 
 ### Too many entries matching (noisy results)

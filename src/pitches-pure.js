@@ -588,3 +588,12 @@ export function applyReview(p, last) {
     const restart = rv.mode !== 'extend';
     return { st: 'running', plan: { ...pl, goal: rv.mode === 'redirect' ? pl.goal : rv.goal || pl.goal, beats, at: Math.min(rv.mode === 'extend' ? pl.at : done.length, beats.length - 1), since: restart ? last : pl.since, asked: undefined, review: undefined } };
 }
+
+/** Did the message she sent use the 📝 draft? At least a third of the draft's words are in it (she may have changed it). */
+export function usedDraft(draft, sent) {
+    const words = t => String(t || '').toLowerCase().match(/[\p{L}\p{N}']+/gu) || [];
+    const d = [...new Set(words(draft).filter(w => w.length > 2))];
+    if (!d.length) return true;
+    const s = new Set(words(sent));
+    return d.filter(w => s.has(w)).length / d.length >= 1 / 3;
+}
