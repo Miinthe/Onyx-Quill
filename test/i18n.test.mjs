@@ -26,110 +26,26 @@ import { test, section, summary, assert, assertEqual, assertArrayEquals } from '
 section('i18n — SUPPORTED_LOCALES shape');
 // ════════════════════════════════════════════════════════════════════════════
 
-test('SUPPORTED_LOCALES has expected 7 entries', () => {
-    assertEqual(SUPPORTED_LOCALES.length, 7, 'seven locales (en + 6 translations)');
-    assert(SUPPORTED_LOCALES.includes('en'), 'has en');
-    assert(SUPPORTED_LOCALES.includes('es-es'), 'has es-es');
-    assert(SUPPORTED_LOCALES.includes('fr-fr'), 'has fr-fr');
-    assert(SUPPORTED_LOCALES.includes('de-de'), 'has de-de');
-    assert(SUPPORTED_LOCALES.includes('ja-jp'), 'has ja-jp');
-    assert(SUPPORTED_LOCALES.includes('zh-cn'), 'has zh-cn');
-    assert(SUPPORTED_LOCALES.includes('ru-ru'), 'has ru-ru');
+test('English only (Onyx Quill, 2026-11-03): one locale', () => {
+    assertEqual(SUPPORTED_LOCALES, ['en']);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-section('i18n — resolveLocale fallback chain');
+section('i18n — resolveLocale: every language falls back to English');
 // ════════════════════════════════════════════════════════════════════════════
 
-test('exact match returns input', () => {
-    assertEqual(resolveLocale('en'), 'en', 'en');
-    assertEqual(resolveLocale('es-es'), 'es-es', 'es-es');
-    assertEqual(resolveLocale('fr-fr'), 'fr-fr', 'fr-fr');
-    assertEqual(resolveLocale('de-de'), 'de-de', 'de-de');
-    assertEqual(resolveLocale('ja-jp'), 'ja-jp', 'ja-jp');
-    assertEqual(resolveLocale('zh-cn'), 'zh-cn', 'zh-cn');
-    assertEqual(resolveLocale('ru-ru'), 'ru-ru', 'ru-ru');
-});
-
-test('case-insensitive match', () => {
-    assertEqual(resolveLocale('ES-ES'), 'es-es', 'uppercase normalized');
-    assertEqual(resolveLocale('Fr-Fr'), 'fr-fr', 'mixed case normalized');
-    assertEqual(resolveLocale('JA-JP'), 'ja-jp', 'JP uppercase normalized');
-});
-
-test('base-lang fallback', () => {
-    assertEqual(resolveLocale('es'), 'es-es', 'es → es-es');
-    assertEqual(resolveLocale('fr'), 'fr-fr', 'fr → fr-fr');
-    assertEqual(resolveLocale('de'), 'de-de', 'de → de-de');
-    assertEqual(resolveLocale('ja'), 'ja-jp', 'ja → ja-jp');
-    assertEqual(resolveLocale('zh'), 'zh-cn', 'zh → zh-cn');
-    assertEqual(resolveLocale('ru'), 'ru-ru', 'ru → ru-ru');
-});
-
-test('unsupported region falls back to en', () => {
-    assertEqual(resolveLocale('pt-br'), 'en', 'pt-br → en (Portuguese unsupported)');
-    assertEqual(resolveLocale('it-it'), 'en', 'it-it → en (Italian unsupported)');
-    assertEqual(resolveLocale('ko-kr'), 'en', 'ko-kr → en (Korean unsupported)');
-});
-
-test('empty/null returns en', () => {
-    assertEqual(resolveLocale(''), 'en', 'empty string → en');
-    assertEqual(resolveLocale(null), 'en', 'null → en');
-    assertEqual(resolveLocale(undefined), 'en', 'undefined → en');
+test('any language, region, case or empty value → en', () => {
+    for (const l of ['en', 'EN', 'es-es', 'fr-fr', 'de', 'ja-jp', 'zh-cn', 'ru', 'pt-br', 'ko-kr', '', null, undefined]) assertEqual(resolveLocale(l), 'en', String(l));
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-section('i18n — resolveAiPromptLocale precedence');
+section('i18n — resolveAiPromptLocale: always English');
 // ════════════════════════════════════════════════════════════════════════════
 
-test('settingValue wins when supported', () => {
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: 'en', override: 'fr-fr', uiLocale: 'es-es' }),
-        'en',
-        'setting overrides everything'
-    );
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: 'zh-cn', override: null, uiLocale: 'en' }),
-        'zh-cn',
-        'setting overrides UI'
-    );
-});
-
-test('override wins when setting empty', () => {
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: '', override: 'fr-fr', uiLocale: 'es-es' }),
-        'fr-fr',
-        'override beats UI when no setting'
-    );
-});
-
-test('UI locale wins when neither setting nor override', () => {
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: '', override: null, uiLocale: 'ja-jp' }),
-        'ja-jp',
-        'UI locale used'
-    );
-});
-
-test('falls through to en when all empty/unsupported', () => {
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: '', override: null, uiLocale: '' }),
-        'en',
-        'all empty → en'
-    );
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: 'pt-br', override: 'it-it', uiLocale: 'ko-kr' }),
-        'en',
-        'all unsupported → en'
-    );
-});
-
-test('unsupported settingValue ignored, falls through', () => {
-    assertEqual(
-        resolveAiPromptLocale({ settingValue: 'pt-br', override: 'fr-fr', uiLocale: 'en' }),
-        'fr-fr',
-        'unsupported setting ignored, override wins'
-    );
+test('an old DeepLore setting for another language falls back to English', () => {
+    assertEqual(resolveAiPromptLocale({ settingValue: 'de-de', override: 'fr-fr', uiLocale: 'ja-jp' }), 'en');
+    assertEqual(resolveAiPromptLocale({ settingValue: 'en', override: null, uiLocale: '' }), 'en');
+    assertEqual(resolveAiPromptLocale({ settingValue: '', override: null, uiLocale: '' }), 'en');
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -371,7 +287,7 @@ test('html count mismatch flagged', () => {
 section('i18n — locale file sanity (canonical dle.en.json)');
 // ════════════════════════════════════════════════════════════════════════════
 
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -425,68 +341,12 @@ test('no ternary expressions leaked into values', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-section('i18n — all 6 translation locale files exist + parse');
+section('i18n — English only: no translation files ship');
 // ════════════════════════════════════════════════════════════════════════════
 
-const TRANSLATION_LOCALES = ['es-es', 'fr-fr', 'de-de', 'ja-jp', 'zh-cn', 'ru-ru'];
-
-for (const loc of TRANSLATION_LOCALES) {
-    test(`locales/dle.${loc}.json exists, parses, has __meta`, () => {
-        let data;
-        try {
-            data = JSON.parse(readFileSync(resolve(repoRoot, `locales/dle.${loc}.json`), 'utf8'));
-        } catch (e) {
-            assert(false, `dle.${loc}.json missing or invalid: ${e.message}`);
-            return;
-        }
-        assert(data.__meta, '__meta present');
-        assertEqual(data.__meta.locale, loc, 'meta locale matches');
-        assert(data.__meta.canonical === false, 'meta canonical=false (translated)');
-        assert(data.__meta.machine_translated === true, 'meta machine_translated=true');
-        const keys = Object.keys(data).filter(k => k !== '__meta');
-        // 2675 = 2592 (2574 v2.6 + 18 settings-overhaul shell keys) + 80 unslop-ui i18n + 2 graph touch hints (2026-10-17) + graph Close (2026-10-18)
-        // keys (rule-builder labels/tooltips, browse quick-filter pill, full setup-wizard
-        // runtime strings routed through tr/trf).
-        // − 313 Librarian / Emma keys removed with the Librarian (2026-10-19) = 2362
-        // − 1 unused (dle_librarian_activity_tab, 2026-11-02; the Emma-named keys were renamed, not removed) = 2361
-        // + 1 dle_carto_diff_same (📖 Why: same as last turn, 2026-11-03) = 2362
-        // − 6 companion-card keys (Kara, Nott, the Companions pop-up; removed for Onyx Quill, 2026-11-03) = 2356
-        assertEqual(keys.length, 2356, `${loc} key count matches canonical (2356)`);
-    });
-}
-
-test('every translation has same key set as canonical EN', () => {
-    const en = JSON.parse(readFileSync(resolve(repoRoot, 'locales/dle.en.json'), 'utf8'));
-    const enKeys = new Set(Object.keys(en).filter(k => k !== '__meta'));
-    for (const loc of TRANSLATION_LOCALES) {
-        const data = JSON.parse(readFileSync(resolve(repoRoot, `locales/dle.${loc}.json`), 'utf8'));
-        const locKeys = new Set(Object.keys(data).filter(k => k !== '__meta'));
-        const missing = [...enKeys].filter(k => !locKeys.has(k));
-        const extra = [...locKeys].filter(k => !enKeys.has(k));
-        assertEqual(missing.length, 0, `${loc} missing ${missing.length} keys (first: ${missing[0] || 'n/a'})`);
-        assertEqual(extra.length, 0, `${loc} extra ${extra.length} keys (first: ${extra[0] || 'n/a'})`);
-    }
-});
-
-test('placeholders preserved across all translations', () => {
-    const en = JSON.parse(readFileSync(resolve(repoRoot, 'locales/dle.en.json'), 'utf8'));
-    let totalMismatches = 0;
-    for (const loc of TRANSLATION_LOCALES) {
-        const data = JSON.parse(readFileSync(resolve(repoRoot, `locales/dle.${loc}.json`), 'utf8'));
-        for (const [k, v] of Object.entries(en)) {
-            if (k === '__meta' || typeof v !== 'string') continue;
-            if (!data[k] || typeof data[k] !== 'string') continue;
-            if (data[k] === v) continue;  // English fallback — skip
-            const issues = placeholderMismatch(v, data[k]);
-            if (issues.length > 0) {
-                totalMismatches++;
-                if (totalMismatches <= 5) {
-                    console.error(`    ${loc} key ${k}: ${issues.join(', ')}`);
-                }
-            }
-        }
-    }
-    assertEqual(totalMismatches, 0, `total placeholder mismatches across translations`);
+test('locales/ holds only dle.en.json; src/i18n/prompts/ only en.js', () => {
+    assertEqual(readdirSync(resolve(repoRoot, 'locales')).sort(), ['dle.en.json']);
+    assertEqual(readdirSync(resolve(repoRoot, 'src/i18n/prompts')).sort(), ['en.js']);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -505,7 +365,7 @@ const REQUIRED_PROMPT_EXPORTS = [
 
 // Pre-load all prompt modules (top-level await is supported in .mjs)
 const PROMPT_MODULES = {};
-for (const loc of ['en', ...TRANSLATION_LOCALES]) {
+for (const loc of ['en']) {
     try {
         PROMPT_MODULES[loc] = await import(`../src/i18n/prompts/${loc}.js`);
     } catch (e) {
@@ -513,7 +373,7 @@ for (const loc of ['en', ...TRANSLATION_LOCALES]) {
     }
 }
 
-for (const loc of ['en', ...TRANSLATION_LOCALES]) {
+for (const loc of ['en']) {
     test(`src/i18n/prompts/${loc}.js has required exports`, () => {
         const mod = PROMPT_MODULES[loc];
         if (mod.__error) {

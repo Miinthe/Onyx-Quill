@@ -83,7 +83,7 @@ function pitchContext(fromMsg) {
         taste: notes.filter(n => n.taste && n.on && !n.ended).map(n => n.text),
         donts: notes.filter(n => n.inForce && n.kind === 'dont' && !n.hidden).map(n => n.text),
         notes: notes.filter(n => n.inForce && n.kind !== 'dont' && !n.hidden).map(n => n.text),
-        board: pkg.board, quiet, cast, lore, world: pkg.world,
+        board: pkg.board, quiet, cast, lore, world: pkg.world, guides: pkg.guides || [],
         cards: [pkg.cards, pkg.persona].filter(Boolean).join('\n\n'),
         replies: pkg.replies, fromMsg,
         already: s.list.filter(p => p.st !== 'hidden' && p.st !== 'fired').slice(0, 12).map(p => p.text),
@@ -151,13 +151,13 @@ export async function pitchFromTalk(talkId, { ask = true } = {}) {
     if (!conn.profileId) return { ok: false, error: noConn };
     const t = meroTalks().find(x => x.id === talkId);
     if (!t) return { ok: false, error: 'That talk is gone.' };
-    if (!t.msgs.some(m => m.who === 'miinthe') || !t.msgs.some(m => m.who === 'mero')) return { ok: false, error: 'Nothing in this talk to pitch from yet.' };
+    if (!t.msgs.some(m => m.who === 'author') || !t.msgs.some(m => m.who === 'mero')) return { ok: false, error: 'Nothing in this talk to pitch from yet.' };
     const c = pitchContext(null), names = castNames();
     // what this talk already made (in this chat): Mero writes those again only when the talk changed them
     const ids = new Set(t.msgs.flatMap(m => m.pitchIds || []));
     // with what the card parked as still open — else a second press asks about it again (bug hunt 2026-11-03)
     const already = store().list.filter(p => ids.has(p.id)).map(p => (p.plan ? `${p.plan.goal || p.text} (plan: ${p.plan.beats.map(b => b.text).join(' → ')})` : p.text) + (p.open ? ` — Still open (parked on the card, don't ask again): ${p.open}` : ''));
-    const { system, user } = talkPitchPrompt(t, { persona: c.persona, character: c.character, user: c.user, names: c.names, board: c.board, castNames: names, donts: c.donts, replies: c.replies, already }, { ask });
+    const { system, user } = talkPitchPrompt(t, { persona: c.persona, character: c.character, user: c.user, names: c.names, board: c.board, castNames: names, donts: c.donts, guides: c.guides, replies: c.replies, already }, { ask });
     busy = 'talk'; changed();
     try {
         const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, maxTokens: Math.max(Number(conn.maxTokens) || 0, 1500) });

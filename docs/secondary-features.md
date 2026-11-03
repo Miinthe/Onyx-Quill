@@ -306,7 +306,6 @@ Visible in `/oq-inspect` timing section (collapsible "Stage Timing" table with p
 ### Additional pushEvent Kinds
 Beyond the existing `init`, `obsidian_circuit`, `search_mode`, `cache_save`, `cache_load`, `scribe`, `enabled`, etc.:
 
-- **`librarian`** — `start`, `completed`, `error`
 - **`scribe`** — `start` (supplements existing completion event)
 - **`ai_notepad`** — `tag_extracted`, `extract_start`, `extract_completed`, `extract_error`, `extract_empty`
 - **`auto_suggest`** — `start`, `completed`

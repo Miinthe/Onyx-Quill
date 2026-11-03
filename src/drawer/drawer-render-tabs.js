@@ -1233,7 +1233,7 @@ export function renderBrowseWindow() {
         if (e.tokenEstimate) _hoverParts.push(`Tokens: ${e.tokenEstimate}`);
         const _hoverTitle = _hoverParts.length ? ` title="${_hoverParts.join('&#10;&#10;')}"` : '';
         html += `<div class="dle-browse-info" role="button" tabindex="0" aria-expanded="false" aria-label="Expand ${escapeHtml(e.title)} (Enter or click)" aria-describedby="${previewId}"${_hoverTitle}>`;
-        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="Writing guide — never sent to the writing AI as lore. Add \'lorebook-guide\' tag to create one."><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i> Guide</span>' : ''}</span>`;
+        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="A note for Mero ☆ — she reads it; never sent to the writing AI. The lorebook-guide tag makes one.">☆ for Mero</span>' : ''}</span>`;
         // LOCAL PATCH 2026-08-03: show the entry's origin on the COLLAPSED row.
         // `character` (and `instance`) previously appeared only in the expanded preview, so
         // triaging a folder of unsorted entries meant opening each one to find out where it

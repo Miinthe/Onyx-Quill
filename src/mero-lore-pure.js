@@ -49,7 +49,7 @@ export const isNotCanon = (lore, title, q) => lore.notCanon.some(x => low(x.titl
 /** Mero's look: the instructions and what she reads. `entries` [{ title, content }], `replies` [{ i, name, text }]. */
 export function buildLookPrompt({ entries = [], replies = [], persona = '', names = {} } = {}) {
     const system = [
-        `You are Mero ☆, Miinthe's co-writer and story bestie.${persona ? ` ${persona}` : ''} Right now you are checking Miinthe's lore entries against the latest replies of her roleplay.`,
+        `You are Mero ☆, {{author}}'s co-writer and story bestie.${persona ? ` ${persona}` : ''} Right now you are checking {{author}}'s lore entries against the latest replies of their roleplay.`,
         'Find facts that the replies clearly show and that an entry is MISSING or CONTRADICTS — about that entry\'s own subject only. Example: the entry "Apple" says apples are red and green; in a reply someone eats a yellow apple → add that apples can also be yellow.',
         'Never invent anything. Never rephrase or restate what the entry already says. Ignore passing mood, dialogue and one-off actions — only lasting facts about the subject. If nothing is missing, return an empty list; that is the usual answer.',
         'Each change is either ADD (one short paragraph added at the end of the entry, in the entry\'s own style and tense) or REWRITE (`find` = an exact passage copied from the entry, `replace` = what it becomes). Write the new text as plain prose on one line.',

@@ -72,20 +72,20 @@ test('Mero\'s answer: note cards and the title are taken out of the text she say
 });
 
 test('Mero\'s prompt: who she is, reading the room, what she knows; the talk as messages', () => {
-    const p = buildMeroPrompt({ settings: { persona: 'Warm and nerdy.' }, talk: { tag: 'fb', msgs: [{ who: 'miinthe', t: 'He apologises too much.' }, { who: 'mero', t: 'Agreed.' }] }, character: 'Kettle', board: ['Relationship: Friends'], replies: [{ i: 4, name: 'Kettle', text: 'Sorry!' }], talkNotes: [{ text: 'Miinthe loves quiet sulking.' }], firstAnswer: true });
+    const p = buildMeroPrompt({ settings: { persona: 'Warm and nerdy.' }, talk: { tag: 'fb', msgs: [{ who: 'author', t: 'He apologises too much.' }, { who: 'mero', t: 'Agreed.' }] }, character: 'Kettle', board: ['Relationship: Friends'], replies: [{ i: 4, name: 'Kettle', text: 'Sorry!' }], talkNotes: [{ text: 'Miinthe loves quiet sulking.' }], firstAnswer: true });
     assert(p.system.includes('Mero ☆') && p.system.includes('Warm and nerdy.') && p.system.includes('Read the room') && p.system.includes('Feedback on a reply') && p.system.includes('[[KIND]]') && p.system.includes('Relationship: Friends') && p.system.includes('#4 Kettle: Sorry!') && p.system.includes('Miinthe loves quiet sulking.') && p.system.includes('[[TITLE]]'));
     assertEqual(p.messages, [{ role: 'user', content: 'He apologises too much.' }, { role: 'assistant', content: 'Agreed.' }]);
 });
 
 test('📚 a vault review: the whole vault goes along, never into the story chat; the talk remembers it is one', () => {
-    const v = buildMeroPrompt({ talk: { msgs: [{ who: 'miinthe', t: 'Look it over?' }] }, entries: [{ title: 'Last', content: 'x' }], vault: [{ title: 'Kettle', content: 'Steams when upset.' }, { title: 'Spoon', content: 'Stirs trouble.' }] }).system;
-    assert(v.includes("the author's whole lore vault (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite her entries') && !v.includes('Lore the writer was given'));
+    const v = buildMeroPrompt({ talk: { msgs: [{ who: 'author', t: 'Look it over?' }] }, entries: [{ title: 'Last', content: 'x' }], vault: [{ title: 'Kettle', content: 'Steams when upset.' }, { title: 'Spoon', content: 'Stirs trouble.' }] }).system;
+    assert(v.includes("The author's whole lore vault (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite their entries') && !v.includes('Lore the writer was given'));
     assert(!buildMeroPrompt({ talk: { msgs: [] } }).system.includes('whole lore vault'));
     assertEqual(asStore({ chars: { 'k.png': { talks: [{ title: 'R', review: true, msgs: [] }] } } }).chars['k.png'].talks[0].review, true);
 });
 
 test('the store survives damage', () => {
-    const s = asStore({ chars: { 'k.png': { talks: [{ title: 'T', msgs: [{ who: 'miinthe', t: 'x' }, { who: 'bad', t: 'y' }, null] }, null] } }, notes: { char: { 'k.png': [{ text: '' }, { text: 'ok', kind: 'weird' }] } }, settings: { chatty: 'loud', initiative: 9 } });
+    const s = asStore({ chars: { 'k.png': { talks: [{ title: 'T', msgs: [{ who: 'author', t: 'x' }, { who: 'bad', t: 'y' }, null] }, null] } }, notes: { char: { 'k.png': [{ text: '' }, { text: 'ok', kind: 'weird' }] } }, settings: { chatty: 'loud', initiative: 9 } });
     assertEqual(s.chars['k.png'].talks.length, 1);
     assertEqual(s.chars['k.png'].talks[0].msgs.length, 1);
     const t2 = asStore({ chars: { k: { talks: [{ msgs: [{ who: 'mero', t: 'x', cards: [{ kind: 'dont', text: 'Rule', state: 'kept', noteId: 'n1' }, { text: '' }] }] }] } } }).chars.k.talks[0];
@@ -305,9 +305,11 @@ test('board Mero: she can not help while off duty or without an AI', () => {
     assertEqual(meroBoardBlock({ job: 'freelance', connected: true }), '');
 });
 
-test('Mero never keeps a made-up "Miinthe:" side (a model finishing the pasted script wrote it)', () => {
-    const r = parseMeroAnswer('Mero: I like where your mind is going!\n\nMiinthe: That sounds fun. How are you, Mero?\nMero: Great.');
+test('Mero never keeps a made-up side for the author (a model finishing the pasted script wrote it)', () => {
+    const r = parseMeroAnswer('Mero: I like where your mind is going!\n\nThe author: That sounds fun. How are you, Mero?\nMero: Great.');
     assertEqual(r.text, 'I like where your mind is going!');
+    assertEqual(parseMeroAnswer('Mero: Love it.\nSam: And then?', { you: 'Sam', me: 'Mero' }).text, 'Love it.', 'the chosen names');
+    assertEqual(parseMeroAnswer('Try it like this:\nLumine: "Hello there."', { you: 'Sam' }).text, 'Try it like this:\nLumine: "Hello there."', 'a quoted story line stays');
     assertEqual(parseMeroAnswer('Miinthe is a fine name for a heroine.').text, 'Miinthe is a fine name for a heroine.');
 });
 
@@ -318,13 +320,13 @@ test('Mero\'s ground rules come last, after the story replies, and say she is no
 });
 
 test('Mero uses the names from her settings — and no name at all when none is set', () => {
-    const talk = { tag: 'yap', msgs: [{ who: 'miinthe', t: 'Miinthe here, hi!' }] };
+    const talk = { tag: 'yap', msgs: [{ who: 'author', t: 'Miinthe here, hi!' }] };
     const plain = buildMeroPrompt({ talk, replies: [{ i: 1, name: 'Corvin', text: 'He watched the fox.' }] });
     assert(!plain.system.includes('Miinthe'), 'no name in her instructions by default');
     assert(plain.system.includes('Never call the author by a name'), 'told to use no name');
     assertEqual(plain.messages[0].content, 'Miinthe here, hi!', 'what the author wrote is never changed');
-    const set = buildMeroPrompt({ talk, settings: { callMe: 'Miinthe', meroName: 'Mira' } }).system;
-    assert(set.startsWith('You are Mira ☆, Miinthe\'s co-writer') && set.includes('Call the author "Miinthe".'), 'both names used');
+    const set = buildMeroPrompt({ talk, settings: { callMe: 'Sam', meroName: 'Mira' } }).system;
+    assert(set.startsWith('You are Mero ☆, Sam\'s co-writer') && set.includes('Call the author "Sam".'), 'her chosen name for the author; Mero stays Mero (an old meroName is ignored)');
     assertEqual(asStore({ settings: { callMe: '  Miinthe  ', meroName: '' } }).settings.callMe, 'Miinthe');
 });
 
@@ -350,12 +352,12 @@ test('looked-up details: each step with its own entry (not the shared one, not t
     assert(d.includes('- The Stolen Bond: He took the bond.') && d.includes('- The Return Offered: He offers it back.') && !d.includes('SHARED'), d);
 });
 test('without lookups she is told she sees names only; with them, to look it up; planning ends in the 💡 Pitch button', () => {
-    const plan = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'miinthe', t: 'x' }] }, boardMap: ['Relationship: Foreign Envoy ← now'] }).system;
+    const plan = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'author', t: 'x' }] }, boardMap: ['Relationship: Foreign Envoy ← now'] }).system;
     assert(plan.includes('never pretend you looked it up') && plan.includes('Relationship: Foreign Envoy ← now') && !plan.includes('search_lore'));
     assert(plan.includes('writing partner') && !plan.includes('[[PITCH') && plan.includes('💡 Pitch button'), 'planning: a partner; pitches through the button, never markup');
-    const look = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'miinthe', t: 'x' }] }, lookups: true }).system;
+    const look = buildMeroPrompt({ talk: { tag: 'plan', msgs: [{ who: 'author', t: 'x' }] }, lookups: true }).system;
     assert(look.includes('search_lore') && look.includes('look it up first') && !look.includes('never pretend you looked it up'));
-    assert(buildMeroPrompt({ talk: { msgs: [{ who: 'miinthe', t: 'make it a pitch' }] }, pitchAsked: true }).system.includes('just asked for a pitch'));
+    assert(buildMeroPrompt({ talk: { msgs: [{ who: 'author', t: 'make it a pitch' }] }, pitchAsked: true }).system.includes('just asked for a pitch'));
     assert(!buildMeroPrompt({ talk: { tagMine: true, msgs: [] } }).system.includes('[[KIND]]'), 'a tag she picked is never re-sorted');
     assert(buildMeroPrompt({ talk: { tag: 'yap', msgs: [] } }).system.includes('Offer a note ONLY when'));
 });
@@ -380,6 +382,30 @@ test('the summary is only written again when the trackers really changed', () =>
     const moved = JSON.parse(JSON.stringify(DB)); moved.trackers[0].steps.push({ id: 'c', name: 'Liked Envoy' });
     assert(mapHash(moved) !== h);
     const noted = JSON.parse(JSON.stringify(DB)); noted.trackers[0].note = 'just a note'; assertEqual(mapHash(noted), h, 'a note alone changes nothing');
+});
+
+test('Chattiness: Custom picked on purpose stays Custom (its parts show), a preset sets its parts, a changed part makes it Custom', () => {
+    assertEqual(asStore({ settings: { chatty: 'custom', talk: 'some', bringUp: false, glow: 'big' } }).settings.chatty, 'custom', 'parts like Chatty, still Custom');
+    assertEqual(asStore({ settings: { chatty: 'chatty', talk: 'lots', bringUp: false, glow: 'big' } }).settings.chatty, 'custom', 'a part changed');
+    assertEqual(asStore({ settings: { chatty: 'very', talk: 'lots', bringUp: true, glow: 'quiet' } }).settings.chatty, 'very');
+    assertEqual(asStore({ settings: { chatty: 'chatty' } }).settings.chatty, 'chatty', 'an older store with only the preset');
+});
+
+test('writing guides: Mero reads those in this chat\'s folders, capped; the writer never gets them', async () => {
+    const { guidesIn, guidesText, GUIDE_MAX } = await import('../src/mero-pure.js');
+    const idx = [
+        { title: 'House style', guide: true, content: 'Present tense. No head-hopping.' },                         // outside any folder: everywhere
+        { title: 'Dragon voice', guide: true, folderPath: 'Dragon/Guides', content: 'Formal, archaic.' },
+        { title: 'Other story voice', guide: true, folderPath: 'Other', content: 'Slang.' },
+        { title: 'Lore, not a guide', folderPath: 'Dragon', content: 'x' },
+    ];
+    assertEqual(guidesIn(idx, ['Dragon']).map(g => g.title), ['House style', 'Dragon voice']);
+    assertEqual(guidesIn(idx, null).map(g => g.title), ['House style', 'Dragon voice', 'Other story voice'], 'no folder filter: all guides');
+    const big = Array.from({ length: 9 }, (_, k) => ({ title: 'G' + k, content: 'w '.repeat(1000) }));
+    assert(guidesText(big).length <= GUIDE_MAX, 'capped');
+    const sys = buildMeroPrompt({ talk: { tag: 'plan', msgs: [] }, guides: guidesIn(idx, ['Dragon']) }).system;
+    assert(sys.includes('Notes the author wrote for you only') && sys.includes('Present tense') && sys.includes('Formal, archaic') && !sys.includes('Slang'));
+    assert(!buildMeroPrompt({ talk: { tag: 'plan', msgs: [] } }).system.includes('writing guides'), 'no guides: no section');
 });
 
 summary('mero');

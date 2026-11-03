@@ -254,7 +254,7 @@ async function worldSetup(input) {
     const about = card => { const ch = card ? chars.find(c => c.avatar === card) : null; return ch ? [ch.description || ch.data?.description, ch.personality || ch.data?.personality].filter(Boolean).join('\n') : ''; };
     const main = !ctx?.groupId && ctx?.characters?.[ctx?.characterId] ? ctx.characters[ctx.characterId] : null;
     const people = [...(main ? [{ key: 'main', name: main.name, about: about(main.avatar) }] : []), ...(input?.cast || []).map(c => ({ key: c.key, name: c.name, about: about(c.card) }))];
-    const { system, user } = setupPrompt({ persona: meroSettings().persona, user: ctx?.name1 || 'Miinthe', storyName: input?.storyName || 'the story', about: input?.about || '', setting: input?.setting || '', people, existing: input?.existing || [], look: input?.look || 'phone' });
+    const { system, user } = setupPrompt({ persona: meroSettings().persona, user: ctx?.name1 || 'User', storyName: input?.storyName || 'the story', about: input?.about || '', setting: input?.setting || '', people, existing: input?.existing || [], look: input?.look || 'phone' });
     worldSettingUp = true;
     try {
         const conn = resolveConnectionConfig('mero');

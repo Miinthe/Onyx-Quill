@@ -26,6 +26,7 @@
  *     replies" — a floor, not a deadline). The writer is told to work toward the current beat gently, over several replies.
  *   - A deleted or swiped message takes its tick back (rewindPlan).
  */
+import { GUIDE_HEADING, guidesText } from './mero-pure.js';   // her writing guides (2026-11-03)
 import { findQuoteMatch } from './quote-match-pure.js';
 import { named, nameRule } from './mero-names-pure.js';
 import { normAsks, MAX_ASKS, withAsked } from './ask-pure.js';
@@ -194,16 +195,16 @@ export const surpriseText = p => `Now is the moment for this — work it into th
 const PITCH_RULES = [
     'Build pitches ONLY from this story — its people, threads, places, lore and what just happened. Never from genre templates or stock tropes.',
     'Each pitch grows from something specific below; name it in "from" in a few words (e.g. "Mara\'s plan: win back the shop", "the cellar door, last mentioned at #12", "Relationship stuck on Friends for 22 messages", "lore: The Old Debt").',
-    'Kinds: "twist" — something unexpected happens · "acts" — a character does something on their own, out of what they want, plan or know (name them in "who") · "callback" — something mentioned earlier and left open comes back · "ask" — a question to Miinthe about her story whose answer would unlock better ideas (at most one per batch, never for a single pitch).',
+    'Kinds: "twist" — something unexpected happens · "acts" — a character does something on their own, out of what they want, plan or know (name them in "who") · "callback" — something mentioned earlier and left open comes back · "ask" — a question to {{author}} about their story whose answer would unlock better ideas (at most one per batch, never for a single pitch).',
     'Strength: "nudge" — small, could happen in passing · "turn" — changes where the scene is going · "bomb" — a bombshell that changes the story.',
     'Each pitch is one or two concrete sentences that the next reply or two can play. Make the pitches of a batch different from each other — different people, threads and kinds.',
     'Never go against a DON\'T note. Never invent facts about the lore or the characters\' pasts; small new details in the scene are fine.',
-    'Miinthe plays her own character — never decide what her character does, says or feels.',
+    '{{author}} plays their own character — never decide what their character does, says or feels.',
 ].join('\n');
 
 const ITEM = '{"kind": "twist"|"acts"|"callback"|"ask", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "source": "cast"|"board"|"lore"|"loose", "from": "what it grew from, a few words", "text": "the pitch"}';
 const PLAN_ITEM = '{"kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "source": "cast"|"board"|"lore"|"loose", "from": "what it grew from, a few words", "goal": "where the plan leads, one sentence", "beats": ["first this happens", "then this", …]}';
-const PLAN_RULES = 'This is a MULTISTEP pitch — a PLAN: 3 to 5 beats in order, each one concrete thing that happens in the story and can be recognized when it does ("Mara notices the stranger keeps looking at the door"), building slowly toward the goal. The story will take several replies per beat — so no beat is a whole scene\'s worth, and no beat depends on what Miinthe\'s character decides.';
+const PLAN_RULES = 'This is a MULTISTEP pitch — a PLAN: 3 to 5 beats in order, each one concrete thing that happens in the story and can be recognized when it does ("Mara notices the stranger keeps looking at the door"), building slowly toward the goal. The story will take several replies per beat — so no beat is a whole scene\'s worth, and no beat depends on what {{author}}\'s character decides.';
 
 /**
  * The prompt for a batch (visible) or one hidden pitch.
@@ -220,12 +221,12 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
     const list = x => arr(x).filter(Boolean).map(t => `- ${t}`).join('\n');
     const system = [
-        `You are Mero ☆, Miinthe's co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
+        `You are Mero ☆, {{author}}'s co-writer for their roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
         multi
-            ? (hidden ? `Miinthe asked for ONE HIDDEN plan — a surprise for her too: she will not read it; the writer is led through it beat by beat.` : `Miinthe asked for ${n} plan${n > 1 ? 's' : ''}: multistep ideas for where her story could go. She picks.`)
+            ? (hidden ? `{{author}} asked for ONE HIDDEN plan — a surprise for them too: they will not read it; the writer is led through it beat by beat.` : `{{author}} asked for ${n} plan${n > 1 ? 's' : ''}: multistep ideas for where their story could go. They pick.`)
             : hidden
-                ? `Miinthe asked for ONE HIDDEN pitch — a surprise for her too: she will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Mara is alone with the stranger") — never a count of messages.${m.moment ? ' Miinthe named the moment herself — use hers.' : ''}`
-                : `Miinthe asked for ${n} pitch${n > 1 ? 'es' : ''}: short ideas for where her story could go next. She picks.`,
+                ? `{{author}} asked for ONE HIDDEN pitch — a surprise for them too: they will not read it until it has happened. Also give the MOMENT it should happen: a plain situation in the story that can be recognized in a message ("when someone goes into the garden", "when Mara is alone with the stranger") — never a count of messages.${m.moment ? ' {{author}} named the moment themselves — use theirs.' : ''}`
+                : `{{author}} asked for ${n} pitch${n > 1 ? 'es' : ''}: short ideas for where their story could go next. They pick.`,
         PITCH_RULES,
         multi ? PLAN_RULES : '',
         multi
@@ -239,16 +240,17 @@ export function pitchPrompt(menu, ctx = {}, { comment = '', like = [] } = {}) {
         `How many: ${n}${multi ? ` plan${n > 1 ? 's' : ''}` : ''}${hidden ? ' (hidden)' : ''}`,
         `Strength wanted: ${m.str}`,
         `Tone: ${m.tone === 'nsfw' ? 'NSFW is allowed where it fits the story' : 'SFW — nothing sexual'}`,
-        m.focus ? `Focus on: ${m.focus}` : 'Focus: anything — surprise her',
-        hidden && !multi && m.moment ? `${N("The moment (Miinthe's words)")}: ${m.moment}` : '',
-        comment.trim() ? `${N("Miinthe's wish")}: ${comment.trim()}` : '',
+        m.focus ? `Focus on: ${m.focus}` : 'Focus: anything — surprise them',
+        hidden && !multi && m.moment ? `${N("The moment ({{author}}'s words)")}: ${m.moment}` : '',
+        comment.trim() ? `${N("{{author}}'s wish")}: ${comment.trim()}` : '',
         arr(like).length ? `More like these (same spirit, new ideas — don't repeat them):\n${list(like)}` : '',
     ].filter(Boolean).join('\n');
     const user = [
-        sec(N('What Miinthe wants now'), want),
+        sec(N('What {{author}} wants now'), want),
         ctx.fromMsg ? sec(`Pitch from this message (#${ctx.fromMsg.i}, ${ctx.fromMsg.name})`, clip(ctx.fromMsg.text, 2000)) : '',
-        sec(N('Miinthe\'s taste (from earlier pitches)'), list(ctx.taste)),
+        sec(N('{{author}}\'s taste (from earlier pitches)'), list(ctx.taste)),
         sec('DON\'T — never pitch against these', list(ctx.donts)),
+        sec(N(GUIDE_HEADING), guidesText(ctx.guides)),
         sec('Other notes the writer follows', list(ctx.notes)),
         sec('The board — where the story stands', arr(ctx.board).join('\n')),
         sec('Threads that have gone quiet', list(ctx.quiet)),
@@ -395,7 +397,7 @@ export const pitchLine = p => `#${p.no} ${KINDS[p.kind] || ''} (${STRENGTHS[p.st
 
 // ── pitches offered in a talk (Mero turns an idea into a card) ────────────────
 
-export const PITCH_FORMAT = 'When an idea in this talk becomes a concrete pitch (or Miinthe asks to combine or change pitches), add it on its own line at the end: [[PITCH kind=twist|acts|callback strength=nudge|turn|bomb who=Name]] the pitch, one or two sentences [[/PITCH]] — it goes to Miinthe\'s 💡 Pitches, where she can use it. Only when it truly helps.';
+export const PITCH_FORMAT = 'When an idea in this talk becomes a concrete pitch (or {{author}} asks to combine or change pitches), add it on its own line at the end: [[PITCH kind=twist|acts|callback strength=nudge|turn|bomb who=Name]] the pitch, one or two sentences [[/PITCH]] — it goes to {{author}}\'s 💡 Pitches, where they can use it. Only when it truly helps.';
 const PITCH_RE = /\[\[PITCH([^\]]*)\]\]([\s\S]*?)\[\[\/PITCH\]\]/gi;
 /** Mero's talk answer → { text without the cards, pitches: [fields] }. */
 export function takePitchCards(text, castNames = []) {
@@ -423,29 +425,30 @@ export const MAX_TALK_PITCHES = 3;
  */
 export function talkPitchPrompt(talk, ctx = {}, { ask = true } = {}) {
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
-    const msgs = arr(talk?.msgs).filter(m => m && (m.who === 'miinthe' || m.who === 'mero') && (str(m.t).trim() || arr(m.asks).length)).slice(-40);
+    const msgs = arr(talk?.msgs).filter(m => m && (m.who === 'author' || m.who === 'mero') && (str(m.t).trim() || arr(m.asks).length)).slice(-40);
     const system = [
-        `You are Mero ☆, Miinthe's co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
-        'Miinthe and you planned something in the talk below. Write up what you WORKED OUT TOGETHER as pitch cards she can send into her story.',
+        `You are Mero ☆, {{author}}'s co-writer for their roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
+        '{{author}} and you planned something in the talk below. Write up what you WORKED OUT TOGETHER as pitch cards they can send into their story.',
         // Miinthe 2026-11-02: the first plan took Mero's own suggestions she never answered as agreed ("the pitch is off")
-        'What counts: Miinthe\'s ideas, and yours ONLY where she said yes or built on them. An idea of yours she didn\'t answer, or a question of yours she didn\'t answer, is still open — not agreed. When she changed her mind, her last word counts. Leave out what she turned down.',
+        'What counts: {{author}}\'s ideas, and yours ONLY where they said yes or built on them. An idea of yours they didn\'t answer, or a question of yours they didn\'t answer, is still open — not agreed. When they changed their mind, their last word counts. Leave out what they turned down.',
         'Add nothing new: no new events, people, twists or details the talk didn\'t have.',
         ask
             // the first press checks before it writes (live test 2026-11-02: as a plain rule, Mero's own unanswered guess still became a card)
-            ? `FIRST fill "open": every IMPORTANT point that is not settled — who does it, what happens, how it ends. These are ALWAYS open: a question you asked in the talk that Miinthe didn't answer; an idea or guess of yours ("my guess", "maybe", "we could") she didn't say yes to. One question per open point — never two points in one question. Its answers are real alternatives to EACH OTHER for that one point (2 to 4, short, from the talk where it has them): {"q": "the question?", "pick": "one"|"many", "options": ["…", "…"]}. Your unconfirmed idea gets its own question (e.g. "Does Toaster try to smooth it over?" → yes / no, he makes it worse / …). At most ${MAX_ASKS}, the most important first. Small details are not important. If "open" has anything, Miinthe answers it first: leave "items" empty.`
-            : 'Miinthe answered your questions (her answers are the latest message) or chose to write it up as it is: write the cards now. Use what she said and what she PICKED — an answer she didn\'t pick, and an idea of yours she never confirmed, is not in the cards. Whatever is still open goes in "open" on the card, never decided by you.',
+            ? `FIRST fill "open": every IMPORTANT point that is not settled — who does it, what happens, how it ends. These are ALWAYS open: a question you asked in the talk that {{author}} didn't answer; an idea or guess of yours ("my guess", "maybe", "we could") they didn't say yes to. One question per open point — never two points in one question. Its answers are real alternatives to EACH OTHER for that one point (2 to 4, short, from the talk where it has them): {"q": "the question?", "pick": "one"|"many", "options": ["…", "…"]}. Your unconfirmed idea gets its own question (e.g. "Does Toaster try to smooth it over?" → yes / no, he makes it worse / …). At most ${MAX_ASKS}, the most important first. Small details are not important. If "open" has anything, {{author}} answers it first: leave "items" empty.`
+            : '{{author}} answered your questions (their answers are the latest message) or chose to write it up as it is: write the cards now. Use what they said and what they PICKED — an answer they didn\'t pick, and an idea of yours they never confirmed, is not in the cards. Whatever is still open goes in "open" on the card, never decided by you.',
         `One card per separate idea the talk settled (at most ${MAX_TALK_PITCHES}; the most settled first). A card is a "pitch" when it is one thing that happens, a "plan" when the talk laid out several steps in order — then each beat is one concrete thing that happens in the story and can be recognized when it does, in the talk's order (2 to ${MAX_BEATS} beats).`,
         'Write "text" and "goal" as what HAPPENS in the story, a plain sentence in present tense with names ("The missing sugar cubes set off a blame game in the kitchen.") — never an instruction ("create…", "have Kettle…", "make it…"), never about the talk. Beats the same way.',
-        'Miinthe plays her own character: a card never decides what her character does, says or feels — write it from the world\'s and the other characters\' side.',
+        '{{author}} plays their own character: a card never decides what their character does, says or feels — write it from the world\'s and the other characters\' side.',
         'Kinds: "twist" — something happens · "acts" — a character does something on their own (name them in "who") · "callback" — something from earlier comes back. Strength: "nudge" small · "turn" changes where the scene goes · "bomb" changes the story.',
         'Cards already made from this talk are listed: never write one of them again. Only when the talk CHANGED one since, write the changed version. If nothing new was settled since, answer with no items.',
         // ONE answer line (bug hunt 2026-11-03: two "JSON only" lines, the last without "open" — a weak model never asked)
         `Answer with JSON only: {${ask ? '"open": [question, …], ' : ''}"items": [{"type": "pitch"|"plan", "kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "from": "what in the talk it comes from, a few words", "text": "what happens (type pitch)", "goal": "where the plan leads (type plan)", "beats": ["…", "…"] (type plan), "open": "what is still open, a few words, or \"\""}]}. If the talk settled nothing concrete yet: {${ask ? '"open": [], ' : ''}"items": [], "why": "one short line on what is still missing"}.`,
     ].filter(Boolean).join('\n\n');
     const user = [
-        sec(`The talk${talk?.title ? ` — “${talk.title}”` : ''}`, msgs.map(m => `${m.who === 'miinthe' ? named('Miinthe', ctx.names) : 'Mero'}: ${clip(m.who === 'mero' ? withAsked(m) : m.t, 1500)}`).join('\n\n')),
+        sec(`The talk${talk?.title ? ` — “${talk.title}”` : ''}`, msgs.map(m => `${m.who === 'author' ? named('{{author}}', ctx.names) : 'Mero'}: ${clip(m.who === 'mero' ? withAsked(m) : m.t, 1500)}`).join('\n\n')),
         sec('Already made from this talk — don\'t repeat', arr(ctx.already).map(t => `- ${clip(t, 400)}`).join('\n')),
         sec('DON\'T — never against these', arr(ctx.donts).map(t => `- ${t}`).join('\n')),
+        sec(named(GUIDE_HEADING, ctx.names), guidesText(ctx.guides)),
         sec('The board — where the story stands', arr(ctx.board).join('\n')),
         sec('The Cast (use these names in "who")', arr(ctx.castNames).join(', ')),
         sec('The latest messages of the story (for names and where things stand — not for new ideas)', arr(ctx.replies).slice(-4).map(r => `#${r.i} ${r.name}: ${clip(r.text, 800)}`).join('\n\n')),
@@ -575,16 +578,16 @@ export function lingerPatch(p, last, isAi = () => true, more = 3) {
 const REWRITE = {
     redirect: 'The story went elsewhere. Rewrite the REMAINING beats so they lead from where the story is NOW back to the same goal — a new path, the same goal.',
     evolve: 'The story went elsewhere. Rewrite the plan to FOLLOW where the story actually went: a new goal and new remaining beats that grow out of it.',
-    extend: 'Miinthe loves this story and doesn\'t want the plan to end. Write NEW beats that continue from the current beat — the plan goes on (the goal may grow).',
+    extend: '{{author}} loves this story and doesn\'t want the plan to end. Write NEW beats that continue from the current beat — the plan goes on (the goal may grow).',
 };
 /** Mero rewrites a plan (↩️ Redirect · 🌱 Evolve · Extend). Miinthe reviews the answer before it is used. */
 export function rewritePrompt(p, mode, ctx = {}) {
     const pl = p.plan;
     const system = [
-        `You are Mero ☆, Miinthe's co-writer. ${ctx.persona || ''}`.trim(),
+        `You are Mero ☆, {{author}}'s co-writer. ${ctx.persona || ''}`.trim(),
         REWRITE[mode] || REWRITE.redirect,
         PLAN_RULES.replace('3 to 5 beats', '2 to 4 beats'),
-        'Miinthe plays her own character — never decide what her character does, says or feels.',
+        '{{author}} plays their own character — never decide what their character does, says or feels.',
         'Answer with JSON only: {"goal": "the goal, one sentence", "beats": ["…", "…"]} — only the beats still to come.',
     ].join('\n\n');
     const user = [
@@ -592,6 +595,7 @@ export function rewritePrompt(p, mode, ctx = {}) {
         `## Beats done\n${pl.beats.filter(b => b.done).map(b => `- ${b.text} (#${b.done.i})`).join('\n') || '(none yet)'}`,
         `## Beats still to come\n${pl.beats.filter(b => !b.done).map((b, k) => `- ${k === 0 ? 'NOW: ' : ''}${b.text}`).join('\n')}`,
         ctx.board?.length ? `## The board\n${ctx.board.join('\n')}` : '',
+        arr(ctx.guides).length ? `## ${named(GUIDE_HEADING, ctx.names)}\n${guidesText(ctx.guides)}` : '',
         `## The latest messages\n${arr(ctx.replies).map(r => `#${r.i} ${r.name}: ${r.text}`).join('\n\n')}`,
     ].filter(Boolean).join('\n\n');
     return { system: `${named(system, ctx.names)}\n\n${nameRule(ctx.names)}`, user };

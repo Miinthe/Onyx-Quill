@@ -239,6 +239,7 @@ function rowEl(row) {
     const ctrl = el('div', 'dle-st-ctrl');
     const c = control(row, s);
     if (c) ctrl.append(c);
+    if (c && row.unit) ctrl.append(el('span', 'dle-st-unit', row.unit));   // "12 replies": the unit right after the box (2026-11-03)
     if (ch) { const rb = el('button', 'dk-link', 'Reset'); rb.type = 'button'; rb.title = `Back to ${showValue(row, rowValue(row, d))}`; rb.addEventListener('click', () => resetOne(row)); ctrl.append(rb); }
     r.append(lab, ctrl);
     if (row.preview === 'fuzzy' && !ui.changed) {
@@ -516,8 +517,6 @@ function jobsPane() {
 
 // ── Prompts ────────────────────────────────────────────────────────────────
 
-const LANGS = [['', 'follow SillyTavern'], ['en', 'English'], ['es-es', 'Español'], ['fr-fr', 'Français'], ['de-de', 'Deutsch'], ['ja-jp', '日本語'], ['zh-cn', '简体中文'], ['ru-ru', 'Русский']];
-
 function defaultPromptText(p) {
     if (!p.prompt) return '';
     try { return resolvePromptOrOverride(p.prompt, '') || ''; } catch { return ''; }
@@ -528,14 +527,7 @@ function promptsPane() {
     const box = el('div', 'dle-st-sec');
     box.append(el('h3', '', 'Prompts'));
     box.append(el('p', 'dle-st-lead', 'Every prompt in one place, with its size.'));
-    const top = el('div', 'dle-st-btnrow');
-    const lang = el('select', 'dk-field dle-st-sel'); lang.id = 'dle-sp-prompts-language'; lang.setAttribute('aria-label', 'Prompt language');
-    for (const [v, l] of LANGS) lang.append(new Option(l, v));
-    lang.value = s.aiPromptLocale || '';
-    const ll = el('label', 'dle-st-inline'); ll.append(el('span', 'dle-st-note', 'Language'), lang);
-    ll.title = 'Which language the built-in prompts are in';
-    top.append(ll);
-    box.append(top);
+    // (no Language picker: Onyx Quill is English only — Miinthe, 2026-11-03)
 
     const list = el('div', 'dle-st-fb');
     for (const p of PROMPTS) {
@@ -967,9 +959,6 @@ async function act(name, btn) {
         case 'about': return showAbout();
         case 'resetAll': if (await resetAllSettingsFlow()) redraw(); return;
         case 'meroPersona': return editPersona();
-        case 'meroResetPersona':
-            if (await K.ask({ title: 'Reset who Mero is?', text: 'Her description goes back to the first draft.', yes: 'Reset' })) { meroSettings(null, { reset: 'persona' }); redraw(); }
-            return;
         case 'meroResetSettings':
             if (await K.ask({ title: 'Reset Mero’s settings?', text: 'Chattiness, initiative, how many replies she reads, her job, sign-off and web search go back to how they shipped. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
             return;
@@ -982,7 +971,9 @@ function editPersona() {
     const ta = el('textarea', 'dk-field'); ta.rows = 8; ta.value = meroSettings().persona || '';
     body.append(el('span', '', 'Who Mero is, in your words'), ta);
     const ok = K.button({ label: 'Save', kind: 'primary', onClick: () => { meroSettings({ persona: ta.value.trim() || meroDefaults().persona }); w.close(); redraw(); } });
-    const w = K.openWindow({ title: 'Mero ☆', body, foot: [K.button({ label: 'Cancel', onClick: () => w.close() }), ok] });
+    // her first description back in the box — saved only with Save (2026-11-03: was a separate "Reset" row, unclear on its own)
+    const first = K.button({ label: 'Back to the first draft', kind: 'quiet', title: 'Puts Mero’s first description back in the box. Nothing changes until you press Save.', onClick: () => { ta.value = meroDefaults().persona || ''; ta.focus(); } });
+    const w = K.openWindow({ title: 'Mero ☆', body, foot: [first, K.button({ label: 'Cancel', onClick: () => w.close() }), ok] });
     w.win.classList.add('dle-st-sub');
 }
 

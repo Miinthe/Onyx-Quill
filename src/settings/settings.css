@@ -202,3 +202,5 @@ table.dle-st-jobs { width: 100%; border-collapse: collapse; font-size: var(--dk-
 .dle-st .dk-fh, .dk-win .dk-fh { min-height: 36px; }
 /* 1 the header's toggles: 28 px buttons */
 @media (pointer: fine) { .dle-st-toggle, .dle-st .dk-btn { height: 28px; } }   /* a phone keeps its bigger touch size */
+/* a number's unit right after its box: "12 replies" (2026-11-03 — was a faint second line under the label) */
+.dle-st-unit { color: var(--dk-muted); white-space: nowrap; }

@@ -7,7 +7,7 @@
  * TALKS live with the character (Miinthe, 2026-10-05): every chat and run of a character sees them.
  *   { id, title, mine (Miinthe renamed it), tag: 'yap'|'plan'|'fb'|'game', tagMine? (Miinthe picked the tag — Mero's
  *     [[KIND]] no longer changes it), state: 'open'|'resolved'|'archived', created, updated, summary,
- *     msgs: [{ who: 'miinthe'|'mero', t, at, ctx?, cards?, pitchNos?, planNos?, steps? (Mero's lookups for this answer),
+ *     msgs: [{ who: 'author'|'mero', t, at, ctx?, cards?, pitchNos?, planNos?, steps? (Mero's lookups for this answer),
  *              sw? + swi? (↻ redo: every version of Mero's LAST answer, until Miinthe writes again) }],
  *     game? (a 🎲 Games talk: games/games-pure.js — Wordle, Four in a Row) }
  * NOTES — one list, each:
@@ -61,7 +61,7 @@ function normVersion(m) {
     };
 }
 function normMsg(m) {
-    const out = { who: m.who, ...normVersion(m) };   // (📎 context stays in memory only, as before)
+    const out = { who: m.who === 'mero' ? 'mero' : 'author', ...normVersion(m) };   // the old label 'miinthe' becomes 'author'   // (📎 context stays in memory only, as before)
     if (m.who === 'mero' && arr(m.sw).length > 1) {
         const sw = arr(m.sw).filter(isObj).slice(-12).map(normVersion);
         out.sw = sw; out.swi = Math.max(0, Math.min(sw.length - 1, Math.round(Number(m.swi) || 0)));
@@ -99,7 +99,7 @@ export function normTalk(t) {
         created: str(t.created) || new Date().toISOString(), updated: str(t.updated) || str(t.created) || new Date().toISOString(),
         summary: str(t.summary),
         ...(normGame(t.game) ? { game: normGame(t.game) } : {}),   // 🎲 Games (Miinthe, 2026-10-27)
-        msgs: arr(t.msgs).filter(m => isObj(m) && (m.who === 'miinthe' || m.who === 'mero') && typeof m.t === 'string').slice(-MAX_TALK_MSGS).map(normMsg),
+        msgs: arr(t.msgs).filter(m => isObj(m) && (m.who === 'author' || m.who === 'miinthe' || m.who === 'mero') && typeof m.t === 'string').slice(-MAX_TALK_MSGS).map(normMsg),   // 'miinthe' = the author's messages before 2026-11-03
     };
 }
 
@@ -134,7 +134,6 @@ export function asStore(raw) {
         settings: {
             persona: str(st.persona, DEFAULT_PERSONA),
             callMe: str(st.callMe).trim().slice(0, 40),     // what she calls the author ('' = no name) — mero-names-pure.js
-            meroName: str(st.meroName).trim().slice(0, 40), // what the author calls her ('' = Mero)
             ...chattiness(st),
             initiative: Math.max(0, Math.min(4, Math.round(Number(st.initiative ?? 2)))),
             replies: Math.max(2, Math.min(40, Math.round(Number(st.replies) || 12))),   // the latest replies Mero reads
@@ -170,6 +169,8 @@ function chattiness(st) {
         bringUp: typeof st.bringUp === 'boolean' ? st.bringUp : base.bringUp,
         glow: ['off', 'big', 'quiet'].includes(st.glow) ? st.glow : base.glow,
     };
+    // Custom picked on purpose stays Custom (its three parts show under it), even while they match a preset (2026-11-03)
+    if (st.chatty === 'custom') return { chatty: 'custom', ...c };
     const preset = Object.keys(CHATTY_PRESETS).find(k => Object.entries(CHATTY_PRESETS[k]).every(([f, v]) => c[f] === v));
     return { chatty: preset || 'custom', ...c };
 }
@@ -252,25 +253,25 @@ export function splitOoc(text) {
  * Planning stays the partner of 2026-10-26 ("plan like discussing with a partner"), and it ends in a REAL pitch:
  * the 💡 Pitch button under the talk writes up what the two of them worked out (pitches.js pitchFromTalk).
  */
-const READ_ROOM = `Read the room: what Miinthe writes tells you what this talk is right now, and it may change as you go.
+const READ_ROOM = `Read the room: what {{author}} writes tells you what this talk is right now, and it may change as you go.
 - A hello or small talk: a short, friendly answer.
-- Talking about the story: react, have opinions, enjoy it with her.
-- Planning (where the story goes, a scene, an arc, an event): think it through WITH her, like a writing partner across the table. Build on her ideas and bring your own, one thing at a time; say honestly what works and what clashes with the story or the board. Don't pile up questions. When something is settled, sum it up in one line ("So far: …").
-- Feedback on a reply ("I don't like that"): look at the latest replies, say out of character what went wrong, and work out the fix with her.`;
+- Talking about the story: react, have opinions, enjoy it with them.
+- Planning (where the story goes, a scene, an arc, an event): think it through WITH them, like a writing partner across the table. Build on their ideas and bring your own, one thing at a time; say honestly what works and what clashes with the story or the board. Don't pile up questions. When something is settled, sum it up in one line ("So far: …").
+- Feedback on a reply ("I don't like that"): look at the latest replies, say out of character what went wrong, and work out the fix with them.`;
 /** How a plan becomes real (Miinthe 2026-11-02: "just discussing it in the mero chat is not enough … both should give me a real pitch"). */
-const PITCH_BUTTON = 'Miinthe turns what you two planned into real pitch cards with the 💡 Pitch button under this talk: it writes up what you worked out together (her ideas and yours), and from there she sends it to the writer, keeps it, edits it or drops it. When a plan has clearly come together, you may say ONCE that she can press 💡 Pitch now. Never write pitch cards or markup yourself, and never say you can\'t make pitches.';
-const PITCH_ASKED = 'Miinthe just asked for a pitch: right after your answer the app writes this talk up as pitch cards for her. So keep your answer to a line or two — what goes into it, or what is still open — and don\'t write the pitch out in full.';
+const PITCH_BUTTON = '{{author}} turns what you two planned into real pitch cards with the 💡 Pitch button under this talk: it writes up what you worked out together (their ideas and yours), and from there they send it to the writer, keeps it, edits it or drops it. When a plan has clearly come together, you may say ONCE that they can press 💡 Pitch now. Never write pitch cards or markup yourself, and never say you can\'t make pitches.';
+const PITCH_ASKED = '{{author}} just asked for a pitch: right after your answer the app writes this talk up as pitch cards for them. So keep your answer to a line or two — what goes into it, or what is still open — and don\'t write the pitch out in full.';
 /** The tag fills itself in (unless Miinthe picked one). */
 const KIND_ASK = 'At the very end, on its own line: [[KIND]]yap|plan|fb[[/KIND]] — what this talk is mostly about now: yap (talking about the story), plan (planning where it goes), fb (fixing a reply).';
 // how MUCH she says — never how (that's "who Mero is")
 const TALK = {
-    little: 'Say little: answer what Miinthe asks in a few sentences, nothing extra.',
+    little: 'Say little: answer what {{author}} asks in a few sentences, nothing extra.',
     some: 'Answer at a natural length; now and then add a thought of your own or a question back.',
     lots: 'Say a lot: long, full answers — add your own thoughts, side tracks and questions back.',
 };
 const BRING_UP = 'Bring things up yourself: what just happened on the board, a thread gone quiet, something you noticed.';
 
-export const NOTE_FORMAT = 'To offer a note, add on its own line at the end: [[NOTE kind=dont|steer|idea|fact last=flash|sticky|pinned scope=chat|run|char|board]] the note text [[/NOTE]] — one per note. Offer a note ONLY when Miinthe asks for one ("make that a note", a wrap-up). In a talk about fixing a reply you may ASK once whether she wants it as a note — don\'t write the card until she says yes. Never right after Miinthe corrects you. A note is SHORT — one or two plain sentences the writer can follow, no explanations (those belong in your answer). Miinthe decides whether to keep it.';
+export const NOTE_FORMAT = 'To offer a note, add on its own line at the end: [[NOTE kind=dont|steer|idea|fact last=flash|sticky|pinned scope=chat|run|char|board]] the note text [[/NOTE]] — one per note. Offer a note ONLY when {{author}} asks for one ("make that a note", a wrap-up). In a talk about fixing a reply you may ASK once whether they want it as a note — don\'t write the card until they say yes. Never right after {{author}} corrects you. A note is SHORT — one or two plain sentences the writer can follow, no explanations (those belong in your answer). {{author}} decides whether to keep it.';
 
 /**
  * Mero's prompt: who she is, the kind of talk, what she knows (the board, the latest replies, the lore the
@@ -279,40 +280,64 @@ export const NOTE_FORMAT = 'To offer a note, add on its own line at the end: [[N
  */
 /** Said last, after the story replies (Miinthe, 2026-10-20: Mero acted as the writer, made up story details, and wrote Miinthe's lines). */
 const GROUND_HEAD = `\n## Ground rules for this talk (read these last)
-- You are NOT the writer of the roleplay: a separate writer writes the story replies, you only talk about them with Miinthe. Never say you will write, use or avoid something in the story yourself.
+- You are NOT the writer of the roleplay: a separate writer writes the story replies, you only talk about them with {{author}}. Never say you will write, use or avoid something in the story yourself.
 - The replies above are reference material. Never continue them or write in their voice.
-- Answer ONLY as Mero. Never write Miinthe's side, and never start a line with "Miinthe:" or "Mero:".
-- Don't add story details Miinthe hasn't given you that aren't in the replies, the board or the lore. If you are guessing, say "I'm guessing".
+- Answer ONLY as Mero. Never write {{author}}'s side, and never start a line with "{{author}}:" or "Mero:".
+- Don't add story details {{author}} hasn't given you that aren't in the replies, the board or the lore. If you are guessing, say "I'm guessing".
 - Don't just agree. If an idea doesn't fit, say so kindly and say why.`;
-const GROUND_NAMES_ONLY = `- You see the storyboard as a summary: each tracker, at most a line on what it is about, its step names, and where each stands. You do NOT know what happens in a step unless its details were looked up for this message (marked "Looked up on the board"). When Miinthe points at a tracker or step you have no details of, say so plainly and ask — never pretend you looked it up or know what it says. Your hunches from the names are welcome; say they are hunches.`;
+const GROUND_NAMES_ONLY = `- You see the storyboard as a summary: each tracker, at most a line on what it is about, its step names, and where each stands. You do NOT know what happens in a step unless its details were looked up for this message (marked "Looked up on the board"). When {{author}} points at a tracker or step you have no details of, say so plainly and ask — never pretend you looked it up or know what it says. Your hunches from the names are welcome; say they are hunches.`;
 // with lookups (2026-11-02): "look it up" replaces "say you can't see it" — the old rules made her timid and vague
-const GROUND_LOOKUPS = `- You can look things up: search_lore and read_lore (her lore), open_tracker (a tracker of the board in detail), search_chat and read_messages (the WHOLE roleplay, not only the latest replies), check_cast (someone in the Cast). When Miinthe points at something you weren't given, or you would be guessing about the lore, the board or something that happened earlier: look it up first, then answer. Don't ask her to tell you what you can look up, and never pretend you looked. If a lookup finds nothing, say so plainly. Don't look up what is already in front of you.`;
-const GROUND_TAIL = `- When Miinthe corrects you or points at something, first say in one line what you understood, and check it against what you were given. Don't jump to a new idea or a note in the same answer.
-- Keep it conversational unless Miinthe asks for more.`;
+const GROUND_LOOKUPS = `- You can look things up: search_lore and read_lore (their lore), open_tracker (a tracker of the board in detail), search_chat and read_messages (the WHOLE roleplay, not only the latest replies), check_cast (someone in the Cast). When {{author}} points at something you weren't given, or you would be guessing about the lore, the board or something that happened earlier: look it up first, then answer. Don't ask them to tell you what you can look up, and never pretend you looked. If a lookup finds nothing, say so plainly. Don't look up what is already in front of you.`;
+const GROUND_TAIL = `- When {{author}} corrects you or points at something, first say in one line what you understood, and check it against what you were given. Don't jump to a new idea or a note in the same answer.
+- Keep it conversational unless {{author}} asks for more.`;
 /** Said last, after the story replies (Miinthe, 2026-10-20: Mero acted as the writer, made up story details, and wrote Miinthe's lines). */
 // 🌐 the web (2026-11-03): only for the real world — her story is never "corrected" from it
-const GROUND_WEB = `- You can also search the web (search_web, then read_page for a result worth reading) — for real-world facts and official game or book lore you don't know or need to check. Search only when it helps; say where a fact came from. Her own lore, board and chat ALWAYS win: when the web disagrees with her story, her story is right and the difference is her choice.`;
+const GROUND_WEB = `- You can also search the web (search_web, then read_page for a result worth reading) — for real-world facts and official game or book lore you don't know or need to check. Search only when it helps; say where a fact came from. Their own lore, board and chat ALWAYS win: when the web disagrees with their story, their story is right and the difference is their choice.`;
 export const groundRules = (lookups, web = false) => [GROUND_HEAD, lookups ? GROUND_LOOKUPS : GROUND_NAMES_ONLY, ...(lookups && web ? [GROUND_WEB] : []), GROUND_TAIL].join('\n');
 export const GROUND_RULES = groundRules(false);
 
 /** A vault review talk: the whole vault is in front of her (what /oq-review used to post into the story chat). */
-const VAULT_REVIEW = 'Miinthe asked you to review her lore vault (all of it is below). Be concrete and name the entries: contradictions between entries, gaps, connections she may not have made, entries that say too little to be useful. Never rewrite her entries — say what you would change and why, and let her decide.';
+const VAULT_REVIEW = '{{author}} asked you to review their lore vault (all of it is below). Be concrete and name the entries: contradictions between entries, gaps, connections they may not have made, entries that say too little to be useful. Never rewrite their entries — say what you would change and why, and let them decide.';
 
-export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, firstAnswer = false, boardMap = [], lookups = false, web = false, pitchAsked = false } = {}) {
+/**
+ * Notes for Mero ☆ (vault notes with the `lorebook-guide` tag — DeepLore called them writing guides): never sent to the
+ * writing AI — Mero reads them, in her talks and her pitches (Miinthe, 2026-11-03: they were Emma's; since she left nothing
+ * read them). Named apart from the board's 🧭 guidance (an entry kind that DOES go to the writer) — Miinthe: "we need to give
+ * it two different names". Only those in this chat's folders (a
+ * story's style guide stays with that story; notes outside any folder count everywhere).
+ */
+export const GUIDE_MAX = 4000;   // characters for all guides together
+export const GUIDE_HEADING = "Notes {{author}} wrote for you only (the writer never sees them) — background, plans and secrets for your ideas, notes and pitches; never spoil them, and they are not story events";
+export function guidesIn(entries, folders = null) {
+    const fs = Array.isArray(folders) && folders.length ? folders : null;
+    return arr(entries).filter(e => e && e.guide && str(e.title).trim() && (!fs || !e.folderPath || fs.some(f => e.folderPath === f || String(e.folderPath).startsWith(f + '/'))));
+}
+/** The guides as text for a prompt, the whole set capped at GUIDE_MAX (each one at most 1500 characters). */
+export function guidesText(guides) {
+    let out = '';
+    for (const g of arr(guides)) {
+        const one = `### ${str(g.title).trim()}\n${String(g.content || '').trim().slice(0, 1500)}`;
+        if (out && out.length + one.length + 2 > GUIDE_MAX) break;
+        out += (out ? '\n\n' : '') + one.slice(0, GUIDE_MAX);
+    }
+    return out;
+}
+
+export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, guides = [], firstAnswer = false, boardMap = [], lookups = false, web = false, pitchAsked = false } = {}) {
     const st = { persona: DEFAULT_PERSONA, talk: 'some', bringUp: false, ...settings };
     const names = meroNames(st), N = t => named(t, names);   // the chosen names, in her instructions only
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${N(h)}\n${String(body).trim()}` : '');
     const system = [
-        N(`You are Mero ☆, Miinthe's co-writer and story bestie for her roleplay${character ? ` with ${character}` : ''}.`) + ` ${st.persona}`,
-        N('You talk with Miinthe OUT OF CHARACTER, about the story. Nothing you say reaches the story — only notes Miinthe keeps do. Never write story prose for the roleplay unless she asks for an example.'),
-        N('Say what you actually think. Be specific about the story: names, moments, quotes. Never invent facts about the story or Miinthe\'s lore; if you don\'t know, say so.'),
+        N(`You are Mero ☆, {{author}}'s co-writer and story bestie for their roleplay${character ? ` with ${character}` : ''}.`) + ` ${st.persona}`,
+        N('You talk with {{author}} OUT OF CHARACTER, about the story. Nothing you say reaches the story — only notes {{author}} keeps do. Never write story prose for the roleplay unless they ask for an example.'),
+        N('Say what you actually think. Be specific about the story: names, moments, quotes. Never invent facts about the story or {{author}}\'s lore; if you don\'t know, say so.'),
         nameRule(names),
         N(READ_ROOM),
         N(TALK[st.talk] || TALK.some),
         // Miinthe 2026-10-18: "Mero is jumping right into the story with a lot of text even though I said just hello"
         N(st.bringUp
-            ? 'Match what Miinthe writes: a hello or small talk gets a short, friendly answer — at most one thing you noticed, in a sentence or two.'
-            : 'Match what Miinthe writes: a hello or small talk gets a short, friendly answer (ask what she feels like doing) — go into the story only once she brings something up.'),
+            ? 'Match what {{author}} writes: a hello or small talk gets a short, friendly answer — at most one thing you noticed, in a sentence or two.'
+            : 'Match what {{author}} writes: a hello or small talk gets a short, friendly answer (ask what they feel like doing) — go into the story only once they bring something up.'),
         st.bringUp ? N(BRING_UP) : '',
         N(NOTE_FORMAT),
         vault ? '' : N(PITCH_BUTTON),
@@ -320,23 +345,24 @@ export function buildMeroPrompt({ settings = {}, talk, character = '', persona =
         pitchAsked && !vault ? N(PITCH_ASKED) : '',
         talk?.tagMine || vault ? '' : KIND_ASK,
         firstAnswer ? 'This is the first answer of the talk: also add on its own line at the very end [[TITLE]] a short title for this talk, 2-6 words [[/TITLE]].' : '',
-        sec('Notes just for your talks (what you know about Miinthe)', talkNotes.map(n => `- ${n.text}`).join('\n')),
+        sec('Notes just for your talks (what you know about {{author}})', talkNotes.map(n => `- ${n.text}`).join('\n')),
         sec('Notes the writer follows right now', storyNotes.map(n => `- ${KINDS[n.kind]} ${n.text}`).join('\n')),
+        sec(GUIDE_HEADING, guidesText(guides)),   // her writing guides (sec runs the heading through N)
         sec('The storyboard at a glance (a summary — you may know more than the writer; never spoil it unasked)', arr(boardMap).join('\n')),
         sec('Where the story stands now (what the writer is told)', board.join('\n')),
-        sec(st.bringUp ? 'Big moments lately (bring them up yourself if Miinthe hasn\'t yet)' : 'Big moments lately', moments.map(m => `- ${m}`).join('\n')),
+        sec(st.bringUp ? 'Big moments lately (bring them up yourself if {{author}} hasn\'t yet)' : 'Big moments lately', moments.map(m => `- ${m}`).join('\n')),
         // world layer stage 5 (Miinthe, 2026-10-19: Mero gets "a short summary of the world", can talk about it and pitch from it)
         sec('The world around the story (chatter, rumors, messages — people in the story know only what they heard)', world),
         vault ? N(VAULT_REVIEW) : '',
-        vault ? sec(`Miinthe's whole lore vault (${vault.length} entries)`, vault.map(e => `### ${e.title}\n${String(e.content || '').trim()}`).join('\n\n')) : '',
+        vault ? sec(`{{author}}'s whole lore vault (${vault.length} entries)`, vault.map(e => `### ${e.title}\n${String(e.content || '').trim()}`).join('\n\n')) : '',
         vault ? '' : sec('Lore the writer was given for the last reply', entries.map(e => `### ${e.title}\n${String(e.content || '').slice(0, 1200)}`).join('\n\n')),
         sec('Character and persona', [cards, persona].filter(Boolean).join('\n\n')),
         sec('The latest replies of the roleplay', replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')),
         N(groundRules(lookups, web)),
     ].filter(Boolean).join('\n');
     // context Miinthe added to a message (the 📎 picker: a post, a rumor, a conversation, a lore entry) goes with it
-    const withCtx = m => (arr(m.ctx).length ? `${m.t}\n\n[Context Miinthe added]\n${m.ctx.map(c => `### ${c.label}\n${String(c.text || '').slice(0, 2000)}`).join('\n\n')}` : m.t);
-    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'miinthe' ? 'user' : 'assistant', content: m.who === 'miinthe' ? withCtx(m) : withAsked(m) }));
+    const withCtx = m => (arr(m.ctx).length ? `${m.t}\n\n${N('[Context {{author}} added]')}\n${m.ctx.map(c => `### ${c.label}\n${String(c.text || '').slice(0, 2000)}`).join('\n\n')}` : m.t);
+    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'author' ? 'user' : 'assistant', content: m.who === 'author' ? withCtx(m) : withAsked(m) }));
     return { system, messages };
 }
 
@@ -362,11 +388,16 @@ const KIND_RE = /\[\[KIND\]\]\s*(\w+)\s*\[\[\/KIND\]\]/i;
 // leftovers of the old inline pitch markup are never shown (the 💡 Pitch button makes pitches now)
 const OLD_PITCH_RE = /\[\[PITCH[^\]]*\]\][\s\S]*?\[\[\/PITCH\]\]/gi;
 /** Mero's answer: the text Miinthe reads, the note cards she offered, a title (first answer), what the talk is about now ([[KIND]]). */
-export function parseMeroAnswer(text) {
+export function parseMeroAnswer(text, names = {}) {
     const cards = [];
     let title = null, kind = null;
-    // a model that finishes a "Miinthe: … Mero: …" script may open with "Mero:" and then write Miinthe's next line — keep only Mero's part
-    text = String(text ?? '').replace(/^\s*Mero\s*:\s*/i, '').split(/\n[ \t]*Miinthe[ \t]*:/i)[0];
+    // a model that finishes an "author: … Mero: …" script may open with "Mero:" and then write the author's next line — keep
+    // only Mero's part. The author's line starts with their chosen name or "The author" / "Author" (never the persona's
+    // name: Mero may quote a story line that starts with it).
+    const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const who = ['The author', 'Author', ...[names.you].filter(x => typeof x === 'string' && x.trim()).map(x => x.trim())].map(esc).join('|');
+    const me = esc(String(names.me || '').trim() || 'Mero');
+    text = String(text ?? '').replace(new RegExp(`^\\s*(?:${me}|Mero)\\s*:\\s*`, 'i'), '').split(new RegExp(`\\n[ \\t]*(?:${who})[ \\t]*:`, 'i'))[0];
     let t = String(text ?? '').replace(OLD_PITCH_RE, '').replace(KIND_RE, (_, x) => { const k = x.toLowerCase(); if (['yap', 'plan', 'fb'].includes(k)) kind = k; return ''; }).replace(TITLE_RE, (_, x) => { title = x.replace(/\s+/g, ' ').trim().replace(/^["“]|["”.]$/g, '').slice(0, 60) || null; return ''; });
     t = t.replace(NOTE_RE, (_, attrs, body) => {
         const a = Object.fromEntries([...String(attrs).matchAll(/(\w+)=([\w|]+)/g)].map(m => [m[1], m[2].split('|')[0]]));

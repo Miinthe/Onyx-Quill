@@ -137,7 +137,7 @@ export function registerAdminCommands() {
                 `Never-Insert Tag: ${settings.neverInsertTag ? '#' + settings.neverInsertTag : '(none)'}`,
                 `Seed Tag: ${settings.seedTag ? '#' + settings.seedTag : '(none)'}`,
                 `Bootstrap Tag: ${settings.bootstrapTag ? '#' + settings.bootstrapTag : '(none)'} (threshold: ${settings.newChatThreshold} messages)`,
-                `Entries: ${vaultIndex.length} (${constants} always-send, ${seeds} seed, ${bootstraps} bootstrap, ${guides} guide, ~${totalTokens} tokens)`,
+                `Entries: ${vaultIndex.length} (${constants} always-send, ${seeds} seed, ${bootstraps} bootstrap, ${guides} for Mero, ~${totalTokens} tokens)`,
                 `Budget: ${settings.unlimitedBudget ? 'unlimited' : settings.maxTokensBudget + ' tokens'}`,
                 `Max Entries: ${settings.unlimitedEntries ? 'unlimited' : settings.maxEntries}`,
                 `Recursive: ${settings.recursiveScan ? 'on (max ' + settings.maxRecursionSteps + ' steps)' : 'off'}`,

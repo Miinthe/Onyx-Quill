@@ -11,9 +11,6 @@ Entry summaries are included in the AI search manifest. In multi-author vaults, 
 ## No AI Call Quota / Budget Cap
 DLE enforces a 500 ms minimum interval between AI calls (a throttle floor in `src/ai/ai.js`), but there is no per-minute quota or spending cap. Rapid generation or auto-features could still run many calls in a short window. Adding a hard cap would add latency and surprise stalls, so it is deliberately omitted. **Mitigation:** Each feature has configurable intervals and timeouts, and an AI circuit breaker trips after consecutive failures.
 
-## Librarian Requires a Tool-Calling Provider
-The Librarian (Emma) uses native tool calling. It does not flip any global SillyTavern function-calling setting — instead it checks whether your selected connection profile/provider supports tools and falls back to its non-tool path otherwise. Reasoner-only models and providers without tool support will not drive the agentic loop. **Mitigation:** Route the Librarian to a tool-capable provider (Claude, Gemini, OpenAI-compatible, or Cohere).
-
 ## Guide Tag Conflict Resolution
 Entries tagged `lorebook-guide` that also carry conflicting tags (`lorebook-seed`, `lorebook-bootstrap`, or base `lorebook`) have runtime conflict resolution: `guide` wins. The entry will be treated as guide-only (never injected into the writing AI context). This is intentional but may surprise authors who expect seed/bootstrap behavior.
 
@@ -34,6 +31,3 @@ Graph focus mode exits with the `e` key, not Escape. Escape bubbles up to SillyT
 
 ## Settings Popup Is Not Mobile-Responsive
 The DLE drawer engages a fixed overlay on narrow viewports (v2.6 fix, `updateOverlayMode` in `src/drawer/drawer.js`), but the tabbed Settings popup does not get an equivalent mobile layout. It keeps a two-column sidebar-plus-content grid at every width; the only narrow-viewport adaptation is a 600px breakpoint that shrinks the nav sidebar to a 140px rail (`.dle-settings-popup` in `style.css`). On a real phone-width viewport both columns are cramped — there is no single-column/stacked layout. A full mobile settings layout is deferred to a future settings overhaul (and to the planned v3 mobile UI). **Mitigation:** Open and edit DLE settings on a desktop or wider viewport; the rest of the extension (drawer, generation) works on narrow viewports.
-
-## Librarian Gap-Flagging Runs in the Background (and Can't Be Stopped Mid-Flight)
-The Librarian's gap-finder (FLAG) step runs *after* your message is already written and shown — it no longer blocks generation. As a result, the small extra AI request that looks for lore gaps fires in the background, and the **Stop** button cannot cancel it once it has started: Stop ends the visible generation (your message is delivered, the input is re-enabled), but the in-flight gap request still completes server-side and its result is simply discarded. The only cost is one small extra tool-call's tokens if you Stop during the brief window after the message appears. The flagged gap (if any) is still recorded; if you switch chats or start a new generation, the stale background result is dropped safely. **Mitigation:** None needed — it's harmless and best-effort by design. Turn off Librarian flagging in DLE Settings → Assistants → Librarian if you don't want the background gap calls at all.

@@ -30,7 +30,7 @@ export const SETUP_SCHEMA = {
  * o: { persona (Mero's own words about herself), user (Miinthe's name), storyName, about (what Miinthe told her), setting (the
  * board's note), people: [{ key, name, about }], existing: [voice names], look }
  */
-export function setupPrompt({ persona = '', user = 'Miinthe', storyName = 'the story', about = '', setting = '', people = [], existing = [], look = 'phone' }) {
+export function setupPrompt({ persona = '', user = 'User', storyName = 'the story', about = '', setting = '', people = [], existing = [], look = 'phone' }) {
     return {
         system: `You are Mero ☆, ${user}'s co-writer and story bestie.${persona ? ` ${clip(persona, 600)}` : ''} You set up the WORLD LAYER of her roleplay: the world around the story — a feed with posts and comments, the news, rumors, and messages between people. Propose everything at once; she ticks what she keeps.
 - note: two to four sentences in your own voice to ${user} — your take on this world and what you went for.

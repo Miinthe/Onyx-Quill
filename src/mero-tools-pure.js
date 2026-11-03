@@ -29,7 +29,7 @@ const fn = (name, description, properties, required) => ({ type: 'function', fun
 
 /** The tools, in the OpenAI function format (SillyTavern passes them on to the provider). */
 export const TOOL_DEFS = [
-    fn('search_lore', 'Search Miinthe\'s lore vault (the entries about characters, places, history, plot). Returns matching entry titles with a short look at each. Use it before saying anything about lore you were not given.',
+    fn('search_lore', 'Search the author\'s lore vault (the entries about characters, places, history, plot). Returns matching entry titles with a short look at each. Use it before saying anything about lore you were not given.',
         { query: { type: 'string', description: 'A name or a few words to look for' } }, ['query']),
     fn('read_lore', 'Read one lore entry in full, by its title (from search_lore or from what you were given).',
         { title: { type: 'string', description: 'The entry title' } }, ['title']),
@@ -49,7 +49,7 @@ export const TOOL_DEFS = [
  * extension, whatever service it uses — or a saved Tavily key); pages come through SillyTavern's /api/search/visit.
  */
 export const WEB_DEFS = [
-    fn('search_web', 'Search the internet for real-world facts you don\'t know or need to check — e.g. the official lore of a book, film or game the story is based on, a real place, a word or a custom. NOT for Miinthe\'s own story: her lore, board and chat always win over the web when they disagree. Returns what the search found (with links when the search gives them).',
+    fn('search_web', 'Search the internet for real-world facts you don\'t know or need to check — e.g. the official lore of a book, film or game the story is based on, a real place, a word or a custom. NOT for the author\'s own story: their lore, board and chat always win over the web when they disagree. Returns what the search found (with links when the search gives them).',
         { query: { type: 'string', description: 'What to search for, like you would type it into a search engine' } }, ['query']),
     fn('read_page', 'Read one web page as plain text, by its link (from search_web, or one you know).',
         { url: { type: 'string', description: 'The full link, starting with https://' } }, ['url']),

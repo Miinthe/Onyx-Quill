@@ -130,7 +130,7 @@ test('↻ redo keeps the old answer as a swipe; ◀ ▶ moves between them; a ke
 });
 
 test('the swipes go as soon as Miinthe writes again — and are stored only while they last', () => {
-    const msgs = [{ who: 'miinthe', t: 'q' }, addVersion({ who: 'mero', t: 'a' }, { t: 'b' })];
+    const msgs = [{ who: 'author', t: 'q' }, addVersion({ who: 'mero', t: 'a' }, { t: 'b' })];
     assertEqual(normTalk({ msgs }).msgs[1].sw.length, 2, 'until then they survive a reload');
     dropSwipes(msgs);
     assertEqual([msgs[1].t, msgs[1].sw, msgs[1].swi], ['b', undefined, undefined], 'the shown one stays');
@@ -156,15 +156,15 @@ test('asking for a pitch: the ways she says it — and not when she says no', ()
 // ── 💡 pitch from a talk ──
 
 const TALK = { title: 'Volcano', msgs: [
-    { who: 'miinthe', t: 'I want the old volcano near the village to erupt.' },
+    { who: 'author', t: 'I want the old volcano near the village to erupt.' },
     { who: 'mero', t: 'Ooh. Warning signs first? Tremors, the well going warm?' },
-    { who: 'miinthe', t: 'Yes — tremors, then ash, then the evacuation. No deaths though.' },
+    { who: 'author', t: 'Yes — tremors, then ash, then the evacuation. No deaths though.' },
     { who: 'mero', t: 'So far: tremors → ash → evacuation, nobody dies.' },
 ] };
 
 test('the write-up prompt: the talk, what they worked out, nothing new, her last word counts', () => {
     const { system, user } = talkPitchPrompt(TALK, { character: 'Kettle', castNames: ['Kettle'], donts: ['No deaths'], board: ['Relationship: Friends'] });
-    assert(system.includes('WORKED OUT TOGETHER') && system.includes('Add nothing new') && system.includes('her last word counts'));
+    assert(system.includes('WORKED OUT TOGETHER') && system.includes('Add nothing new') && system.includes('their last word counts'));
     assert(user.includes('erupt') && user.includes('Mero: So far') && user.includes('No deaths') && user.includes('Kettle'));
     const again = talkPitchPrompt(TALK, { already: ['The volcano erupts (plan: tremors → ash → evacuation)'] });
     assert(again.user.includes('Already made from this talk') && again.user.includes('tremors → ash') && again.system.includes('never write one of them again'), 'a second press never repeats the first cards');
@@ -236,7 +236,7 @@ test('💡 Pitch asks first when something important is open — never with card
     assertEqual([q.list.length, q.asks.length, q.asks[0].opts[1]], [0, 1, 'Spoon']);
     assertEqual(parseTalkPitches('{"items": [{"type": "pitch", "text": "x happens"}], "open": [{"q": "Q?", "options": ["a", "b"]}]}').asks.length, 1, 'open points are kept even when cards came along — on a first press they win');
     const sys = talkPitchPrompt(TALK, {}).system;
-    assert(sys.includes('ONLY where she said yes') && sys.includes('never an instruction'), 'her unanswered ideas are open; the goal is a story sentence');
+    assert(sys.includes('ONLY where they said yes') && sys.includes('never an instruction'), 'her unanswered ideas are open; the goal is a story sentence');
     assert(!talkPitchPrompt(TALK, {}, { ask: false }).system.includes('{"open": [question'), 'the write-up asks for cards only');
     assertEqual(parseTalkPitches('{"items": [{"type": "pitch", "text": "the cubes vanish."}]}').list[0].text, 'The cubes vanish.');
 });
@@ -267,7 +267,7 @@ test('a lookup line names each entry once', () => {
 test('Mero\'s question cards stay visible to her later answers and to Pitch', () => {
     assertEqual(withAsked({ t: 'A quick question first:', asks: [{ q: 'Who finds it?' }, { q: 'At night?' }] }), 'A quick question first:\n[asked: Who finds it? · At night?]');
     assertEqual(withAsked({ t: 'plain' }), 'plain');
-    const talk = { title: 'x', msgs: [{ who: 'miinthe', t: 'plan it' }, { who: 'mero', t: 'One thing:', asks: [{ q: 'Who finds the sugar?', opts: ['a', 'b'] }] }] };
+    const talk = { title: 'x', msgs: [{ who: 'author', t: 'plan it' }, { who: 'mero', t: 'One thing:', asks: [{ q: 'Who finds the sugar?', opts: ['a', 'b'] }] }] };
     const first = talkPitchPrompt(talk, {}, { ask: true });
     assert(first.user.includes('[asked: Who finds the sugar?]'));
     assertEqual((first.system.match(/Answer with JSON only/g) || []).length, 1);

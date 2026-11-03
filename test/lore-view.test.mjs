@@ -31,7 +31,7 @@ test('why: short for the row, long for "Why:" — the AI’s own reason carried 
 });
 
 test('row icon and her Origin label', () => {
-    assertEqual(P.leadFor({ guide: true }), '🧭');
+    assertEqual(P.leadFor({ guide: true }), '☆', 'a note for Mero — 🧭 is the board guidance');
     assertEqual(P.leadFor({ tags: ['lorebook', 'Character'] }), '🎭');
     assertEqual(P.leadFor({ customFields: { type: 'location' } }), '📍');
     assertEqual(P.leadFor({}), '📄');

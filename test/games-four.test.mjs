@@ -9,7 +9,7 @@ import { replay, normGame, newGame, play, pickCol, winsFor, roundFacts, lineProm
 import { normGame as anyGame, gameOf, TITLES } from '../src/games/games-pure.js';
 import { normTalk } from '../src/mero-pure.js';
 
-const G = (moves, first = 'miinthe') => normGame({ kind: 'four', first, moves });
+const G = (moves, first = 'author') => normGame({ kind: 'four', first, moves });
 const seq = n => () => n;   // a fixed "random"
 
 test('pieces stack from the bottom; a full column takes no more', () => {
@@ -60,19 +60,19 @@ test('Mero speaks only when something happened; the facts are words, not a grid'
     assert(b.facts.join(' ').includes('column 3') && b.facts.join(' ').includes('column 4, blocking it'));
     const p = linePrompt(b.game, 'block', { facts: b.facts }).user;
     assert(p.includes('blocked') && !/[.rm]{7}/.test(p), 'no grid');
-    assert(roundFacts({ c: 2, m: -1, end: { over: 'won' } }).join(' ').includes('Miinthe won'));
+    assert(roundFacts({ c: 2, m: -1, end: { over: 'won' } }).join(' ').includes('{{author}} won'));
 });
 
 test('a new game: who starts swaps, and Mero\'s first piece is in when it is her', () => {
-    const a = newGame(null, seq(0.9)); assertEqual(a.first, 'miinthe'); assertEqual(a.moves.length, 0);
+    const a = newGame(null, seq(0.9)); assertEqual(a.first, 'author'); assertEqual(a.moves.length, 0);
     const b = newGame(a, seq(0.9)); assertEqual(b.first, 'mero'); assertEqual(b.moves.length, 1); assertEqual(replay(b).turn, 'r');
-    assertEqual(newGame(b, seq(0.9)).first, 'miinthe');
+    assertEqual(newGame(b, seq(0.9)).first, 'author');
     assert(linePrompt(b, 'start').user.includes('you went first'));
 });
 
 test('ready-made lines for every moment; empty answers fall back', () => {
     const g = G([]);
-    for (const w of ['start', 'won', 'lost', 'draw', 'riiFork', 'meroFork', 'block', 'riiBlock', 'threat']) assert(stockLine(g, w).length > 0, w);
+    for (const w of ['start', 'won', 'lost', 'draw', 'authorFork', 'meroFork', 'block', 'authorBlock', 'threat']) assert(stockLine(g, w).length > 0, w);
     assert(safeLine('', g, 'block').length > 0);
     assertEqual(safeLine('Mero ☆: Ha!', g, 'block'), 'Ha!');
 });
@@ -87,8 +87,8 @@ test('it survives the talk store, beside Wordle', () => {
 });
 
 test('bug hunt 2026-11-03: Mero opens in the center and says the real column; junk moves are dropped', () => {
-    for (let k = 0; k < 50; k++) assertEqual(newGame({ kind: 'four', first: 'miinthe' }).moves[0], 3);
-    assert(linePrompt(newGame({ kind: 'four', first: 'miinthe' }), 'start').user.includes('column 4'));
+    for (let k = 0; k < 50; k++) assertEqual(newGame({ kind: 'four', first: 'author' }).moves[0], 3);
+    assert(linePrompt(newGame({ kind: 'four', first: 'author' }), 'start').user.includes('column 4'));
     assertEqual(normGame({ kind: 'four', moves: [3, null, true, '2', 'x'] }).moves.join(), '3,2');
 });
 

@@ -14,7 +14,7 @@ import { resolveConnectionConfig, getSettings } from '../settings.js';
 import { callAI } from './ai/ai.js';
 import { meroNames } from './mero-names-pure.js';
 import { vaultIndex } from './state.js';
-import { currentCharacter } from './characters.js';
+import { currentCharacter, effectiveFolderFilter } from './characters.js';
 import { runOf } from './characters-pure.js';
 import { BOARD_KEY } from './storyboard-pure.js';
 import { readActiveTrackers, readTrackers } from './trackers.js';
@@ -25,7 +25,7 @@ import { liveWriterLines, liveStepJudgeSection, live } from './board-live.js';
 import { GLOW_KEY, asGlow, glowNow, recentMoments, momentOpener } from './mero-glow-pure.js';
 import { getCurrentForChat } from './verdict/verdict-store.js';
 import {
-    MERO_KEY, CHAT_NOTES_KEY, asStore, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
+    MERO_KEY, CHAT_NOTES_KEY, asStore, guidesIn, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
     askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
@@ -206,7 +206,7 @@ function contextPackage() {
     const replies = [];
     for (let k = chat.length - 1; k >= 0 && replies.length < n; k--) {
         const m = chat[k]; if (!m || m.is_system || typeof m.mes !== 'string') continue;
-        replies.unshift({ i: k, name: m.is_user ? (name1 || 'Miinthe') : m.name, text: splitOoc(m.mes).clean.slice(0, 2500) });
+        replies.unshift({ i: k, name: m.is_user ? (name1 || 'User') : m.name, text: splitOoc(m.mes).clean.slice(0, 2500) });
     }
     let board = [];
     let summarized = false; try { summarized = !!getMeroMap(live()?.board?.name)?.text; } catch { /* no board */ }
@@ -219,7 +219,7 @@ function contextPackage() {
     const entries = titles.map(t => { const e = (vaultIndex || []).find(x => x.title === t); return e ? { title: e.title, content: e.content || e.summary || '' } : null; }).filter(Boolean);
     const card = ctx?.characters?.[ctx?.characterId];
     const cards = card ? [`${card.name}: ${String(card.description || '').slice(0, 1500)}`, card.personality ? `Personality: ${String(card.personality).slice(0, 600)}` : '', card.scenario ? `Scenario: ${String(card.scenario).slice(0, 600)}` : ''].filter(Boolean).join('\n') : '';
-    const persona = (ctx?.powerUserSettings?.persona_description || '').trim() ? `${name1 || 'Miinthe'} (persona): ${String(ctx.powerUserSettings.persona_description).slice(0, 1000)}` : '';
+    const persona = (ctx?.powerUserSettings?.persona_description || '').trim() ? `${name1 || 'User'} (persona): ${String(ctx.powerUserSettings.persona_description).slice(0, 1000)}` : '';
     const all = meroNotes();
     let moments = [];
     try { const L = live(); if (L) moments = recentMoments(L.board, L.state, chat.length - 1).map(m => `${m.text} (#${m.i})`); } catch { /* no board */ }
@@ -231,7 +231,10 @@ function contextPackage() {
         const L = live();
         if (L) { const m = getMeroMap(L.board?.name); boardMap = m?.text ? [...m.text.split('\n'), nowLine(L.board, L.state)].filter(Boolean) : boardSummary(L.board, L.state); }
     } catch { /* no board */ }
-    return { boardMap, replies, board, entries, cards, persona, moments, world, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
+    // her writing guides — only those in this chat's folders (mero-pure.js guidesIn; 2026-11-03)
+    let guides = [];
+    try { let f = null; try { f = effectiveFolderFilter(); } catch { /* no character */ } guides = guidesIn(vaultIndex || [], f).map(e => ({ title: e.title, content: e.content || '' })); } catch { /* no vault */ }
+    return { boardMap, replies, board, entries, cards, persona, moments, world, guides, talkNotes: all.filter(x => !x.story && x.on && !x.ended), storyNotes: all.filter(x => x.inForce) };
 }
 
 // the world layer registers itself (world.js — no import loop): its summary, and the things the 📎 picker offers
@@ -322,14 +325,14 @@ export function pickContext() {
 }
 
 /** What Mero knows, for her other jobs (💡 pitches): the talk package, who she is, where, Miinthe's name. */
-export function meroKnows() { return { pkg: contextPackage(), who: store().settings.persona, where: meroWhere(), user: name1 || 'Miinthe', names: meroNames(store().settings) }; }
+export function meroKnows() { return { pkg: contextPackage(), who: store().settings.persona, where: meroWhere(), user: name1 || 'User', names: meroNames(store().settings) }; }
 
 // 💡 pitch cards Mero offers in a talk go to the pitches (pitches.js registers itself — no import loop)
 let pitchSink = null;
 export function setPitchSink(fn) { pitchSink = fn; }
 
 /** The talk as one readable text — for the ⓘ view only (it is sent as real turns). */
-const flatten = messages => messages.map(m => `${m.role === 'user' ? 'Miinthe' : 'Mero'}: ${m.content}`).join('\n\n');
+const flatten = (messages, names = meroNames(store().settings)) => messages.map(m => `${m.role === 'user' ? (names.you || 'You') : names.me}: ${m.content}`).join('\n\n');
 
 // ── 🔎 lookups (Miinthe, 2026-11-02: tool calls, shown while she works and in the reply's header afterwards) ─────────
 
@@ -348,7 +351,7 @@ function lookupData() {
     const nameOf = m => m.label.replace(/\s*\((?:in the scene|the main character)\)$/, '');
     return {
         entries: vaultIndex || [],
-        chat: chat.map((m, i) => ({ m, i })).filter(({ m }) => m && !m.is_system && typeof m.mes === 'string').map(({ m, i }) => ({ i, name: m.is_user ? (name1 || 'Miinthe') : m.name, text: splitOoc(m.mes).clean })),
+        chat: chat.map((m, i) => ({ m, i })).filter(({ m }) => m && !m.is_system && typeof m.mes === 'string').map(({ m, i }) => ({ i, name: m.is_user ? (name1 || 'User') : m.name, text: splitOoc(m.mes).clean })),
         board: L?.board || null, state: L?.state || null,
         // every tracker as the writer sees it (meters, collections, places, state…), for open_tracker on those (2026-11-03)
         boardLines: (() => { try { return writerBlock(readActiveTrackers(), liveWriterLines()).split('\n').filter(Boolean); } catch { return []; } })(),
@@ -458,7 +461,7 @@ async function answerInner(t, history, said, { opener }, conn) {
             if (!raw.trim()) console.warn('[DLE] Mero: the model sent back an empty answer', r);
         }
         const told = lastTold.get(t.id); if (told) told.raw = raw;
-        const a = parseMeroAnswer(raw);
+        const a = parseMeroAnswer(raw, meroNames(store().settings));
         // notes only when asked (Miinthe 2026-10-26: "too quick to make notes") — everywhere now; in a fixing talk she asks first
         if (a.cards.length && !opener && !askedForNote(said)) a.cards = [];
         // her AI can't look things up: the reply's header says so instead of staying empty
@@ -488,7 +491,7 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
     const said = String(text || '').trim(); if (!said) return { ok: false, error: 'nothing to send' };
     const extra = (Array.isArray(ctx) ? ctx : []).filter(c => c && c.label).slice(0, 6).map(c => ({ label: String(c.label).slice(0, 120), text: String(c.text || '').slice(0, 2000) }));
     dropSwipes(t.msgs);   // she wrote again: the swipes of Mero's last answer are gone (Miinthe 2026-11-02)
-    if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
+    if (!opener) t.msgs.push({ who: 'author', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
     if (t.state !== 'open') t.state = 'open';
     t.updated = new Date().toISOString(); saveStore();
     if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
@@ -512,19 +515,19 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
 // or to edit my own reply") — swipes only until she writes again, never stored for long ──────────────────────────
 
 const lastMeroIndex = t => { for (let k = t.msgs.length - 1; k >= 0; k--) if (t.msgs[k].who === 'mero') return k; return -1; };
-const riiBefore = (t, k) => { for (let i = k - 1; i >= 0; i--) if (t.msgs[i].who === 'miinthe') return t.msgs[i].t; return ''; };
+const authorBefore = (t, k) => { for (let i = k - 1; i >= 0; i--) if (t.msgs[i].who === 'author') return t.msgs[i].t; return ''; };
 
 /** ↻ Mero answers her last message again; the old answer stays as a swipe (◀ 1/2 ▶). */
 export async function redoMero(talkId, k) {
     const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
-    if (k !== lastMeroIndex(t) || t.msgs.slice(k + 1).some(m => m.who === 'miinthe')) return { ok: false, error: 'Only her last answer can be redone.' };
+    if (k !== lastMeroIndex(t) || t.msgs.slice(k + 1).some(m => m.who === 'author')) return { ok: false, error: 'Only her last answer can be redone.' };
     // only an answer to Miinthe's message — a write-up, Pitch's questions, "nothing to pitch" follow Mero's own words (bug hunt 2026-11-03)
     const mk = t.msgs[k];
-    if (t.msgs[k - 1]?.who !== 'miinthe' || (mk.pitchIds || []).length || mk.pcheck) return { ok: false, error: 'This one can\'t be answered again — it isn\'t an answer to your message.' };
+    if (t.msgs[k - 1]?.who !== 'author' || (mk.pitchIds || []).length || mk.pcheck) return { ok: false, error: 'This one can\'t be answered again — it isn\'t an answer to your message.' };
     const history = t.msgs.slice(0, k);
-    if (!history.some(m => m.who === 'miinthe')) return { ok: false, error: 'She spoke first here — there is nothing to answer again.' };
+    if (!history.some(m => m.who === 'author')) return { ok: false, error: 'She spoke first here — there is nothing to answer again.' };
     try {
-        const r = await answerFor(t, history, riiBefore(t, k));
+        const r = await answerFor(t, history, authorBefore(t, k));
         const t2 = findTalk(talkId); const m = t2?.msgs[k];
         if (!m || m.who !== 'mero') return { ok: false, error: 'The talk changed meanwhile.' };
         addVersion(m, r.version);
@@ -558,10 +561,10 @@ export function deleteMsg(talkId, k) {
 export async function editMsg(talkId, k, text, { again = false } = {}) {
     const t = findTalk(talkId), m = t?.msgs[k];
     const said = String(text || '').trim();
-    if (!m || m.who !== 'miinthe' || !said) return { ok: false, error: 'Nothing to save.' };
+    if (!m || m.who !== 'author' || !said) return { ok: false, error: 'Nothing to save.' };
     m.t = said;
     if (!again) { t.updated = new Date().toISOString(); saveStore(); return { ok: true }; }
-    if (t.msgs.slice(k + 1).some(x => x.who === 'miinthe')) { saveStore(); return { ok: false, error: 'Only your last message can be asked again.' }; }
+    if (t.msgs.slice(k + 1).some(x => x.who === 'author')) { saveStore(); return { ok: false, error: 'Only your last message can be asked again.' }; }
     if (busyIn.has(t.id)) { saveStore(); return { ok: false, error: 'Mero is still answering — your words are saved; ask again when she is done.' }; }
     t.msgs.splice(k + 1);
     dropSwipes(t.msgs);
@@ -596,7 +599,7 @@ export function noteTalkPitches(talkId, { text, pitchNos = [], planNos = [], pit
 export async function answerTalkAsks(talkId, k, answers = [], { skipped = false, detail = '', talk = false } = {}) {
     const t = findTalk(talkId), m = t?.msgs[k];
     if (!m || m.who !== 'mero' || !Array.isArray(m.asks) || !m.asks.length) return { ok: false, error: 'Those questions are gone.' };
-    if (t.msgs.slice(k + 1).some(x => x.who === 'miinthe')) return { ok: false, error: 'You wrote since — answer in the box instead.' };
+    if (t.msgs.slice(k + 1).some(x => x.who === 'author')) return { ok: false, error: 'You wrote since — answer in the box instead.' };
     const asks = answerAsks(m.asks, answers, { skipped });
     // "Anything to add?" (Miinthe, 2026-11-02: "I do not seem to have a chance to add more details in between")
     const more = String(detail || '').trim();
@@ -604,7 +607,7 @@ export async function answerTalkAsks(talkId, k, answers = [], { skipped = false,
     if (!skipped && !said) return { ok: false, error: 'Pick an answer, write your own, or add something.' };
     m.asks = asks;
     if (m.pcheck && !talk) {
-        if (said) { dropSwipes(t.msgs); t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString() }); }
+        if (said) { dropSwipes(t.msgs); t.msgs.push({ who: 'author', t: said, at: new Date().toISOString() }); }
         t.updated = new Date().toISOString(); saveStore();
         if (!pitchSink?.fromTalk) return { ok: false, error: 'Pitches are not ready yet.' };
         return pitchSink.fromTalk(talkId, { ask: false });

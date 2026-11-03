@@ -440,7 +440,7 @@ export function diagnoseEntry(entry, chatMsgs) {
     // Guide entries never reach the writing AI through any path.
     if (entry.guide) {
         result.stage = 'guide_entry';
-        result.detail = 'This is a lorebook-guide entry (a writing guide) — it is never injected into the writing AI prompt.';
+        result.detail = 'This is a note for Mero ☆ (lorebook-guide tag) — Mero reads it; it is never injected into the writing AI prompt.';
         result.suggestions.push('Remove the lorebook-guide tag if you want this entry to be injected normally.');
         return result;
     }

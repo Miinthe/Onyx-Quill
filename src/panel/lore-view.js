@@ -670,7 +670,7 @@ export function mountLoreView(panel) {
             const tip = (el, t) => { el.title = t; end.push(el); };
             if (P.isIn(pins, e.title, e.vaultSource)) tip(h('span', 'dle-lv-state', I('pinI')), 'Pinned in this chat');
             if (P.isIn(blocks, e.title, e.vaultSource)) tip(h('span', 'dle-lv-state bad', I('block')), 'Blocked in this chat');
-            if (e.guide) end.push(pill('writing guide', 'g', 'Writing guide: read by Mero ☆ only, never sent to the writing AI'));
+            if (e.guide) end.push(pill('for Mero ☆', 'g', 'A note for Mero ☆: she reads it in her talks and pitches — never sent to the writing AI'));
             const origin = P.originOf(e);
             if (origin) end.push(pill(origin, '', 'Origin: where it came from'));
             const ek = entryKey(e);

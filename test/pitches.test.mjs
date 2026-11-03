@@ -98,7 +98,7 @@ test('the fallback fires after N messages, not before; off when 0', () => {
 test('the prompt: hidden asks for a moment; DON\'T notes and taste go in; a single pitch never asks', () => {
     const ctx = { user: 'Miinthe', character: 'Toaster', donts: ['Kettle never apologises first.'], taste: ['Not my thing: new characters'], cast: castForPitches([{ name: 'Kettle', here: true, wants: 'peace', plans: ['fix the toaster'], thoughts: 'buried the teaspoons', hidden: true }]), replies: [{ i: 3, name: 'Kettle', text: 'Hm.' }] };
     const h = pitchPrompt({ vis: 'hide', moment: 'when the lights go out' }, ctx);
-    assert(/MOMENT/.test(h.system) && /the author named the moment/.test(h.system), 'hidden: the moment');
+    assert(/MOMENT/.test(h.system) && /the author named the moment/i.test(h.system), 'hidden: the moment');
     assert(/when the lights go out/.test(h.user));
     const v = pitchPrompt({ n: 4, str: 'nudge', tone: 'sfw' }, ctx, { comment: 'something with the cellar' });
     assert(/exactly 4/.test(v.system) && /Strength wanted: nudge/.test(v.user) && /something with the cellar/.test(v.user));
@@ -223,7 +223,7 @@ test('plans: rewrites are reviewed; redirect keeps the goal, extend adds after, 
 test('pitches name the author from Mero\'s settings — never by the persona (Miinthe 2026-10-26)', () => {
     const plain = pitchPrompt({}, { user: 'Lucan', persona: 'x' }, { comment: 'more angst' });
     assert(!plain.system.includes('Lucan') && !plain.system.includes('Miinthe') && plain.system.includes('Never call the author by a name'));
-    assert(plain.user.includes("the author's wish: more angst"));
+    assert(/the author's wish: more angst/i.test(plain.user));
     const set = pitchPrompt({}, { names: { you: 'Miinthe', me: 'Mero' } }, {});
     assert(set.system.startsWith("You are Mero ☆, Miinthe's co-writer") && set.system.includes('Call the author "Miinthe".'));
 });

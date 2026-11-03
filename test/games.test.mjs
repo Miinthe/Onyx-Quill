@@ -77,11 +77,11 @@ test('Mero is not told the word while the game runs — only for a hint and at t
     assert(board(g).includes('ABOUT — 2 green, 0 yellow, 3 gray; right spot: O (3rd), T (5th)'));
 });
 
-test('her names are used: no name set, no name; her own name kept', () => {
+test('her names are used: no name set, no name; Mero stays Mero', () => {
     const p = linePrompt(G('ghost'), 'start', { names: { you: '', me: 'Mero' } });
-    assert(!/\bRii\b/.test(p.system + p.user) && /Never call the author by a name/.test(p.system));
+    assert(!/\{\{author\}\}/.test(p.system + p.user) && /Never call the author by a name/.test(p.system));
     const q = linePrompt(G('ghost'), 'start', { names: { you: 'Boss', me: 'Mimi' } });
-    assert(q.system.includes('Mimi') && q.system.includes('"Boss"'));
+    assert(q.system.includes('Mero') && !q.system.includes('Mimi') && q.system.includes('"Boss"'));
 });
 
 test('a line that gives the word away mid-game is swapped; at the end it may say it', () => {

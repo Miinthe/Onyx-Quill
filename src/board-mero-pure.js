@@ -38,7 +38,7 @@ export function boardText(brief) {
     return lines.join('\n');
 }
 
-const who = ({ persona = '', character = '' } = {}) => `You are Mero ☆, Miinthe's co-writer and story bestie${character ? ` for her roleplay with ${character}` : ''}.${persona ? ` ${oneLine(persona)}` : ''}`;
+const who = ({ persona = '', character = '' } = {}) => `You are Mero ☆, {{author}}'s co-writer and story bestie${character ? ` for their roleplay with ${character}` : ''}.${persona ? ` ${oneLine(persona)}` : ''}`;
 import { normAsks, MAX_ASKS } from './ask-pure.js';
 
 const JSON_ONLY = 'Answer with JSON only, no other text.';
@@ -57,23 +57,23 @@ function boardPrompt(task, input = {}, me = {}) {
     if (task === 'tiles') {
         const what = LIST_WORD[i.list] || LIST_WORD.states;
         return {
-            system: [who(me), `Miinthe is adding "${str(i.name) || 'a new tracker'}" to her storyboard. Suggest the ${what}.`,
-                'Short names (one to four words each), in story order, 3 to 7 of them. Fit them to her words; never repeat one she already has.',
+            system: [who(me), `{{author}} is adding "${str(i.name) || 'a new tracker'}" to their storyboard. Suggest the ${what}.`,
+                'Short names (one to four words each), in story order, 3 to 7 of them. Fit them to their words; never repeat one they already have.',
                 `${JSON_ONLY} {"tiles":["…","…"]}`].join('\n'),
-            user: [`Her words: ${oneLine(i.words) || '(none — make a sensible start)'}`, arr(i.have).length ? `She already has: ${arr(i.have).join(', ')}` : '', i.brief ? `\n${boardText(i.brief)}` : ''].filter(Boolean).join('\n'),
+            user: [`Their words: ${oneLine(i.words) || '(none — make a sensible start)'}`, arr(i.have).length ? `They already have: ${arr(i.have).join(', ')}` : '', i.brief ? `\n${boardText(i.brief)}` : ''].filter(Boolean).join('\n'),
         };
     }
     if (task === 'draft') {
         return {
-            system: [who(me), 'Draft ONE lore entry for Miinthe\'s vault. It is sent to the story\'s writer when its keys come up, so write facts the writer can use, in plain prose — no headings, no lists, no markdown.',
+            system: [who(me), 'Draft ONE lore entry for {{author}}\'s vault. It is sent to the story\'s writer when its keys come up, so write facts the writer can use, in plain prose — no headings, no lists, no markdown.',
                 'Use what the board, the tile and the linked entries say; invent only small, fitting details and never contradict them. Keep it short: one to three paragraphs, each paragraph on ONE line.',
                 'keys: 2 to 6 words or names that appear in the story when this entry matters. summary: one line saying WHEN the entry should be picked (not the secret it keeps).',
                 `kind: one of ${ENTRY_KINDS.join(', ')}.`,
                 `${JSON_ONLY} {"title":"…","kind":"…","keys":["…"],"summary":"…","text":"…"}`].join('\n'),
             user: [
                 i.tile ? `The tile: ${str(i.tile)}${i.tracker ? ` (on the tracker ${str(i.tracker)})` : ''}` : 'A new entry, not tied to a tile.',
-                i.title ? `Title she has in mind: ${oneLine(i.title)}` : '',
-                `What it should be about: ${oneLine(i.words) || '(her choice: what this tile needs)'}`,
+                i.title ? `Title they have in mind: ${oneLine(i.title)}` : '',
+                `What it should be about: ${oneLine(i.words) || '(their choice: what this tile needs)'}`,
                 arr(i.entries).length ? `\nLinked entries:\n${arr(i.entries).slice(0, 4).map(e => `### ${str(e.title)}\n${str(e.text).slice(0, 1500)}`).join('\n\n')}` : '',
                 i.brief ? `\n${boardText(i.brief)}` : '',
             ].filter(Boolean).join('\n'),
@@ -91,15 +91,15 @@ function boardPrompt(task, input = {}, me = {}) {
     // talk
     const quick = { gaps: 'Find gaps on this board: tiles without an entry that need one, a story line that stops too early, a missing tracker. At most 4 suggestions.',
         explain: 'Explain how this board is wired, in a few plain sentences: what drives the story, what waits on what. No suggestions.',
-        build: 'Build what Miinthe describes: suggest a new tracker (with its steps), or steps for an existing one.' }[i.quick] || '';
+        build: 'Build what {{author}} describes: suggest a new tracker (with its steps), or steps for an existing one.' }[i.quick] || '';
     return {
-        system: [who(me), 'Right now you help Miinthe set up her storyboard (trackers with steps; entries linked to tiles). Talk like yourself, short — two to five sentences.',
-            'You may suggest changes; Miinthe accepts or refuses each one. Kinds: {"kind":"step","tracker":"<tracker id>","name":"…","why":"…"} adds a step at the end of a tracker; {"kind":"tracker","name":"…","icon":"<one emoji>","steps":["…"],"why":"…"} a new tracker with 2 to 7 steps; {"kind":"entry","tracker":"<tracker id>","step":<step number>,"title":"…","why":"…"} an entry for a step that has none.',
+        system: [who(me), 'Right now you help {{author}} set up their storyboard (trackers with steps; entries linked to tiles). Talk like yourself, short — two to five sentences.',
+            'You may suggest changes; {{author}} accepts or refuses each one. Kinds: {"kind":"step","tracker":"<tracker id>","name":"…","why":"…"} adds a step at the end of a tracker; {"kind":"tracker","name":"…","icon":"<one emoji>","steps":["…"],"why":"…"} a new tracker with 2 to 7 steps; {"kind":"entry","tracker":"<tracker id>","step":<step number>,"title":"…","why":"…"} an entry for a step that has none.',
             'Use only tracker ids and step numbers that are on the board. No suggestions is fine.',
             // question cards (Miinthe, 2026-11-02: "would be useful for storyboard Mero as well")
-            `When you need to know something from Miinthe to help (which tracker, what should happen, how it ends) and there are a few clear possible answers, ask it as a question card in "asks" instead of in your text: {"q":"the question?","pick":"one"|"many","options":["…","…"]} — 2 to 4 short answers that really differ (she can always write her own), at most ${MAX_ASKS} cards, only when you need to know.`,
+            `When you need to know something from {{author}} to help (which tracker, what should happen, how it ends) and there are a few clear possible answers, ask it as a question card in "asks" instead of in your text: {"q":"the question?","pick":"one"|"many","options":["…","…"]} — 2 to 4 short answers that really differ (they can always write their own), at most ${MAX_ASKS} cards, only when you need to know.`,
             `${JSON_ONLY} {"text":"your answer","suggestions":[…],"asks":[…]}`].join('\n'),
-        user: [boardText(i.brief), arr(i.talk).length ? `\nThis talk so far:\n${arr(i.talk).slice(-8).map(m => `${m.who === 'you' ? (me?.names?.you || 'The author') : (me?.names?.me || 'Mero')}: ${oneLine(m.t)}`).join('\n')}` : '', `\nMiinthe: ${quick || oneLine(i.message)}`].filter(Boolean).join('\n'),
+        user: [boardText(i.brief), arr(i.talk).length ? `\nThis talk so far:\n${arr(i.talk).slice(-8).map(m => `${m.who === 'you' ? (me?.names?.you || 'The author') : (me?.names?.me || 'Mero')}: ${oneLine(m.t)}`).join('\n')}` : '', `\n${me?.names?.you || 'The author'}: ${quick || oneLine(i.message)}`].filter(Boolean).join('\n'),
     };
 }
 

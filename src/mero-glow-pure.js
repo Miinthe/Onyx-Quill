@@ -95,5 +95,5 @@ export function glowNow(level, board, state, lastIndex, glow = asGlow(null)) {
 /** What Mero is told when she opens a talk about these moments herself. */
 export function momentOpener(moments, names = {}) {
     const lines = arr(moments).map(m => `- ${m.text}${m.i ? ` (message #${m.i})` : ''}${m.quote ? ` — “${m.quote}”` : ''}`);
-    return `(${named("Miinthe hasn't written yet", names)} — you open this talk. Something just happened on the board:\n${lines.join('\n')}\nReact to it like her story bestie: what you think it means for the story, how you feel about it, and one question back. Short.)`;
+    return `(${named("{{author}} hasn't written yet", names)} — you open this talk. Something just happened on the board:\n${lines.join('\n')}\nReact to it like their story bestie: what you think it means for the story, how you feel about it, and one question back. Short.)`;
 }

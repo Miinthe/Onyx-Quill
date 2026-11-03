@@ -5,7 +5,9 @@
  * The ST-integrated loader lives in `i18n.js` and re-uses these.
  */
 
-export const SUPPORTED_LOCALES = ['en', 'es-es', 'fr-fr', 'de-de', 'ja-jp', 'zh-cn', 'ru-ru'];
+// Onyx Quill is English only for now (Miinthe, 2026-11-03: "onyx quill is just english for now"). DeepLore's six translations
+// (es-es, fr-fr, de-de, ja-jp, zh-cn, ru-ru) covered only the old parts — removed; they are in the git history if ever wanted.
+export const SUPPORTED_LOCALES = ['en'];
 
 /**
  * Resolve a locale request to one we ship. Falls back through:

@@ -119,32 +119,32 @@ export function hintLetter(game) {
 export function linePrompt(game, what, { persona = '', names = {}, before = [], word = '' } = {}) {
     const N = t => named(t, names);
     const system = [
-        N(`You are Mero ☆, Miinthe's co-writer and story bestie, playing a game of Wordle with Miinthe for fun.`) + (persona ? ` ${persona}` : ''),
+        N(`You are Mero ☆, {{author}}'s co-writer and story bestie, playing a game of Wordle with {{author}} for fun.`) + (persona ? ` ${persona}` : ''),
         nameRule(names),
-        N('The game itself picks the word and colors the letters — never correct the colors, never make up letters. You only react, like a friend watching over Miinthe\'s shoulder: teasing, cheering, groaning, one or two short sentences. Plain text, no lists, no emoji spam. Stay out of the story; this is a break.'),
+        N('The game itself picks the word and colors the letters — never correct the colors, never make up letters. You only react, like a friend watching over {{author}}\'s shoulder: teasing, cheering, groaning, one or two short sentences. Plain text, no lists, no emoji spam. Stay out of the story; this is a break.'),
     ].join('\n');
     const lines = [];
     if (game.guesses.length) lines.push(`The board so far — the game counted every letter, so these counts are exact:\n${board(game)}`);
     const left = TRIES - game.guesses.length, n = game.guesses.length;
-    if (what === 'start') lines.push(N('A new game just started. Say hi and dare Miinthe to beat it. Don\'t give any clue.'));
+    if (what === 'start') lines.push(N('A new game just started. Say hi and dare {{author}} to beat it. Don\'t give any clue.'));
     if (what === 'guess') {
         const greens = i => count(score(game.guesses[i], game.answer), 'hit');
         const trend = n >= 2 ? ` Greens went from ${greens(n - 2)} on the guess before to ${greens(n - 1)} now.` : '';
-        lines.push(N(`Miinthe just played guess ${n} (the last line above).${trend} ${left} ${left === 1 ? 'try is' : 'tries are'} left. React to how it went. Use the counts and letters exactly as the game gave them — never count letters yourself, never name a letter or spot that isn't listed above. If in doubt, react to the mood, not the details. You do not know the word — don't guess it, don't hint at it.`));
+        lines.push(N(`{{author}} just played guess ${n} (the last line above).${trend} ${left} ${left === 1 ? 'try is' : 'tries are'} left. React to how it went. Use the counts and letters exactly as the game gave them — never count letters yourself, never name a letter or spot that isn't listed above. If in doubt, react to the mood, not the details. You do not know the word — don't guess it, don't hint at it.`));
     }
-    if (what === 'notword') lines.push(N(`Miinthe typed "${String(word).toUpperCase()}", which isn't in the dictionary, so it didn't count. Tease a little.`));
+    if (what === 'notword') lines.push(N(`{{author}} typed "${String(word).toUpperCase()}", which isn't in the dictionary, so it didn't count. Tease a little.`));
     if (what === 'hint') {
         // hints step up slowly (Miinthe, 2026-11-03: "the hint is spoiling too much"): a vague category, then one
         // association, and only from the third on a letter — picked by the game, not by Mero
         const no = 'No synonym, no definition, no rhyme, no "sounds like", no letters, no word that contains it — and never the word itself.';
         const L = game.hints >= 3 ? hintLetter(game) : null;
         const how = game.hints <= 1 ? `Give ONE vague clue: only a broad category or a feeling (like "it's something you'd find outdoors" or "it's something people do"). ${no}`
-            : game.hints === 2 ? `Give ONE clue a little closer than a category: a place, a situation or a mood it belongs to. Still vague — Miinthe should have to think. ${no}`
-            : L ? `The game picked the clue: the ${L.spot} letter is ${L.letter}. Tell Miinthe just that, in your own words, with no other clue. Never write the word itself.`
-            : `Miinthe already has every letter in the right spot somewhere on the board. Say so, with no other clue. Never write the word itself.`;
-        lines.push(N(`Miinthe asks for hint number ${game.hints}. The word is "${game.answer.toUpperCase()}" — for you only. ${how}`));
+            : game.hints === 2 ? `Give ONE clue a little closer than a category: a place, a situation or a mood it belongs to. Still vague — {{author}} should have to think. ${no}`
+            : L ? `The game picked the clue: the ${L.spot} letter is ${L.letter}. Tell {{author}} just that, in your own words, with no other clue. Never write the word itself.`
+            : `{{author}} already has every letter in the right spot somewhere on the board. Say so, with no other clue. Never write the word itself.`;
+        lines.push(N(`{{author}} asks for hint number ${game.hints}. The word is "${game.answer.toUpperCase()}" — for you only. ${how}`));
     }
-    if (what === 'won') lines.push(N(`Miinthe got it: "${game.answer.toUpperCase()}" in ${game.guesses.length} ${game.guesses.length === 1 ? 'try' : 'tries'}. Celebrate (or tease, if it was close). Ask if they want another round.`));
+    if (what === 'won') lines.push(N(`{{author}} got it: "${game.answer.toUpperCase()}" in ${game.guesses.length} ${game.guesses.length === 1 ? 'try' : 'tries'}. Celebrate (or tease, if it was close). Ask if they want another round.`));
     if (what === 'lost') lines.push(N(`Out of tries. The word was "${game.answer.toUpperCase()}". Commiserate warmly, maybe a playful jab. Ask if they want another round.`));
     if (arr(before).length) lines.push(`Your last lines (don't repeat them):\n${arr(before).slice(-3).map(t => `- ${t}`).join('\n')}`);
     return { system, user: lines.join('\n\n') };

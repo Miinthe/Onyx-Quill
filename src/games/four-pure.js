@@ -7,7 +7,7 @@
  * an AI misreads grids the way it miscounted Wordle letters.
  *
  * 7 columns × 6 rows; columns 1–7 from the left for her, 0–6 here. The state lives in the talk (mero-pure.js normTalk):
- *   { kind: 'four', first: 'miinthe' | 'mero', moves: [col, …], hints }
+ *   { kind: 'four', first: 'author' | 'mero', moves: [col, …], hints }
  * Everything else (the cells, whose turn, won/lost/draw, the winning four) is worked out from the moves, so a stored
  * game can't be half-broken.
  */
@@ -66,14 +66,14 @@ export function winsFor(cells, p) {
 /** A game from whatever was stored; null when it isn't one. */
 export function normGame(g) {
     if (!g || typeof g !== 'object' || g.kind !== 'four') return null;
-    const first = g.first === 'mero' ? 'mero' : 'miinthe';
+    const first = g.first === 'mero' ? 'mero' : 'author';
     const moves = replay({ first, moves: arr(g.moves).filter(v => (typeof v === 'number') || (typeof v === 'string' && /^\d$/.test(v))).map(Number).filter(Number.isInteger) }).moves;
     return { kind: 'four', first, moves, hints: Math.max(0, Math.min(99, Math.round(Number(g.hints) || 0))) };
 }
 
 /** A new game: whoever didn't start last time starts now; when it's Mero, her first piece is already in. */
 export function newGame(prev = null, rand = Math.random) {
-    const first = prev?.kind === 'four' && prev.first === 'miinthe' ? 'mero' : 'miinthe';
+    const first = prev?.kind === 'four' && prev.first === 'author' ? 'mero' : 'author';
     const g = { kind: 'four', first, moves: [], hints: 0 };
     if (first === 'mero') g.moves.push(pickCol(g, rand, { hint: true }));   // her best opening (the center): never a random one
     return g;
@@ -133,7 +133,7 @@ export function pickCol(game, rand = Math.random, { hint = false } = {}) {
 
 /**
  * Miinthe drops in column c (0–6); Mero answers at once. → { ok, game, what, facts } or { ok: false, why: 'over' | 'full' }.
- * `what`: what Mero reacts to — 'won' · 'lost' · 'draw' · 'riiFork' · 'meroFork' · 'block' · 'riiBlock' · 'threat',
+ * `what`: what Mero reacts to — 'won' · 'lost' · 'draw' · 'authorFork' · 'meroFork' · 'block' · 'authorBlock' · 'threat',
  * or '' when nothing happened (then she stays quiet: no call).
  */
 export function play(game, c, rand = Math.random) {
@@ -142,32 +142,32 @@ export function play(game, c, rand = Math.random) {
     if (dropRow(before.cells, c) < 0) return { ok: false, why: 'full' };
     const meroHad = winsFor(before.cells, 'm');
     const g1 = { ...g, moves: [...g.moves, c] }, mid = replay(g1);
-    const riiHas = mid.over ? [] : winsFor(mid.cells, 'r');
+    const authorHas = mid.over ? [] : winsFor(mid.cells, 'r');
     let g2 = g1, m = -1;
     if (!mid.over) { m = pickCol(g1, rand); g2 = { ...g1, moves: [...g1.moves, m] }; }
     const end = replay(g2), meroHas = end.over ? [] : winsFor(end.cells, 'm');
     const what = end.over
-        || (riiHas.length >= 2 ? 'riiFork' : '')
+        || (authorHas.length >= 2 ? 'authorFork' : '')
         || (meroHas.length >= 2 ? 'meroFork' : '')
-        || (riiHas.includes(m) ? 'block' : '')
-        || (meroHad.includes(c) ? 'riiBlock' : '')
+        || (authorHas.includes(m) ? 'block' : '')
+        || (meroHad.includes(c) ? 'authorBlock' : '')
         || (meroHas.length ? 'threat' : '');
-    return { ok: true, game: g2, what, facts: roundFacts({ c, m, riiHas, meroHad, meroHas, end }) };
+    return { ok: true, game: g2, what, facts: roundFacts({ c, m, authorHas, meroHad, meroHas, end }) };
 }
 
 const col = c => `column ${c + 1}`;
 const cols = l => l.map(c => c + 1).join(' and ');
 
 /** What just happened, in plain words for Mero (she never gets a grid to read). "Miinthe" is swapped for her name later. */
-export function roundFacts({ c, m, riiHas = [], meroHad = [], meroHas = [], end }) {
-    const f = [`Miinthe dropped a piece in ${col(c)}.`];
+export function roundFacts({ c, m, authorHas = [], meroHad = [], meroHas = [], end }) {
+    const f = [`{{author}} dropped a piece in ${col(c)}.`];
     if (meroHad.includes(c)) f.push(`That blocked your four — you were one piece from winning there.`);
-    if (end?.over === 'won') { f.push('That made four in a row: Miinthe won.'); return f; }
-    if (riiHas.length) f.push(`It gave Miinthe a winning spot in ${riiHas.length > 1 ? `columns ${cols(riiHas)}` : col(riiHas[0])}.`);
-    if (m >= 0) f.push(`You dropped yours in ${col(m)}${riiHas.includes(m) ? ', blocking it' : ''}.`);
+    if (end?.over === 'won') { f.push('That made four in a row: {{author}} won.'); return f; }
+    if (authorHas.length) f.push(`It gave {{author}} a winning spot in ${authorHas.length > 1 ? `columns ${cols(authorHas)}` : col(authorHas[0])}.`);
+    if (m >= 0) f.push(`You dropped yours in ${col(m)}${authorHas.includes(m) ? ', blocking it' : ''}.`);
     if (end?.over === 'lost') f.push('That made four in a row: you won.');
     else if (end?.over === 'draw') f.push('The board is full: a draw.');
-    else if (meroHas.length) f.push(`Now you are one piece from four in ${meroHas.length > 1 ? `columns ${cols(meroHas)} — Miinthe can only block one` : col(meroHas[0])}.`);
+    else if (meroHas.length) f.push(`Now you are one piece from four in ${meroHas.length > 1 ? `columns ${cols(meroHas)} — {{author}} can only block one` : col(meroHas[0])}.`);
     return f;
 }
 
@@ -176,23 +176,23 @@ export function roundFacts({ c, m, riiHas = [], meroHad = [], meroHas = [], end 
 export function linePrompt(game, what, { persona = '', names = {}, before = [], facts = [] } = {}) {
     const N = t => named(t, names);
     const system = [
-        N(`You are Mero ☆, Miinthe's co-writer and story bestie, playing Four in a Row against Miinthe for fun.`) + (persona ? ` ${persona}` : ''),
+        N(`You are Mero ☆, {{author}}'s co-writer and story bestie, playing Four in a Row against {{author}} for fun.`) + (persona ? ` ${persona}` : ''),
         nameRule(names),
-        N('The game itself drops the pieces and makes your moves — treat them as yours. You only talk: teasing, gloating, groaning, one or two short sentences. Use only the facts given; never describe the board beyond them, never make up moves, never tell Miinthe where to play. Plain text, no lists, no emoji spam. Stay out of the story; this is a break.'),
+        N('The game itself drops the pieces and makes your moves — treat them as yours. You only talk: teasing, gloating, groaning, one or two short sentences. Use only the facts given; never describe the board beyond them, never make up moves, never tell {{author}} where to play. Plain text, no lists, no emoji spam. Stay out of the story; this is a break.'),
     ].join('\n');
     const lines = [];
-    const first = game.first === 'mero' ? 'You' : 'Miinthe';
-    if (what === 'start') lines.push(N(game.first === 'mero' ? `A new game just started and you went first: your piece is in column ${(game.moves[0] ?? 3) + 1}. Say hi and dare Miinthe to beat you.` : 'A new game just started; Miinthe goes first. Say hi and dare Miinthe to beat you.'));
+    const first = game.first === 'mero' ? 'You' : '{{author}}';
+    if (what === 'start') lines.push(N(game.first === 'mero' ? `A new game just started and you went first: your piece is in column ${(game.moves[0] ?? 3) + 1}. Say hi and dare {{author}} to beat you.` : 'A new game just started; {{author}} goes first. Say hi and dare {{author}} to beat you.'));
     else {
         if (arr(facts).length) lines.push(N(`What just happened (the game worked it out, so it is exact; columns 1–7 from the left; ${first} started):\n${arr(facts).join(' ')}`));
         const how = {
-            won: 'Miinthe beat you. Be a good sport about it (a little dramatic is fine). Ask if they want another round.',
+            won: '{{author}} beat you. Be a good sport about it (a little dramatic is fine). Ask if they want another round.',
             lost: 'You won. Gloat a little, kindly. Ask if they want another round.',
             draw: 'A draw. React, and ask if they want another round.',
-            riiFork: 'Miinthe has two ways to win and you can only block one — you are about to lose. React.',
-            meroFork: 'You have two ways to win and Miinthe can only block one. React, but don\'t say which columns.',
-            block: 'You just blocked Miinthe\'s win. React.',
-            riiBlock: 'Miinthe just blocked your win. React.',
+            authorFork: '{{author}} has two ways to win and you can only block one — you are about to lose. React.',
+            meroFork: 'You have two ways to win and {{author}} can only block one. React, but don\'t say which columns.',
+            block: 'You just blocked {{author}}\'s win. React.',
+            authorBlock: '{{author}} just blocked your win. React.',
             threat: 'You are one piece from winning. Tease a little, but don\'t say where.',
         }[what];
         if (how) lines.push(N(how));
@@ -216,10 +216,10 @@ export function stockLine(game, what, rand = Math.random) {
         won: ['Okay, okay, you got me. Rematch?', 'Four in a row?! I demand a rematch.'],
         lost: ['Four in a row! Better luck next time. Another one?', 'And that\'s mine. Another round?'],
         draw: ['A full board and nobody won. Again?', 'A draw! We\'re too evenly matched. Another?'],
-        riiFork: ['Oh no. Two ways in. I can only block one…', 'Wait. That\'s… that\'s not fair.'],
+        authorFork: ['Oh no. Two ways in. I can only block one…', 'Wait. That\'s… that\'s not fair.'],
         meroFork: ['Hm. Two ways to win. Which one will you block?', 'I have a feeling this is going my way.'],
         block: ['Nope! Not on my watch.', 'Blocked. Nice try.'],
-        riiBlock: ['Hey! I had that one.', 'Rude. I was so close.'],
+        authorBlock: ['Hey! I had that one.', 'Rude. I was so close.'],
         threat: ['Careful… I\'m one piece away.', 'Something\'s brewing over here.'],
     }[what] || ['Your move.']);
 }

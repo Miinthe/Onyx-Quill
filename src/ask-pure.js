@@ -28,13 +28,13 @@ export function normAsk(a) {
 export const normAsks = list => arr(list).map(normAsk).filter(Boolean).slice(0, MAX_ASKS);
 
 /** How Mero writes a card in a talk answer (the talk is plain text, so markup — taken out before Miinthe reads it). */
-export const ASK_FORMAT = `When you ask Miinthe something that has a few clear possible answers, ask it as a question card instead of in your text — on its own lines at the end:
+export const ASK_FORMAT = `When you ask {{author}} something that has a few clear possible answers, ask it as a question card instead of in your text — on its own lines at the end:
 [[ASK one]] The question?
 - a first answer
 - a second answer
 - a third answer
 [[/ASK]]
-"one" = she picks one; "many" = she may pick several. 2 to 4 short answers that really differ; she can always write her own. At most ${MAX_ASKS} cards in an answer, and only when you need to know. A question with no clear answers stays in your text.`;
+"one" = they pick one; "many" = they may pick several. 2 to 4 short answers that really differ; they can always write their own. At most ${MAX_ASKS} cards in an answer, and only when you need to know. A question with no clear answers stays in your text.`;
 
 const ASK_RE = /\[\[ASK\b([^\]]*)\]\]([\s\S]*?)\[\[\/ASK\]\]/gi;
 /** The cards out of a talk answer: { text (without them), asks }. */

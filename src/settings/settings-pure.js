@@ -63,7 +63,7 @@ export const SECTIONS = [
             { id: 'v-toast', label: 'Tell me what changed', tip: 'A notice after a re-read finds changes', type: 'switch', key: 'showSyncToasts', old: 'Show sync change toasts' },
             { id: 'v-now', label: 'Re-read now', type: 'btn', btn: 'Re-read', act: 'reindex', old: 'Refresh index' },
             { id: 'v-rebuild', label: 'Rebuild the index', type: 'seg', key: 'indexRebuildTrigger', opts: [['ttl', 'after a time'], ['generation', 'every N replies'], ['manual', 'only by hand']], more: true, old: 'Index rebuild trigger' },
-            { id: 'v-cache', label: 'Keep the index for', hint: 'seconds', tip: 'Used by “after a time”', type: 'num', key: 'cacheTTL', more: true, old: 'Cache duration / cache TTL' },
+            { id: 'v-cache', label: 'Keep the index for', unit: 'seconds', tip: 'Used by “after a time”', type: 'num', key: 'cacheTTL', more: true, old: 'Cache duration / cache TTL' },
             { id: 'v-rebuildn', label: 'Every N replies', tip: 'Used by “every N replies”', type: 'num', key: 'indexRebuildGenerationInterval', more: true, old: 'Rebuild every N generations' },
         ] },
         { t: 'Tags', rows: [
@@ -72,8 +72,8 @@ export const SECTIONS = [
             { id: 'v-never', label: 'Never-send tag', type: 'text', key: 'neverInsertTag', more: true, fx: 'rebuild', old: 'Never insert tag' },
             { id: 'v-seed', label: 'Seed tag', tip: 'Sent quietly in the background while a chat is new', type: 'text', key: 'seedTag', more: true, fx: 'rebuild', old: 'Seed tag' },
             { id: 'v-boot', label: 'Starter tag', tip: 'Sent openly while a chat is new', type: 'text', key: 'bootstrapTag', more: true, fx: 'rebuild', old: 'Bootstrap tag' },
-            { id: 'v-guide', label: 'Writing-guide tag', tip: 'Entries with this tag are writing guides, not lore', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
-            { id: 'v-newchat', label: 'A chat counts as new for', hint: 'messages', type: 'num', key: 'newChatThreshold', more: true, old: 'New chat threshold' },
+            { id: 'v-guide', label: 'Notes-for-Mero tag', tip: 'Notes with this tag are for Mero ☆ only, not lore: she reads them in her talks and pitches (those in the chat’s folders); the writing AI never gets them. Not the board’s 🧭 guidance, which does go to the writer.', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
+            { id: 'v-newchat', label: 'A chat counts as new for', unit: 'messages', type: 'num', key: 'newChatThreshold', more: true, old: 'New chat threshold' },
         ] },
         { t: 'Files', rows: [
             { id: 'v-fields', label: 'Field definitions file', hint: 'in your vault', type: 'text', key: 'fieldDefinitionsPath', old: 'Field definitions path' },
@@ -113,7 +113,7 @@ export const SECTIONS = [
             { id: 's-err', label: 'If the judge fails', type: 'select', key: 'aiErrorFallback', opts: [['keyword', 'use the keyword picks'], ['constants_only', 'always-send entries only'], ['bootstrap_only', 'starter entries only'], ['none', 'send no lore']], more: true, old: 'AI error fallback' },
             { id: 's-empty', label: 'If the judge picks nothing', type: 'select', key: 'aiEmptyFallback', opts: [['constants', 'always-send entries only'], ['constants_bootstrap', 'always-send + starter entries'], ['keyword', 'use the keyword picks'], ['none', 'send no lore']], more: true, old: 'AI empty result fallback' },
             { id: 's-desc', label: 'The judge reads', type: 'select', key: 'manifestSummaryMode', opts: [['prefer_summary', 'the summary, else the text'], ['summary_only', 'summaries only'], ['content_only', 'the text only']], more: true, old: 'Entry description mode / manifest summary mode' },
-            { id: 's-sum', label: 'Longest summary sent', hint: 'characters', type: 'num', key: 'aiSearchManifestSummaryLength', more: true, old: 'Manifest summary length' },
+            { id: 's-sum', label: 'Longest summary sent', unit: 'characters', type: 'num', key: 'aiSearchManifestSummaryLength', more: true, old: 'Manifest summary length' },
             { id: 's-jnotes', label: 'Give it the session notes', tip: 'Scribe’s latest notes go to the judge too', type: 'switch', key: 'scribeInformedRetrieval', more: true, old: 'Use session notes as AI context / Scribe informed retrieval' },
             { id: 's-jfields', label: 'Your fields it sees', hint: 'comma list · empty = all', type: 'text', more: true, old: 'Custom fields in manifest',
                 read: s => (Array.isArray(s.aiManifestIncludeFields) ? s.aiManifestIncludeFields.join(', ') : ''),
@@ -131,15 +131,15 @@ export const SECTIONS = [
         { t: 'Budget', custom: 'budgetScopes', rows: [
             { id: 'b-max', label: 'Entries per reply', type: 'num', key: 'maxEntries', dis: s => !!s.unlimitedEntries, disWhy: 'No limit on entries is on', old: 'Max entries' },
             { id: 'b-maxu', label: 'No limit on entries', tip: 'Big vaults may feel slower', type: 'switch', key: 'unlimitedEntries', old: 'Unlimited entries' },
-            { id: 'b-tok', label: 'Lore budget', hint: 'tokens per reply', type: 'num', key: 'maxTokensBudget', dis: s => !!s.unlimitedBudget, disWhy: 'No limit on tokens is on', old: 'Token budget' },
+            { id: 'b-tok', label: 'Lore budget', unit: 'tokens per reply', type: 'num', key: 'maxTokensBudget', dis: s => !!s.unlimitedBudget, disWhy: 'No limit on tokens is on', old: 'Token budget' },
             { id: 'b-toku', label: 'No limit on tokens', type: 'switch', key: 'unlimitedBudget', old: 'Unlimited token budget' },
         ] },
         { t: 'Variety', rows: [
             { id: 'b-rep', label: 'Give others a turn', tip: 'An entry sent many times in a row steps back; one skipped a long time gets a boost', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
-            { id: 'b-cool', label: 'Rest after sending', hint: 'replies', tip: 'An entry waits this many replies before it can be sent again', type: 'num', key: 'reinjectionCooldown', old: 'Repeat cooldown / reinjection cooldown' },
+            { id: 'b-cool', label: 'Rest after sending', unit: 'replies', tip: 'An entry waits this many replies before it can be sent again', type: 'num', key: 'reinjectionCooldown', old: 'Repeat cooldown / reinjection cooldown' },
             // 'Skip what was just sent' removed (Miinthe, 2026-11-03): entries sent again are shown in 📖 Why as "Same as last turn"
-            { id: 'b-boost', label: 'Bring one back after', hint: 'replies skipped', type: 'num', key: 'decayBoostThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Boost after N skips' },
-            { id: 'b-pen', label: 'Hold one back after', hint: 'times in a row', type: 'num', key: 'decayPenaltyThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Penalize after N in a row' },
+            { id: 'b-boost', label: 'Bring one back after', unit: 'replies skipped', type: 'num', key: 'decayBoostThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Boost after N skips' },
+            { id: 'b-pen', label: 'Hold one back after', unit: 'times in a row', type: 'num', key: 'decayPenaltyThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Penalize after N in a row' },
         ] },
     ] },
     { id: 'inject', name: 'Where it goes', icon: 'ssend', grp: 'Lore', lead: 'Where Onyx Quill’s parts go in the prompt.', cards: [
@@ -170,9 +170,7 @@ export const SECTIONS = [
     { id: 'mero', name: 'Mero', icon: 'mero', grp: 'AI', lead: 'Your co-writer: who she is and how she helps. Her AI is picked in AI & connections.', cards: [
         { t: 'Who she is', sum: 'who Mero is, in your words', rows: [
             { id: 'm-persona', label: 'In your words', type: 'btn', btn: 'Edit', act: 'meroPersona', old: 'Persona / who Mero is' },
-            { id: 'm-callme', label: 'She calls you', tip: 'The name Mero uses for you. Empty: no name at all', type: 'text', src: 'mero', key: 'callMe', old: 'Your name / what Mero calls me' },
-            { id: 'm-name', label: 'You call her', tip: 'Her name in her instructions. Empty: Mero', type: 'text', src: 'mero', key: 'meroName', old: 'Mero\'s name / what I call her' },
-            { id: 'm-reset', label: 'Who she is: first draft', type: 'btn', btn: 'Reset', act: 'meroResetPersona', old: 'Reset who she is' },
+            { id: 'm-callme', label: 'She calls you', tip: 'The name Mero uses for you, also on your messages to her. Empty: no name — she just says you, and your messages say You', type: 'text', src: 'mero', key: 'callMe', old: 'Your name / what Mero calls me' },
         ] },
         { t: 'Her job', rows: [
             { id: 'm-job', label: 'How much she does', tip: 'Her lore upkeep: how often she checks the entries', type: 'seg', src: 'mero', key: 'job', opts: [['off', 'Off duty'], ['freelance', 'Freelancer'], ['part', 'Part-timer'], ['full', 'Full-timer']], old: 'Mero’s job' },
@@ -181,12 +179,14 @@ export const SECTIONS = [
         ] },
         { t: 'How she talks', rows: [
             { id: 'm-chat', label: 'Chattiness', type: 'seg', src: 'mero', key: 'chatty', opts: [['quiet', 'Quiet'], ['chatty', 'Chatty'], ['very', 'Very chatty'], ['custom', 'Custom']], old: 'Chatty / yapper' },
-            { id: 'm-init', label: 'The writer’s initiative', tip: 'From “follow my lead” to “brings events”', type: 'select', src: 'mero', key: 'initiative', num: true, opts: [[0, 'follow my lead'], [1, 'mostly follows'], [2, 'balanced'], [3, 'brings events'], [4, 'takes the wheel']], old: 'Initiative' },
-            { id: 'm-reads', label: 'She reads the latest', hint: 'replies', type: 'num', src: 'mero', key: 'replies', min: 2, max: 40, old: 'How many replies Mero reads' },
-            { id: 'm-talks', label: 'How much she talks', type: 'seg', src: 'mero', key: 'talk', opts: [['little', 'a little'], ['some', 'some'], ['lots', 'a lot']], more: true, old: 'Custom: talks' },
-            { id: 'm-brings', label: 'Brings things up herself', type: 'switch', src: 'mero', key: 'bringUp', more: true, old: 'Custom: brings up' },
-            { id: 'm-glow', label: 'The glow', tip: 'A soft light while she has something; costs nothing until you click it', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], more: true, old: 'Custom: the glow' },
-            { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job, sign-off and web search back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', more: true, old: 'Reset her settings' },
+            { id: 'm-talks', label: 'Custom: how much she talks', type: 'seg', src: 'mero', key: 'talk', opts: [['little', 'a little'], ['some', 'some'], ['lots', 'a lot']], show: s => s.chatty === 'custom', old: 'Custom: talks' },
+            { id: 'm-brings', label: 'Custom: brings things up herself', type: 'switch', src: 'mero', key: 'bringUp', show: s => s.chatty === 'custom', old: 'Custom: brings up' },
+            { id: 'm-glow', label: 'Custom: the glow', tip: 'Her 💬 lights up after a big moment on the board — an invitation to talk about it. Costs nothing until you click it.', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], show: s => s.chatty === 'custom', old: 'Custom: the glow' },
+            { id: 'm-reads', label: 'She reads the latest', unit: 'replies', type: 'num', src: 'mero', key: 'replies', min: 2, max: 40, old: 'How many replies Mero reads' },
+            { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job, sign-off and web search back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', old: 'Reset her settings' },
+        ] },
+        { t: 'What the story writer is told', sum: 'Mero passes this to the AI that writes the story', rows: [
+            { id: 'm-init', label: 'Who drives the story', tip: 'Told to the AI that writes the story replies — not to Mero. From “follow my lead” to “takes the wheel”; balanced tells it nothing.', type: 'select', src: 'mero', key: 'initiative', num: true, opts: [[0, 'follow my lead'], [1, 'mostly follows'], [2, 'balanced'], [3, 'brings events'], [4, 'takes the wheel']], old: 'Initiative' },
         ] },
     ] },
     { id: 'story', name: 'Story & memory', icon: 'story', grp: 'Story', lead: 'What Onyx Quill writes down, and the story tools.', cards: [
@@ -480,12 +480,12 @@ export const roughTokens = text => Math.ceil(String(text || '').length / 4);
  */
 export const NOT_DRAWN = {
     showLoreSources: 'Why? on / off — let go (Step 4 checklist s-whybtn); Why these entries lives in the reply’s ⋯',
-    stripDuplicateInjections: 'Skip what was just sent — let go (Miinthe, 2026-11-03): entries sent again show in 📖 Why as "Same as last turn"',
+    stripDuplicateInjections: 'Skip what was just sent — let go (2026-11-03): entries sent again show in 📖 Why as "Same as last turn"',
     stripLookbackDepth: 'goes with Skip what was just sent (let go)',
     aiSearchClaudeCodePrefix: 'proxy-only and already hidden in the old window (proxy mode retired in v2.5)',
     aiSearchSystemPrompt: 'edited in Prompts', scribePrompt: 'edited in Prompts', autoSuggestPrompt: 'edited in Prompts',
     optimizeKeysPrompt: 'edited in Prompts', aiNotepadPrompt: 'edited in Prompts', aiNotepadExtractPrompt: 'edited in Prompts',
-    aiPromptLocale: 'Prompts › Language', enabled: 'the On switch in the header', vaults: 'Vault › Vaults',
+    aiPromptLocale: 'let go: Onyx Quill is English only (2026-11-03) — an old value falls back to English', enabled: 'the On switch in the header', vaults: 'Vault › Vaults',
     aiForceUserRole: 'AI & connections › Fine print',
     ownPrompts: 'Prompts › + Your own prompt (its own editor)', characterBudgets: 'a character’s page (Budget rows)',
 };
