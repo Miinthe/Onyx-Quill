@@ -6,7 +6,7 @@
  * the real data (window.__dleBoardHost.load) instead of its toy example; Save calls back.
  *
  * STORAGE (engine on v2, step 5 — one board store):
- *   extension_settings.deeplore_storyboards_v2.boards[name] = { board: v2 }   — every board (board-store.js); the old
+ *   extension_settings.onyxquill_storyboards.boards[name] = { board: v2 }   — every board (board-store.js); the old
  *   extension_settings.deeplore_storyboards is no longer written (kept as a backup)
  *   chat_metadata.deeplore_board_state                       = v2 chat state        — collections, places, forks…
  *   chat_metadata.deeplore_trackers                          = v1 list              — the engine's older list (since
@@ -18,7 +18,7 @@ import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { getContext, saveMetadataDebounced, extension_settings } from '../../../../extensions.js';
 import { vaultIndex, setIndexTimestamp, loreGaps } from './state.js';
 import { askBeforeRemoving, setAskBeforeRemoving, getSettings, resolveConnectionConfig } from '../settings.js';   // overhaul step 4: one "Ask before removing" switch
-import { buildIndex } from './vault/vault.js';   // the re-read after a save (what /dle-refresh does)
+import { buildIndex } from './vault/vault.js';   // the re-read after a save (what /oq-refresh does)
 import { escapeHtml } from '../../../../utils.js';
 import { BOARD_KEY, noteRename } from './storyboard-pure.js';
 import { boardStore, getBoard, putBoard } from './board-store.js';   // engine on v2, step 5: one board store
@@ -44,7 +44,7 @@ import { meroNames } from './mero-names-pure.js';
 
 export { V2_KEY } from './board-store.js';
 export const STATE_KEY = 'deeplore_board_state';
-export const PREFS_KEY = 'deeplore_board_prefs';      // the window's own settings (theme), same on every device
+export const PREFS_KEY = 'onyxquill_board_prefs';       // the window's own settings (theme), same on every device
 
 function prefs() {
     const p = extension_settings[PREFS_KEY];
@@ -395,7 +395,7 @@ async function writeEntries(list) {
     return out;
 }
 
-/** After every board save: re-read the vault, as /dle-refresh does (Miinthe, 2026-10-05), in the background. */
+/** After every board save: re-read the vault, as /oq-refresh does (Miinthe, 2026-10-05), in the background. */
 function refreshVault() {
     try { setIndexTimestamp(0); } catch { /* noop */ }
     buildIndex().then(() => notifyTrackersView()).catch(err => console.warn('[DLE] re-reading the vault after a board save failed:', err?.message || err));

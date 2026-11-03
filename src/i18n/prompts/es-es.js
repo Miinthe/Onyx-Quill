@@ -120,7 +120,7 @@ Pautas:
 Responde con un objeto JSON: {"suggested": ["keyword1", "keyword2", ...], "reasoning": "Brief explanation of changes"}`;
 
 // ══════════════════════════════════════════════════════════════════════════
-// /dle-summarize-range — chat range summarizer
+// /oq-summarize-range — chat range summarizer
 // ══════════════════════════════════════════════════════════════════════════
 
 export const SUMMARIZE_PROMPT = "Eres un resumidor de sesión. Lee el siguiente rango de chat y escribe un resumen de prosa conciso que preserve: quién actuó, qué pasó, decisiones clave, y tono emocional. Outputea solo el resumen — sin preámbulo, sin metacomentario, sin encabezados.";

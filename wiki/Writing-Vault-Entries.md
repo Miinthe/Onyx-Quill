@@ -121,4 +121,4 @@ The `summary` is for the selection AI. The content is for the writing AI. Two pu
 - **Summaries are for the search AI, not the writing AI.** Don't put character descriptions in summaries. Put *when to select this entry* in summaries.
 - **Priority matters for constants too.** Even always-send entries use priority to determine injection order.
 - **Don't over-tag.** An entry only needs `#lorebook`. Add special tags (`#lorebook-always`, etc.) only when you specifically need that behavior.
-- **Run `/dle-lint` after authoring.** Catches common frontmatter footguns (case-wrong field names, comma-string `keys`, quoted numerics, missing fences) at once.
+- **Run `/oq-lint` after authoring.** Catches common frontmatter footguns (case-wrong field names, comma-string `keys`, quoted numerics, missing fences) at once.

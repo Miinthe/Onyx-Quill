@@ -87,7 +87,7 @@ export function buildClaudeAdaptiveMessage(detail, surface = 'toast') {
     if (surface === 'banner') {
         return `Profile "${profileName}" + ${modelName}: completion preset "${presetName}" needs reasoning_effort set to Low, Medium, or High. ${path}.`;
     }
-    return `DeepLore: ${modelName} on profile "${profileName}" will fail — set reasoning_effort on preset "${presetName}" (Low/Medium/High).`;
+    return `Onyx Quill: ${modelName} on profile "${profileName}" will fail — set reasoning_effort on preset "${presetName}" (Low/Medium/High).`;
 }
 
 /**

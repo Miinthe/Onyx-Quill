@@ -86,8 +86,8 @@ export function renderStatusZone() {
             ? pipelineLabelFor(pipelinePhase)
             : (ds.stGenerating ? pipelineLabelFor('generating') : pipelineLabelFor('idle')));
     // The dot is the activity glyph AND a click target for full status (handler bound elsewhere).
-    $dot.attr('title', `DeepLore activity: ${pipelineText} — click for full status`)
-        .attr('aria-label', `DeepLore activity: ${pipelineText} — click for full status`);
+    $dot.attr('title', `Onyx Quill activity: ${pipelineText} — click for full status`)
+        .attr('aria-label', `Onyx Quill activity: ${pipelineText} — click for full status`);
     // No aria-live here — the visible label is plain content; status transitions are announced
     // once at polite urgency via #dle-drawer-live above (announceToScreenReader). f106.
     $drawer.find('.dle-pipeline-label').text(pipelineText).attr('aria-label', `Status: ${pipelineText}`);
@@ -98,7 +98,7 @@ export function renderStatusZone() {
         if (!$setupBanner.length) {
             const banner = `<div class="dle-setup-banner" role="status" style="padding: var(--dle-space-2) var(--dle-space-3); background: color-mix(in srgb, var(--dle-info) 15%, transparent); border-radius: var(--dle-radius-sm); margin: var(--dle-space-2) 0; display: flex; align-items: center; gap: var(--dle-space-2); font-size: var(--dle-text-sm);">
                 <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--dle-info);"></i>
-                <span>New to DeepLore?</span>
+                <span>New to Onyx Quill?</span>
                 <button type="button" class="dle-setup-banner-btn menu_button" style="padding: var(--dle-space-1) var(--dle-space-3); min-height: 28px; font-size: var(--dle-text-xs);" title="Run the setup wizard">Run Setup</button>
                 <button type="button" class="dle-setup-banner-dismiss" style="margin-left: auto; background: none; border: none; cursor: pointer; opacity: 0.5; padding: 2px;" title="Dismiss" aria-label="Dismiss setup banner"><i class="fa-solid fa-xmark"></i></button>
             </div>`;

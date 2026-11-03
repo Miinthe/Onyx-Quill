@@ -1477,7 +1477,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
 .aw .asw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--page); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s; }
 .aw .asw[aria-checked="true"] { background: var(--accent); }
 .aw .asw[aria-checked="true"]::after { left: 18px; }
-/* = DeepLore's one bar (kit .dk-seg; unification 2026-11-03) */
+/* = Onyx Quill's one bar (kit .dk-seg; unification 2026-11-03) */
 .aw .aseg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--menu); align-self: flex-start; }
 .aw .aseg button { height: 26px; padding: 0 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 12.5px; color: var(--muted); }
 .aw .aseg button:hover { color: var(--ink); }
@@ -1633,7 +1633,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
   .applpop { left: 8px !important; right: 8px; width: auto !important; }
 }
 
-/* ── coherence (Miinthe, 2026-11-03: "yes to all" — https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu): the board's controls in DeepLore's
+/* ── coherence (Miinthe, 2026-11-03: "yes to all" — https://claude.ai/artifact/XfcU3v7NTFJdAgT7bnrjBu): the board's controls in Onyx Quill's
    one size; its text stays at the board's own reading size ── */
 /* 1/2 buttons: 28 px, corners 8, 13 px text — the menu bar and the tools too */
 .btn, .b2 { height: auto; min-height: 28px; padding: 3px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 8px; font-size: 13px; }
@@ -1655,7 +1655,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
 .side h3, .abody h4, .linkmenu .fam, .wov-card .wch b, .epick h5, .side .card h4 { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; }
 /* the more specific board rules: the size buttons, the toolbar's tools */
 @media (pointer: fine) { .tbsize .b2 { height: 28px; font-size: 13px; } }   /* a phone keeps its bigger touch size */
-/* the board's own small bars (.seg2: strictness, ask me at …) = DeepLore's one bar: the choice in the accent color */
+/* the board's own small bars (.seg2: strictness, ask me at …) = Onyx Quill's one bar: the choice in the accent color */
 .side .seg2 button, .dialog .seg2 button { border: 1px solid transparent; font-size: 13px; }
 .side .seg2 button.on, .dialog .seg2 button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 700; box-shadow: none; }
 .tools .tool { border-radius: 8px; }
@@ -1692,7 +1692,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
 <script>
 const clone = o => JSON.parse(JSON.stringify(o));
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-// Inside SillyTavern, DeepLore (src/board-window.js) hands over the real boards, this chat's place and the vault;
+// Inside SillyTavern, Onyx Quill (src/board-window.js) hands over the real boards, this chat's place and the vault;
 // opened on its own, the window shows the toy example below.
 const HOST = (() => { try { return window.parent !== window ? window.parent.__dleBoardHost || null : null; } catch { return null; } })();
 // Anything that breaks shows up — in a red box here and as a notice in SillyTavern — instead of a blank page.
@@ -1734,7 +1734,7 @@ async function askMero(task, input) {
   try { return await HOST.meroAsk(task, clone(input)); } catch (e) { return { ok: false, error: e?.message || String(e) }; }
 }
 // Overhaul step 3 (2026-10-16): the shared parts in src/kit — one icon list and one list of 14 colors for every
-// DeepLore window (pickers-pure.js), and SillyTavern's live theme colors (theme.js). They load as modules; the
+// Onyx Quill window (pickers-pure.js), and SillyTavern's live theme colors (theme.js). They load as modules; the
 // board draws at once and the pickers fill in when they arrive (a click on an icon or color field comes later).
 let SWATCHES = [], searchEmoji = () => [];
 // World layer (Miinthe, 2026-10-19): the board's World tab — its rules live in src/world/world-pure.js
@@ -1742,7 +1742,7 @@ let WORLD = null, WPLAN = null;
 import('../src/world/planned-pure.js').then(m => { WPLAN = m; if (tab === 'world') render(); }).catch(e => showBreak(`The planned messages did not load: ${e?.message || e}`));
 import('../src/world/world-pure.js').then(m => { WORLD = m; if (tab === 'world') render(); }).catch(e => showBreak(`The world layer's settings did not load: ${e?.message || e}`));
 import('../src/kit/pickers-pure.js').then(m => { SWATCHES = m.SWATCHES; searchEmoji = m.searchEmoji; }).catch(e => showBreak(`The icon and color lists did not load: ${e?.message || e}`));
-// Light / dark / follow SillyTavern (or the device, outside ST) — kept in DeepLore's settings (so PC and iPad share it), else in this browser.
+// Light / dark / follow SillyTavern (or the device, outside ST) — kept in Onyx Quill's settings (so PC and iPad share it), else in this browser.
 const THEMES = { system: HOST ? 'Follow SillyTavern' : 'Same as device', light: 'Light', dark: 'Dark' };
 function themePref() {
   const v = HD?.prefs?.theme ?? (() => { try { return localStorage.getItem('sb-theme'); } catch { return null; } })();
@@ -1770,20 +1770,20 @@ function setTheme(v) {
   HOST?.setPref?.('theme', v);
   applyTheme();
 }
-if (HOST) { try { HD = HOST.load(); applyTheme(); } catch (e) { showBreak(`Loading from DeepLore failed: ${e?.message || e}\n${String(e?.stack || '').split('\n').slice(0, 4).join('\n')}`); throw e; } }
+if (HOST) { try { HD = HOST.load(); applyTheme(); } catch (e) { showBreak(`Loading from Onyx Quill failed: ${e?.message || e}\n${String(e?.stack || '').split('\n').slice(0, 4).join('\n')}`); throw e; } }
 if (!HOST) applyTheme();
 
-// ── built-in templates (board-templates-pure.js: four starters for new users, 2026-11-02) — from DeepLore; the
+// ── built-in templates (board-templates-pure.js: four starters for new users, 2026-11-02) — from Onyx Quill; the
 // standalone preview of this page has none and starts on an empty board ─────────────────────────────────────
 const TEMPLATES = HD?.templates && typeof HD.templates === 'object' ? clone(HD.templates) : {};
 
 let boards = { 'Untitled board': { folders: [], applied: [], trackers: [] } };   // the standalone preview only — inside SillyTavern: HD.boards
-// templates saved with "Save as template" live in DeepLore's settings (all devices); the ones above are built in (cloud bug hunt, 2026-10-04 — before, a saved template was gone once the window closed)
+// templates saved with "Save as template" live in Onyx Quill's settings (all devices); the ones above are built in (cloud bug hunt, 2026-10-04 — before, a saved template was gone once the window closed)
 const BUILTIN_TEMPLATES = new Set(Object.keys(TEMPLATES));
 if (HD?.prefs?.templates && typeof HD.prefs.templates === 'object') for (const [n, v] of Object.entries(HD.prefs.templates)) if (!BUILTIN_TEMPLATES.has(n) && Array.isArray(v?.trackers)) TEMPLATES[n] = v;
 const saveTemplates = () => { const own = Object.fromEntries(Object.entries(TEMPLATES).filter(([n]) => !BUILTIN_TEMPLATES.has(n))); if (HD) (HD.prefs ||= {}).templates = own; HOST?.setPref?.('templates', clone(own)); };
 let templates = Object.keys(TEMPLATES);
-// a chat's place on the board, meter histories, quotes and the timeline: all from DeepLore inside SillyTavern (below);
+// a chat's place on the board, meter histories, quotes and the timeline: all from Onyx Quill inside SillyTavern (below);
 // the standalone preview starts empty (the old toy story was scrubbed for the public release, 2026-11-03)
 const chats = {};
 const MHIST = {};
@@ -1988,7 +1988,7 @@ function normalizeEntries(d) {
   const fix = o => { if (!o) return; if (!Array.isArray(o.entries)) o.entries = o.entry ? [o.entry] : []; delete o.entry; };
   for (const t of d.trackers) { (t.steps || []).forEach(fix); (t.steps || []).forEach(st => (st.fork || []).forEach(fix)); (t.items || []).forEach(fix); }
 }
-const VAULT = [];   // the vault's entries — from DeepLore (HD.vault); the standalone preview has none
+const VAULT = [];   // the vault's entries — from Onyx Quill (HD.vault); the standalone preview has none
 let searchQ = '';
 const tl_closed = new Set();
 // tools
@@ -3327,7 +3327,7 @@ function stepSel(k) {
 }
 const KEYS = [['M', 'Mero — your set-up helper'], ['A', 'Add ▸ — the Add bar · A again: the Add window'], ['V', 'View ▸ — the View bar'], ['C', 'Check ▸'], ['P', 'Play ▸ (Space: pause)'], ['X', 'Remove'], ['L', 'Link two tiles — click one, then the other'], ['N', 'Notes — click a tile or a connection to write a note'], ['F', 'Focus on the selected tile (F again: back)'], ['Del', 'Remove the selection'], ['Double-click', 'Rename'], ['/', 'Search'], ['1 · 2 · 3', 'Full · Compact · Mini'], ['Alt + / −', 'Full · Compact · Mini, one step'], ['← → ↑ ↓', 'Walk through steps and rows'], ['Esc', 'Close a bar or a form, back to Select'], ['Ctrl Z / Ctrl Y', 'Undo / Redo']];
 function keysDialog() { dialog(`<h2>Keyboard shortcuts</h2><div class="keys">${KEYS.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div><div class="btns"><button class="btn primary" id="dlg-x">Close</button></div>`, sc => { sc.querySelector('#dlg-x').onclick = closeDialog; }); }
-// Save board `name` to DeepLore: the board and where this chat stands on it.
+// Save board `name` to Onyx Quill: the board and where this chat stands on it.
 async function hostSave(name) {
   if (!HOST) return true;
   // new entries made on the board are written first — only the ones still linked somewhere; if any can't be
@@ -3346,7 +3346,7 @@ async function hostSave(name) {
   }
   delete boards[name].newEntries; delete doc.newEntries;
   try { HOST.save(name, clone(boards[name]), clone(chats[HD.chat] || {})); }
-  catch (e) { toast(`Could not save to DeepLore: ${e?.message || e}`); return false; }
+  catch (e) { toast(`Could not save to Onyx Quill: ${e?.message || e}`); return false; }
   neverSaved.delete(name);
   return true;
 }
@@ -3416,7 +3416,7 @@ const HELP = {
     ['Click a step', 'Its panel opens on the right: the helper\'s strictness and asking, going back, detours, what it depends on and what it affects.', '[data-st]'],
     ['Link entries', 'Open a tile\'s drawer (▾) and click + entry — the entries window: link from your vault, or write a new one (Mero can draft it). Each entry has a kind (context, guidance, judge).', '[data-drt]'],
     ['Connect things', 'Add ▸ + Connection: pick From, the kind (needs, starts when, blocks, makes it happen, only one at a time) and To — click the tiles or type.', '#t-add'],
-    ['Check it', 'Check ▸ steps through anything broken — loops, missing entries, lore DeepLore would hide. Tiles with a problem carry ⚠️.', '#t-chk'],
+    ['Check it', 'Check ▸ steps through anything broken — loops, missing entries, lore Onyx Quill would hide. Tiles with a problem carry ⚠️.', '#t-chk'],
     ['Play it through', 'Play ▸ walks the board in story order in a sandbox. Pause and click a step for “what if”.', '#t-play'],
     ['Focus', 'Select a tile, then View ▸ ◎ Focus — only it and everything it touches.', '#t-view'],
     ['Save and apply', 'File → Save, or Save as and apply to a character or chat. Edits stay a draft until you save.', '[data-m="file"] > button'],
@@ -3436,13 +3436,13 @@ const HELP = {
     ['click the side panel’s title', 'rename it'], ['drag a step sideways', 'reorder the steps of its tracker'], ['drag a step pill', 'the same, in the tracker panel'],
     ['hover a line', 'what it means'], ['Enter on an entry chip', 'open the entries menu'],
   ].map(([k, d]) => `<tr><td><kbd>${k}</kbd></td><td>${d}</td></tr>`).join('')}</table>`],
-  cmds: ['Slash commands', () => `<p class="note">Typed in SillyTavern's chat box. They exist in DeepLore today; the board window does the same with clicks.</p><table class="keys">${[
-    ['/dle-board', 'show the storyboards — or apply one: /dle-board My Story'], ['/dle-board-saveas name', 'save this chat\'s trackers as a new board and use it here'],
-    ['/dle-board-character name', 'default board for new chats with this character (off clears it)'], ['/dle-board-detach', 'this chat stops using its board and keeps its own copy'],
-    ['/dle-tracker', 'list this chat\'s trackers — or make one: /dle-tracker Name = Step 1, Step 2'], ['/dle-tracker-next · /dle-tracker-back', 'move a tracker one step'],
-    ['/dle-tracker-go Name = Step', 'jump a tracker to a step'], ['/dle-tracker-aside Name = text', 'set a detour beside the step (nothing after = clears it)'],
-    ['/dle-tracker-remove Name', 'remove a tracker from this chat'], ['/dle-tracker-rewind [n]', 'put every tracker back to where it was at message n'],
-    ['/dle-branch-run', 'start this chat as the next run, copying its session notes and lore up to here'],
+  cmds: ['Slash commands', () => `<p class="note">Typed in SillyTavern's chat box. They exist in Onyx Quill today; the board window does the same with clicks.</p><table class="keys">${[
+    ['/oq-board', 'show the storyboards — or apply one: /oq-board My Story'], ['/oq-board-saveas name', 'save this chat\'s trackers as a new board and use it here'],
+    ['/oq-board-character name', 'default board for new chats with this character (off clears it)'], ['/oq-board-detach', 'this chat stops using its board and keeps its own copy'],
+    ['/oq-tracker', 'list this chat\'s trackers — or make one: /oq-tracker Name = Step 1, Step 2'], ['/oq-tracker-next · /oq-tracker-back', 'move a tracker one step'],
+    ['/oq-tracker-go Name = Step', 'jump a tracker to a step'], ['/oq-tracker-aside Name = text', 'set a detour beside the step (nothing after = clears it)'],
+    ['/oq-tracker-remove Name', 'remove a tracker from this chat'], ['/oq-tracker-rewind [n]', 'put every tracker back to where it was at message n'],
+    ['/oq-branch-run', 'start this chat as the next run, copying its session notes and lore up to here'],
   ].map(([k, d]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(d)}</td></tr>`).join('')}</table>`],
   what: ['What\'s what', () => `<table class="keys">${[
     ['Tracker', 'a line of steps with one current step'], ['Step', 'one point on it; holds entries and its own rules (🚫 one-way · 🔍 strict · 🌿 relaxed · ❓ asks · 🔕 never asks · ↩ falls back)'],
@@ -3644,9 +3644,9 @@ const AW = (() => {
       ['text', 'label', 'Label for the writer', 'e.g. ITEM, CLUE, SUSPECT', ''],
       ['sw', 'grows', 'The story can add new items', 'a key pocketed, a clue found: added with the quote', false, o => `New items <span class="aseg" data-seg="growAsk">${segB(o.growAsk ?? 'ask', [['ask', 'ask me first'], ['auto', 'add on their own']])}</span> Folder <input type="text" data-o="growFolder" value="${esc(o.growFolder ?? '')}" placeholder="Items/">`]],
     place: [['sw', 'pin', 'Pin the entry of where we are', 'always given to the writer while the scene is there', true], ['sw', 'near', 'Nearby places may come in', 'from the current spot\'s Related links, as “nearby, not here”', true],
-      ['sw', 'loc', 'Sets DeepLore\'s location filter', 'like /dle-set-location; off: you set it by hand', true], ['text', 'folder', 'Places come from folder', 'each entry\'s location: field', '']],
+      ['sw', 'loc', 'Sets Onyx Quill\'s location filter', 'like /oq-set-location; off: you set it by hand', true], ['text', 'folder', 'Places come from folder', 'each entry\'s location: field', '']],
     cast: [['sw', 'director', 'The director', 'before each reply, a helper updates the plans and thoughts of the people in the scene', true], ['sw', 'pinp', 'Pin their entries while they are here', '', true],
-      ['sw', 'present', 'Sets DeepLore\'s Characters Present', 'who is here becomes “Characters Present” in Filters; off: you set it by hand', false]],
+      ['sw', 'present', 'Sets Onyx Quill\'s Characters Present', 'who is here becomes “Characters Present” in Filters; off: you set it by hand', false]],
     state: [['tiles', 'tod', 'Time of day', 'loops; Night → Morning adds a day'], ['num', 'day', 'Starts on day', '', 1],
       ['seg', 'datesAsk', 'Dates the story adds', 'e.g. “in two days there\'s a party at the harbor”', 'auto', [['auto', 'on their own'], ['ask', 'ask me first']]]],
   };
@@ -4147,7 +4147,7 @@ function openDialog() {
     });
   });
 }
-const FOLDERS = [];   // the vault's folders — from DeepLore (HD.vault)
+const FOLDERS = [];   // the vault's folders — from Onyx Quill (HD.vault)
 // run letters: a run folder carries the letter in its name ("Instance B"); the board stores it as a pattern
 // and reads the current run's folder. Play-born entries it writes there get instance: + character: stamps.
 const RUNS = {};   // this chat's run — HD.run
@@ -4246,8 +4246,8 @@ function deleteBoardAsk() {
   if (!others.length) { toast('This is your only board — make another one first (Board ▸ New…), then delete this one.'); return; }
   const users = boards[cur]?.applied || doc.applied || [];
   confirmDialog(`Delete “${cur}”?`, `${users.length ? `Used by: ${users.join(', ')}. Those chats will have no board — their trackers and their place on the board go with it.` : 'No chat is set to use it.'} This can't be undone.`, 'Delete board', () => {
-    const name = cur, r = HOST?.remove && !neverSaved.has(name) ? HOST.remove(name) : { ok: true };   // never saved: nothing in DeepLore to delete (hunt 2, 2026-11-03)
-    if (!r?.ok) { toast(`Not deleted: ${r?.error || 'DeepLore did not answer.'}`); return; }
+    const name = cur, r = HOST?.remove && !neverSaved.has(name) ? HOST.remove(name) : { ok: true };   // never saved: nothing in Onyx Quill to delete (hunt 2, 2026-11-03)
+    if (!r?.ok) { toast(`Not deleted: ${r?.error || 'Onyx Quill did not answer.'}`); return; }
     delete boards[name]; neverSaved.delete(name); dropRescue();
     cur = others[0]; doc = clone(boards[cur]); dirty = false; resetHistory(); sel = { kind: 'tracker', t: doc.trackers[0]?.id }; render();
     toast(`Deleted “${name}”. Showing “${cur}”.`);
@@ -4916,7 +4916,7 @@ function noteDialogPopup(obj, label) {
 }
 // Removing asks first — unless you ticked "don't ask me again" (Undo always brings it back). Edit → Ask before removing turns it on again.
 // Miinthe, 2026-10-15: small things go at once (Undo is there); big ones ask, with "Don't ask me again"; Edit → Ask before removing = ask for everything.
-// Overhaul step 4 (2026-10-16): in DeepLore, Edit → Ask before removing is the same switch as Settings → Interface → Ask before removing.
+// Overhaul step 4 (2026-10-16): in Onyx Quill, Edit → Ask before removing is the same switch as Settings → Interface → Ask before removing.
 const rmAsk = () => { if (HD?.askBeforeRemoving === true) return 'all'; try { const v = localStorage.getItem('sb-ask-remove'); if (['big', 'never', 'all'].includes(v)) return v; return localStorage.getItem('sb-noask-remove') === '1' ? 'never' : 'big'; } catch { return 'big'; } };
 const setRmAsk = v => { try { localStorage.setItem('sb-ask-remove', v); } catch { /* private window */ } };
 const askRemove = () => rmAsk() === 'all';                    // the ✓ in Edit → Ask before removing
@@ -5556,7 +5556,7 @@ const ROLE_LABEL = { often: 'often found here', only: 'only here', place: 'this 
 const isPinned = (o, name) => kindOf(o, name) !== 'judge' && !!(o.pins && o.pins[name]);
 function entryCard(o, t, label) {
   const e = ents(o);
-  return card(`Entries (${e.length})`, `<div class="kind-legend">${Object.entries(KINDS).map(([k, v]) => `<span style="--kc:var(--k-${k})" title="${v[1]}: ${v[2]}"><b>${v[0]} ${v[1]}</b></span>`).join('<span class="sep2">·</span>')}</div><div class="elist2">${e.map((x, k) => { const kd = kindOf(o, x); return `<div class="ent" style="--kc:var(--k-${kd})"><button class="en" data-eopen="${k}" title="Open in DeepLore">${KINDS[kd][0]} ${esc(x)}${isDraftEntry(x) ? DRAFT_MARK : ''}</button>${o.roles?.[x] ? `<span class="erole" title="how it belongs to this place">${ROLE_LABEL[o.roles[x]]}</span>` : ''}<select class="kindsel" data-ekind="${k}" aria-label="Kind of ${esc(x)}">${Object.entries(KINDS).map(([kk, v]) => `<option value="${kk}"${kk === kd ? ' selected' : ''}>${v[1]}</option>`).join('')}</select><button class="ex" data-erm="${k}" aria-label="Unlink ${esc(x)}">✕</button></div>`; }).join('') || `<span class="mini">No entry yet — the writer gets nothing extra at ${esc(label)}.</span>`}
+  return card(`Entries (${e.length})`, `<div class="kind-legend">${Object.entries(KINDS).map(([k, v]) => `<span style="--kc:var(--k-${k})" title="${v[1]}: ${v[2]}"><b>${v[0]} ${v[1]}</b></span>`).join('<span class="sep2">·</span>')}</div><div class="elist2">${e.map((x, k) => { const kd = kindOf(o, x); return `<div class="ent" style="--kc:var(--k-${kd})"><button class="en" data-eopen="${k}" title="Open in Onyx Quill">${KINDS[kd][0]} ${esc(x)}${isDraftEntry(x) ? DRAFT_MARK : ''}</button>${o.roles?.[x] ? `<span class="erole" title="how it belongs to this place">${ROLE_LABEL[o.roles[x]]}</span>` : ''}<select class="kindsel" data-ekind="${k}" aria-label="Kind of ${esc(x)}">${Object.entries(KINDS).map(([kk, v]) => `<option value="${kk}"${kk === kd ? ' selected' : ''}>${v[1]}</option>`).join('')}</select><button class="ex" data-erm="${k}" aria-label="Unlink ${esc(x)}">✕</button></div>`; }).join('') || `<span class="mini">No entry yet — the writer gets nothing extra at ${esc(label)}.</span>`}
     <div class="btnrow"><button id="e-link">Link entries…</button><button id="e-create">Create</button><button id="e-draft">Draft with AI</button></div></div>`);
 }
 const entrySection = entryCard;
@@ -5670,7 +5670,7 @@ function castWriter(t) {
     if (p.speaks !== 'call') out.push(`${p.name}'s lines come in ${p.name}'s own messages — never write them; what ${p.name} does may be mentioned in passing.`); }
   return out;
 }
-// the board closes (asking first about an unsaved draft) and DeepLore's Cast tab opens
+// the board closes (asking first about an unsaved draft) and Onyx Quill's Cast tab opens
 const toCastTab = key => { const go = () => HOST.openCast(key); if (dirty) confirmDialog('Close without saving?', 'The draft is thrown away — chats keep the saved board. (Save first to keep your changes.)', 'Close', () => { dropRescue(); go(); }); else go(); };
 const castTabBtn = id => `<div class="runbtns"><button class="btn" id="${id}">🎭 Open in the Cast tab</button><span class="mini">who is here, plans, thoughts, who speaks next</span></div>`;
 function castPanel(el, t) {
@@ -5685,11 +5685,11 @@ function castPanel(el, t) {
       line('The director', 'before each reply, a helper updates the plans and thoughts of the people in the scene — one call, only while someone is here', swH('cp-dir', t.director !== false), t.director !== false) + '<div class="sub"></div>'
       + line('Ties the director notices', 'how people feel about each other, read from the scene · ask me: ✓ / ✕ in the Cast tab · write them: straight in · off: only yours and ✨ Suggest ties — no extra call either way', segH('cp-ties', [['suggest', 'ask me'], ['write', 'write them'], ['off', 'off']], t.ties || 'suggest'), t.director !== false, true) + '<div class="sub"></div>'
       + line('Pin their entries while they are here', 'their linked entries always reach the writer while they are in the scene', swH('cp-pin', t.pinHere !== false), t.pinHere !== false) + '<div class="sub"></div>'
-      + line('Sets DeepLore\'s Characters Present', 'who is here becomes “Characters Present” in Filters (with the main character) — off: you set it by hand', swH('cp-present', !!t.setsPresent), !!t.setsPresent))}
+      + line('Sets Onyx Quill\'s Characters Present', 'who is here becomes “Characters Present” in Filters (with the main character) — off: you set it by hand', swH('cp-present', !!t.setsPresent), !!t.setsPresent))}
     ${entryCard(t.keep ||= { entries: [], kinds: {} }, t, 'what counts as being in the scene').replace(/<h4>[^<]*<\/h4>/, '<h4>When is someone in the scene</h4>')}
     ${card('Waiting on this', dependents(t).length ? `<div class="deps">${dependents(t).map(d => `<span class="chipc" style="--c:${d.col || lineColor(d.c, d.lk)}">${esc(d.text)}</span>`).join('')}</div>` : '<span class="mini">Nothing yet.<span class="tip"> With Link: click a person, then a step or a tracker — “starts when the stranger is in the scene”.</span></span>')}
     ${noteCard(t)}`;
-  el.querySelector('#cp-tab').onclick = () => { if (HOST?.openCast) toCastTab(null); else toast('In SillyTavern this closes the board and opens the Cast tab in DeepLore\'s side panel.'); };
+  el.querySelector('#cp-tab').onclick = () => { if (HOST?.openCast) toCastTab(null); else toast('In SillyTavern this closes the board and opens the Cast tab in Onyx Quill\'s side panel.'); };
   el.querySelectorAll('[data-pp]').forEach(b => b.onclick = ev => { if (ev.target.closest('[data-px]')) return; sel = { kind: 'person', t: t.id, i: +b.dataset.pp }; render(); });
   el.querySelectorAll('[data-px]').forEach(b => b.onclick = ev => { ev.stopPropagation(); sel = { kind: 'person', t: t.id, i: +b.dataset.px }; deleteSel(); });
   el.querySelector('#cp-add').onclick = () => addPersonDialog(t);
@@ -5721,7 +5721,7 @@ function personPanel(el, t, k) {
     <p class="note tip">${t.pinHere !== false ? `While ${esc(p.name)} is in the scene, these entries are pinned — always given to the writer.` : 'Their entries come in like any other — pinning is off for this cast.'}</p>
     ${noteCard(p)}`;
   const q = id => el.querySelector(id);
-  q('#ps-tab').onclick = () => { if (HOST?.openCast) toCastTab(`${t.id}:${p.id}`); else toast('In SillyTavern this closes the board and opens the Cast tab in DeepLore\'s side panel.'); };
+  q('#ps-tab').onclick = () => { if (HOST?.openCast) toCastTab(`${t.id}:${p.id}`); else toast('In SillyTavern this closes the board and opens the Cast tab in Onyx Quill\'s side panel.'); };
   wireSeg(el, 'ps-speaks', v => { p.speaks = v; touch(); });
   wireSeg(el, 'ps-appears', v => { p.appears = v; touch(); });
   q('#ps-odds-dec') && (q('#ps-odds-dec').onclick = () => { p.odds = Math.max(1, (p.odds || 3) - 1); touch(); });
@@ -5955,7 +5955,7 @@ function renderMail(el) {
   wireSw(el, 'm-unsure', on => { a.unsure = on; if (on && a.level === 'rarely') a.level = 'some'; touch(); });
   wireSw(el, 'm-suggest', on => { a.suggest = on; if (on) a.level = 'often'; touch(); });
 }
-const LINKS = {};   // which entries link to which — from DeepLore (HD.links)
+const LINKS = {};   // which entries link to which — from Onyx Quill (HD.links)
 const linksOf = title => LINKS[title] || [];
 const backlinks = title => Object.keys(LINKS).filter(k => LINKS[k].includes(title));
 let readerBack = null;
@@ -6515,7 +6515,7 @@ function renderSide0(el) {
       ${card('Options',
         line('Pin the entry of where we are', 'always given to the writer while the scene is there', swH('p-pin', !!t.pinHere), !!t.pinHere) + '<div class="sub"></div>'
         + line('Nearby places may come in', 'from the current spot\'s Related links — as “nearby, not here”', swH('p-near', !!t.nearby), !!t.nearby) + '<div class="sub"></div>'
-        + line('Sets DeepLore\'s location filter', 'where the scene is becomes the Location in Filters, like /dle-set-location — off: you set it by hand', swH('p-loc', t.setsLocation !== false), t.setsLocation !== false) + '<div class="sub"></div>'
+        + line('Sets Onyx Quill\'s location filter', 'where the scene is becomes the Location in Filters, like /oq-set-location — off: you set it by hand', swH('p-loc', t.setsLocation !== false), t.setsLocation !== false) + '<div class="sub"></div>'
         + '<div class="ln"><span>No spot established yet?<small>the helper falls back to the place it sits in (e.g. Kitchen) instead of guessing a spot</small></span></div>')}
       ${entryCard(t.keep ||= { entries: [], kinds: {} }, t, 'what counts as being somewhere').replace(/<h4>[^<]*<\/h4>/, '<h4>When are we somewhere</h4>')}
       ${card(`Places (${t.places.length})`, `<div class="pills">${t.places.map((x, k) => `<span class="pill" data-pk2="${k}">${x.parent ? '↳ ' : ''}${esc(x.name)}<button class="x" data-px="${k}" aria-label="Remove ${esc(x.name)}">✕</button></span>`).join('')}<button class="add" id="p-add">+ place</button></div>`)}

@@ -49,7 +49,7 @@ A persistent per-chat scratchpad injected into every generation. Use it for auth
 
 **How it works:**
 
-1. Open the notebook via `/dle-notebook`, the side panel's ⋯ → **Author’s notebook**, or Mero › Notes → **Notebook**.
+1. Open the notebook via `/oq-notebook`, the side panel's ⋯ → **Author’s notebook**, or Mero › Notes → **Notebook**.
 2. Write any text. It's saved per-chat in `chat_metadata`.
 3. The notebook content is injected into every generation as a separate prompt, independent of the entry pipeline.
 
@@ -73,11 +73,11 @@ Pin entries to always inject, or block entries from injecting, on a per-chat bas
 
 **Commands:**
 
-- `/dle-pin <entry name>`: pin an entry (always inject in this chat).
-- `/dle-unpin <entry name>`: remove a pin.
-- `/dle-block <entry name>`: block an entry (never inject in this chat).
-- `/dle-unblock <entry name>`: remove a block.
-- `/dle-pins`: show all pins and blocks for the current chat.
+- `/oq-pin <entry name>`: pin an entry (always inject in this chat).
+- `/oq-unpin <entry name>`: remove a pin.
+- `/oq-block <entry name>`: block an entry (never inject in this chat).
+- `/oq-unblock <entry name>`: remove a block.
+- `/oq-pins`: show all pins and blocks for the current chat.
 
 **How it works:**
 
@@ -102,7 +102,7 @@ Filter entries based on the current story context using gating fields in frontma
 | `scene_type` | string \| string[] | Entry only injects when the active scene type matches any value |
 | `character_present` | string[] | Entry only injects when any listed character is present |
 
-Custom fields work the same way: add the field name to your entry's frontmatter with one or more values, then set the active value via `/dle-set-field`. Field definitions are stored in `DeepLore/field-definitions.yaml` in your vault. Each field definition specifies a type (`string`, `number`, `boolean`), a multi-value flag, a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, `lt`), and a tolerance level (`strict`, `moderate`, `lenient`).
+Custom fields work the same way: add the field name to your entry's frontmatter with one or more values, then set the active value via `/oq-set-field`. Field definitions are stored in `DeepLore/field-definitions.yaml` in your vault. Each field definition specifies a type (`string`, `number`, `boolean`), a multi-value flag, a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, `lt`), and a tolerance level (`strict`, `moderate`, `lenient`).
 
 **Tolerance** controls what happens when an entry has a value for a field but the active context doesn't:
 
@@ -112,13 +112,13 @@ Custom fields work the same way: add the field name to your entry's frontmatter 
 
 **Commands:**
 
-- `/dle-set-field <name> [value]`: set any gating field (built-in or custom). With no value, opens a browse-and-select popup.
-- `/dle-clear-field <name>`: clear a gating field from the active context.
-- `/dle-set-era [era]`: alias for `/dle-set-field era`. With no argument, opens a browse-and-select popup.
-- `/dle-set-location [location]`: alias for `/dle-set-field location`. With no argument, shows a browse-and-select popup.
-- `/dle-set-scene [type]`: alias for `/dle-set-field scene_type`. With no argument, shows a browse-and-select popup.
-- `/dle-set-characters <names>`: alias for `/dle-set-field character_present`. Comma-separated list.
-- `/dle-context-state`: show all active gating fields (built-in and custom).
+- `/oq-set-field <name> [value]`: set any gating field (built-in or custom). With no value, opens a browse-and-select popup.
+- `/oq-clear-field <name>`: clear a gating field from the active context.
+- `/oq-set-era [era]`: alias for `/oq-set-field era`. With no argument, opens a browse-and-select popup.
+- `/oq-set-location [location]`: alias for `/oq-set-field location`. With no argument, shows a browse-and-select popup.
+- `/oq-set-scene [type]`: alias for `/oq-set-field scene_type`. With no argument, shows a browse-and-select popup.
+- `/oq-set-characters <names>`: alias for `/oq-set-field character_present`. Comma-separated list.
+- `/oq-context-state`: show all active gating fields (built-in and custom).
 
 **Notes:**
 
@@ -137,8 +137,8 @@ Restrict injection to entries from specific vault folders. When a folder filter 
 
 **Commands:**
 
-- `/dle-set-folder [path]`: set the folder filter. With no argument, opens a browse-and-select popup showing all folders in the vault.
-- `/dle-clear-folder`: clear the folder filter so entries from all folders pass.
+- `/oq-set-folder [path]`: set the folder filter. With no argument, opens a browse-and-select popup showing all folders in the vault.
+- `/oq-clear-folder`: clear the folder filter so entries from all folders pass.
 
 **How it works:**
 

@@ -55,8 +55,8 @@ test('adding and removing folders, for the base and for a run; an emptied run di
 
 test('the store survives damage; describe says it plainly', () => {
     assertEqual(asStore({ chars: { x: null, y: { name: 'Y', folders: ['a', 'a', ' '], runs: { B: { folders: ['r'] }, '': { folders: ['z'] } } } } }), { v: 1, chars: { y: { name: 'Y', folders: ['a'], runs: { b: { folders: ['r'] } } } } });
-    assertEqual(describe({ store: store(), key: Z, run: 'c' }), 'Corvin · run c — DeepLore on (reads Corvin\'s folders), 4 folders');
-    assertEqual(describe({ store: asStore({}), key: 'k.png', name: 'Kettle' }), 'Kettle — DeepLore off (Kettle has no folders yet)');
+    assertEqual(describe({ store: store(), key: Z, run: 'c' }), 'Corvin · run c — Onyx Quill on (reads Corvin\'s folders), 4 folders');
+    assertEqual(describe({ store: asStore({}), key: 'k.png', name: 'Kettle' }), 'Kettle — Onyx Quill off (Kettle has no folders yet)');
 });
 
 summary('characters');

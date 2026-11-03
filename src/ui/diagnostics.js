@@ -26,7 +26,7 @@ export function runHealthCheck() {
 
     const enabledVaults = (settings.vaults || []).filter(v => v.enabled);
     if (enabledVaults.length === 0) {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'No enabled vaults configured. Go to DeepLore settings → Vault Connections and click "Add Vault".' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'No enabled vaults configured. Go to Onyx Quill settings → Vault Connections and click "Add Vault".' });
     }
     for (const vault of enabledVaults) {
         if (!vault.apiKey) {
@@ -47,7 +47,7 @@ export function runHealthCheck() {
     // — the old "no proxy URL set" warning is moot since users can no longer
     // pick proxy mode in the UI; the actionable signal is "switch to a profile".
     if (settings.aiSearchEnabled && settings.aiSearchConnectionMode === 'proxy') {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'AI search is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in DLE Settings → Setup → AI Connections.' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'AI search is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.' });
     }
 
     if (settings.scribeEnabled && settings.scribeConnectionMode === 'profile' && !settings.scribeProfileId) {
@@ -55,7 +55,7 @@ export function runHealthCheck() {
     }
 
     if (settings.scribeEnabled && settings.scribeConnectionMode === 'proxy') {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'Scribe is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in DLE Settings → Setup → AI Connections.' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'Scribe is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.' });
     }
 
     if (!settings.unlimitedBudget && settings.maxTokensBudget < 200) {
@@ -469,7 +469,7 @@ export function diagnoseEntry(entry, chatMsgs) {
         if (Array.isArray(blocks) && blocks.some(b => tkKey(typeof b === 'string' ? { title: b } : b) === _entryKey)) {
             result.stage = 'blocked';
             result.detail = 'Entry is explicitly blocked in this chat (via pin/block controls).';
-            result.suggestions.push('Unblock the entry using the drawer or /dle-unblock command.');
+            result.suggestions.push('Unblock the entry using the drawer or /oq-unblock command.');
             return result;
         }
     } catch { /* chat_metadata may not be available */ }
@@ -479,7 +479,7 @@ export function diagnoseEntry(entry, chatMsgs) {
         if (_diagTrace.contextualGatingRemoved.some(e => tkKey(e) === _entryKey)) {
             result.stage = 'contextual_gating';
             result.detail = 'Entry was removed by contextual gating (era, location, scene type, or character filter).';
-            result.suggestions.push('Check the entry\'s custom fields against the current gating state (/dle-context-state).');
+            result.suggestions.push('Check the entry\'s custom fields against the current gating state (/oq-context-state).');
             return result;
         }
     }

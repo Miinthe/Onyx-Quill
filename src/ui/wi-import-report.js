@@ -52,11 +52,11 @@ function buildI18nStrings() {
         failed: (n) => _interp(_resolved('dle_wi_import_report_failed', '${0} failed'), n),
         nativeSection: () => _resolved('dle_wi_import_report_native_section', 'Fields imported and active'),
         roundTripSection: () => _resolved('dle_wi_import_report_roundtrip_section', 'SillyTavern-specific fields preserved (not acted on)'),
-        roundTripExplainer: () => _resolved('dle_wi_import_report_roundtrip_explainer', 'Safe to ignore — DeepLore doesn\'t use these. They land in vault frontmatter so you can see what SillyTavern had configured. Remove the lines only if your Markdown feels cluttered. Run <code>/dle-lint</code> to find which entries carry them.'),
+        roundTripExplainer: () => _resolved('dle_wi_import_report_roundtrip_explainer', 'Safe to ignore — Onyx Quill doesn\'t use these. They land in vault frontmatter so you can see what SillyTavern had configured. Remove the lines only if your Markdown feels cluttered. Run <code>/oq-lint</code> to find which entries carry them.'),
         emSection: () => _resolved('dle_wi_import_report_em_section', 'Example Messages handling'),
         emAppendedCount: (n) => _interp(_resolved('dle_wi_import_report_em_appended', '${0} appended as subheader'), n),
         emSkippedCount: (n) => _interp(_resolved('dle_wi_import_report_em_skipped', '${0} skipped'), n),
-        emExplainer: () => _resolved('dle_wi_import_report_em_explainer', 'SillyTavern\'s "Example Messages" slot is a special prompt position for sample dialogue lines that ride alongside the example messages already in your chat. DeepLore doesn\'t have that slot — by default we tuck these entries\' content under a "## Example Dialogue" subheader inside the entry body, so they still reach the model when the entry triggers.<br><br>Honestly, one short flavor quote inside a character entry is usually enough to teach an LLM the voice. If you\'d rather skip them on future imports, the button below flips the setting permanently (until you change it back in <code>Settings → DeepLore → Matching → Import → WI Example Messages on import</code>). Entries already imported stay in the vault — <code>/dle-delete</code> them by name if you want them gone.'),
+        emExplainer: () => _resolved('dle_wi_import_report_em_explainer', 'SillyTavern\'s "Example Messages" slot is a special prompt position for sample dialogue lines that ride alongside the example messages already in your chat. Onyx Quill doesn\'t have that slot — by default we tuck these entries\' content under a "## Example Dialogue" subheader inside the entry body, so they still reach the model when the entry triggers.<br><br>Honestly, one short flavor quote inside a character entry is usually enough to teach an LLM the voice. If you\'d rather skip them on future imports, the button below flips the setting permanently (until you change it back in <code>Settings → Onyx Quill → Matching → Import → WI Example Messages on import</code>). Entries already imported stay in the vault — <code>/oq-delete</code> them by name if you want them gone.'),
         emSkipButton: () => _resolved('dle_wi_import_report_em_skip_button', 'Always skip Example Messages on import (reversible in settings)'),
         emEntriesTitle: (n) => _interp(_resolved('dle_wi_import_report_em_entries_title', 'Entry titles (${0})'), n),
         skippedTag: () => _resolved('dle_wi_import_report_skipped_tag', '(skipped)'),
@@ -123,7 +123,7 @@ export async function showImportReport(result, source, folder, deps = {}) {
     // body, in case some other UI later reuses the class name.
     const doneText = _resolved(
         'dle_wi_import_report_em_skip_done',
-        'Done — Example Messages will be skipped on future imports. Revert in Settings → DeepLore → Matching → Import.',
+        'Done — Example Messages will be skipped on future imports. Revert in Settings → Onyx Quill → Matching → Import.',
     );
     // Per-row recovery state, so a retried/dismissed row doesn't fire twice.
     const rowDone = new Set();

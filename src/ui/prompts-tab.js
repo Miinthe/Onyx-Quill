@@ -196,8 +196,8 @@ const PROMPT_STATUS_BADGE_FALLBACK = {
 /** Button factory entries. `data-prompt-action` is the key. */
 const PROMPT_ROW_ACTION_BUTTONS = {
     'export-one': { icon: 'fa-file-export',           label: 'Edit in vault', title: 'Write this prompt into your vault, where you can change it.' },
-    'revert-one': { icon: 'fa-rotate-left',           label: 'Back to default', title: 'Delete this prompt file from your vault. The one DeepLore ships is used again.' },
-    'update-one': { icon: 'fa-arrow-up-from-bracket', label: 'Update', title: 'Replace the file with the newest version DeepLore ships.' },
+    'revert-one': { icon: 'fa-rotate-left',           label: 'Back to default', title: 'Delete this prompt file from your vault. The one Onyx Quill ships is used again.' },
+    'update-one': { icon: 'fa-arrow-up-from-bracket', label: 'Update', title: 'Replace the file with the newest version Onyx Quill ships.' },
 };
 
 /**
@@ -332,7 +332,7 @@ async function resolveCanonicalForKey(locale, key) {
 async function handlePromptRowAction($container, settings, action, key) {
     const connection = buildPromptsConnection(settings);
     if (!connection) {
-        toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'DeepLore');
+        toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'Onyx Quill');
         return;
     }
     const $status = $container.find('#dle-sp-prompts-status');
@@ -432,7 +432,7 @@ export function bindPromptsTabHandlers($container, settings) {
         const raw = String($(this).val() || '').trim();
         const sanitized = sanitizePromptsFolderPath(raw);
         if (!sanitized) {
-            toastr.warning('Prompts folder path failed sanitization. Reverted to default.', 'DeepLore');
+            toastr.warning('Prompts folder path failed sanitization. Reverted to default.', 'Onyx Quill');
             $(this).val(DLE_PROMPTS_DEFAULT_DIR);
             settings.promptsFolderPath = DLE_PROMPTS_DEFAULT_DIR;
         } else {
@@ -447,7 +447,7 @@ export function bindPromptsTabHandlers($container, settings) {
         if ($(this).hasClass('disabled')) return;
         const connection = buildPromptsConnection(settings);
         if (!connection) {
-            toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'DeepLore');
+            toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'Onyx Quill');
             return;
         }
 
@@ -469,10 +469,10 @@ export function bindPromptsTabHandlers($container, settings) {
             renderPromptsGrid($container);
             if (failed.length === 0) {
                 setPromptsStatus($status, `Exported ${written} prompts. ${result.vaultCount} active overrides.`, 'ok');
-                toastr.success(`Exported ${written} prompts to vault.`, 'DeepLore');
+                toastr.success(`Exported ${written} prompts to vault.`, 'Onyx Quill');
             } else {
                 setPromptsStatus($status, `Exported ${written}, failed ${failed.length}. See console.`, 'warn');
-                toastr.warning(`Exported ${written}, ${failed.length} failed. Check console.`, 'DeepLore');
+                toastr.warning(`Exported ${written}, ${failed.length} failed. Check console.`, 'Onyx Quill');
                 console.warn('[DLE prompts] export failures:', failed);
             }
         } catch (err) {
@@ -510,7 +510,7 @@ export function bindPromptsTabHandlers($container, settings) {
         if ($(this).hasClass('disabled')) return;
         const connection = buildPromptsConnection(settings);
         if (!connection) {
-            toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'DeepLore');
+            toastr.warning('No enabled Obsidian vault. Connect a vault on the Connection tab first.', 'Onyx Quill');
             return;
         }
         const confirmed = await callGenericPopup(
@@ -531,10 +531,10 @@ export function bindPromptsTabHandlers($container, settings) {
         $(this).removeClass('disabled');
         if (failures.length === 0) {
             setPromptsStatus($status, `Reset complete. Deleted ${deleted}, ${alreadyMissing} already missing.`, 'ok');
-            toastr.success(`Reset ${deleted} prompts.`, 'DeepLore');
+            toastr.success(`Reset ${deleted} prompts.`, 'Onyx Quill');
         } else {
             setPromptsStatus($status, `Deleted ${deleted}, ${failures.length} failed. See console.`, 'warn');
-            toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'DeepLore');
+            toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'Onyx Quill');
             console.warn('[DLE prompts] reset failures:', failures);
         }
     });

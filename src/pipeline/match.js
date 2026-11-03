@@ -19,7 +19,7 @@ const MAX_RECURSION_TEXT = 50000;
  * #12 — THE runtime-gate predicate, shared by all 4 match paths (primary
  * keyword, cascade, recursion, BM25 fuzzy). The gate block used to be
  * copy-pasted per path and drifted: BM25 probability skips were never recorded
- * (invisible to /dle-why), recursion warmup drops were never recorded, and the
+ * (invisible to /oq-why), recursion warmup drops were never recorded, and the
  * cooldown pre-check existed in two variants. One helper, one behavior.
  *
  * Gate order (deterministic first, random roll last):
@@ -140,7 +140,7 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
             const key = testEntryMatch(entry, scanText, settings);
             if (!key && entry.refineKeys?.length > 0) {
                 // Primary hit but refine keys blocked. selectiveLogic threaded
-                // so the diagnostic surface (/dle-why, commands-pipeline.js)
+                // so the diagnostic surface (/oq-why, commands-pipeline.js)
                 // can render mode-aware copy instead of hard-coded AND_ANY
                 // phrasing (audit fix-up — pin-the-predicate rule, gotcha #69).
                 const primaryHit = testPrimaryMatchOnly(entry, scanText, settings);
@@ -234,7 +234,7 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
                     // #12: unified runtime gates. getWarmupText=null skips the warmup
                     // gate — BUG-035: cascade is an explicit author relationship, not a
                     // keyword trigger, so warmup doesn't apply. L-12: probability skips
-                    // are recorded so /dle-why can explain a cascade-pulled entry that
+                    // are recorded so /oq-why can explain a cascade-pulled entry that
                     // didn't inject.
                     if (!passesRuntimeGates(linked, { probabilitySkipped, warmupFailed }, settings, null)) continue;
                     // L-11: cascade ALSO intentionally bypasses the refine_keys/selectiveLogic
@@ -318,7 +318,7 @@ export function matchEntries(chat, snapshot = null, { settings, characterName } 
             if (entry.constant) continue;
 
             // #12: unified runtime gates. BM25 probability skips are now recorded in
-            // probabilitySkipped (they were invisible to /dle-why before — the
+            // probabilitySkipped (they were invisible to /oq-why before — the
             // original L-12 fix missed this path). BUG-AUDIT-8: BM25 fuzzy matches
             // must also honor warmup. Warmup scan text uses `||` not `??`: a
             // per-entry scanDepth of 0 ("AI-only, don't keyword-scan") would

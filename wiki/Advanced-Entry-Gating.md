@@ -18,7 +18,7 @@ excludes:
 
 - `requires`: **all** listed titles must be matched.
 - `excludes`: if **any** listed title is matched, this entry is blocked.
-- Titles must match the target entry's **title** exactly, and are case-sensitive. A typo silently drops the gate, so run `/dle-lint` after editing.
+- Titles must match the target entry's **title** exactly, and are case-sensitive. A typo silently drops the gate, so run `/oq-lint` after editing.
 
 > [!NOTE]
 > `requires` / `excludes` match by **bare title**, which is cross-vault: a `Castle` entry in vault A satisfies a `requires: [Castle]` gate in vault B. This is intentional. If you have same-named entries in different vaults, be aware they're interchangeable for gating purposes.
@@ -62,7 +62,7 @@ A primary `keys` match is always required first. Then the refine keys are checke
 | `not_all` | At least **one** refine key is **missing** (a full match blocks the entry). |
 | `not_any` | **No** refine key matches (any refine-key hit blocks the entry). |
 
-Invalid `selective_logic` values fall back to `and_any` and are flagged by `/dle-lint` with `W_INVALID`.
+Invalid `selective_logic` values fall back to `and_any` and are flagged by `/oq-lint` with `W_INVALID`.
 
 > [!NOTE]
 > An empty `refine_keys` list passes for all four modes — the refine gate is vacuously satisfied, so the entry behaves as if it had no refine filter.
@@ -97,13 +97,13 @@ character_present:
   - Maren Blacktide
 ```
 
-Set the active context with `/dle-set-era`, `/dle-set-location`, `/dle-set-scene`, `/dle-set-characters`, or the generic `/dle-set-field <name> [value]`.
+Set the active context with `/oq-set-era`, `/oq-set-location`, `/oq-set-scene`, `/oq-set-characters`, or the generic `/oq-set-field <name> [value]`.
 
 **How it works:**
 - Entries with **no** contextual fields are always eligible (they pass through unfiltered).
 - Each field is checked **independently**: an entry with only `era` set is filtered only on era, regardless of location / scene / character.
 - The four defaults use the `match_any` operator at `moderate` tolerance — the entry passes if any of its listed values matches the active context value.
-- Use `/dle-context-state` to see the current active context.
+- Use `/oq-context-state` to see the current active context.
 - Context is stored per-chat in `chat_metadata.deeplore_context`.
 
 These four fields ship out of the box. You can add, remove, or modify gating fields via the rule builder (side panel **Filters** tab → **Change folders and fields…** → **Edit the filter fields…**, or **Settings › Filters**). Custom field definitions are stored in `DeepLore/field-definitions.yaml` in your vault, where each field gets a type (`string`, `number`, `boolean`), a gating operator (`match_any`, `match_all`, `not_any`, `exists`, `not_exists`, `eq`, `gt`, `lt`), and a tolerance level (`strict`, `moderate`, `lenient`). See [[Custom Fields]] for the full schema.

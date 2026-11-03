@@ -136,7 +136,7 @@ The defaults previously held copies of these strings in:
 - `src/ai/scribe.js` (Scribe summarizer fallback)
 - `src/ai/auto-suggest.js` (Auto-Suggest fallback)
 - `src/ui/popups.js` (Optimize Keys fallback)
-- `src/ai/summarize.js` (`/dle-summarize-range` fallback)
+- `src/ai/summarize.js` (`/oq-summarize-range` fallback)
 
 All call sites now resolve through `resolvePromptOrOverride(KEY, userOverride)` (for keys with a legacy user-prompt setting) or `getPrompt(KEY)` (for keys without). The `DEFAULT_*_PROMPT` consts were removed from `settings.js` and feature modules.
 

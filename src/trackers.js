@@ -74,7 +74,7 @@ export function completeChat(name = currentBoardName()) {
 }
 
 /**
- * /dle-tracker-rewind (engine on v2, step 7): where the trackers stood at message `idx` (the v2 log), made a move by
+ * /oq-tracker-rewind (engine on v2, step 7): where the trackers stood at message `idx` (the v2 log), made a move by
  * hand now — the messages after it and the board's items / places stay as they are. Returns { moved } or { error }.
  */
 export function rewindTrackersTo(idx) {
@@ -279,7 +279,7 @@ async function reconcileFromV2(v2, idx, { prune, confirm }) {
                 `<h3>This chat ends at message ${idx}</h3>
                  <p>Its story trackers are further along than the story here — usually because this is a branch, which inherits the state from where it was made.</p>
                  ${rows}
-                 <p style="opacity:.7;font-size:.9em;margin-top:1em">You can apply it later with <code>/dle-tracker-rewind</code>.</p>`,
+                 <p style="opacity:.7;font-size:.9em;margin-top:1em">You can apply it later with <code>/oq-tracker-rewind</code>.</p>`,
                 POPUP_TYPE.CONFIRM, '', { okButton: 'Roll back to message ' + idx, cancelButton: 'Leave as is' },
             );
         } finally { confirmOpen = false; }
@@ -502,13 +502,13 @@ export function syncBoardOnOpen() {
     if (name && now && now !== name) { chat_metadata[BOARD_KEY] = now; saveMetadataDebounced(); name = now; }
     if (name && !boardStore().boards[name] && wasDeleted(boardStore(), name)) {
         // deleted on purpose (the board's Delete board…): this chat has no board any more — no copy rebuilt from its trackers
-        try { toastr.info(`The storyboard "${name}" was deleted — this chat has no board now.`, 'DeepLore'); } catch { /* noop */ }
+        try { toastr.info(`The storyboard "${name}" was deleted — this chat has no board now.`, 'Onyx Quill'); } catch { /* noop */ }
         clearChatBoard();
         return null;
     }
     if (name && !boardStore().boards[name]) {
         // Board deleted or from another account: keep the chat's own copy.
-        try { toastr.warning(`This chat's storyboard "${name}" no longer exists — it keeps its own copy of the trackers.`, 'DeepLore'); } catch { /* noop */ }
+        try { toastr.warning(`This chat's storyboard "${name}" no longer exists — it keeps its own copy of the trackers.`, 'Onyx Quill'); } catch { /* noop */ }
         delete chat_metadata[BOARD_KEY];
         saveMetadataDebounced();
         return null;
@@ -616,7 +616,7 @@ export function setTrackerAside(name, aside) {
 }
 
 /**
- * Take a fork's branch by hand (Story tab buttons, /dle-tracker-branch). The tracker must
+ * Take a fork's branch by hand (Story tab buttons, /oq-tracker-branch). The tracker must
  * stand at that fork. Afterwards as the branch says (on / back / end / next).
  */
 export function chooseBranch(name, branch) {
@@ -766,23 +766,23 @@ function pick(arg) {
 
 function statusText() {
     const list = getTrackers();
-    if (!list.length) return 'No story trackers in this chat. Make one in DeepLore\'s Story tab, or: /dle-tracker Relationship = Strangers, Neighbours, Friends';
+    if (!list.length) return 'No story trackers in this chat. Make one in Onyx Quill\'s Story tab, or: /oq-tracker Relationship = Strangers, Neighbours, Friends';
     return list.map(t => `${t.name}: ${describe(t)} (${t.index + 1}/${t.steps.length})\n    ${t.steps.map((s, i) => (i === t.index ? `[${s}]` : s)).join(' · ')}`).join('\n');
 }
 
 export function registerTrackerCommands() {
-    const toast = (msg, kind = 'info') => { try { toastr[kind](msg, 'DeepLore'); } catch { /* noop */ } };
+    const toast = (msg, kind = 'info') => { try { toastr[kind](msg, 'Onyx Quill'); } catch { /* noop */ } };
     const add = (props) => SlashCommandParser.addCommandObject(SlashCommand.fromProps({ returns: ARGUMENT_TYPE.STRING, ...props }));
     const arg = (description) => [SlashCommandArgument.fromProps({ description, typeList: [ARGUMENT_TYPE.STRING] })];
 
     add({
-        name: 'dle-tracker',
+        name: 'oq-tracker',
         callback: async (_a, value) => {
             const text = String(value || '').trim();
             if (!text) return statusText();
             const spec = parseTrackerSpec(text);
             if (!spec.ok) {
-                const m = spec.error === 'usage' ? 'Usage: /dle-tracker Name = Step 1, Step 2, Step 3' : `Tracker not saved: ${spec.error}.`;
+                const m = spec.error === 'usage' ? 'Usage: /oq-tracker Name = Step 1, Step 2, Step 3' : `Tracker not saved: ${spec.error}.`;
                 toast(m, 'warning'); return m;
             }
             setTracker(spec.name, spec.steps);
@@ -790,7 +790,7 @@ export function registerTrackerCommands() {
             return statusText();
         },
         unnamedArgumentList: arg('Name = Step 1, Step 2, …'),
-        helpString: 'Make or edit a story tracker: /dle-tracker Relationship = Strangers, Neighbours, Friends. No argument lists this chat\'s trackers.',
+        helpString: 'Make or edit a story tracker: /oq-tracker Relationship = Strangers, Neighbours, Friends. No argument lists this chat\'s trackers.',
     });
 
     const step = (name, delta, help) => add({
@@ -806,16 +806,16 @@ export function registerTrackerCommands() {
         unnamedArgumentList: arg('tracker name (optional with one tracker)'),
         helpString: help,
     });
-    step('dle-tracker-next', 1, 'Move a story tracker one step on.');
-    step('dle-tracker-back', -1, 'Move a story tracker one step back.');
+    step('oq-tracker-next', 1, 'Move a story tracker one step on.');
+    step('oq-tracker-back', -1, 'Move a story tracker one step back.');
 
     add({
-        name: 'dle-tracker-go',
+        name: 'oq-tracker-go',
         callback: async (_a, value) => {
             const [name, want] = String(value || '').split('=').map(s => s.trim());
             const list = getTrackers();
             const i = findIndex(list, name);
-            if (i === -1 || !want) { const m = 'Usage: /dle-tracker-go Name = Step (or step number)'; toast(m, 'warning'); return m; }
+            if (i === -1 || !want) { const m = 'Usage: /oq-tracker-go Name = Step (or step number)'; toast(m, 'warning'); return m; }
             const idx = /^\d+$/.test(want) ? Number(want) - 1 : list[i].steps.findIndex(s => s.toLowerCase() === want.toLowerCase());
             if (idx < 0 || idx >= list[i].steps.length) { const m = `"${want}" is not a step of ${list[i].name}.`; toast(m, 'warning'); return m; }
             const r = moveTracker(list[i].name, { toIndex: idx });
@@ -823,28 +823,28 @@ export function registerTrackerCommands() {
             return r.value;
         },
         unnamedArgumentList: arg('Name = Step'),
-        helpString: 'Jump a story tracker to a step: /dle-tracker-go Relationship = Friends',
+        helpString: 'Jump a story tracker to a step: /oq-tracker-go Relationship = Friends',
     });
 
     add({
-        name: 'dle-tracker-aside',
+        name: 'oq-tracker-aside',
         callback: async (_a, value) => {
             const raw = String(value || '');
             const eq = raw.indexOf('=');
             const name = (eq === -1 ? raw : raw.slice(0, eq)).trim();
             const aside = eq === -1 ? '' : raw.slice(eq + 1).trim();
-            if (!name) { const m = 'Usage: /dle-tracker-aside Name = Nuisance   (nothing after = clears it)'; toast(m, 'warning'); return m; }
+            if (!name) { const m = 'Usage: /oq-tracker-aside Name = Nuisance   (nothing after = clears it)'; toast(m, 'warning'); return m; }
             const r = setTrackerAside(name, aside);
             if (r.error) { toast(r.error, 'warning'); return r.error; }
             toast(`${r.name}: ${r.value}`);
             return r.value;
         },
         unnamedArgumentList: arg('Name = aside (empty clears)'),
-        helpString: 'Set a detour beside a tracker\'s step, e.g. /dle-tracker-aside Relationship = Nuisance. Nothing after = clears it.',
+        helpString: 'Set a detour beside a tracker\'s step, e.g. /oq-tracker-aside Relationship = Nuisance. Nothing after = clears it.',
     });
     // LOCAL PATCH (Miinthe, 2026-10-05): engine on v2, step 1 — do the engine's list and the v2 state agree?
     add({
-        name: 'dle-engine-check',
+        name: 'oq-engine-check',
         callback: async () => {
             const name = chat_metadata?.[BOARD_KEY];
             const rec = name ? boardStore()?.boards?.[name] : null;
@@ -864,23 +864,23 @@ export function registerTrackerCommands() {
 
     // LOCAL PATCH (Miinthe, 2026-10-04): pause / continue / abandon / reactivate, and the board on/off for this chat (WIP controls)
     add({
-        name: 'dle-tracker-run',
+        name: 'oq-tracker-run',
         callback: async (_a, value) => {
             const m0 = String(value || '').trim().match(/^(.+?)\s+(pause|continue|abandon|reactivate|undo)$/i);
-            if (!m0) { const m = 'Usage: /dle-tracker-run Name pause|continue|abandon|reactivate|undo'; toast(m, 'warning'); return m; }
+            if (!m0) { const m = 'Usage: /oq-tracker-run Name pause|continue|abandon|reactivate|undo'; toast(m, 'warning'); return m; }
             const r = m0[2].toLowerCase() === 'undo' ? undoTrackerRun(m0[1]) : setTrackerRun(m0[1], m0[2].toLowerCase());
             if (r.error) { toast(r.error, 'warning'); return r.error; }
             toast(r.text);
             return r.text;
         },
         unnamedArgumentList: arg('Name action'),
-        helpString: 'In this chat only: /dle-tracker-run Relationship pause (keeps its step; not watched, not told, its lore hidden) · continue · abandon (back to the start, switched off) · reactivate (on again from the start) · undo.',
+        helpString: 'In this chat only: /oq-tracker-run Relationship pause (keeps its step; not watched, not told, its lore hidden) · continue · abandon (back to the start, switched off) · reactivate (on again from the start) · undo.',
     });
     add({
-        name: 'dle-board-off',
+        name: 'oq-board-off',
         callback: async (_a, value) => {
             const v = String(value || '').trim().toLowerCase();
-            const r = v === 'on' ? switchBoard(false) : v === 'character' ? switchBoard(true, { forCharacter: true }) : v === '' || v === 'chat' ? switchBoard(true) : { error: 'Usage: /dle-board-off [chat|character|on]' };
+            const r = v === 'on' ? switchBoard(false) : v === 'character' ? switchBoard(true, { forCharacter: true }) : v === '' || v === 'chat' ? switchBoard(true) : { error: 'Usage: /oq-board-off [chat|character|on]' };
             if (r.error) { toast(r.error, 'warning'); return r.error; }
             toast(r.text);
             return r.text;
@@ -891,22 +891,22 @@ export function registerTrackerCommands() {
 
     // LOCAL PATCH (Miinthe, 2026-10-05): forks — pick the way by hand.
     add({
-        name: 'dle-tracker-branch',
+        name: 'oq-tracker-branch',
         callback: async (_a, value) => {
             const raw = String(value || '');
             const eq = raw.indexOf('=');
-            if (eq === -1) { const m = 'Usage: /dle-tracker-branch Name = Branch   (the tracker must wait at that fork)'; toast(m, 'warning'); return m; }
+            if (eq === -1) { const m = 'Usage: /oq-tracker-branch Name = Branch   (the tracker must wait at that fork)'; toast(m, 'warning'); return m; }
             const r = chooseBranch(raw.slice(0, eq).trim(), raw.slice(eq + 1).trim());
             if (r.error) { toast(r.error, 'warning'); return r.error; }
             toast(r.text);
             return r.text;
         },
         unnamedArgumentList: arg('Name = branch'),
-        helpString: 'Take a fork\'s branch by hand, e.g. /dle-tracker-branch Relationship = Confesses. The tracker must be waiting at that fork.',
+        helpString: 'Take a fork\'s branch by hand, e.g. /oq-tracker-branch Relationship = Confesses. The tracker must be waiting at that fork.',
     });
 
     add({
-        name: 'dle-tracker-remove',
+        name: 'oq-tracker-remove',
         callback: async (_a, value) => {
             const name = String(value || '').trim();
             const m = removeTracker(name) ? `Tracker "${name}" removed.` : `No tracker called "${name}".`;
@@ -918,7 +918,7 @@ export function registerTrackerCommands() {
 
     // ── storyboards ──
     add({
-        name: 'dle-board',
+        name: 'oq-board',
         callback: async (_a, value) => {
             const name = String(value || '').trim();
             if (name) {
@@ -940,10 +940,10 @@ export function registerTrackerCommands() {
             return m;
         },
         unnamedArgumentList: arg('storyboard name (empty: open the board window)'),
-        helpString: 'Open the storyboard window, or apply a board to this chat: /dle-board My Story',
+        helpString: 'Open the storyboard window, or apply a board to this chat: /oq-board My Story',
     });
     add({
-        name: 'dle-board-saveas',
+        name: 'oq-board-saveas',
         callback: async (_a, value) => {
             const name = saveBoardAs(String(value || '').trim() || 'Storyboard');
             const m = `Saved as storyboard "${name}" and applied to this chat.`;
@@ -953,7 +953,7 @@ export function registerTrackerCommands() {
         helpString: 'Save this chat\'s trackers as a new storyboard and use it here. The old one stays as it was.',
     });
     add({
-        name: 'dle-board-character',
+        name: 'oq-board-character',
         callback: async (_a, value) => {
             const raw = String(value || '').trim();
             const name = raw && raw.toLowerCase() !== 'off' ? raw : null;
@@ -963,10 +963,10 @@ export function registerTrackerCommands() {
             toast(m, 'success'); return m;
         },
         unnamedArgumentList: arg('storyboard name, or off'),
-        helpString: 'Default storyboard for new chats with this character: /dle-board-character My Story (off clears it).',
+        helpString: 'Default storyboard for new chats with this character: /oq-board-character My Story (off clears it).',
     });
     add({
-        name: 'dle-board-detach',
+        name: 'oq-board-detach',
         callback: async () => {
             const cur = currentBoardName();
             if (!cur) return 'This chat uses no storyboard.';
@@ -978,11 +978,11 @@ export function registerTrackerCommands() {
     });
 
     add({
-        name: 'dle-tracker-rewind',
+        name: 'oq-tracker-rewind',
         callback: async (_a, value) => {
             const raw = String(value || '').trim();
             const idx = raw ? Number(raw) : lastMessageIndex();
-            if (!Number.isFinite(idx)) return 'Usage: /dle-tracker-rewind [message number]';
+            if (!Number.isFinite(idx)) return 'Usage: /oq-tracker-rewind [message number]';
             const r = rewindTrackersTo(idx);
             const m = r.error || (r.moved.length ? r.moved.join('\n') : 'Trackers already match that point.');
             toast(m); return m;

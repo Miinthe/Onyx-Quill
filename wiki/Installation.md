@@ -1,12 +1,12 @@
 # Installation
 
-Install steps for DeepLore. Install the extension, point it at an Obsidian vault, then either run the setup wizard (`/dle-setup`) or configure manually.
+Install steps for DeepLore. Install the extension, point it at an Obsidian vault, then either run the setup wizard (`/oq-setup`) or configure manually.
 
 ## Prerequisites
 
 - [SillyTavern](https://github.com/SillyTavern/SillyTavern) v1.12.14+
 - [Obsidian](https://obsidian.md/) with the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed and enabled
-- A vault for your lore. Your existing Obsidian vault works; `/dle-import` converts SillyTavern World Info JSON into vault entries
+- A vault for your lore. Your existing Obsidian vault works; `/oq-import` converts SillyTavern World Info JSON into vault entries
 - For AI search (optional): a saved Connection Manager profile in SillyTavern (any provider). This is the only supported connection path as of v2.5 — the old Custom Proxy mode was removed
 
 > [!IMPORTANT]
@@ -45,7 +45,7 @@ Stop and restart SillyTavern to load the new extension.
 ## First-time setup
 
 > [!TIP]
-> Run `/dle-setup` in the SillyTavern chat input to use the guided setup wizard. It walks through vault connection, tags, matching, AI search, Mero ☆ (lore tools during replies), vault structure, and lorebook import in one flow. See [[Setup Wizard]].
+> Run `/oq-setup` in the SillyTavern chat input to use the guided setup wizard. It walks through vault connection, tags, matching, AI search, Mero ☆ (lore tools during replies), vault structure, and lorebook import in one flow. See [[Setup Wizard]].
 
 The rest of this section covers manual setup. Skip it if you ran the wizard.
 

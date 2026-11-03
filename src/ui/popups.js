@@ -128,7 +128,7 @@ export async function showNotebookPopup() {
 
     if (result) {
         if (epochAtOpen !== chatEpoch) {
-            toastr.warning(tr('dle_toast_chat_changed_discard'), 'DeepLore');
+            toastr.warning(tr('dle_toast_chat_changed_discard'), 'Onyx Quill');
             return;
         }
         chat_metadata.deeplore_notebook = capturedValue;
@@ -282,13 +282,13 @@ export async function showAiNotepadPopup() {
                         }
                     }
                     if (dropped === 0) {
-                        toastr.info(tr('dle_toast_no_duplicates'), 'DeepLore');
+                        toastr.info(tr('dle_toast_no_duplicates'), 'Onyx Quill');
                         return;
                     }
                     textarea.value = kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
                     await updateCounts();
                     renderPinList();
-                    toastr.success(trf('dle_toast_duplicates_merged', dropped, dropped === 1 ? 'entry' : 'entries'), 'DeepLore');
+                    toastr.success(trf('dle_toast_duplicates_merged', dropped, dropped === 1 ? 'entry' : 'entries'), 'Onyx Quill');
                 });
             }
 
@@ -299,7 +299,7 @@ export async function showAiNotepadPopup() {
 
     if (result) {
         if (epochAtOpen !== chatEpoch) {
-            toastr.warning(tr('dle_toast_chat_changed_discard'), 'DeepLore');
+            toastr.warning(tr('dle_toast_chat_changed_discard'), 'Onyx Quill');
             return;
         }
         chat_metadata.deeplore_ai_notepad = capturedValue;
@@ -310,7 +310,7 @@ export async function showAiNotepadPopup() {
 
 export async function showBrowsePopup() {
     if (vaultIndex.length === 0) {
-        toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+        toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
         return;
     }
 
@@ -542,7 +542,7 @@ export async function showBrowsePopup() {
         if (!title) return;
         if (copyBtn) {
             navigator.clipboard?.writeText(title).then(() => {
-                toastr.success(trf('dle_toast_title_copied', title), 'DeepLore', { timeOut: 1200 });
+                toastr.success(trf('dle_toast_title_copied', title), 'Onyx Quill', { timeOut: 1200 });
             }).catch(() => { /* clipboard unavailable */ });
             return;
         }
@@ -557,22 +557,22 @@ export async function showBrowsePopup() {
             const idx = chat_metadata.deeplore_pins.findIndex(matches);
             if (idx !== -1) {
                 chat_metadata.deeplore_pins.splice(idx, 1);
-                toastr.info(trf('dle_toast_entry_unpinned', title), 'DeepLore', { timeOut: 1500 });
+                toastr.info(trf('dle_toast_entry_unpinned', title), 'Onyx Quill', { timeOut: 1500 });
             } else {
                 chat_metadata.deeplore_pins.push({ title, vaultSource });
                 if (chat_metadata.deeplore_blocks) chat_metadata.deeplore_blocks = chat_metadata.deeplore_blocks.filter(p => !matches(p));
-                toastr.info(trf('dle_toast_entry_pinned', title), 'DeepLore', { timeOut: 1500 });
+                toastr.info(trf('dle_toast_entry_pinned', title), 'Onyx Quill', { timeOut: 1500 });
             }
         } else {
             if (!chat_metadata.deeplore_blocks) chat_metadata.deeplore_blocks = [];
             const idx = chat_metadata.deeplore_blocks.findIndex(matches);
             if (idx !== -1) {
                 chat_metadata.deeplore_blocks.splice(idx, 1);
-                toastr.info(trf('dle_toast_entry_unblocked', title), 'DeepLore', { timeOut: 1500 });
+                toastr.info(trf('dle_toast_entry_unblocked', title), 'Onyx Quill', { timeOut: 1500 });
             } else {
                 chat_metadata.deeplore_blocks.push({ title, vaultSource });
                 if (chat_metadata.deeplore_pins) chat_metadata.deeplore_pins = chat_metadata.deeplore_pins.filter(p => !matches(p));
-                toastr.info(trf('dle_toast_entry_blocked', title), 'DeepLore', { timeOut: 1500 });
+                toastr.info(trf('dle_toast_entry_blocked', title), 'Onyx Quill', { timeOut: 1500 });
             }
         }
         saveMetadataDebounced();
@@ -732,7 +732,7 @@ export async function optimizeEntryKeys(entry) {
 
 export async function showOptimizePopup(entry, result) {
     if (!result) {
-        toastr.warning(tr('dle_toast_optimize_keys_failed'), 'DeepLore');
+        toastr.warning(tr('dle_toast_optimize_keys_failed'), 'Onyx Quill');
         return;
     }
 
@@ -790,13 +790,13 @@ export async function showOptimizePopup(entry, result) {
 
             const data = await writeNote(optVault.host, optVault.port, optVault.apiKey, entry.filename, newContent, !!optVault.https);
             if (data.ok) {
-                toastr.success(trf('dle_toast_keywords_updated', entry.title), 'DeepLore');
+                toastr.success(trf('dle_toast_keywords_updated', entry.title), 'Onyx Quill');
                 setVaultIndex([]);
                 setIndexTimestamp(0);
                 await buildIndex();
             } else {
                 console.warn('[DLE] Optimize keys write failed:', data && data.error);
-                toastr.error(tr('dle_toast_keywords_save_failed'), 'DeepLore');
+                toastr.error(tr('dle_toast_keywords_save_failed'), 'Onyx Quill');
             }
         } catch (err) {
             notify.error(classifyError(err), { copyable: true });
@@ -826,7 +826,7 @@ export async function runBatchOptimize(trackerKeys) {
         if (found) entries.push(found);
     }
     if (entries.length === 0) {
-        toastr.info('No selected entries remain in the index.', 'DeepLore');
+        toastr.info('No selected entries remain in the index.', 'Onyx Quill');
         return { accepted: 0, skipped: 0, errored: 0 };
     }
 
@@ -861,7 +861,7 @@ export async function runBatchOptimize(trackerKeys) {
     // Persistent progress toast — closing it sets `aborted=true` so the loop bails after the in-flight call.
     const progressToast = toastr.info(
         `Optimizing 0 / ${count}…`,
-        'DeepLore',
+        'Onyx Quill',
         { timeOut: 0, extendedTimeOut: 0, closeButton: true, tapToDismiss: false, onHidden: () => { aborted = true; } }
     );
 
@@ -896,9 +896,9 @@ export async function runBatchOptimize(trackerKeys) {
     if (aborted) {
         skipped = entries.length - accepted - errored;
         if (skipped > 0) summaryParts.push(`${skipped} skipped`);
-        toastr.warning(trf('dle_toast_batch_aborted', summaryParts.join(', ')), 'DeepLore');
+        toastr.warning(trf('dle_toast_batch_aborted', summaryParts.join(', ')), 'Onyx Quill');
     } else {
-        toastr.success(trf('dle_toast_batch_complete', summaryParts.join(', ')), 'DeepLore');
+        toastr.success(trf('dle_toast_batch_complete', summaryParts.join(', ')), 'Onyx Quill');
     }
     return { accepted, skipped, errored };
 }

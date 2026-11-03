@@ -389,9 +389,9 @@ function vaultEditor(s, v, i) {
     const btns = el('div', 'dle-st-btnrow dle-st-end');
     btns.append(K.button({ label: 'Test', icon: 'test', onClick: () => testVault(v, i) }));
     btns.append(K.button({ label: 'Remove', icon: 'trash', kind: 'danger', onClick: async () => {
-        if ((s.vaults || []).length <= 1) { K.notify({ text: 'Add another vault before removing this one — DeepLore needs one.', tone: 'wait' }); return; }
+        if ((s.vaults || []).length <= 1) { K.notify({ text: 'Add another vault before removing this one — Onyx Quill needs one.', tone: 'wait' }); return; }
         const saved = { ...v };
-        await K.removeWithCare({ name: `the vault “${v.name}”`, big: true, askKey: 'vault', text: 'DeepLore stops reading it. Your files in Obsidian are not touched.',
+        await K.removeWithCare({ name: `the vault “${v.name}”`, big: true, askKey: 'vault', text: 'Onyx Quill stops reading it. Your files in Obsidian are not touched.',
             remove: () => { s.vaults.splice(i, 1); ui.vopen = null; ui.vstatus = {}; mirrorPrimary(s); save(); redraw(); },
             undo: () => { s.vaults.splice(Math.min(i, s.vaults.length), 0, saved); mirrorPrimary(s); save(); redraw(); } });
     } }));
@@ -648,7 +648,7 @@ function editOwnPrompt(id) {
     const body = el('div', 'dle-st-pedit');
     const field = (label, input, tip) => { const l = el('label', 'dle-st-vf'); const sp = el('span', '', label); if (tip) sp.title = tip; l.append(sp, input); body.append(l); return input; };
     const name = field('Name', el('input', 'dk-field')); name.value = cur ? cur.name : ''; name.placeholder = 'e.g. Keep it in present tense';
-    const where = field('Where it goes', el('select', 'dk-field dle-st-sel'), 'The same places DeepLore offers for its lore');
+    const where = field('Where it goes', el('select', 'dk-field dle-st-sel'), 'The same places Onyx Quill offers for its lore');
     for (const [v, l] of [[2, 'before the main prompt'], [0, 'after the main prompt'], [1, 'in the chat']]) where.append(new Option(l, String(v)));
     where.value = String(draft.position);
     const depth = field('Depth', el('input', 'dk-field dle-st-num'), 'How many messages from the bottom of the chat'); depth.type = 'number'; depth.min = '0'; depth.value = String(draft.depth);
@@ -716,9 +716,9 @@ function hubPane() {
         const now = el('div', 'dle-st-now');
         now.append(el('span', 'dle-st-note', 'Open now'));
         now.append(el('b', '', [cs.character?.name || 'Group chat', cs.run ? `run ${cs.run.toUpperCase()}` : '', `“${getContext()?.getCurrentChatId?.() || ''}”`].filter(Boolean).join(' · ')));
-        now.append(chips(cs.folders, 'no folders — DeepLore reads nothing here'));
+        now.append(chips(cs.folders, 'no folders — Onyx Quill reads nothing here'));
         const board = currentBoardName();
-        now.append(el('span', 'dle-st-note', `DeepLore ${cs.on ? 'on' : 'off'} · ${cs.why}${board ? ` · board: ${board}` : ''}`));
+        now.append(el('span', 'dle-st-note', `Onyx Quill ${cs.on ? 'on' : 'off'} · ${cs.why}${board ? ` · board: ${board}` : ''}`));
         now.append(el('span', 'dle-st-note', newEntriesHere(cs)));
         const b = el('div', 'dle-st-btnrow');
         if (cs.character) b.append(K.button({ label: `Edit ${cs.character.name}`, onClick: () => { ui.scope = 'char'; ui.charKey = cs.character.key; redraw(); } }));
@@ -755,14 +755,14 @@ function hubPane() {
     }
     if (!using.length) roster.append(el('p', 'dle-st-note', t ? 'No character with folders matches.' : 'No character has folders yet.'));
     box.append(roster);
-    box.append(el('div', 'dle-st-note', 'Not using DeepLore (no folders yet, or switched off) — tap a name to give it folders'));
+    box.append(el('div', 'dle-st-note', 'Not using Onyx Quill (no folders yet, or switched off) — tap a name to give it folders'));
     const idleBox = el('div', 'dle-st-idle' + (ui.idleOpen ? ' open' : ''));
     const ic = el('span', 'dk-chips');
     for (const c of idle) {
         const rec = st.chars[c.key];
         const off = rec?.on === false;
-        ic.append(K.chip({ label: c.name + (off ? ' · off' : ''), title: off ? `DeepLore is switched off for ${c.name}` : `Give ${c.name} folders`, onClick: async () => {
-            if (off && hasFolders(rec)) { setCharacterSwitchFor(c.key, c.name, true); K.notify({ text: `DeepLore is on for ${c.name} again.` }); redraw(); return; }
+        ic.append(K.chip({ label: c.name + (off ? ' · off' : ''), title: off ? `Onyx Quill is switched off for ${c.name}` : `Give ${c.name} folders`, onClick: async () => {
+            if (off && hasFolders(rec)) { setCharacterSwitchFor(c.key, c.name, true); K.notify({ text: `Onyx Quill is on for ${c.name} again.` }); redraw(); return; }
             const picked = await editFoldersFor({ key: c.key, name: c.name });
             if (picked) { ui.hubOpen = c.key; redraw(); }
         } }));
@@ -810,7 +810,7 @@ function charDetail(c, rec) {
     // the switch means "follow the folders": say what that comes to right now (bug hunt 2026-10-17: ON beside "no folders = off" read as a contradiction)
     const folderCount = (rec?.folders || []).length + Object.values(rec?.runs || {}).reduce((n, r) => n + (r.folders || []).length, 0);
     const now = rec?.on === false ? 'off for this character' : folderCount ? 'on — reads its folders' : 'no folders yet, so it stays off';
-    row(`DeepLore for ${c.name}`, el('small', '', now), K.toggle({ checked: rec?.on !== false, label: `DeepLore for ${c.name}`, onChange: x => { setCharacterSwitchFor(c.key, c.name, x); redraw(); } }));
+    row(`Onyx Quill for ${c.name}`, el('small', '', now), K.toggle({ checked: rec?.on !== false, label: `Onyx Quill for ${c.name}`, onChange: x => { setCharacterSwitchFor(c.key, c.name, x); redraw(); } }));
     row('Base folders', chips(rec?.folders), K.button({ label: 'Edit', onClick: async () => { if (await editFoldersFor({ key: c.key, name: c.name })) redraw(); } }));
     for (const L of Object.keys(rec?.runs || {}).sort()) {
         row(`Run ${L.toUpperCase()} adds`, chips(rec.runs[L].folders), K.button({ label: 'Edit', onClick: async () => { if (await editFoldersFor({ key: c.key, name: c.name, run: L })) redraw(); } }));
@@ -916,13 +916,13 @@ function chatPane() {
     };
     const opts = who ? [['follow', `like ${who}`], ['on', 'always on'], ['off', 'off']] : [['follow', 'follow'], ['on', 'on'], ['off', 'off']];
     const sw = cs.chatSwitch === 'on' || cs.chatSwitch === 'off' ? cs.chatSwitch : 'follow';
-    row('DeepLore in this chat', `${cs.on ? 'on' : 'off'} · ${cs.why}`, badge(sw === 'follow' ? (who ? `from ${who}` : 'automatic') : 'this chat', sw === 'follow' ? 'char' : 'chat'),
-        K.seg({ options: opts, value: sw, label: 'DeepLore in this chat', onChange: v => { setChatSwitch(v); redraw(); } }));
+    row('Onyx Quill in this chat', `${cs.on ? 'on' : 'off'} · ${cs.why}`, badge(sw === 'follow' ? (who ? `from ${who}` : 'automatic') : 'this chat', sw === 'follow' ? 'char' : 'chat'),
+        K.seg({ options: opts, value: sw, label: 'Onyx Quill in this chat', onChange: v => { setChatSwitch(v); redraw(); } }));
     if (cs.character) {
         row('Base folders', chips(cs.setup?.folders), badge(`from ${who}`, 'char'), K.button({ label: 'Edit', onClick: async () => { await editFolders({ run: false }); redraw(); } }));
         if (cs.run) row(`Run ${cs.run.toUpperCase()} adds`, chips(cs.setup?.runs?.[cs.run]?.folders), badge(`run ${cs.run.toUpperCase()}`, 'char'), K.button({ label: 'Edit', onClick: async () => { await editFolders({ run: true }); redraw(); } }));
     }
-    row('This chat adds', chips(cs.own), badge('this chat', 'chat'), K.button({ label: 'Change', title: 'Pick this chat’s own folders', onClick: async () => { await runCommand('/dle-set-folder'); redraw(); } }));
+    row('This chat adds', chips(cs.own), badge('this chat', 'chat'), K.button({ label: 'Change', title: 'Pick this chat’s own folders', onClick: async () => { await runCommand('/oq-set-folder'); redraw(); } }));
     const board = currentBoardName();
     row('Board', board || 'none', null, K.button({ label: 'Open', onClick: () => act('openBoard') }));
     // "Trackers follow the story" has one home: the side panel's Story ⋯ (Miinthe, 2026-10-17: no setting in two places)
@@ -957,11 +957,11 @@ async function act(name, btn) {
             W?.close();
             const panel = document.getElementById('deeplore-panel');
             if (panel?.__dleShowReady) return panel.__dleShowReady();
-            return runCommand('/dle-status');
+            return runCommand('/oq-status');
         }
         case 'exportDiagnostics': return busy(() => exportDiagnosticsFlow());
         case 'resetBreaker': return resetAiBreakerFlow();
-        case 'tryMatching': W?.close(); return runCommand('/dle-simulate');
+        case 'tryMatching': W?.close(); return runCommand('/oq-simulate');
         case 'commands': return showCommands();
         case 'wizard': { W?.close(); const { showSetupWizard } = await import('../ui/setup-wizard.js'); return showSetupWizard(); }
         case 'about': return showAbout();
@@ -1004,23 +1004,12 @@ async function showAbout() {
     let version = '';
     try { version = (await (await fetch(new URL('../../manifest.json', import.meta.url).href)).json()).version || ''; } catch { /* offline */ }
     const body = el('div', 'dle-st-about');
-    body.append(el('p', '', `DeepLore ${version ? 'v' + version : ''} — Miinthe’s fork (branch dev/board-model).`));
-    const wiki = el('a', 'dk-link', 'The DeepLore wiki'); wiki.href = 'https://github.com/pixelnull/sillytavern-DeepLore/wiki'; wiki.target = '_blank'; wiki.rel = 'noopener noreferrer';
-    body.append(wiki);
-    // the companions (today's About easter egg): character cards to import
-    const base = new URL('../../assets/companions/', import.meta.url).href;
-    const list = [
-        ['Kara-Emily-Gren-STChar.png', 'Kara Emily Gren', 'Forensic researcher. Was. The boundary between study and practice became more a matter of preference.'],
-        ['Nott-STChar.png', 'Nott', 'Norse goddess of night. Pale, tattooed, wrapped in black that drinks light rather than catching it.'],
-    ];
-    const f = el('div', 'dle-st-fb');
-    for (const [file, name, desc] of list) {
-        const a = el('a', 'dk-btn', 'Download'); a.href = base + file; a.download = file;
-        f.append(K.row({ title: name, sub: desc, end: a }));
-    }
-    const fold = K.fold({ title: 'Companions', summary: 'character cards to import', body: f });
-    body.append(fold);
-    const w = K.openWindow({ title: 'About DeepLore', body, size: 'small' });
+    body.append(el('p', '', `Onyx Quill ${version ? 'v' + version : ''}`));
+    body.append(el('p', '', 'Built on DeepLore by pixelnull. Thank you for the foundation.'));
+    const wiki = el('a', 'dk-link', 'The Onyx Quill wiki'); wiki.href = 'https://github.com/Miinthe/Onyx-Quill/wiki'; wiki.target = '_blank'; wiki.rel = 'noopener noreferrer';
+    const dl = el('a', 'dk-link', 'DeepLore'); dl.href = 'https://github.com/pixelnull/sillytavern-DeepLore'; dl.target = '_blank'; dl.rel = 'noopener noreferrer';
+    body.append(wiki, ' · ', dl);
+    const w = K.openWindow({ title: 'About Onyx Quill', body, size: 'small' });
     w.win.classList.add('dle-st-sub');
 }
 
@@ -1036,14 +1025,14 @@ function headEl() {
     const s = getSettings();
     const h = el('div', 'dle-st-head');
     const master = el('button', 'dle-st-toggle dle-st-master' + (s.enabled ? ' on' : ''));
-    master.type = 'button'; master.title = 'DeepLore on or off everywhere'; master.setAttribute('aria-pressed', String(!!s.enabled));
+    master.type = 'button'; master.title = 'Onyx Quill on or off everywhere'; master.setAttribute('aria-pressed', String(!!s.enabled));
     const sw = el('span', 'dk-switch'); sw.setAttribute('aria-checked', String(!!s.enabled)); sw.setAttribute('aria-hidden', 'true');
     master.append(sw, el('span', '', s.enabled ? 'On' : 'Off everywhere'));
     master.addEventListener('click', () => {
         s.enabled = !s.enabled; save();
         setupSyncPolling(buildIndexWithReuse, buildIndexWithReuse);
         try { $('#dle-enabled').prop('checked', s.enabled); } catch { /* noop */ }
-        K.notify({ text: s.enabled ? 'DeepLore is on again.' : 'DeepLore is off everywhere until you switch it on.' });
+        K.notify({ text: s.enabled ? 'Onyx Quill is on again.' : 'Onyx Quill is off everywhere until you switch it on.' });
         redraw();
     });
     const search = el('label', 'dle-st-search');
@@ -1104,7 +1093,7 @@ function searchPane() {
     const box = el('div', 'dle-st-sec');
     const n = rows.length + extras.length;
     box.append(el('h3', '', 'Search'));
-    box.append(el('p', 'dle-st-lead', `${n} setting${n === 1 ? '' : 's'} for “${ui.q.trim()}” · also finds DeepLore’s old names`));
+    box.append(el('p', 'dle-st-lead', `${n} setting${n === 1 ? '' : 's'} for “${ui.q.trim()}” · also finds Onyx Quill’s old names`));
     const res = el('div', 'dle-st-results');
     for (const h of rows) {
         const b = el('button', 'dle-st-hit'); b.type = 'button';
@@ -1230,7 +1219,7 @@ export async function openSettingsView(nav = null) {
     const onMq = () => drawBody();
     mq?.addEventListener?.('change', onMq);
     return new Promise(resolve => {
-        W = K.openWindow({ title: 'DeepLore settings', body: bodyEl, headExtra: headBox, size: 'wide', label: 'DeepLore settings', onClose: () => { W = null; mq?.removeEventListener?.('change', onMq); saveSettingsDebounced(); resolve(); } });
+        W = K.openWindow({ title: 'Onyx Quill settings', body: bodyEl, headExtra: headBox, size: 'wide', label: 'Onyx Quill settings', onClose: () => { W = null; mq?.removeEventListener?.('change', onMq); saveSettingsDebounced(); resolve(); } });
         W.win.classList.add('dle-st-win', 'dk');
         W.win.parentElement?.classList.add('dle-st-scrim');
         // Miinthe's patch 23 (2026-10-03): a close button that always fits on a phone screen — here the window's own ✕, which

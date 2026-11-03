@@ -100,7 +100,7 @@ function openDB() {
  *          caller over state.js buildEpoch. Checked AFTER the DB open resolves, synchronously
  *          with transaction creation — if it reports stale, the write is skipped and false is
  *          returned. This closes the race where finalizeIndex's fire-and-forget save is still
- *          opening the DB when a /dle-clear (which bumps buildEpoch via resetVaultIndexState)
+ *          opening the DB when a /oq-clear (which bumps buildEpoch via resetVaultIndexState)
  *          wipes the store: without the fence the save's txn would repopulate IDB with the
  *          pre-clear entries. A bump that lands after this check is still safe — the clear's
  *          own transaction is then created after ours, so its clear() commits last.
@@ -124,7 +124,7 @@ export async function saveIndexToCache(entries, isStale = null) {
             schemaVersion: CACHE_SCHEMA_VERSION,
             timestamp: Date.now(),
             // L-2: persist `_parserWarnings` (already compacted to {code, severity, field}
-            // in vault.js before commit) so /dle-lint keeps surfacing warnings after a
+            // in vault.js before commit) so /oq-lint keeps surfacing warnings after a
             // reload/hydrate instead of going blank until the next full rebuild.
             entries: entries.map(e => Object.fromEntries(Object.entries(e).filter(([k]) => !k.startsWith('_') || k === '_contentHash' || k === '_originalRequires' || k === '_originalExcludes' || k === '_originalCascadeLinks' || k === '_parserWarnings'))),
         };

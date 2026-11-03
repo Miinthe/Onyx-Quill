@@ -545,7 +545,7 @@ Core rules that should always be present in context...
 
 ## 16. Contextual gating
 
-Use `era`, `location`, `scene_type`, and `character_present` fields to control when an entry injects based on the current story context. Set the active context with `/dle-set-era`, `/dle-set-location`, `/dle-set-scene`, `/dle-set-characters`, or use the generic `/dle-set-field <name> [value]` command. See [[Custom Fields]] for the full schema and [[Advanced Entry Gating]] for behavior.
+Use `era`, `location`, `scene_type`, and `character_present` fields to control when an entry injects based on the current story context. Set the active context with `/oq-set-era`, `/oq-set-location`, `/oq-set-scene`, `/oq-set-characters`, or use the generic `/oq-set-field <name> [value]` command. See [[Custom Fields]] for the full schema and [[Advanced Entry Gating]] for behavior.
 
 ```markdown
 ---
@@ -559,8 +559,8 @@ keys:
 priority: 50
 
 # This entry only injects when:
-# - The active era is "pre-war" (set via /dle-set-era pre-war)
-# - The active location is "The Docks" (set via /dle-set-location The Docks)
+# - The active era is "pre-war" (set via /oq-set-era pre-war)
+# - The active location is "The Docks" (set via /oq-set-location The Docks)
 # - The active scene type is "investigation"
 # - Maren Blacktide is among the present characters
 era: pre-war

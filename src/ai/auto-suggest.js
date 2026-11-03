@@ -254,7 +254,7 @@ async function writeSuggestionToVault(s, settings, place = null) {
  */
 export async function showSuggestionPopup(suggestions) {
     if (!suggestions || suggestions.length === 0) {
-        toastr.info(tr('dle_suggest_toast_none'), 'DeepLore');
+        toastr.info(tr('dle_suggest_toast_none'), 'Onyx Quill');
         return;
     }
 
@@ -272,7 +272,7 @@ export async function showSuggestionPopup(suggestions) {
         for (const s of suggestions) {
             // Stale-chat bail: same epoch contract as per-card Accept.
             if (popupEpoch !== chatEpoch) {
-                toastr.warning(tr('dle_suggest_toast_chat_changed'), 'DeepLore');
+                toastr.warning(tr('dle_suggest_toast_chat_changed'), 'Onyx Quill');
                 break;
             }
             const r = await writeSuggestionToVault(s, settings, place);
@@ -282,20 +282,20 @@ export async function showSuggestionPopup(suggestions) {
         const failures = results.filter(r => !r.ok);
         if (successes.length > 0) {
             const failNote = failures.length > 0 ? `, ${failures.length} failed: ${failures.map(f => f.title).join(', ')}` : '';
-            toastr.success(trf('dle_suggest_toast_batch_success', successes.length, results.length, failNote), 'DeepLore');
+            toastr.success(trf('dle_suggest_toast_batch_success', successes.length, results.length, failNote), 'Onyx Quill');
             // Reindex once at end (per-card flow does one per accept).
             try { await buildIndex(); } catch (reidxErr) {
                 console.warn('[DLE] Auto-suggest batch reindex failed:', reidxErr?.message);
                 try {
                     toastr.warning(
                         trf('dle_suggest_toast_batch_reindex_failed', reidxErr?.message || 'unknown error'),
-                        'DeepLore',
+                        'Onyx Quill',
                         { timeOut: 10000 },
                     );
                 } catch { /* toastr unavailable */ }
             }
         } else if (failures.length > 0) {
-            toastr.error(trf('dle_suggest_toast_batch_all_failed', failures.length), 'DeepLore');
+            toastr.error(trf('dle_suggest_toast_batch_all_failed', failures.length), 'Onyx Quill');
         }
         return;
     }
@@ -358,7 +358,7 @@ export async function showSuggestionPopup(suggestions) {
                     if (this.disabled) return;
                     // BUG-272: chat switched since suggestions were generated — refuse to write.
                     if (popupEpoch !== chatEpoch) {
-                        toastr.warning(tr('dle_suggest_toast_stale_chat'), 'DeepLore');
+                        toastr.warning(tr('dle_suggest_toast_stale_chat'), 'Onyx Quill');
                         this.disabled = true;
                         return;
                     }
@@ -378,7 +378,7 @@ export async function showSuggestionPopup(suggestions) {
                             card.classList.add('dle-suggest-card--accepted');
                             this.disabled = true;
                             this.textContent = 'Accepted';
-                            toastr.success(trf('dle_suggest_toast_created', s.title), 'DeepLore');
+                            toastr.success(trf('dle_suggest_toast_created', s.title), 'Onyx Quill');
                             try { await buildIndex(); } catch (reidxErr) {
                                 console.warn('[DLE] Auto-suggest reindex after write failed:', reidxErr?.message);
                                 // BUG-AUDIT: without surfacing this, the new entry is
@@ -386,14 +386,14 @@ export async function showSuggestionPopup(suggestions) {
                                 try {
                                     toastr.warning(
                                         trf('dle_suggest_toast_reindex_failed_single', reidxErr?.message || 'unknown error'),
-                                        'DeepLore',
+                                        'Onyx Quill',
                                         { timeOut: 10000 },
                                     );
                                 } catch { /* toastr unavailable */ }
                             }
                         } else {
                             console.warn('[DLE] Auto-suggest write failed:', data && data.error);
-                            toastr.error(tr('dle_suggest_toast_write_fail_single'), 'DeepLore');
+                            toastr.error(tr('dle_suggest_toast_write_fail_single'), 'Onyx Quill');
                         }
                     } catch (err) {
                         notify.error(classifyError(err), { copyable: true });

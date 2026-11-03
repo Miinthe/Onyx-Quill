@@ -157,7 +157,7 @@ export async function askOffscreen(castId, personId) {
     const L = live();
     const cast = L?.board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
     if (!p) return null;
-    if (resolveConnectionConfig('storyTracker').mode !== 'profile') { try { toastr.info('The director needs the story helper\'s connection: DeepLore settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
+    if (resolveConnectionConfig('storyTracker').mode !== 'profile') { try { toastr.info('The director needs the story helper\'s connection: Onyx Quill settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
     const ch = await writeOffscreen(castId, personId, { from: leftAt(L.state, cast, p), to: turnIndex(getContext()?.chat), who: 'asked' });
     if (!ch) { try { toastr.info(`No answer about ${escapeHtml(p.name)} this time — try again.`, 'Cast'); } catch { /* noop */ } return null; }
     return ch[0].to?.at?.(-1)?.text ?? null;
@@ -173,7 +173,7 @@ export async function suggestTies(castId, personId) {
     const cast = L?.board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
     if (!p) return null;
     const conn = resolveConnectionConfig('storyTracker');
-    if (conn.mode !== 'profile' || !conn.profileId) { try { toastr.info('Suggest ties uses the story helper\'s connection: DeepLore settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
+    if (conn.mode !== 'profile' || !conn.profileId) { try { toastr.info('Suggest ties uses the story helper\'s connection: Onyx Quill settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
     const ctx = getContext();
     const targets = [...runningCasts(L.board, L.state).flatMap(c => (c.people || []).map(x => x.name)).filter(n => n.toLowerCase() !== p.name.toLowerCase()), ctx?.groupId ? '' : (ctx?.name2 || ''), ctx?.name1 || ''].filter((v, k, a) => v && a.indexOf(v) === k);
     const now = personNow(L.state, cast, p);

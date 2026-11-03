@@ -18,7 +18,7 @@ import { consoleBuffer, networkBuffer, errorBuffer, eventBuffer, aiCallBuffer, a
 import { generationBuffer } from './flight-recorder.js';
 import { longTaskBuffer, captureMemorySnapshot } from './performance.js';
 
-const ISSUE_URL = 'https://github.com/pixelnull/sillytavern-DeepLore/issues/new';
+const ISSUE_URL = 'https://github.com/Miinthe/Onyx-Quill/issues/new';
 
 /** Length-only descriptor for a redacted prompt/chat body. */
 function redactedLen(v) {
@@ -77,8 +77,8 @@ function buildSummarySection(snapshot, scrubbedGenerations) {
     push('');
     push(`- Captured: ${snapshot.capturedAt}`);
     const dleVer = snapshot.dleVersion || 'unknown';
-    push(`- DLE version: ${dleVer === 'unknown' ? '**unknown** ⚠' : dleVer}`);
-    if (dleVer === 'unknown') issues.warning.push('DLE version unknown');
+    push(`- Onyx Quill version: ${dleVer === 'unknown' ? '**unknown** ⚠' : dleVer}`);
+    if (dleVer === 'unknown') issues.warning.push('Onyx Quill version unknown');
     if (snapshot.system) {
         const stVer = snapshot.system.stVersion;
         push(`- ST version: ${stVer || '**unknown** ⚠'}`);
@@ -360,7 +360,7 @@ function buildSummarySection(snapshot, scrubbedGenerations) {
     return lines.join('\n');
 }
 
-const HEADER = `# DeepLore — Diagnostic Report
+const HEADER = `# Onyx Quill — Diagnostic Report
 
 > **For support:** Attach this file when opening an issue at <${ISSUE_URL}>.
 >
@@ -423,7 +423,7 @@ const traceEntryArrayDocLines = TRACE_ENTRY_ARRAY_KEYS
 // Base64-encoded in the report so it doesn't clutter GitHub issues.
 const AI_INSTRUCTIONS = `## How to Read This File (for AI assistants)
 
-You are looking at a DeepLore (DLE) diagnostic report. Your job is to
+You are looking at an Onyx Quill diagnostic report. Your job is to
 diagnose what's wrong with the user's setup.
 
 1. Start with **Summary Data** above — it's pre-digested.
@@ -469,7 +469,7 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 
 \`snapshot.setupState\` — Wizard completion, migration sentinels, vault config summary. \`possiblyIncomplete\` flags wizard-done-but-no-vaults-enabled. \`vaultSummary[]\` shows per-vault enabled/host/apiKey status. \`settingsVersion\` tracks migration schema level.
 
-\`snapshot.connections\` — Per-tool resolved connection config. \`tools.*\` shows effectiveMode, profileId, profileExists, profileModel, proxyUrl for each DLE tool (aiSearch, scribe, autoSuggest, etc.). \`profiles.*\` has full ST profile objects. \`stActiveConnection\` shows ST's own active API/model/proxy. \`issues[]\` flags missing profiles and broken inherit chains.
+\`snapshot.connections\` — Per-tool resolved connection config. \`tools.*\` shows effectiveMode, profileId, profileExists, profileModel, proxyUrl for each Onyx Quill tool (aiSearch, scribe, autoSuggest, etc.). \`profiles.*\` has full ST profile objects. \`stActiveConnection\` shows ST's own active API/model/proxy. \`issues[]\` flags missing profiles and broken inherit chains.
 
 \`snapshot.chatContext\` — Chat state at snapshot time: characterId, characterName, groupId, isGroupChat, chatLength, lastMessageRole, lastMessageHasContent.
 
@@ -492,16 +492,16 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 - **Stuck warmup** -> same entry appears in \`warmupFailed\` many generations in a row.
 - **Repeated aborts** -> multiple abort entries in flight recorder. User may be impatient or pipeline is too slow.
 - **Zero injections** -> injection trend shows all zeros. Pipeline is matching entries but they're all being gated/cooldown'd/budget-cut.
-- **Missing connection profile** -> \`snapshot.connections.tools.*.profileExists === false\`. Profile ID configured but deleted from ST Connection Manager. User needs to re-select a profile in DLE AI Connections settings.
+- **Missing connection profile** -> \`snapshot.connections.tools.*.profileExists === false\`. Profile ID configured but deleted from ST Connection Manager. User needs to re-select a profile in Onyx Quill AI Connections settings.
 - **Inherit chain confusion** -> tool has \`effectiveMode\` different from its configured mode. Check \`snapshot.connections.tools\` — inherit resolves through aiSearch. If aiSearch itself is misconfigured, all inheriting tools break.
-- **Wrong model for tool** -> \`profileModel\` in connections table doesn't match what user expects. Common when profile was edited after DLE was configured.
+- **Wrong model for tool** -> \`profileModel\` in connections table doesn't match what user expects. Common when profile was edited after Onyx Quill was configured.
 - **Proxy with no CORS** -> tool mode is 'proxy' but calls fail. Check if \`enableCorsProxy\` is true in ST config (visible in network log 403 errors).
 - **Obsidian vault circuit breaker open** -> \`obsidianCircuitBreakers["host:port"].state === "open"\`. One vault being down can make all entries from that vault invisible. Check which vault is affected and whether Obsidian REST API plugin is running.
 - **Zombie generation lock** -> \`staleness.generationLockZombie === true\`. Pipeline hung and lock wasn't released. Subsequent generations are blocked.
 - **Group chat entity confusion** -> \`chatContext.isGroupChat === true\` and entity matching shows unexpected character names. Group chats have multiple characters; entity regex may be matching the wrong character's lore.
 - **AI cache stale after regex rebuild** -> \`ai.cacheRegexVersionMatch === false\`. Cache was written before entity regexes were rebuilt (e.g. after vault re-index). Next generation will use stale entity matching data.
 - **Dismissed lore gaps** -> \`loreGaps.dismissedCount\` > 0. User may have permanently dismissed valid gaps that should be re-examined.
-- **Wizard skipped or incomplete** -> \`setupState.possiblyIncomplete === true\`. User marked wizard complete but no vaults are enabled. DLE has nothing to work with. Guide them through vault setup.
+- **Wizard skipped or incomplete** -> \`setupState.possiblyIncomplete === true\`. User marked wizard complete but no vaults are enabled. Onyx Quill has nothing to work with. Guide them through vault setup.
 - **Vault missing host or API key** -> \`setupState.vaultSummary[].hasHost === false\` or \`hasApiKey === false\`. Vault configured but can't connect. Often caused by partial wizard completion.
 - **Settings version mismatch** -> \`setupState.settingsVersion\` is null or lower than expected (currently 2). Old settings may lack required fields and migrations may not have run.
 - **Index never loaded** -> \`setupState.indexEverLoaded === false\` AND \`setupState.hasEnabledVaults === true\`. Vault is configured but index never built — likely Obsidian connection failure or missing REST API plugin.
@@ -526,7 +526,7 @@ RECOMMENDED ACTIONS (prioritized):
   3. <third>
 
 REPORT THIS BUG?
-  - <yes/no — is this a DLE bug, a config issue, or expected behavior?>
+  - <yes/no — is this an Onyx Quill bug, a config issue, or expected behavior?>
 \`\`\`
 `;
 
@@ -583,7 +583,7 @@ function stripUrlSecrets(u) {
  */
 function buildConnectionsReference(rawSnapshot) {
     const lines = [];
-    lines.push('# DLE Connections Reference (YOUR EYES ONLY)');
+    lines.push('# Onyx Quill Connections Reference (YOUR EYES ONLY)');
     lines.push('');
     lines.push('> This file contains your **real** connection data — profile names, URLs, models.');
     lines.push('> **Do NOT share this file.** It is for your own reference only.');
@@ -612,7 +612,7 @@ function buildConnectionsReference(rawSnapshot) {
     }
 
     if (conn.tools) {
-        lines.push('## DLE Tool Connections');
+        lines.push('## Onyx Quill Tool Connections');
         lines.push('');
         lines.push('| Tool | Mode | Target | Model | Timeout | Max Tokens |');
         lines.push('|------|------|--------|-------|---------|------------|');

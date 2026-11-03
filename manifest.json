@@ -1,14 +1,14 @@
 {
-    "display_name": "DeepLore (Obsidian required)",
-    "description": "Requires Obsidian with the Local REST API plugin. AI-powered lorebook for SillyTavern that reads Markdown notes from an Obsidian vault.",
+    "display_name": "Onyx Quill (Obsidian required)",
+    "description": "Requires Obsidian with the Local REST API plugin. Lore from your Obsidian vault, storyboards, a cast of NPCs and Mero, a co-writer, for SillyTavern. Built on DeepLore by pixelnull.",
     "loading_order": 1,
     "requires": [],
     "optional": [],
-    "generate_interceptor": "deepLoreEnhanced_onGenerate",
+    "generate_interceptor": "onyxQuill_onGenerate",
     "js": "index.js",
     "css": "style.css",
-    "author": "pixelnull",
-    "version": "2.6.2",
-    "homePage": "https://github.com/pixelnull/sillytavern-DeepLore",
+    "author": "Miinthe",
+    "version": "1.0.0",
+    "homePage": "https://github.com/Miinthe/Onyx-Quill",
     "minimum_client_version": "1.12.14"
 }

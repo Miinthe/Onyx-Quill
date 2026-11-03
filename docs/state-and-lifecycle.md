@@ -121,7 +121,7 @@ under `multiVaultConflictResolution='all'` (CLAUDE.md trackerKey invariant).
 ### Pipeline Control Flags
 | Variable | Type | Reset scope | Writers | Readers |
 |---|---|---|---|---|
-| `skipNextPipeline` | `boolean` | Consumed on use (→false) | commands-ai.js (`/dle-review`) | onGenerate (early return before tool-call check) |
+| `skipNextPipeline` | `boolean` | Consumed on use (→false) | commands-ai.js (`/oq-review`) | onGenerate (early return before tool-call check) |
 
 ### UI State
 | Variable | Type | Reset scope | Writers | Readers |
@@ -131,7 +131,7 @@ under `multiVaultConflictResolution='all'` (CLAUDE.md trackerKey invariant).
 **`PIPELINE_PHASE_LABELS` / `pipelineLabelFor(phase)` (state.js, v2.5 Wave 2):** the canonical phase→label map. SINGLE source of truth for the drawer label AND the chat toast. `runPipeline`'s `onStatus` callback receives a phase KEY (`'prefilter'`/`'consulting'`), not display text; `index.js` sets the phase deterministically and derives the label from this map. See gotcha #74 — never sniff phase from label text. C2 split health off the glyph: `computeOverallStatus` now drives only the SR-only status announce, not the dot's color/pulse (health = footer icons).
 | `autoSuggestMessageCount` | `number` | Chat (→0) | CHARACTER_MESSAGE_RENDERED, CHAT_CHANGED | auto-suggest trigger |
 | `notepadExtractInProgress` | `boolean` | Chat (→false) | GENERATION_ENDED, CHAT_CHANGED | extract lock |
-| `lastHealthResult` | `{errors, warnings}\|null` | Session | /dle-health command | settings badge |
+| `lastHealthResult` | `{errors, warnings}\|null` | Session | /oq-health command | settings badge |
 | `claudeAutoEffortBad` | `boolean` | Session | ~~init pre-flight~~ **DORMANT (gotcha #82)** — no writer sets true anymore | drawer chip, settings banner (dormant) |
 | `claudeAutoEffortDetail` | `object\|null` | Session | ~~init pre-flight~~ **DORMANT (gotcha #82)** | toast message (dormant) |
 | `ds.browseRowModel` | `Array<{type:'header'\|'entry'...}>` | Chat (→[]) | `renderBrowseTab()` | `renderBrowseWindow()` virtual scroll |
@@ -175,7 +175,7 @@ See `docs/gotchas.md` #70 for the delete cage layers and the load-bearing struct
 | `_dleLocale` | `string\|null` | Session | `initDleI18n()` | `getI18nStats()` |
 | `_initPromise` | `Promise\|null` | Session | `initDleI18n()` (dedupe) | concurrent init |
 | `_aiPromptLocale` | `string\|null` | Session | `setAiPromptLocale()` (test/debug) | `getEffectiveAiPromptLocale()` |
-| **Setting** `aiPromptLocale` | `string` (locale code or `''`) | Settings (persisted) | Settings UI / `/dle` cmds | `getEffectiveAiPromptLocale(settingValue)` |
+| **Setting** `aiPromptLocale` | `string` (locale code or `''`) | Settings (persisted) | Settings UI / `/oq-` cmds | `getEffectiveAiPromptLocale(settingValue)` |
 
 Init order matters: `initDleI18n()` runs in `index.js` jQuery handler **before** any HTML template render, so ST's MutationObserver picks up `data-i18n` attrs on first insertion. Concurrent callers get the same `_initPromise` — no duplicate fetches.
 

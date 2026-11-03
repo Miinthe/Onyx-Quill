@@ -188,7 +188,7 @@ function moreItems(panel) {
         { label: 'Author’s notebook', icon: 'notebook', onClick: tool(panel, 'notebook') },
         { label: 'AI notepad', icon: 'notes', onClick: tool(panel, 'ai-notebook') },
         { label: 'Scribe history', icon: 'scribe', onClick: tool(panel, 'scribe-history') },
-        { heading: 'DeepLore' },
+        { heading: 'Onyx Quill' },
         { label: 'Setup wizard', icon: 'wand', onClick: tool(panel, 'setup') },
         { label: 'Diagnostics', icon: 'info', onClick: () => panel.__dleShowReady?.() },
         { label: left ? 'Move the side panel to the right' : 'Move the side panel to the left', icon: left ? 'panel' : 'panelL', sub: 'remembered', onClick: () => setSide(panel, left ? 'right' : 'left') },

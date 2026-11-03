@@ -17,7 +17,7 @@ DeepLore has several independent AI connection channels. Each feature picks its 
 | **Session Scribe** | `scribe*` | `inherit` | Auto-summaries written back to the vault every N messages. |
 | **Auto Lorebook** | `autoSuggest*` | `inherit` | AI-suggested new entries from chat content. |
 | **AI Notepad** | `aiNotepad*` | `inherit` | Extract-mode session notes (the post-generation extraction call). Tag mode uses no AI channel of its own. |
-| **Optimize Keys** | `optimizeKeys*` | `inherit` | The `/dle-optimize-keys` AI keyword refiner. |
+| **Optimize Keys** | `optimizeKeys*` | `inherit` | The `/oq-optimize-keys` AI keyword refiner. |
 | **Story helper** | `storyTracker*` | `profile` | Moves the [[Storyboards|storyboard]] trackers; also the [[Cast]]'s director. |
 | **Mero ☆** | `mero*` | `profile` | [[Mero]]'s talks, pitches and entry ideas. |
 
@@ -135,7 +135,7 @@ When the index rebuilds, DLE compares the new index against the previous one and
 
 **Auto-sync polling:** set **Settings › Vault › Re-read the vault every** N seconds (0 = only by hand). When changes are found, a notice says what changed (controlled by **Tell me what changed**).
 
-**Manual refresh:** click **Re-read** (Re-read now) in **Settings › Vault**, press **Refresh** in the side panel's header, or run `/dle-refresh`.
+**Manual refresh:** click **Re-read** (Re-read now) in **Settings › Vault**, press **Refresh** in the side panel's header, or run `/oq-refresh`.
 
 ---
 

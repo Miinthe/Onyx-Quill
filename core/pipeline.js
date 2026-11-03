@@ -79,7 +79,7 @@ function _resolveRoleByName(name) {
 /**
  * WI parity — parser-side round-trip preservation table. ST fields DLE does
  * NOT enforce; landed in vault frontmatter as snake_case keys and flagged via
- * `W_WI_ROUND_TRIP` for /dle-lint visibility.
+ * `W_WI_ROUND_TRIP` for /oq-lint visibility.
  *
  * Module-level export so the WI-PARITY-1 drift guard (test/regression.test.mjs)
  * can set-compare against the importer table in `src/helpers.js`
@@ -360,7 +360,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
 
     // Wave 3 (WI parity) — native selective_logic enforcement. Validate enum;
     // unknown values fall back to 'and_any' (current behavior) so a typo doesn't
-    // silently break matching. W_INVALID surfaces the typo via /dle-lint.
+    // silently break matching. W_INVALID surfaces the typo via /oq-lint.
     const SELECTIVE_LOGIC_VALUES = ['and_any', 'and_all', 'not_all', 'not_any'];
     let selectiveLogic = 'and_any';
     if (frontmatter.selective_logic != null) {
@@ -395,7 +395,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
     // their own custom field via `field-definitions.yaml`, suppress the
     // WI-parity flag — their custom field is the source of truth, not the WI
     // import contract. Without this, a pre-v2.5 user with a custom field
-    // literally named `vectorized` or `case_sensitive` sees /dle-lint warnings
+    // literally named `vectorized` or `case_sensitive` sees /oq-lint warnings
     // + a misleading "imported from SillyTavern WI" message. The custom field
     // still works (extractCustomFields ran above); we just stop lying about
     // its provenance.
@@ -403,7 +403,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
 
     // C.3: round-trip-safe preservation of WI fields DLE has BUG numbers for
     // (planned-to-implement). Stored in customFields, flagged via W_NOT_IMPLEMENTED
-    // so /dle-lint surfaces them.
+    // so /oq-lint surfaces them.
     const WI_NOT_IMPLEMENTED_FIELDS = [
         { key: 'sticky', bug: 'BUG-047' },
         { key: 'delay', bug: 'BUG-048' },
@@ -436,7 +436,7 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
                 code: 'W_WI_ROUND_TRIP',
                 severity: 'warn',
                 field: fieldName,
-                message: `Field '${fieldName}' preserved from SillyTavern WI import. DLE does not act on it.`,
+                message: `Field '${fieldName}' preserved from SillyTavern WI import. Onyx Quill does not act on it.`,
                 suggestedFix: `Remove '${fieldName}' if you don't need it preserved for round-trip readability.`,
             });
         }

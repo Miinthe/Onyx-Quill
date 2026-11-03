@@ -88,7 +88,7 @@ function _emit(cfg) {
         : {};
 
     try {
-        const t = toastr[sev.method](message, title || 'DeepLore', {
+        const t = toastr[sev.method](message, title || 'Onyx Quill', {
             timeOut: sev.timeOut,
             ...interactionDefaults,
             ...options,

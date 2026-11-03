@@ -4,9 +4,9 @@
  */
 import { splitGatingFields } from '../drawer/gating-visibility-pure.js';
 
-/** Today's "Set" button runs these for the four built-in fields; any other field uses /dle-set-field <name>. */
-export const FIELD_COMMANDS = { era: '/dle-set-era', location: '/dle-set-location', scene_type: '/dle-set-scene', character_present: '/dle-set-characters' };
-export const setCommandFor = name => FIELD_COMMANDS[name] || `/dle-set-field ${name}`;
+/** Today's "Set" button runs these for the four built-in fields; any other field uses /oq-set-field <name>. */
+export const FIELD_COMMANDS = { era: '/oq-set-era', location: '/oq-set-location', scene_type: '/oq-set-scene', character_present: '/oq-set-characters' };
+export const setCommandFor = name => FIELD_COMMANDS[name] || `/oq-set-field ${name}`;
 
 export const hasValue = v => v != null && v !== '' && !(Array.isArray(v) && v.length === 0);
 /** A field's value(s) in this chat, always as a list of strings. */

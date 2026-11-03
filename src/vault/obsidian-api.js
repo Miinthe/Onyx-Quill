@@ -566,7 +566,7 @@ export function buildConnectionGuidanceHtml(result) {
                     <ol>
                         <li>In Obsidian, open Settings &rarr; Local REST API</li>
                         <li>Ensure "Enable Non-Encrypted (HTTP) Server" is <strong>ON</strong></li>
-                        <li>Here in DeepLore, <strong>uncheck HTTPS</strong> and set port to <code>${result.httpPort || 27123}</code></li>
+                        <li>Here in Onyx Quill, <strong>uncheck HTTPS</strong> and set port to <code>${result.httpPort || 27123}</code></li>
                     </ol>
                 </div>
                 <div class="dle-guidance-option">
@@ -603,7 +603,7 @@ export function buildConnectionGuidanceHtml(result) {
                 <p>Your API key doesn't match. In Obsidian, go to Settings &rarr; Local REST API and copy the API key exactly.</p>
             </div>`;
     }
-    return `<div class="dle-connection-guidance"><p>${result.error || 'Connection failed. Run /dle-health for diagnostics.'}</p></div>`;
+    return `<div class="dle-connection-guidance"><p>${result.error || 'Connection failed. Run /oq-health for diagnostics.'}</p></div>`;
 }
 
 /**

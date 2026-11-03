@@ -32,18 +32,18 @@ import { notify } from '../toast-dedup.js';
 
 export function registerPipelineCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-simulate',
+        name: 'oq-simulate',
         callback: async () => {
             if (!chat || chat.length === 0) {
-                toastr.info(tr('dle_cmd_simulate_nochat_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_simulate_nochat_toast'), 'Onyx Quill');
                 return '';
             }
-            if (!await ensureFreshOrToast('/dle-simulate')) return '';
+            if (!await ensureFreshOrToast('/oq-simulate')) return '';
             if (vaultIndex.length === 0) {
-                toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+                toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
                 return '';
             }
-            toastr.info(tr('dle_cmd_simulate_running_toast'), 'DeepLore', { timeOut: 2000 });
+            toastr.info(tr('dle_cmd_simulate_running_toast'), 'Onyx Quill', { timeOut: 2000 });
             const timeline = runSimulation(chat);
             showSimulationPopup(timeline);
             return '';
@@ -53,22 +53,22 @@ export function registerPipelineCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-why',
-        aliases: ['dle-context'],
+        name: 'oq-why',
+        aliases: ['oq-context'],
         callback: async () => {
             if (!chat || chat.length === 0) {
-                toastr.info(tr('dle_toast_no_active_chat'), 'DeepLore');
+                toastr.info(tr('dle_toast_no_active_chat'), 'Onyx Quill');
                 return '';
             }
             if (generationLock) {
-                toastr.warning('A generation is in progress — wait for it to finish.', 'DeepLore');
+                toastr.warning('A generation is in progress — wait for it to finish.', 'Onyx Quill');
                 return '';
             }
             // Wait for any in-progress index build to prevent concurrent pipeline execution.
             if (buildPromise) await buildPromise;
-            if (!await ensureFreshOrToast('/dle-why')) return '';
+            if (!await ensureFreshOrToast('/oq-why')) return '';
             if (vaultIndex.length === 0) {
-                toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+                toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
                 return '';
             }
 
@@ -88,7 +88,7 @@ export function registerPipelineCommands() {
             try {
                 ({ finalEntries, matchedKeys } = await runPipeline(chat, getWriterVisibleEntries(), gatingContext, { pins: cmdPins, blocks: cmdBlocks, folderFilter }));
             } catch (err) {
-                console.warn('[DLE] /dle-why pipeline failed:', err);
+                console.warn('[DLE] /oq-why pipeline failed:', err);
                 notify.error(classifyError(err), { copyable: true });
                 return '';
             }
@@ -103,7 +103,7 @@ export function registerPipelineCommands() {
                 });
             }
 
-            // /dle-why is a diagnostic preview — bootstrapActive=false intentionally.
+            // /oq-why is a diagnostic preview — bootstrapActive=false intentionally.
             // Showing the user "what would inject right now if bootstrap is OFF" is
             // the conservative (and accurate, post-bootstrap) view. Gotcha #60.
             if (gatingContext && Object.keys(gatingContext).length > 0) {
@@ -118,7 +118,7 @@ export function registerPipelineCommands() {
             const injected = acceptedEntries || gated.slice(0, injectedCount);
 
             if (injected.length === 0) {
-                toastr.info('No entries would be injected right now — no keywords or fuzzy matches found in the current chat.', 'DeepLore');
+                toastr.info('No entries would be injected right now — no keywords or fuzzy matches found in the current chat.', 'Onyx Quill');
                 return '';
             }
 
@@ -134,17 +134,17 @@ export function registerPipelineCommands() {
             showSourcesPopup(sources);
             return '';
         },
-        helpString: 'Preview which entries would be included in the next message, and why. Alias: /dle-context',
+        helpString: 'Preview which entries would be included in the next message, and why. Alias: /oq-context',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-inspect',
-        aliases: ['dle-i'],
+        name: 'oq-inspect',
+        aliases: ['oq-i'],
         callback: async () => {
             const _inspectTrace = _currentVerdictForChat()?.trace ?? null;
             if (!_inspectTrace) {
-                toastr.info(tr('dle_cmd_inspect_nodata_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_inspect_nodata_toast'), 'Onyx Quill');
                 return '';
             }
             const t = _inspectTrace;
@@ -421,7 +421,7 @@ export function registerPipelineCommands() {
                 && (!t.injected || t.injected.length === 0);
 
             if (nothingMatched) {
-                html += `<p class="dle-text-warning">No entries matched. Check scan depth (currently ${settings.scanDepth}), keyword coverage, or run /dle-health.</p>`;
+                html += `<p class="dle-text-warning">No entries matched. Check scan depth (currently ${settings.scanDepth}), keyword coverage, or run /oq-health.</p>`;
             }
 
             const pushHtmlSection = (s) => {

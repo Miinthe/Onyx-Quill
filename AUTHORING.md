@@ -52,7 +52,7 @@ Example (character): "Eris's spymaster, interrogator, and closest enforcer. Inne
 Example (lore): "The biological dependency created when a vampire feeds from a mortal — same mechanism as Bloodchain via saliva. Select when feeding, biting, addiction, venom, feeding sites (Khal/neck, Rhyn/wrist, Thae/thigh), or chattel dynamics come up. Scales with vampire age."
 
 ## Common Mistakes
-Easy-to-hit frontmatter footguns. Each produces a warning in `/dle-lint` when `lenientAuthoring` is on, silent skip/drop when off. Diagnose single entry via `/dle-inspect` (see `diagnoseEntry()` in `src/ui/diagnostics.js`).
+Easy-to-hit frontmatter footguns. Each produces a warning in `/oq-lint` when `lenientAuthoring` is on, silent skip/drop when off. Diagnose single entry via `/oq-inspect` (see `diagnoseEntry()` in `src/ui/diagnostics.js`).
 
 **Field-name case.** YAML keys are case-sensitive, and the canonical names are a *mix* of styles (see "Field name casing" above). Capitalizing a lowercase field, or using the wrong style on a multi-word field, silently drops it.
 ```yaml
@@ -149,7 +149,7 @@ requires:
   - Bloodchain
 ```
 
-Run `/dle-lint` after authoring to catch all of these at once.
+Run `/oq-lint` after authoring to catch all of these at once.
 
 ## Content Structure
 ```markdown
@@ -173,7 +173,7 @@ Use [[wikilinks]] to cross-reference other entries.
 
 ## WI Import Parity (v2.5)
 
-If you imported a SillyTavern World Info book via `/dle-import`, your entries may carry extra frontmatter fields that DLE itself doesn't act on. They're preserved so `/dle-lint` surfaces them and you can decide whether to keep them. Remove the lines you don't want — DLE won't notice either way.
+If you imported a SillyTavern World Info book via `/oq-import`, your entries may carry extra frontmatter fields that DLE itself doesn't act on. They're preserved so `/oq-lint` surfaces them and you can decide whether to keep them. Remove the lines you don't want — DLE won't notice either way.
 
 **Fields DLE acts on natively** (you can author these by hand too):
 
@@ -184,7 +184,7 @@ If you imported a SillyTavern World Info book via `/dle-import`, your entries ma
 | `role: system\|user\|assistant` | For `position: in_chat`, sets the chat-message role of the injection. |
 | `selective_logic: and_any\|and_all\|not_all\|not_any` | Refine-key gating mode. `and_any` (default) = ≥1 refine key must match. `and_all` = all must match. `not_all` = at least one must miss (full match blocks). `not_any` = zero matches (any hit blocks). Empty `refine_keys` passes for all 4 modes. |
 
-**Fields preserved for round-trip readability only** (DLE ignores; `/dle-lint` flags with `W_WI_ROUND_TRIP` so you can find them):
+**Fields preserved for round-trip readability only** (DLE ignores; `/oq-lint` flags with `W_WI_ROUND_TRIP` so you can find them):
 
 `vectorized`, `selective`, `use_probability`, `prevent_recursion`, `delay_until_recursion`, `group_override`, `use_group_scoring`, `case_sensitive`, `match_whole_words`, `automation_id`, `add_memo`, `display_index`, plus 6 ST-specific scan-source toggles (`match_persona_description`, `match_character_description`, `match_character_personality`, `match_character_depth_prompt`, `match_scenario`, `match_creator_notes`), plus 4 newer ST fields (`triggers`, `ignore_budget`, `character_filter`, `decorators`).
 
@@ -197,4 +197,4 @@ If you imported a SillyTavern World Info book via `/dle-import`, your entries ma
 The prepend anchors to the **body start only** — it is idempotent only when the body genuinely *begins* with `## Example Dialogue` (a re-import of an already-subheadered entry won't stack a second one). If you author a `## Example Dialogue` heading *in the middle* of an EM entry's body, it does NOT suppress the top prepend, so you may end up with two such headings — keep your own EM heading at the very top of the body, or let DLE add it.
 
 ## Vault Folder Structure
-Each entry's folder path extracted from filename (not frontmatter), used for folder-based filtering. Organize into subfolders (e.g., `Characters/`, `Locations/`, `Lore/`) enables per-folder filtering in UI and via `/dle-folder` command.
+Each entry's folder path extracted from filename (not frontmatter), used for folder-based filtering. Organize into subfolders (e.g., `Characters/`, `Locations/`, `Lore/`) enables per-folder filtering in UI and via `/oq-folder` command.

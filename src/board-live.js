@@ -26,7 +26,7 @@ import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, ste
 import { vaultIndex } from './state.js';
 import { boardStore } from './board-store.js';   // engine on v2, step 5: one board store
 
-export const V2_KEY = 'deeplore_storyboards_v2';
+export const V2_KEY = 'onyxquill_storyboards';   // was deeplore_storyboards_v2
 export const STATE_KEY = 'deeplore_board_state';
 
 /**
@@ -164,7 +164,7 @@ export function saveLiveState(state) {
 
 /**
  * Places: "here" sets DeepLore's own location filter (deeplore_context.location — what
- * /dle-set-location sets by hand) to the place's id. Only while a place tracker runs and
+ * /oq-set-location sets by hand) to the place's id. Only while a place tracker runs and
  * the board doesn't say otherwise; a paused one leaves the filter as it is. Returns the value set.
  */
 export function syncLiveLocation() {

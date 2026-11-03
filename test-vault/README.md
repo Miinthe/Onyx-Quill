@@ -39,7 +39,7 @@ The current year is **355 PC** (Post-Calamity). The city sits on the ruins of a 
 
 ## Expected Health Check Results
 
-Run `/dle-health` with this vault connected (default settings). Expected output:
+Run `/oq-health` with this vault connected (default settings). Expected output:
 
 ### ERRORS (7)
 
@@ -250,13 +250,13 @@ ISOLATED PAIR (only links to each other):
 ## Manual QA Test Scenarios
 
 ### Scenario 1: Era Gating
-1. `/dle-set-era medieval`
+1. `/oq-set-era medieval`
 2. Send: "Tell me about the war"
 3. **Expect:** `events/war-of-the-broken-mountain.md`, `lore/war-of-glimmering-hope.md`, `lore/battle-of-the-false-prophet.md` eligible
 4. **Expect NOT:** `events/war-of-kroyhr.md` (era: ancient), `events/battle-of-the-vanguard-crossing.md` (era: reconstruction)
 
 ### Scenario 2: Location Gating
-1. `/dle-set-location Bellsummit`
+1. `/oq-set-location Bellsummit`
 2. Send: "I walk through Gorduin's office"
 3. **Expect:** `characters/gorduin-wynlar.md` AND `locations/bellsummit.md` inject (both match location)
 4. **Expect NOT:** `lore/oracles-summit.md` (requires character_present Ayre Waesphyra)
@@ -289,7 +289,7 @@ ISOLATED PAIR (only links to each other):
 3. Send: "Grolgrurim stands up" — **Expect:** injects again (cooldown expired)
 
 ### Scenario 8: All-4-Fields Gating (strict blocks)
-1. Clear all context: `/dle-set-era`, `/dle-set-location`, etc. (no active context)
+1. Clear all context: `/oq-set-era`, `/oq-set-location`, etc. (no active context)
 2. Set tolerance to `strict` in settings
 3. Send: "The solstice ceremony begins" (matches `lore/solstice-ritual.md` keywords)
 4. **Expect:** No injection — `solstice-ritual.md` requires all 4 gating fields; none are set; strict mode blocks
@@ -309,14 +309,14 @@ ISOLATED PAIR (only links to each other):
 
 ### Scenario 11: Health Check Validation
 1. Connect this vault in a test vault config
-2. Run `/dle-rebuild`
-3. Run `/dle-health`
+2. Run `/oq-rebuild`
+3. Run `/oq-health`
 4. **Verify:** 7+ errors including circular requires, self-exclude, duplicate titles, orphaned requires, requires+excludes contradiction
 5. **Verify:** 9+ warnings including empty content, probability zero, cooldown-on-constant, oversized entries, short keywords
 6. **Verify:** 1 info: unresolved wiki-link
 
 ### Scenario 12: Graph Topology
-1. Run `/dle-graph`
+1. Run `/oq-graph`
 2. **Verify:** Gorduin Wynlar is a hub node with many connections
 3. **Verify:** Assault of Broken Love and Battle of Vryhs appear as an isolated pair
 4. **Verify:** Oracles of Might cluster is visible (gorduin, ayre, bellsummit, oracles-tower, etc.)
@@ -441,14 +441,14 @@ _empty-content, _orphaned-requires, _circular-requires-a, _circular-requires-b, 
 
 ### For RP Testing
 1. Point DLE at this vault directory
-2. Run `/dle-rebuild` — should index ~256 entries (minus disabled/never-insert)
+2. Run `/oq-rebuild` — should index ~256 entries (minus disabled/never-insert)
 3. Set era to `medieval` or `renaissance`, set a location, and start chatting
 4. The vault is a coherent world — entries cross-reference naturally and the AI should produce consistent RP
 
 ### For QA Testing
 1. Run through the Manual QA Test Scenarios above
-2. Run `/dle-health` — verify errors/warnings match the expected list
-3. Run `/dle-graph` — verify topology (hub nodes, clusters, isolated pairs, excludes edges)
+2. Run `/oq-health` — verify errors/warnings match the expected list
+3. Run `/oq-graph` — verify topology (hub nodes, clusters, isolated pairs, excludes edges)
 4. The `_edge-cases/` directory covers parser edge cases and health check conditions
 
 ### Health Check Baseline

@@ -119,7 +119,7 @@ Richtlinien:
 Antworte mit einem JSON-Objekt: {"suggested": ["stichwort1", "stichwort2", ...], "reasoning": "Kurze Erklärung der Änderungen"}`;
 
 // ══════════════════════════════════════════════════════════════════════════
-// /dle-summarize-range — Chat-Bereichs-Zusammenfasser
+// /oq-summarize-range — Chat-Bereichs-Zusammenfasser
 // ══════════════════════════════════════════════════════════════════════════
 
 export const SUMMARIZE_PROMPT = "Du bist ein Sitzungs-Zusammenfasser. Lies den folgenden Chat-Bereich und schreibe eine prägnante Prosa-Zusammenfassung, die bewahrt: wer handelte, was passierte, Schlüsselbeschaffungen und emotionalen Ton. Gib nur die Zusammenfassung aus — keine Präambel, keine Meta-Kommentare, keine Header.";

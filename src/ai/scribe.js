@@ -123,7 +123,7 @@ export async function callScribe(systemPrompt, userMessage, _settings) {
     // fall through to ST's active-connection 'st' path below (which would mask
     // the misconfiguration and use whatever connection ST happens to have).
     if (mode === 'proxy') {
-        throw new Error('Custom Proxy mode was removed in v2.5. Pick a Connection Profile in DLE Settings → Setup → AI Connections.');
+        throw new Error('Custom Proxy mode was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.');
     }
 
     // 'st' mode — ST's active connection via generateQuietPrompt.
@@ -317,7 +317,7 @@ export async function runScribe(customPrompt) {
                 saveMetadataDebounced();
             }
             pushEvent('scribe', { action: 'completed', chatLength: chatLenAtWrite });
-            toastr.success(trf('dle_scribe_toast_saved', filename), 'DeepLore', { timeOut: 5000 });
+            toastr.success(trf('dle_scribe_toast_saved', filename), 'Onyx Quill', { timeOut: 5000 });
             if (epoch !== chatEpoch) {
                 if (getSettings().debugMode) console.log('[DLE] Scribe: chat changed before reindex, skipping buildIndex');
                 return;
@@ -329,7 +329,7 @@ export async function runScribe(customPrompt) {
                 try {
                     toastr.warning(
                         trf('dle_scribe_toast_reindex_failed', reidxErr?.message || 'unknown error'),
-                        'DeepLore',
+                        'Onyx Quill',
                         { timeOut: 10000 },
                     );
                 } catch { /* toastr unavailable */ }

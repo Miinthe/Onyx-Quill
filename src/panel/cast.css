@@ -26,7 +26,7 @@
 .dle-cv-qitem.dle-cv-dragging { z-index: 2; background: var(--dk-page); box-shadow: var(--dk-shadow); opacity: .95; }
 .dle-cv-qitem.dle-cv-drop-before { box-shadow: inset 0 2px 0 var(--dk-accent); }
 .dle-cv-qitem.dle-cv-drop-after { box-shadow: inset 0 -2px 0 var(--dk-accent); }
-.dle-cv-writebox { display: grid; gap: 6px; padding: 0 8px 8px 50px; }
+.dle-cv-writebox { display: grid; gap: 6px; padding: 2px 8px 8px; }   /* the whole width for a couple of paragraphs (2026-11-03) */
 .dle-cv-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .dle-cv-sugg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 4px 0; padding: 6px 8px; border: 1px dashed color-mix(in oklab, var(--dk-mero) 50%, var(--dk-line)); border-radius: 8px; }
 .dle-cv-sugg > span { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
@@ -127,3 +127,7 @@ button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-
 .dle-cv-tietools { display: flex; gap: 4px; flex-wrap: wrap; }
 .dle-cv-tietools[hidden] { display: none; }
 .dle-cv-th { font-style: normal; color: var(--dk-ink); margin-bottom: 2px; }
+/* writing a Cast member's line yourself: room for a couple of paragraphs, grows with the text (Miinthe 2026-11-03) */
+.dle-cv-writeta { min-height: 7.5em; max-height: 60vh; resize: vertical; line-height: 1.45; }
+/* you and the main character on their own row above the Cast (Miinthe 2026-11-03) — same columns, so the tiles line up */
+.dle-cv-ours { padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px solid var(--dk-line); }

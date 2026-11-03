@@ -1,6 +1,6 @@
 # Librarian (removed)
 
-The Librarian (Emma) was removed from this fork on 2026-10-27 (shipped live, tag `live-2026-10-27`). Its code (`src/librarian/`), the reply takeover and agentic loop, the `search_lore` / `flag_lore` tools, Emma's session and review pop-up, the Librarian tab and its action-row buttons, the in-message tool dropdown, `/dle-librarian`, its settings tab, setup-wizard page 6 (the wizard has 8 pages now) and its prompts are all gone.
+The Librarian (Emma) was removed from this fork on 2026-10-27 (shipped live, tag `live-2026-10-27`). Its code (`src/librarian/`), the reply takeover and agentic loop, the `search_lore` / `flag_lore` tools, Emma's session and review pop-up, the Librarian tab and its action-row buttons, the in-message tool dropdown, `/oq-librarian`, its settings tab, setup-wizard page 6 (the wizard has 8 pages now) and its prompts are all gone.
 
 What it used that survived moved to the co-writer Mero ☆ (side panel → Mero tab):
 

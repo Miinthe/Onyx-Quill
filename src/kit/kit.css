@@ -61,8 +61,10 @@
 }
 .dk-btn:hover { background: var(--dk-menu); border-color: var(--dk-line-strong); }
 .dk-btn .dk-i { width: 14px; height: 14px; }
-/* SillyTavern's text shadow smudges button text, worst on the light primary button (Miinthe 2026-10-26: "Go looks blurry") */
-.dk-btn { text-shadow: none; }
+/* SillyTavern puts its text shadow on EVERY element (its style.css `* { text-shadow }`), so a button's label <span> got it
+   back even with the button itself cleared — a dark halo around dark letters on a filled color (Miinthe 2026-10-26 and again
+   2026-11-03: "Go looks blurry"). Off for buttons and everything inside them, and for the small filled badges. */
+.dk-btn, .dk-btn *, .dle-idr-badge, .dle-st-cnt, .dle-lv-ck, .dle-hint-label { text-shadow: none; }
 .dk-btn.dk-primary { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); font-weight: 700; }
 .dk-btn.dk-primary:hover { background: color-mix(in oklab, var(--dk-accent) 88%, var(--dk-ink)); }
 .dk-btn.dk-mero { background: var(--dk-mero); border-color: var(--dk-mero); color: var(--dk-on-mero); font-weight: 700; }

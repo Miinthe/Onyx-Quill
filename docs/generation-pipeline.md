@@ -39,7 +39,7 @@ onGenerate(chatMessages, contextSize, abort, type)
 1. **Quiet generations** (type `'quiet'`, `index.js:670`): Background API calls (e.g., summarization). No lore injection. If `!settings.enabled`, also clears the stale prefill prompt so it doesn't survive a mid-session toggle.
 2. **Response prefill** (`applyResponsePrefill(settings)`, `index.js:682`): Runs BEFORE every skip guard, on purpose — prefill must survive stepped-thinking, `skipNextPipeline`, and tool-call-continuation generations (all of which still emit a writing-AI call that benefits from prefill). When the prefill setting is off it clears any stale `PREFILL_ID` extension prompt. This is a separate injection axis from the lore pipeline.
 3. **Stepped Thinking coexistence** (`inSteppedThinking`, `index.js:688`): When a Stepped Thinking generation pass is in flight, the pipeline is skipped — otherwise it would re-enter N× per user turn. Records `{ skipped: true, reason: 'stepped_thinking' }` in the flight recorder.
-4. **`skipNextPipeline` bypass** (`index.js:695`): One-shot flag checked after the stepped-thinking guard and before the tool-call continuation check. When true, the entire DLE pipeline is skipped (early return). The flag is consumed immediately (reset to `false`). Used by `/dle-review` to prevent the DLE pipeline from running on vault review generations — the review needs a clean generation with no lore injection.
+4. **`skipNextPipeline` bypass** (`index.js:695`): One-shot flag checked after the stepped-thinking guard and before the tool-call continuation check. When true, the entire DLE pipeline is skipped (early return). The flag is consumed immediately (reset to `false`). Used by `/oq-review` to prevent the DLE pipeline from running on vault review generations — the review needs a clean generation with no lore injection.
 5. **Tool-call continuations** (`index.js:704`): When the last message has `extra.tool_invocations` or `is_system`, ST is re-calling Generate after a tool invocation from another extension using ST's ToolManager. Lore from the original generation is still in context. Re-running would waste tokens and corrupt analytics. Records `{ skipped: true, reason: 'tool_call_continuation' }` in the flight recorder.
 
 ---
@@ -314,7 +314,7 @@ finally {
 10. `notifyInjectionSourcesReady()` fires right after pipeline commit, allowing the drawer to render the Why? tab early.
 11. (removed with the Librarian)
 12. (removed with the Librarian)
-13. `skipNextPipeline` is consumed before the tool-call continuation check — it provides a clean early exit for `/dle-review` without touching any pipeline state.
+13. `skipNextPipeline` is consumed before the tool-call continuation check — it provides a clean early exit for `/oq-review` without touching any pipeline state.
 14. (removed with the Librarian)
 
 ---

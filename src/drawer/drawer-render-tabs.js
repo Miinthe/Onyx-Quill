@@ -95,7 +95,7 @@ function _fixItPinLabel(stage) {
 
 // Button-first call-to-action for the pre-setup empty states (Injection / Browse). Mirrors the
 // static markup in drawer.html so the JS-rebuilt and static variants stay identical. data-empty-action
-// is dispatched in drawer-events.js (executes the same /dle-setup, /dle-import as the Tools tab).
+// is dispatched in drawer-events.js (executes the same /oq-setup, /oq-import as the Tools tab).
 // Slash-command hint kept as small muted text below for power users (f082).
 function emptyCtaHtml() {
     return '<div class="dle-empty-cta-row">'
@@ -1449,7 +1449,7 @@ export function renderGatingTab() {
         }
         $container.find('.dle-gating-hint').remove();
         if (!anySet && enabledDefs.length > 0) {
-            $container.append('<div class="dle-gating-hint">Set gating fields to filter which lore entries are included. Set via slash command (<code>/dle-set-field</code>) or click the field below.</div>');
+            $container.append('<div class="dle-gating-hint">Set gating fields to filter which lore entries are included. Set via slash command (<code>/oq-set-field</code>) or click the field below.</div>');
         }
     }
 

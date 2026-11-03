@@ -4,7 +4,7 @@
  * the newest reply's turn changed, runs the helper and the board again as if the message had just
  * been sent, makes the judge ask fresh, and swipes. Costs one helper call and one judge call.
  *
- * WIP controls (the real home is the DeepLore bar, still being designed): /dle-reevaluate and a
+ * WIP controls (the real home is the DeepLore bar, still being designed): /oq-reevaluate and a
  * button in the Story tab.
  */
 import { getContext } from '../../../../extensions.js';
@@ -65,7 +65,7 @@ export async function reEvaluate({ confirm = true } = {}) {
 
 export function registerReevaluateCommand() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-reevaluate',
+        name: 'oq-reevaluate',
         returns: ARGUMENT_TYPE.STRING,
         callback: async () => { await reEvaluate({ confirm: true }); return ''; },
         helpString: 'Re-evaluate and swipe: undo what the newest turn changed on the board, ask the helper and the judge again, then write a new swipe.',

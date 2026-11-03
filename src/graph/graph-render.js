@@ -241,7 +241,7 @@ export function initRender(gs) {
         if (!el) return;
         const legendHtml = buildColorLegend() || '&nbsp;';
         // Expand chevron once the swatch count is likely to overflow (>8).
-        const swatchCount = (legendHtml.match(/dle-graph-legend-swatch/g) || []).length;
+        const swatchCount = (legendHtml.match(/oq-graph-legend-swatch/g) || []).length;
         const expandToggle = swatchCount > 8
             ? `<span class="dle-graph-legend-toggle" title="${escapeHtml(T('dle_graph_legend_toggle_title', 'Click to expand/collapse legend'))}" role="button" tabindex="0" aria-label="${escapeHtml(T('dle_graph_legend_toggle_aria', 'Expand or collapse the color legend'))}">&#x25BC;</span>`
             : '';

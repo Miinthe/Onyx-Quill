@@ -11,12 +11,12 @@
  * never the whole list (keeps the prompt small, and doesn't put the words in its head). In the chat a listed phrase is
  * underlined: a banned one wherever it shows up, a "use less" one only when it comes back too soon.
  *
- * Store (extension_settings.deeplore_slop):
+ * Store (extension_settings.onyxquill_slop):
  *   { phrases: [{ id, t, m: 'ban'|'less', sc: 'all'|'board'|'char', k, kn, src: 'learned'|'mine', at }],
  *     fine: [{ t, sc, k, kn }], asked: [t] }
  */
 
-export const SLOP_KEY = 'deeplore_slop';
+export const SLOP_KEY = 'onyxquill_slop';   // was deeplore_slop
 export const WINDOW = 15;        // the replies looked at
 export const MIN_REPLIES = 4;     // a phrase in this many of them is "used over and over"
 export const LATELY = WINDOW;    // a listed phrase goes to the writer when one of these replies used it

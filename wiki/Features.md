@@ -62,14 +62,14 @@ Tools for understanding what DLE is doing and why. See [[Inspection and Diagnost
 | Feature | What it does |
 |---------|-------------|
 | **Context Cartographer** | Each message's DeepLore ⋯ button → **Why these entries** shows which entries were sent and why |
-| **Pipeline Inspector** | Detailed trace of the last generation (`/dle-inspect`) |
-| **Entry Browser** | Searchable popup of all indexed entries (`/dle-browse`) |
-| **Relationship graph** | Interactive force-directed graph of entry connections (`/dle-graph`) |
-| **Activation Simulation** | Replay chat history showing entry activation timeline (`/dle-simulate`) |
+| **Pipeline Inspector** | Detailed trace of the last generation (`/oq-inspect`) |
+| **Entry Browser** | Searchable popup of all indexed entries (`/oq-browse`) |
+| **Relationship graph** | Interactive force-directed graph of entry connections (`/oq-graph`) |
+| **Activation Simulation** | Replay chat history showing entry activation timeline (`/oq-simulate`) |
 | **"Why Not?" diagnostics** | In the Lore tab's **Left out** list, tap an entry to see why it was not sent |
-| **Entry analytics** | Track match and injection counts per entry (`/dle-analytics`) |
-| **Health check** | 30+ automated checks for common entry issues (`/dle-health`) |
-| **Diagnostics export** | Pseudonymized bundle for bug reports (`/dle-diagnostics`); IPs, hostnames, API keys, profile names, vault names, and character names masked |
+| **Entry analytics** | Track match and injection counts per entry (`/oq-analytics`) |
+| **Health check** | 30+ automated checks for common entry issues (`/oq-health`) |
+| **Diagnostics export** | Pseudonymized bundle for bug reports (`/oq-diagnostics`); IPs, hostnames, API keys, profile names, vault names, and character names masked |
 
 ---
 
@@ -82,9 +82,9 @@ Features that use AI to help you build and maintain your vault. See [[AI-Powered
 | Feature | What it does |
 |---------|-------------|
 | **Session Scribe** | Auto-summarize sessions and write notes back to your vault |
-| **Auto Lorebook** | AI suggests new entries based on chat content (`/dle-newlore`) |
-| **Optimize Keys** | AI analyzes an entry and suggests better keywords (`/dle-optimize-keys`) |
-| **Auto-Summary** | Generate AI summaries for entries missing a `summary` field (`/dle-summarize`) |
+| **Auto Lorebook** | AI suggests new entries based on chat content (`/oq-newlore`) |
+| **Optimize Keys** | AI analyzes an entry and suggests better keywords (`/oq-optimize-keys`) |
+| **Auto-Summary** | Generate AI summaries for entries missing a `summary` field (`/oq-summarize`) |
 | **Scribe-informed retrieval** | Feed Scribe summaries into AI search for broader story awareness |
 
 ---
@@ -99,7 +99,7 @@ Per-chat AI-extracted session notes injected into context. The AI maintains runn
 | **Per-chat storage** | Notes stored on `chat_metadata.deeplore_ai_notepad`; accumulate as the chat grows |
 | **Configurable injection** | Position, depth, and role controls; same pattern as Author's Notebook |
 | **Independent connection** | Separate connection channel for the extraction call |
-| **`/dle-ai-notepad`** | View, edit, or clear accumulated notes |
+| **`/oq-ai-notepad`** | View, edit, or clear accumulated notes |
 
 ---
 
@@ -132,7 +132,7 @@ How and where entries are injected, plus per-chat overrides. See [[Injection and
 |---------|-------------|
 | **Per-entry injection position** | Override position, depth, and role per entry |
 | **Prompt Manager integration** | Register DLE injections as draggable Prompt Manager entries (`injectionMode: prompt_list`) |
-| **Author's Notebook** | Persistent per-chat user scratchpad injected every generation (`/dle-notebook`) |
+| **Author's Notebook** | Persistent per-chat user scratchpad injected every generation (`/oq-notebook`) |
 | **Per-chat pin and block** | Pin entries to always inject or block them, per chat |
 | **Contextual gating** | Filter entries by era, location, scene type, characters present, and user-defined custom fields (configurable via the rule builder) |
 | **Confidence-gated budget** | AI over-requests, then prioritizes high-confidence picks |
@@ -163,6 +163,6 @@ Getting started and migrating from other lorebook systems. See [[Setup and Impor
 
 | Feature | What it does |
 |---------|-------------|
-| **Setup wizard** | Guided first-time setup (`/dle-setup`) |
+| **Setup wizard** | Guided first-time setup (`/oq-setup`) |
 | **Header and ⋯ menu** | One-click actions in the side panel's header and its ⋯ menu |
-| **ST lorebook import** | Convert SillyTavern World Info JSON into Obsidian vault notes (`/dle-import`); offers AI summary generation for imported entries |
+| **ST lorebook import** | Convert SillyTavern World Info JSON into Obsidian vault notes (`/oq-import`); offers AI summary generation for imported entries |

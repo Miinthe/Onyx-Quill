@@ -1,4 +1,4 @@
-<!-- DeepLore — First-Run Setup Wizard -->
+<!-- Onyx Quill — First-Run Setup Wizard -->
 <div class="dle-wizard">
 
     <!-- Screen-reader-only progress announcer. Updated on every page advance so
@@ -53,12 +53,12 @@
 
         <!-- ═══ Page 1: Welcome ═══ -->
         <div id="dle-wizard-page-1" class="dle-wizard-page active" data-wizard-page="1" role="tabpanel" aria-labelledby="dle-wizard-step-1" tabindex="-1">
-            <h2 data-i18n="dle_wizard_welcome_heading">Welcome to DeepLore</h2>
+            <h2 data-i18n="dle_wizard_welcome_heading">Welcome to Onyx Quill</h2>
             <p class="dle-wizard-subtitle" data-i18n="dle_wizard_subtitle">Your Obsidian vault, connected to SillyTavern.</p>
 
             <div class="dle-wizard-card">
                 <h3><i class="fa-solid fa-book-open" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_what_is_h3">What is this?</span></h3>
-                <p data-i18n="dle_wizard_what_is_desc">DeepLore connects your Obsidian lore vault to SillyTavern, automatically injecting relevant worldbuilding entries into your roleplay context. Your characters, locations, lore, and rules — pulled in when they matter.</p>
+                <p data-i18n="dle_wizard_what_is_desc">Onyx Quill connects your Obsidian lore vault to SillyTavern, automatically injecting relevant worldbuilding entries into your roleplay context. Your characters, locations, lore, and rules — pulled in when they matter.</p>
             </div>
 
             <div class="dle-wizard-card">
@@ -76,12 +76,12 @@
                     <span class="dle-wizard-choice-badge" data-i18n="dle_wizard_fork_easiest_badge">Easiest start</span>
                     <i class="fa-solid fa-flask dle-wizard-choice-icon" aria-hidden="true"></i>
                     <span class="dle-wizard-choice-title" data-i18n="dle_wizard_fork_demo_title">Try the demo vault</span>
-                    <span class="dle-wizard-choice-desc" data-i18n="dle_wizard_fork_demo_desc">Explore DeepLore with the pre-built Duskfrost world — no vault of your own needed.</span>
+                    <span class="dle-wizard-choice-desc" data-i18n="dle_wizard_fork_demo_desc">Explore Onyx Quill with the pre-built Duskfrost world — no vault of your own needed.</span>
                 </button>
                 <button type="button" class="dle-wizard-choice-card" data-fork="connect">
                     <i class="fa-solid fa-plug dle-wizard-choice-icon" aria-hidden="true"></i>
                     <span class="dle-wizard-choice-title" data-i18n="dle_wizard_fork_connect_title">Connect my Obsidian</span>
-                    <span class="dle-wizard-choice-desc" data-i18n="dle_wizard_fork_connect_desc">Point DeepLore at your own Obsidian vault over the Local REST API.</span>
+                    <span class="dle-wizard-choice-desc" data-i18n="dle_wizard_fork_connect_desc">Point Onyx Quill at your own Obsidian vault over the Local REST API.</span>
                 </button>
                 <button type="button" class="dle-wizard-choice-card" data-fork="import">
                     <i class="fa-solid fa-file-import dle-wizard-choice-icon" aria-hidden="true"></i>
@@ -126,7 +126,7 @@
                     <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_trust_cert_link">Trust Certificate (open in new tab)</span>
                 </a>
                 <p class="dle-wizard-muted" style="font-size: 0.85em; margin-top: var(--dle-space-1);">
-                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i> <strong data-i18n="dle_wizard_http_recommended">HTTP is recommended.</strong> HTTPS requires trusting a self-signed certificate, which DLE does not provide support for. If you need HTTPS, see the
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i> <strong data-i18n="dle_wizard_http_recommended">HTTP is recommended.</strong> HTTPS requires trusting a self-signed certificate, which Onyx Quill does not provide support for. If you need HTTPS, see the
                     <a href="https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F" target="_blank" rel="noopener" data-i18n="dle_wizard_https_guide_link">Local REST API author's guide</a>.
                 </p>
             </div>
@@ -145,20 +145,20 @@
             <div id="dle-wiz-conn-result" class="dle-wizard-result-banner" style="display: none;"></div>
 
             <p class="dle-wizard-muted dle-wizard-wiki-link">
-                <a href="https://github.com/pixelnull/sillytavern-DeepLore/wiki/Installation" target="_blank" rel="noopener"><i class="fa-solid fa-book" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_installation_guide_link">Installation guide</span></a>
+                <a href="https://github.com/Miinthe/Onyx-Quill/wiki/Installation" target="_blank" rel="noopener"><i class="fa-solid fa-book" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_installation_guide_link">Installation guide</span></a>
             </p>
 
             <!-- Demo vault callout -->
             <div class="dle-wizard-card dle-wizard-demo-callout">
-                <h3><i class="fa-solid fa-flask" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_demo_card_h3">New to DeepLore? Try the demo vault</span></h3>
-                <p data-i18n-html="dle_setup_wizard_demo_card_p">A complete pre-built vault — the fantasy city of <strong>Duskfrost</strong>. Hundreds of characters, locations, lore, factions, and species. Perfect for exploring DLE before building your own vault.</p>
+                <h3><i class="fa-solid fa-flask" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_demo_card_h3">New to Onyx Quill? Try the demo vault</span></h3>
+                <p data-i18n-html="dle_setup_wizard_demo_card_p">A complete pre-built vault — the fantasy city of <strong>Duskfrost</strong>. Hundreds of characters, locations, lore, factions, and species. Perfect for exploring Onyx Quill before building your own vault.</p>
                 <button type="button" id="dle-wiz-demo-toggle" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-folder-open" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_demo_show_me_how_btn">Show me how</span>
                 </button>
                 <div id="dle-wiz-demo-instructions" style="display: none;">
                     <ol>
                         <li data-i18n-html="dle_setup_wizard_demo_step_1">In Obsidian, click the vault icon (bottom-left) → <strong>Open folder as vault</strong></li>
-                        <li data-i18n-html="dle_setup_wizard_demo_step_2_intro">Navigate to the <code>test-vault</code> folder inside the DLE extension directory:
+                        <li data-i18n-html="dle_setup_wizard_demo_step_2_intro">Navigate to the <code>test-vault</code> folder inside the Onyx Quill extension directory:
                             <div class="dle-wizard-demo-path-row">
                                 <code id="dle-wiz-demo-path" class="dle-wizard-demo-path"></code>
                                 <button type="button" id="dle-wiz-demo-copy" class="menu_button menu_button_icon dle-wizard-demo-copy" title="Copy path" aria-label="Copy path" data-i18n="[title]dle_wizard_demo_copy_tooltip;[aria-label]dle_wizard_demo_copy_tooltip">
@@ -235,7 +235,7 @@
             </div>
 
             <p class="dle-wizard-muted dle-wizard-wiki-link">
-                <a href="https://github.com/pixelnull/sillytavern-DeepLore/wiki/Writing-Vault-Entries" target="_blank" rel="noopener"><i class="fa-solid fa-book" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_write_entries_link">How to write vault entries</span></a>
+                <a href="https://github.com/Miinthe/Onyx-Quill/wiki/Writing-Vault-Entries" target="_blank" rel="noopener"><i class="fa-solid fa-book" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_write_entries_link">How to write vault entries</span></a>
             </p>
         </div>
 
@@ -304,7 +304,7 @@
         <!-- ═══ Page 5: AI Search Setup ═══ -->
         <div id="dle-wizard-page-5" class="dle-wizard-page" data-wizard-page="5" role="tabpanel" aria-labelledby="dle-wizard-step-5" tabindex="-1">
             <h2 data-i18n="dle_wizard_ai_heading">AI Search Setup</h2>
-            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_ai_subtitle">Configure how DLE connects to an AI for entry selection.</p>
+            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_ai_subtitle">Configure how Onyx Quill connects to an AI for entry selection.</p>
 
             <div class="dle-wizard-field">
                 <label data-i18n="dle_wizard_ai_mode_label">Connection Mode</label>
@@ -363,7 +363,7 @@
             <p class="dle-wizard-subtitle" data-i18n="dle_wizard_prepare_subtitle">Optional scaffolding for advanced features.</p>
 
             <div class="dle-wizard-card dle-wizard-card-info">
-                <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_prepare_info_p">DeepLore scans your whole vault by tag, not by folder &mdash; so there's nothing to point at here. These files are just scaffolding for optional features. You can skip this entirely and add them later from Settings.</span></p>
+                <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_prepare_info_p">Onyx Quill scans your whole vault by tag, not by folder &mdash; so there's nothing to point at here. These files are just scaffolding for optional features. You can skip this entirely and add them later from Settings.</span></p>
             </div>
 
             <div id="dle-wiz-vault-conn-warning" class="dle-wizard-card" style="display: none;">
@@ -431,7 +431,7 @@
             <p class="dle-wizard-subtitle" data-i18n="dle_wizard_import_subtitle">Already have a SillyTavern lorebook? Import entries into your Obsidian vault.</p>
 
             <div class="dle-wizard-card dle-wizard-card-info">
-                <p data-i18n-html="dle_setup_wizard_optional_step_p"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> This step is optional. You can always import later with <code>/dle-import</code>.</p>
+                <p data-i18n-html="dle_setup_wizard_optional_step_p"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> This step is optional. You can always import later with <code>/oq-import</code>.</p>
             </div>
 
             <div class="dle-wizard-field">
@@ -546,7 +546,7 @@
             </p>
 
             <p class="dle-wizard-wiki-link">
-                <a href="https://github.com/pixelnull/sillytavern-DeepLore/wiki" target="_blank">
+                <a href="https://github.com/Miinthe/Onyx-Quill/wiki" target="_blank">
                     <i class="fa-solid fa-book" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_full_docs_link">Read the full documentation</span>
                 </a>
             </p>

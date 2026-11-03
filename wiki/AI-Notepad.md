@@ -3,10 +3,10 @@
 The AI Notepad lets the writing AI keep private session notes: things it should remember across messages but not say out loud. Character motivations, unspoken thoughts, plot threads to revisit, relationship shifts, revealed secrets. The notes are hidden from the visible chat and reinjected as context on the next generation.
 
 > [!NOTE]
-> The settings panel labels this feature **"AI Notebook"**. The wiki uses "AI Notepad" because that matches the setting key prefix (`aiNotepad*`) and the slash command (`/dle-ai-notepad`). Same feature, two names.
+> The settings panel labels this feature **"AI Notebook"**. The wiki uses "AI Notepad" because that matches the setting key prefix (`aiNotepad*`) and the slash command (`/oq-ai-notepad`). Same feature, two names.
 
 This is a different feature from:
-- The **Author's Notebook** (`/dle-notebook`), which is written by you, the author, as a per-chat scratchpad
+- The **Author's Notebook** (`/oq-notebook`), which is written by you, the author, as a per-chat scratchpad
 - The **Session Scribe** ([[AI Powered Tools|Scribe]]), which writes longer summaries back to your Obsidian vault
 
 All three coexist; they target different writing tasks and have independent settings.
@@ -71,9 +71,9 @@ Extract mode is useful when your writing model doesn't reliably follow the `<dle
 
 ## Viewing and editing notes
 
-`/dle-ai-notepad` opens a popup showing all accumulated notes for the current chat with a live token counter. Edit and save manually.
+`/oq-ai-notepad` opens a popup showing all accumulated notes for the current chat with a live token counter. Edit and save manually.
 
-`/dle-ai-notepad clear` clears all notes for the current chat.
+`/oq-ai-notepad clear` clears all notes for the current chat.
 
 Notes are also visible per-message in the **Context Cartographer** popup (📖 on AI messages → **Why these entries**).
 
@@ -87,7 +87,7 @@ Each message's extracted notes are also saved on `message.extra.deeplore_ai_note
 
 ### Pinning notes
 
-In the `/dle-ai-notepad` editor you can **pin** individual lines. Pinned lines are protected: they survive the 64KB cap trim and any deduplication pass, so a critical fact you want kept forever won't be evicted as the note store grows. Pins are stored as normalized keys in `chat_metadata.deeplore_ai_notepad_pins` (per chat). If you later edit a pinned line so it no longer matches its stored key, the pin quietly stops applying rather than erroring.
+In the `/oq-ai-notepad` editor you can **pin** individual lines. Pinned lines are protected: they survive the 64KB cap trim and any deduplication pass, so a critical fact you want kept forever won't be evicted as the note store grows. Pins are stored as normalized keys in `chat_metadata.deeplore_ai_notepad_pins` (per chat). If you later edit a pinned line so it no longer matches its stored key, the pin quietly stops applying rather than erroring.
 
 ### Swipe and edit rollback
 
@@ -115,7 +115,7 @@ In tag mode, the instruction prompt is appended after the notes, telling the AI 
 
 - **Tag mode works best with capable models** (Claude, GPT-4, etc.) that reliably follow formatting instructions. Smaller models may forget the tags or place them wrong.
 - **Extract mode is more reliable but costs an extra API call per generation.** Good fit for local models that don't follow tags well. Route Extract mode to a cheap model via its own connection channel.
-- **Edit notes periodically** with `/dle-ai-notepad` to prune stale information. The store grows every turn and eventually wastes tokens on outdated context.
+- **Edit notes periodically** with `/oq-ai-notepad` to prune stale information. The store grows every turn and eventually wastes tokens on outdated context.
 - **Custom prompts let you steer what the AI tracks.** For example, instruct it to only track relationship changes and ignore combat details.
 
 ---
@@ -125,4 +125,4 @@ In tag mode, the instruction prompt is appended after the notes, telling the AI 
 - [[Features]]: feature overview
 - [[AI Powered Tools]]: Session Scribe (longer summaries to vault), Auto Lorebook, others
 - [[Injection and Context Control]]: how injection position, depth, and role work
-- [[Slash Commands]]: `/dle-ai-notepad` and `/dle-notebook` reference
+- [[Slash Commands]]: `/oq-ai-notepad` and `/oq-notebook` reference

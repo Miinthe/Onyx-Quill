@@ -78,7 +78,7 @@ export async function lookAtLore({ force = false } = {}) {
     idx = idx.slice(-MAX_REPLIES);
     if (!idx.length) return { ok: false, error: 'no replies to look at yet' };
     const conn = resolveConnectionConfig('mero');
-    if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆' };
+    if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆' };
     const entries = entriesFor(idx);
     putLore({ ...L, last: chat.length - 1 });   // looked at, whatever comes of it — the next look starts after these
     if (!entries.length) return { ok: true, found: 0, noEntries: true };

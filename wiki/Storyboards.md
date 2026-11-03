@@ -11,7 +11,7 @@ One board can be used by many chats. Each chat keeps its own place on it.
 - The bar's 📖 menu → **Open the board**.
 - The side panel's ⋯ → **Open the board**.
 - **Story** tab → **Timeline** (opens the board on its Timeline).
-- The slash command `/dle-board`.
+- The slash command `/oq-board`.
 
 The board opens as a big window over SillyTavern. **Close** (top right) takes you back to the chat. It works on a phone too.
 
@@ -83,4 +83,4 @@ Link vault entries to a step, an item, a band or a place with **+ Entry**. Each 
 - Each reply's 📖 → **What this changed** shows what the board changed, with Undo.
 - **Re-evaluate and swipe** (on the bar or the newest reply) undoes the newest reply's board changes and asks again.
 
-Slash commands for boards and trackers (`/dle-board`, `/dle-board-off`, `/dle-tracker`, `/dle-tracker-go` and more) are in [[Slash Commands]].
+Slash commands for boards and trackers (`/oq-board`, `/oq-board-off`, `/oq-tracker`, `/oq-tracker-go` and more) are in [[Slash Commands]].

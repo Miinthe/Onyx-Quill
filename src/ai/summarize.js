@@ -1,10 +1,10 @@
 /**
  * DeepLore — Dedicated summary feature (#15).
  *
- * `/dle-summarize-range start-end | N` runs an AI summary of the named chat range,
+ * `/oq-summarize-range start-end | N` runs an AI summary of the named chat range,
  * hides the originals via ST's is_system flag, and inserts the summary as a new
  * message at the start of the range. Each operation is recorded in
- * chat_metadata.deeplore_summary_log so `/dle-summarize-rollback` can undo by id
+ * chat_metadata.deeplore_summary_log so `/oq-summarize-rollback` can undo by id
  * or all-at-once.
  *
  * Hidden originals stay in chat[] so ST's reload + AI-context skip both honor
@@ -59,7 +59,7 @@ async function callSummaryAI(userMessage, signal) {
     // v2.5 dead-head: refuse legacy proxy mode explicitly (mirrors callScribe) so it
     // doesn't fall through to the 'st' path and silently use ST's active connection.
     if (mode === 'proxy') {
-        throw new Error('Custom Proxy mode was removed in v2.5. Pick a Connection Profile in DLE Settings → Setup → AI Connections.');
+        throw new Error('Custom Proxy mode was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.');
     }
 
     // Wave-B contract: summarize was bypassing the breaker entirely. Match the
@@ -83,7 +83,7 @@ async function callSummaryAI(userMessage, signal) {
             // 'st' (ST's active connection) — directly or via 'inherit'. callAI's mode
             // whitelist only accepts 'profile', so routing 'st' through it threw
             // "unknown connection mode"; that error isn't breaker-excluded, so two
-            // /dle-summarize-range calls tripped the circuit breaker and locked ALL AI
+            // /oq-summarize-range calls tripped the circuit breaker and locked ALL AI
             // features for ~30s. Dispatch 'st' via generateQuietPrompt, exactly like
             // callScribe. generateQuietPrompt can't be aborted, so race the passed
             // signal, GENERATION_STOPPED, and a timeout to release the in-flight guard.
@@ -159,7 +159,7 @@ export async function summarizeRange(range, signal) {
     // corrupts the per-message rollback markers and would hide the shared messages
     // permanently. Overlapping summaries have no coherent semantics anyway.
     if (rangeOverlapsSummary(chat, range)) {
-        return { ok: false, error: 'That range overlaps an existing summary — roll it back first (/dle-summarize-rollback) before re-summarizing these messages.' };
+        return { ok: false, error: 'That range overlaps an existing summary — roll it back first (/oq-summarize-rollback) before re-summarizing these messages.' };
     }
 
     const userMessage = buildSummaryUserMessage(chat, range.start, range.end);

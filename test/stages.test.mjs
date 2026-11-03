@@ -759,7 +759,7 @@ test('F5: Lookback depth 0 → dedup disabled (M-4 fix, 2026-05-22)', () => {
     // returns the entire array, so callers asking for "no lookback" silently got
     // "lookback against ALL history." Now `<= 0` is an explicit no-op that matches
     // the semantic the parameter name implies. UI still clamps to min 1; this
-    // guards external callers (`/dle-why`, future programmatic call sites).
+    // guards external callers (`/oq-why`, future programmatic call sites).
     const entry = makeEntry('Any Entry', { injectionPosition: 1, injectionDepth: 4, injectionRole: 'system' });
     entry._contentHash = 'abc123';
     const policy = buildExemptionPolicy([], [], []);

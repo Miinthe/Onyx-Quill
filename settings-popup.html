@@ -1,11 +1,11 @@
-<!-- DeepLore — Settings Popup (header strip + grouped sidebar nav) -->
+<!-- Onyx Quill — Settings Popup (header strip + grouped sidebar nav) -->
 <div class="dle-settings-popup">
 
     <!-- Header strip: brand + master enable + help -->
     <header class="dle-settings-header">
         <div class="dle-brand">
             <span class="dle-brand-logo" id="dle-sp-brand-logo" aria-hidden="true"></span>
-            <span class="dle-brand-name" data-i18n="dle_about_title">DeepLore</span>
+            <span class="dle-brand-name" data-i18n="dle_about_title">Onyx Quill</span>
             <span class="dle-version-chip" id="dle-sp-version" data-i18n="dle_about_version_text">v2.6.2</span>
         </div>
         <div class="dle-header-spacer"></div>
@@ -13,7 +13,7 @@
             <span data-i18n="dle_settings_master_enabled_label">Enabled</span>
             <span class="dle-switch"><input id="dle-sp-enabled" type="checkbox"><span class="track"></span></span>
         </label>
-        <a href="https://github.com/pixelnull/sillytavern-DeepLore/wiki" target="_blank" rel="noopener noreferrer" class="dle-header-icon" title="Open the DeepLore wiki" data-i18n="[title]dle_settings_header_help_title;[aria-label]dle_settings_header_help_title" aria-label="Open the DeepLore wiki">
+        <a href="https://github.com/Miinthe/Onyx-Quill/wiki" target="_blank" rel="noopener noreferrer" class="dle-header-icon" title="Open the Onyx Quill wiki" data-i18n="[title]dle_settings_header_help_title;[aria-label]dle_settings_header_help_title" aria-label="Open the Onyx Quill wiki">
             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
         </a>
         <!-- LOCAL PATCH (Miinthe, 2026-10-03): a close button that always fits on a phone screen. -->
@@ -236,7 +236,7 @@
 
             <div class="dle-panel-header">
                 <h3 class="dle-panel-title" data-i18n="dle_ai_connections_heading">AI Connections</h3>
-                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_ai_connections">Which AI connection each DeepLore tool uses — profiles, models, and per-tool overrides.</p>
+                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_ai_connections">Which AI connection each Onyx Quill tool uses — profiles, models, and per-tool overrides.</p>
             </div>
 
             <div class="dle-settings-section" id="dle-sp-ai-connections">
@@ -259,7 +259,7 @@
 
             <div class="dle-panel-header">
                 <h3 class="dle-panel-title" data-i18n="dle_tab_search">Search</h3>
-                <p class="dle-panel-subtitle"><span data-i18n="dle_settings_panel_sub_search">How DeepLore finds and ranks entries — keyword matching and AI selection, unified.</span>
+                <p class="dle-panel-subtitle"><span data-i18n="dle_settings_panel_sub_search">How Onyx Quill finds and ranks entries — keyword matching and AI selection, unified.</span>
                     <span class="dle-merge-note"><i class="fa-solid fa-code-merge" aria-hidden="true"></i><span data-i18n="dle_settings_search_merge_note">was Matching + AI Search</span></span></p>
             </div>
 
@@ -269,7 +269,7 @@
 
             <div class="flex-container flexFlowColumn">
                 <div class="flex-container">
-                    <div class="flex1" title="How DeepLore matches entries to inject." data-i18n="[title]dle_search_mode_tooltip">
+                    <div class="flex1" title="How Onyx Quill matches entries to inject." data-i18n="[title]dle_search_mode_tooltip">
                         <label for="dle-sp-search-mode"><small data-i18n="dle_search_mode_label">Mode</small></label>
                         <select id="dle-sp-search-mode" class="text_pole">
                             <option value="keywords-only" data-i18n="dle_search_mode_keywords">Keyword Only</option>
@@ -385,7 +385,7 @@
                     <input id="dle-sp-import-compress-default" type="checkbox" class="checkbox">
                     <span data-i18n="dle_compress_import_label">Shrink imported entries to save tokens (caveman mode)</span>
                 </label>
-                <div class="flex-container dle-sp-indent" title="How WI 'Example Messages' positions (before_example_messages / after_example_messages) are converted. DLE has no EM slot, so 'Append' makes them regular vault entries with a '## Example Dialogue' subheader; 'Skip' drops them entirely. Per-import override available from the post-import popup." data-i18n="[title]dle_wi_em_handling_tooltip">
+                <div class="flex-container dle-sp-indent" title="How WI 'Example Messages' positions (before_example_messages / after_example_messages) are converted. Onyx Quill has no EM slot, so 'Append' makes them regular vault entries with a '## Example Dialogue' subheader; 'Skip' drops them entirely. Per-import override available from the post-import popup." data-i18n="[title]dle_wi_em_handling_tooltip">
                     <div class="flex1">
                         <label for="dle-sp-wi-import-em-handling"><small data-i18n="dle_wi_em_handling_label">WI Example Messages on import</small></label>
                         <select id="dle-sp-wi-import-em-handling" class="text_pole">
@@ -455,7 +455,7 @@
 
             <div class="dle-settings-section">
             <h4 data-i18n="dle_injection_mode_heading">Injection Mode</h4>
-            <p class="dle-section-desc" data-i18n="dle_injection_mode_desc">Control how DeepLore places entries into the prompt.</p>
+            <p class="dle-section-desc" data-i18n="dle_injection_mode_desc">Control how Onyx Quill places entries into the prompt.</p>
 
             <div class="radio_group">
                 <label title="Use the standard SillyTavern injection method with fixed position, depth, and role." data-i18n="[title]dle_injection_extension_tooltip">
@@ -485,7 +485,7 @@
                         <div class="dle-injection-ext-controls">
                             <span class="dle-text-xs dle-muted" data-i18n="dle_injection_constants_same">Same position as Lore Entries</span>
                         </div>
-                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_constants">DLE Constants</code></span>
+                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_constants">Onyx Quill Constants</code></span>
                     </div>
                     <div class="dle-injection-status">
                         <span id="dle-sp-inj-constants-status" class="dle-text-xs dle-muted"></span>
@@ -516,7 +516,7 @@
                                 </select>
                             </span>
                         </div>
-                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_lore">DLE Lore Entries</code></span>
+                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_lore">Onyx Quill Lore Entries</code></span>
                     </div>
                     <div class="dle-injection-status">
                         <span id="dle-sp-inj-lore-status" class="dle-text-xs dle-muted"></span>
@@ -547,7 +547,7 @@
                                 </select>
                             </span>
                         </div>
-                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_notebook">DLE Author's Notebook</code></span>
+                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_notebook">Onyx Quill Author's Notebook</code></span>
                     </div>
                     <div class="dle-injection-status">
                         <span id="dle-sp-inj-notebook-status" class="dle-text-xs dle-muted"></span>
@@ -578,7 +578,7 @@
                                 </select>
                             </span>
                         </div>
-                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_pm_ai_notepad">DLE AI Notepad</code></span>
+                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_pm_ai_notepad">Onyx Quill AI Notepad</code></span>
                     </div>
                     <div class="dle-injection-status">
                         <span id="dle-sp-inj-notepad-status" class="dle-text-xs dle-muted"></span>
@@ -614,7 +614,7 @@
                     <label for="dle-sp-template"><small data-i18n="dle_template_label">Entry Format</small></label>
                     <textarea id="dle-sp-template" class="text_pole textarea_compact" rows="3" placeholder="Use {{title}} and {{content}} macros." data-i18n="[placeholder]dle_template_placeholder"></textarea>
                 </div>
-                <label class="checkbox_label" for="dle-sp-allow-wi-scan" title="When enabled, SillyTavern's built-in World Info can trigger on text inside your DeepLore entries. Useful if you use both systems. May cause duplicate injections." data-i18n="[title]dle_allow_wi_scan_tooltip">
+                <label class="checkbox_label" for="dle-sp-allow-wi-scan" title="When enabled, SillyTavern's built-in World Info can trigger on text inside your Onyx Quill entries. Useful if you use both systems. May cause duplicate injections." data-i18n="[title]dle_allow_wi_scan_tooltip">
                     <input id="dle-sp-allow-wi-scan" type="checkbox" class="checkbox">
                     <span data-i18n="dle_allow_wi_scan_label">Allow World Info Scan</span>
                 </label>
@@ -793,7 +793,7 @@
                 <div class="dle-advanced-section" data-section="sp_ai_search" style="display: none;">
                     <label class="dle-advanced-subheader"><small data-i18n="dle_ai_utilities_label">AI Utilities</small></label>
                     <div class="flex-container">
-                        <div class="flex1" title="When running /dle-optimize-keys, use keyword-only analysis or two-stage (keyword + AI) analysis." data-i18n="[title]dle_optimize_keys_mode_tooltip">
+                        <div class="flex1" title="When running /oq-optimize-keys, use keyword-only analysis or two-stage (keyword + AI) analysis." data-i18n="[title]dle_optimize_keys_mode_tooltip">
                             <label for="dle-sp-optimize-keys-mode"><small data-i18n="dle_optimize_keys_mode_label">Optimize Keys Mode</small></label>
                             <select id="dle-sp-optimize-keys-mode" class="text_pole">
                                 <option value="keyword" data-i18n="dle_search_mode_keywords">Keyword Only</option>
@@ -878,7 +878,7 @@
                     </div>
                     <div id="dle-sp-ai-notepad-mode-extract-desc" class="dle-text-xs dle-muted" style="display: none; margin-top: var(--dle-space-1);">
                         <i class="fa-solid fa-bolt" aria-hidden="true"></i>
-                        After each response, DLE sends the text to your <b>AI Search connection</b> to extract session notes. Works with any writing model — the extraction uses a separate, reliable call. Visible "Note to self:" prose is automatically stripped. Costs one extra API call per message.
+                        After each response, Onyx Quill sends the text to your <b>AI Search connection</b> to extract session notes. Works with any writing model — the extraction uses a separate, reliable call. Visible "Note to self:" prose is automatically stripped. Costs one extra API call per message.
                     </div>
                 </div>
 
@@ -1021,7 +1021,7 @@
 
             <div class="dle-panel-header">
                 <h3 class="dle-panel-title" data-i18n="dle_feature_graph_h4">Graph</h3>
-                <p class="dle-panel-subtitle" data-i18n="dle_feature_graph_p">Tune how the relationship graph (/dle-graph) looks and behaves.</p>
+                <p class="dle-panel-subtitle" data-i18n="dle_feature_graph_p">Tune how the relationship graph (/oq-graph) looks and behaves.</p>
             </div>
 
             <div class="dle-settings-section">
@@ -1089,12 +1089,12 @@
 
             <div class="dle-panel-header">
                 <h3 class="dle-panel-title" data-i18n="dle_tab_prompts">Prompts</h3>
-                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_prompts">Override DeepLore's built-in AI prompts with editable files in your vault.</p>
+                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_prompts">Override Onyx Quill's built-in AI prompts with editable files in your vault.</p>
             </div>
 
             <div class="dle-settings-section">
                 <h4 data-i18n="dle_prompts_h4">Editable Prompts</h4>
-                <p class="dle-section-desc" data-i18n="dle_prompts_desc">Override DeepLore's built-in LLM prompts with files in your Obsidian vault. Edit the files in Obsidian, click Reload to pick up changes. Disabled until an Obsidian vault is connected.</p>
+                <p class="dle-section-desc" data-i18n="dle_prompts_desc">Override Onyx Quill's built-in LLM prompts with files in your Obsidian vault. Edit the files in Obsidian, click Reload to pick up changes. Disabled until an Obsidian vault is connected.</p>
 
                 <div class="flex-container dle-sp-margin-top">
                     <div class="flex1" title="The language of the built-in prompt templates. Changing this and clicking Export overwrites every file in the prompts folder with this locale's defaults." data-i18n="[title]dle_prompts_language_tooltip">
@@ -1204,7 +1204,7 @@
                     <div id="dle-sp-rebuild-trigger-desc" class="dle-mb-1">
                         <span class="dle-text-xs dle-muted" id="dle-sp-rebuild-trigger-ttl-desc" data-i18n="dle_rebuild_trigger_ttl_desc">Rebuild after a time interval (uses Cache Duration above). Best for most users.</span>
                         <span class="dle-text-xs dle-muted" id="dle-sp-rebuild-trigger-gen-desc" style="display: none;" data-i18n="dle_rebuild_trigger_gen_desc">Rebuild every N generations (messages sent). Use if you edit vault entries mid-chat and want changes picked up quickly.</span>
-                        <span class="dle-text-xs dle-muted" id="dle-sp-rebuild-trigger-manual-desc" style="display: none;" data-i18n="dle_rebuild_trigger_manual_desc">Only rebuild when you use /dle-refresh or reopen the chat. Best for stable vaults that rarely change.</span>
+                        <span class="dle-text-xs dle-muted" id="dle-sp-rebuild-trigger-manual-desc" style="display: none;" data-i18n="dle_rebuild_trigger_manual_desc">Only rebuild when you use /oq-refresh or reopen the chat. Best for stable vaults that rarely change.</span>
                     </div>
                     <div class="flex-container" id="dle-sp-rebuild-gen-interval-row" style="display: none;">
                         <div class="flex1" title="Rebuild the index every N generations. Default: 10." data-i18n="[title]dle_rebuild_gen_interval_tooltip">
@@ -1221,7 +1221,7 @@
 
             <div class="flex-container flexFlowColumn">
                 <div class="flex-container">
-                    <div class="flex1" title="Max response tokens for /dle-review. 0 = auto. Default: 0." data-i18n="[title]dle_review_tokens_tooltip">
+                    <div class="flex1" title="Max response tokens for /oq-review. 0 = auto. Default: 0." data-i18n="[title]dle_review_tokens_tooltip">
                         <label for="dle-sp-review-tokens"><small data-i18n="dle_review_tokens_label">Review Response Tokens (0 = auto)</small></label>
                         <input id="dle-sp-review-tokens" type="number" class="text_pole" min="0" max="100000" />
                     </div>
@@ -1247,23 +1247,23 @@
             </div>
 
             <div class="dle-about-hero">
-                <div id="dle-sp-mascot" class="dle-about-logo" title="Who tends the deep lore?" tabindex="0" role="button" data-i18n="[title]dle_about_mascot_tooltip;[aria-label]dle_about_mascot_tooltip" aria-label="Who tends the deep lore?"></div>
+                <div id="dle-sp-mascot" class="dle-about-logo" title="Who tends the deep lore?" data-i18n="[title]dle_about_mascot_tooltip;[aria-label]dle_about_mascot_tooltip" aria-label="Who tends the deep lore?"></div>
                 <div class="dle-about-links">
-                    <a href="https://github.com/pixelnull/sillytavern-DeepLore" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon">
+                    <a href="https://github.com/Miinthe/Onyx-Quill" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon">
                         <i class="fa-brands fa-github" aria-hidden="true"></i>
                         <span data-i18n="dle_about_github_link">GitHub</span>
                     </a>
-                    <a href="https://github.com/pixelnull/sillytavern-DeepLore/wiki" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon">
+                    <a href="https://github.com/Miinthe/Onyx-Quill/wiki" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-book" aria-hidden="true"></i>
                         <span data-i18n="dle_about_wiki_link">Wiki</span>
                     </a>
-                    <a href="https://infosec.exchange/@pixelnull" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon">
-                        <i class="fa-brands fa-mastodon" aria-hidden="true"></i>
-                        <span data-i18n="dle_about_mastodon_link">@pixelnull</span>
+                    <a href="https://github.com/pixelnull/sillytavern-DeepLore" target="_blank" rel="noopener noreferrer" class="menu_button menu_button_icon" title="DeepLore by pixelnull — what Onyx Quill is built on">
+                        <i class="fa-brands fa-github" aria-hidden="true"></i>
+                        <span>DeepLore</span>
                     </a>
                 </div>
                 <p class="dle-about-credits" data-i18n-html="dle_settings_about_credits_html">
-                    Made by <strong>pixelnull</strong> &middot; Licensed under <a href="https://github.com/pixelnull/sillytavern-DeepLore/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a> &middot; Icons by <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">Flaticon</a>
+                    Onyx Quill by <strong>Miinthe</strong>, built on DeepLore by <strong>pixelnull</strong> &middot; Licensed under <a href="https://github.com/Miinthe/Onyx-Quill/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a> &middot; Icons by <a href="https://www.flaticon.com" target="_blank" rel="noopener noreferrer">Flaticon</a>
                 </p>
             </div>
 
@@ -1287,7 +1287,7 @@
             <div class="dle-settings-section">
                 <h4 data-i18n="dle_about_token_estimation_h4">Token Estimation</h4>
                 <p class="dle-note-block" data-i18n="dle_about_token_estimation_note">
-                    Token counts shown throughout DLE (budget bars, entry sizes, injection totals) are
+                    Token counts shown throughout Onyx Quill (budget bars, entry sizes, injection totals) are
                     <strong>estimates based on ~4 characters per token</strong>. This is accurate for
                     typical English text but may undercount for non-Latin scripts, code blocks, or
                     highly punctuated content. For precise counts, consult your API provider's tokenizer.
@@ -1309,7 +1309,7 @@
                         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                         <span data-i18n="dle_reset_ai_breaker_button">Reset AI Breaker</span>
                     </div>
-                    <div id="dle-sp-reset-defaults" class="menu_button menu_button_icon dle-danger-btn" role="button" tabindex="0" title="Reset all DeepLore settings to their defaults. Vault and AI connections are preserved." data-i18n="[title]dle_reset_defaults_tooltip">
+                    <div id="dle-sp-reset-defaults" class="menu_button menu_button_icon dle-danger-btn" role="button" tabindex="0" title="Reset all Onyx Quill settings to their defaults. Vault and AI connections are preserved." data-i18n="[title]dle_reset_defaults_tooltip">
                         <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
                         <span data-i18n="dle_reset_defaults_button">Reset All Settings to Defaults</span>
                     </div>
@@ -1329,7 +1329,7 @@
 
             <div class="dle-panel-header">
                 <h3 class="dle-panel-title" data-i18n="dle_tab_reference">Reference</h3>
-                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_reference">Every /dle slash command — searchable, runnable, and linked to its feature.</p>
+                <p class="dle-panel-subtitle" data-i18n="dle_settings_panel_sub_reference">Every /oq slash command — searchable, runnable, and linked to its feature.</p>
             </div>
 
             <h4 data-i18n="dle_settings_reference_slash_commands_h4">Slash Commands</h4>

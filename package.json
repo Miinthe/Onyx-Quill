@@ -1,13 +1,13 @@
 {
-  "name": "sillytavern-deeplore",
-  "version": "2.6.2",
-  "description": "Use your Obsidian vault as an AI-powered lorebook \u2014 keywords + AI selection, so your lore fires when it matters",
-  "author": "pixelnull",
+  "name": "sillytavern-onyx-quill",
+  "version": "1.0.0",
+  "description": "Lore from your Obsidian vault, storyboards, a cast of NPCs and a co-writer for SillyTavern. Built on DeepLore by pixelnull.",
+  "author": "Miinthe",
   "license": "MIT",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pixelnull/sillytavern-DeepLore"
+    "url": "https://github.com/Miinthe/Onyx-Quill"
   },
   "scripts": {
     "test": "node test/unit.mjs",
@@ -34,7 +34,7 @@
     "test:audit-fix-lifecycle": "node test/audit-fix-lifecycle.test.mjs",
     "test:audit-fix-vault": "node test/audit-fix-vault.test.mjs",
     "test:audit-fix-secondary": "node test/audit-fix-secondary.test.mjs",
-    "test:all": "node test/unit.mjs && node test/integration.mjs && node test/fields.test.mjs && node test/stages.test.mjs && node test/contracts.test.mjs && node test/diagnostics.test.mjs && node test/vault.test.mjs && node test/regression.test.mjs && node test/verdict.test.mjs && node test/i18n.test.mjs && node test/wi-import.test.mjs && node test/prompts-delete-safety.test.mjs && node test/prompts-store.test.mjs && node test/prompts-api.test.mjs && node test/dag.test.mjs && node test/health.test.mjs && node test/verify-imports.mjs && node test/i18n-html.test.mjs && node test/audit-fix-privacy.test.mjs && node test/audit-fix-lifecycle.test.mjs && node test/audit-fix-vault.test.mjs && node test/audit-fix-secondary.test.mjs && npm run test:local-patches && npm run test:trackers && npm run test:autotrack && npm run -s test:storyboard && npm run -s test:conditions && npm run -s test:board-model && npm run test:board-window && npm run test:board-templates && npm run test:spell && npm run test:forks && npm run test:collections && npm run test:places && npm run test:state && npm run test:rolls && npm run test:reevaluate && npm run test:characters && npm run test:board-entry && npm run test:run && npm run test:board-links && npm run test:timeline && npm run test:mero && npm run test:mero-tools && npm run test:engine && npm run test:meters && npm run test:cast && npm run test:cast-voice && npm run test:notices && npm run test:pitches && npm run test:kit && npm run test:bar && npm run test:mero-view && npm run test:filters-view && npm run test:cast-view && npm run test:story-view && npm run test:lore-view && npm run test:settings-view && npm run test:budget && npm run test:notes && npm run test:world && npm run test:regen",
+    "test:all": "node test/unit.mjs && node test/integration.mjs && node test/fields.test.mjs && node test/stages.test.mjs && node test/contracts.test.mjs && node test/diagnostics.test.mjs && node test/vault.test.mjs && node test/regression.test.mjs && node test/verdict.test.mjs && node test/i18n.test.mjs && node test/wi-import.test.mjs && node test/prompts-delete-safety.test.mjs && node test/prompts-store.test.mjs && node test/prompts-api.test.mjs && node test/dag.test.mjs && node test/health.test.mjs && node test/verify-imports.mjs && node test/i18n-html.test.mjs && node test/audit-fix-privacy.test.mjs && node test/audit-fix-lifecycle.test.mjs && node test/audit-fix-vault.test.mjs && node test/audit-fix-secondary.test.mjs && npm run test:local-patches && npm run test:trackers && npm run test:autotrack && npm run -s test:storyboard && npm run -s test:conditions && npm run -s test:board-model && npm run test:board-window && npm run test:board-templates && npm run test:spell && npm run test:forks && npm run test:collections && npm run test:places && npm run test:state && npm run test:rolls && npm run test:reevaluate && npm run test:characters && npm run test:board-entry && npm run test:run && npm run test:board-links && npm run test:timeline && npm run test:mero && npm run test:mero-tools && npm run test:engine && npm run test:meters && npm run test:cast && npm run test:cast-voice && npm run test:notices && npm run test:pitches && npm run test:kit && npm run test:bar && npm run test:mero-view && npm run test:filters-view && npm run test:cast-view && npm run test:story-view && npm run test:lore-view && npm run test:settings-view && npm run test:budget && npm run test:notes && npm run test:world && npm run test:regen && npm run test:onyx-start",
     "test:imports": "node test/verify-imports.mjs",
     "lint": "eslint .",
     "test:story-view": "node test/story-view.test.mjs",
@@ -80,7 +80,8 @@
     "test:icon-drawer": "node test/icon-drawer.test.mjs",
     "test:slop": "node test/slop.test.mjs",
     "test:guided-swipe": "node test/guided-swipe.test.mjs",
-    "test:cast-ties": "node test/cast-ties.test.mjs"
+    "test:cast-ties": "node test/cast-ties.test.mjs",
+    "test:onyx-start": "node test/onyx-start.test.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.4"

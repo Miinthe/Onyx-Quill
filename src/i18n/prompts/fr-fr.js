@@ -118,7 +118,7 @@ Directives :
 Réponds avec un objet JSON : {"suggested": ["keyword1", "keyword2", ...], "reasoning": "Brève explication des changements"}`;
 
 // ══════════════════════════════════════════════════════════════════════════
-// /dle-summarize-range — résumeur de plage de chat
+// /oq-summarize-range — résumeur de plage de chat
 // ══════════════════════════════════════════════════════════════════════════
 
 export const SUMMARIZE_PROMPT = "Tu es un résumeur de session. Lis la plage de chat suivante et écris un résumé concis en prose qui préserve : qui a agi, ce qui s'est passé, décisions clés, et ton émotionnel. Produis uniquement le résumé — pas de préambule, pas de méta-commentaire, pas d'en-têtes.";

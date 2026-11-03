@@ -56,8 +56,8 @@ let installed = false;
 
 function debugModeOn() {
     try {
-        // DIAG-01: canonical key is 'deeplore_enhanced', not legacy 'deeplore'.
-        return !!(globalThis.extension_settings?.deeplore_enhanced?.debugMode);
+        // DIAG-01: the settings key (was 'deeplore_enhanced' before the Onyx Quill rename).
+        return !!(globalThis.extension_settings?.onyxquill?.debugMode);
     } catch { return false; }
 }
 

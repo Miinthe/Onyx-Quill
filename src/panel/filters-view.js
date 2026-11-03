@@ -9,7 +9,7 @@
  *   this chat's own folders              → today's folder picker (.dle-folder-set-btn, with "Clear all folders")
  *   DeepLore for <character>             → characters.js setCharacterSwitch()   (today: the card's checkbox)
  *   DeepLore in this chat                → characters.js setChatSwitch()        (today: the card's dropdown; here a choice row)
- *   set / remove / clear a field value   → today's /dle-set-* windows; ✕ on a value, as today's chips
+ *   set / remove / clear a field value   → today's /oq-set-* windows; ✕ on a value, as today's chips
  *   show the unused fields               → the fold's "Show" (her patch 2026-10-03)
  *   clear all field values, edit the filter fields, full view → today's toolbar buttons, still in the page
  * Today's tab content stays in the page, hidden (.dle-fv-today): its renders keep running, its buttons keep their
@@ -92,7 +92,7 @@ export function mountFiltersView(panel) {
         items.push({ icon: 'folder', label: 'This chat’s own folders…', sub: 'this chat only', onClick: () => proxy('.dle-folder-set-btn') });
         if (!m.group) {
             items.push({ heading: 'Switch' });
-            items.push({ label: `DeepLore for ${m.title}`, sub: 'all chats with this character', checked: m.charOn, onClick: () => setCharacterSwitch(!m.charOn) });
+            items.push({ label: `Onyx Quill for ${m.title}`, sub: 'all chats with this character', checked: m.charOn, onClick: () => setCharacterSwitch(!m.charOn) });
         }
         items.push({ heading: 'Fields' });
         items.push({ icon: 'eye', label: ui.showAll ? 'Hide the unused fields' : 'Show the unused fields', onClick: () => { ui.showAll = !ui.showAll; ui.fieldsOpen = true; draw(); } });
@@ -119,7 +119,7 @@ export function mountFiltersView(panel) {
         const nm = el('span', 'dle-fv-nm', m.title + (m.run ? ` · run ${m.run}` : ''));
         nm.title = nm.textContent;
         const state = el('span', 'dle-fv-state ' + (m.on ? 'on' : 'off'), m.on ? 'on' : 'off');
-        state.title = `DeepLore is ${m.on ? 'on' : 'off'} in this chat`;
+        state.title = `Onyx Quill is ${m.on ? 'on' : 'off'} in this chat`;
         hd.append(nm, el('span', 'dle-fv-tag', 'This chat'), state);
         c.append(hd);
         if (m.why) c.append(el('div', 'dle-fv-mini dle-fv-why', m.why.charAt(0).toUpperCase() + m.why.slice(1) + '.'));
@@ -132,8 +132,8 @@ export function mountFiltersView(panel) {
 
         if (m.switchOptions) {
             const ft = el('div', 'dle-fv-ft');
-            ft.append(el('span', 'dle-fv-mini', 'DeepLore in this chat'));
-            const s = K.seg({ options: m.switchOptions, value: m.chatSwitch, label: 'DeepLore in this chat', onChange: v => setChatSwitch(v) });
+            ft.append(el('span', 'dle-fv-mini', 'Onyx Quill in this chat'));
+            const s = K.seg({ options: m.switchOptions, value: m.chatSwitch, label: 'Onyx Quill in this chat', onChange: v => setChatSwitch(v) });
             s.classList.add('dle-fv-seg');
             ft.append(s);
             c.append(ft);

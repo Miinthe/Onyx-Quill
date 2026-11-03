@@ -166,21 +166,21 @@ export const STRINGS_EN = {
     failed: (n) => `${n} failed`,
     nativeSection: () => 'Fields imported and active',
     roundTripSection: () => 'SillyTavern-specific fields preserved (not acted on)',
-    roundTripExplainer: () => 'Safe to ignore — DeepLore doesn\'t use these. They land in vault frontmatter so you can see what SillyTavern had configured. Remove the lines only if your Markdown feels cluttered. Run <code>/dle-lint</code> to find which entries carry them.',
+    roundTripExplainer: () => 'Safe to ignore — Onyx Quill doesn\'t use these. They land in vault frontmatter so you can see what SillyTavern had configured. Remove the lines only if your Markdown feels cluttered. Run <code>/oq-lint</code> to find which entries carry them.',
     emSection: () => 'Example Messages handling',
     emAppendedCount: (n) => `${n} appended as subheader`,
     emSkippedCount: (n) => `${n} skipped`,
     emExplainer: () => `SillyTavern's "Example Messages" slot is a special prompt position for sample
 dialogue lines that ride alongside the example messages already in your chat.
-DeepLore doesn't have that slot — by default we tuck these entries' content
+Onyx Quill doesn't have that slot — by default we tuck these entries' content
 under a "## Example Dialogue" subheader inside the entry body, so they still
 reach the model when the entry triggers.
 <br><br>
 Honestly, one short flavor quote inside a character entry is usually enough to
 teach an LLM the voice. If you'd rather skip them on future imports, the button
 below flips the setting permanently (until you change it back in
-<code>Settings → DeepLore → Matching → Import → WI Example Messages on import</code>).
-Entries already imported stay in the vault — <code>/dle-delete</code> them by
+<code>Settings → Onyx Quill → Matching → Import → WI Example Messages on import</code>).
+Entries already imported stay in the vault — <code>/oq-delete</code> them by
 name if you want them gone.`,
     emSkipButton: () => 'Always skip Example Messages on import (reversible in settings)',
     emEntriesTitle: (n) => `Entry titles (${n})`,

@@ -39,7 +39,7 @@ export async function writeEntry(form, { reindex = true } = {}) {
     try {
         const s = getSettings();
         const v = resolveWriteVault('autoSuggest', s);
-        if (!v?.host && !v?.port) return { ok: false, error: 'no vault to write to — set one up in DeepLore\'s settings' };
+        if (!v?.host && !v?.port) return { ok: false, error: 'no vault to write to — set one up in Onyx Quill\'s settings' };
         const { filename, content } = buildEntryFile(form, { stamp: runStampYaml(chat_metadata?.deeplore_context, ['character', 'instance']), lorebookTag: s.lorebookTag || 'lorebook' });
         const there = await readNote(v.host, v.port, v.apiKey, filename, !!v.https);
         if (there.ok) return { ok: false, exists: true, filename, error: `${filename} already exists — nothing was written` };
@@ -108,7 +108,7 @@ export function refuseFound(colId, pendId) {
     if (!r.found) return false;
     saveLiveState(r.state);
     saveTrackers(getTrackers());
-    try { toastr.info(`Not kept. DeepLore won't ask about ${escapeHtml(r.found.name)} again in this chat.`, 'Storyboard', { escapeHtml: false }); } catch { /* noop */ }
+    try { toastr.info(`Not kept. Onyx Quill won't ask about ${escapeHtml(r.found.name)} again in this chat.`, 'Storyboard', { escapeHtml: false }); } catch { /* noop */ }
     return true;
 }
 

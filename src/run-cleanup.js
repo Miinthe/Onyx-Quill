@@ -132,7 +132,7 @@ export async function openCleanup(r) {
     body.innerHTML = (plan.count ? '' : `<p>No files of run ${R} were found in your vault.</p>`)
         + plan.groups.map((g, i) => `<details class="dle-rc-grp"><summary><input type="checkbox" checked data-g="${i}" aria-label="${esc(g.label)}"><b>${esc(g.label)}</b><span class="dle-rc-mini">${g.files.length}</span></summary><ul>${g.files.map((f, j) => `<li><label><input type="checkbox" checked data-f="${i}:${j}"><span>${esc(f.path)}</span></label></li>`).join('')}</ul></details>`).join('')
         + (plan.kept.length ? `<details class="dle-rc-kept"><summary>Kept: ${plan.kept.length} ${plan.kept.length === 1 ? 'file' : 'files'} another run also uses</summary><ul>${plan.kept.map(k => `<li><b>${esc(k.path)}</b> — ${esc(k.why)}</li>`).join('')}</ul></details>` : '')
-        + (forgets ? `<p class="dle-rc-also">Also in DeepLore: forget run ${R}'s folders (Filters).</p>` : '')
+        + (forgets ? `<p class="dle-rc-also">Also in Onyx Quill: forget run ${R}'s folders (Filters).</p>` : '')
         + `<p class="dle-rc-mini">${forGood() ? 'Deleted for good — there is no undo. (Settings › Vault)' : `They move to “${esc(trashName())}” in your vault; drag a file back out to undo. Folders left empty stay — remove them in Obsidian. (Settings › Vault)`}</p>`;
     const ticked = () => [...body.querySelectorAll('[data-f]:checked')].map(c => { const [i, j] = c.dataset.f.split(':').map(Number); return plan.groups[i].files[j]; });
     const label = () => {

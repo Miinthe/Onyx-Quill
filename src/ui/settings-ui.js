@@ -139,7 +139,7 @@ function bindVaultListEvents(settings, $scope = null, $addBtn = null) {
                 }
                 newName = `${newName} ${counter}`;
                 $(this).val(newName);
-                toastr.warning(`Vault name already in use. Renamed to "${newName}".`, 'DeepLore', { timeOut: 4000 });
+                toastr.warning(`Vault name already in use. Renamed to "${newName}".`, 'Onyx Quill', { timeOut: 4000 });
             }
             settings.vaults[idx].name = newName;
         } else if ($(this).hasClass('dle-vault-host')) {
@@ -287,7 +287,7 @@ function bindVaultListEvents(settings, $scope = null, $addBtn = null) {
         const idx = parseInt(row.data('index'), 10);
         if (isNaN(idx) || !settings.vaults[idx]) return;
         if (settings.vaults.length <= 1) {
-            toastr.warning('At least one vault connection is required. Add another vault before removing this one.', 'DeepLore');
+            toastr.warning('At least one vault connection is required. Add another vault before removing this one.', 'Onyx Quill');
             return;
         }
         const vaultName = settings.vaults[idx].name || `Vault ${idx + 1}`;
@@ -378,7 +378,7 @@ function populateProfileDropdownIn($container, selectId, settingsKey) {
             // Profiles (profile-is-canonical since v2.5) — point the user at where to make one.
             $select.after(
                 '<div class="dle-no-profiles-help dle-text-xs dle-muted" style="margin-top:4px;">'
-                + '<i class="fa-solid fa-circle-info"></i> No connection profiles yet. DeepLore routes AI through '
+                + '<i class="fa-solid fa-circle-info"></i> No connection profiles yet. Onyx Quill routes AI through '
                 + 'SillyTavern <strong>Connection Profiles</strong> — create one in <strong>API Connections</strong> '
                 + '(the plug icon, top bar) → <strong>Connection Profile</strong>, then reopen these settings.'
                 + '</div>',
@@ -494,7 +494,7 @@ async function saveCurrentAsPreset($container, $select, toolKey, settings) {
     const $textarea = $container.find(`#${tool.textareaId}`);
     const text = $textarea.val()?.trim();
     if (!text) {
-        toastr.warning('Textarea is empty — nothing to save.', 'DeepLore');
+        toastr.warning('Textarea is empty — nothing to save.', 'Onyx Quill');
         $select.val('');
         return;
     }
@@ -525,7 +525,7 @@ async function saveCurrentAsPreset($container, $select, toolKey, settings) {
     saveSettingsDebounced();
     refreshPresetDropdown($select, settings);
     $select.val('');
-    toastr.success(`Preset "${presetName}" saved.`, 'DeepLore');
+    toastr.success(`Preset "${presetName}" saved.`, 'Onyx Quill');
 }
 
 async function deletePreset($container, $select, toolKey, settings) {
@@ -555,7 +555,7 @@ async function deletePreset($container, $select, toolKey, settings) {
         delete settings.promptPresets[toolKey][toDelete];
         saveSettingsDebounced();
         refreshPresetDropdown($select, settings);
-        toastr.success(`Preset "${toDelete}" deleted.`, 'DeepLore');
+        toastr.success(`Preset "${toDelete}" deleted.`, 'Onyx Quill');
     }
     $select.val('');
 }
@@ -1560,12 +1560,12 @@ function loadPopupSettings($container) {
 /** Show exactly what the judge would be sent for this chat (old window: Preview; new window: The judge ▸ Its prompt). */
 export async function previewJudgePrompt() {
     const settings = getSettings();
-    if (!chat || chat.length === 0) { toastr.info('No active chat.', 'DeepLore'); return; }
+    if (!chat || chat.length === 0) { toastr.info('No active chat.', 'Onyx Quill'); return; }
     await ensureIndexFresh();
-    if (vaultIndex.length === 0) { toastr.info('No entries indexed.', 'DeepLore'); return; }
+    if (vaultIndex.length === 0) { toastr.info('No entries indexed.', 'Onyx Quill'); return; }
     let candidateManifest, candidateHeader, modeLabel;
     if (settings.aiSearchMode === 'ai-only') { const r = buildCandidateManifest(vaultIndex); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = 'AI-only (full vault)'; }
-    else { const kr = matchEntries(chat); const nc = kr.matched.filter(e => !e.constant); if (nc.length === 0) { toastr.warning('No entries matched the current chat. Try /dle-simulate for details.', 'DeepLore'); return; } const r = buildCandidateManifest(kr.matched); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = `Two-stage (${nc.length} candidates)`; }
+    else { const kr = matchEntries(chat); const nc = kr.matched.filter(e => !e.constant); if (nc.length === 0) { toastr.warning('No entries matched the current chat. Try /oq-simulate for details.', 'Onyx Quill'); return; } const r = buildCandidateManifest(kr.matched); candidateManifest = r.manifest; candidateHeader = r.header; modeLabel = `Two-stage (${nc.length} candidates)`; }
     const chatContext = buildAiChatContext(chat, settings.aiSearchScanDepth);
     const maxE = settings.unlimitedEntries ? 'as many as are relevant' : String(settings.maxEntries);
     // Preview-only AI search prompt (Settings popup). Same fallback chain
@@ -1610,11 +1610,11 @@ export async function exportDiagnosticsFlow() {
                 ${statsHtml}
                 <p><strong>Please verify the diagnostic file before sharing.</strong>
                 The format is plain markdown around a base64 blob — any LLM can audit it:</p>
-                <p><em>"Decode the base64 blob in this DLE diagnostic report and tell me
+                <p><em>"Decode the base64 blob in this Onyx Quill diagnostic report and tell me
                 everything personally identifiable that's still in it."</em></p>
                 <p>If you find anything we missed, that's a bug — please open an issue.</p>
                 <p style="margin-top: 14px;">
-                    <a href="https://github.com/pixelnull/sillytavern-DeepLore/issues/new"
+                    <a href="https://github.com/Miinthe/Onyx-Quill/issues/new"
                        target="_blank" rel="noopener noreferrer"
                        class="menu_button menu_button_icon">
                         <i class="fa-solid fa-up-right-from-square"></i>
@@ -1632,8 +1632,8 @@ export async function exportDiagnosticsFlow() {
             ? 'Your browser may not support gzip compression. Try a recent Chrome, Firefox, or Safari.'
             : msg.includes('SecurityError') || msg.includes('NotAllowed')
                 ? 'Browser blocked the file download. Check pop-up blocker or security settings.'
-                : 'Try /dle-diagnostics in chat instead, or check browser console (F12) for details.';
-        try { toastr.error(`Diagnostic export failed. ${hint}`, 'DeepLore', { timeOut: 10000 }); } catch {}
+                : 'Try /oq-diagnostics in chat instead, or check browser console (F12) for details.';
+        try { toastr.error(`Diagnostic export failed. ${hint}`, 'Onyx Quill', { timeOut: 10000 }); } catch {}
     }
     return false;
 }
@@ -1661,11 +1661,11 @@ export async function scanForVaultFlow() {
             enabled: true,
         });
         saveSettingsDebounced();
-        toastr.success(`Added ${picked.vaultName} (${picked.host}:${picked.port}) — fill in the API key if needed.`, 'DeepLore');
+        toastr.success(`Added ${picked.vaultName} (${picked.host}:${picked.port}) — fill in the API key if needed.`, 'Onyx Quill');
         return true;
     } catch (err) {
         console.error('[DLE] Vault scan error:', err);
-        toastr.error('Vault scan didn\'t find anything. Make sure Obsidian is running.', 'DeepLore');
+        toastr.error('Vault scan didn\'t find anything. Make sure Obsidian is running.', 'Onyx Quill');
         return false;
     }
 }
@@ -1682,22 +1682,22 @@ export async function resetAllSettingsFlow() {
     settings._vaultsMigrated = true;
     invalidateSettingsCache();
     saveSettingsDebounced();
-    toastr.success('Settings are back to their defaults. Your connections, prompts, words and lists stayed.', 'DeepLore');
+    toastr.success('Settings are back to their defaults. Your connections, prompts, words and lists stayed.', 'Onyx Quill');
     return true;
 }
 
 /** Clear the AI pause DeepLore sets after repeated AI errors (asks first). */
 export async function resetAiBreakerFlow() {
     const confirmed = await callGenericPopup(
-        '<div style="text-align:center;"><p><strong>Reset the AI pause?</strong></p><p>After repeated AI errors DeepLore pauses its AI for a short while. Reset, and it tries again right away.</p></div>',
+        '<div style="text-align:center;"><p><strong>Reset the AI pause?</strong></p><p>After repeated AI errors Onyx Quill pauses its AI for a short while. Reset, and it tries again right away.</p></div>',
         POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
     );
     if (!confirmed) return;
     const result = resetAiCircuitBreaker();
     if (result.wasOpen) {
-        toastr.success('The AI pause is over: DeepLore tries its AI again with the next reply.', 'DeepLore');
+        toastr.success('The AI pause is over: Onyx Quill tries its AI again with the next reply.', 'Onyx Quill');
     } else {
-        toastr.info('The AI was not paused.', 'DeepLore');
+        toastr.info('The AI was not paused.', 'Onyx Quill');
     }
 }
 
@@ -1901,34 +1901,6 @@ function bindPopupEvents($container) {
             if (brand) brand.innerHTML = svg;
         })
         .catch(() => {});
-
-    // Easter egg — companion character cards.
-    $c('#dle-sp-mascot').on('click', async function () {
-        const basePath = new URL('../../assets/companions/', import.meta.url).href;
-        const companions = [
-            { file: 'Kara-Emily-Gren-STChar.png', name: 'Kara Emily Gren', desc: 'Forensic researcher. Was. The boundary between study and practice became more a matter of preference.' },
-            { file: 'Nott-STChar.png', name: 'Nott', desc: 'Norse goddess of night. Pale, tattooed, wrapped in black that drinks light rather than catching it.' },
-        ];
-        const rows = companions.map(c =>
-            `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--SmartThemeBorderColor);">
-                <div style="flex:1;">
-                    <strong>${escapeHtml(c.name)}</strong>
-                    <div class="dle-text-xs dle-muted" style="margin-top:2px;">${escapeHtml(c.desc)}</div>
-                </div>
-                <a href="${basePath}${c.file}" download="${c.file}" class="menu_button menu_button_icon" style="text-decoration:none;white-space:nowrap;flex-shrink:0;">
-                    <i class="fa-solid fa-download" aria-hidden="true"></i>
-                </a>
-            </div>`
-        ).join('');
-        await callGenericPopup(
-            `<div style="text-align:center;margin-bottom:12px;">
-                <h3 style="margin:0 0 4px;">The Companions</h3>
-                <span class="dle-text-xs dle-muted">SillyTavern character cards — import them and say hello.</span>
-            </div>
-            <div>${rows}</div>`,
-            POPUP_TYPE.TEXT, '', { wide: false, large: false, allowVerticalScrolling: true }
-        );
-    });
 
     $c('#dle-sp-scan-vaults').on('click', async function () {
         const $btn = $(this);
@@ -2156,7 +2128,7 @@ function bindPopupEvents($container) {
     $c('#dle-sp-notebook-enabled').on('change', function () {
         settings.notebookEnabled = $(this).prop('checked'); saveSettingsDebounced();
     });
-    $c('#dle-sp-open-notebook').on('click', function () { if (!settings.notebookEnabled) { toastr.warning('Enable the Author Notebook checkbox above to use this feature.', 'DeepLore'); return; } showNotebookPopup(); });
+    $c('#dle-sp-open-notebook').on('click', function () { if (!settings.notebookEnabled) { toastr.warning('Enable the Author Notebook checkbox above to use this feature.', 'Onyx Quill'); return; } showNotebookPopup(); });
 
     // ── Features — AI Notebook ──
     $c('#dle-sp-ai-notepad-enabled').on('change', function () {
@@ -2190,7 +2162,7 @@ function bindPopupEvents($container) {
         // Tag mode never calls AI — hide its connection accordion.
         $c('.dle-conn-accordion[data-tool="aiNotepad"]').toggle(!isTag);
     });
-    $c('#dle-sp-open-ai-notepad').on('click', function () { if (!settings.aiNotepadEnabled) { toastr.warning('Enable the AI Notepad checkbox above to use this feature.', 'DeepLore'); return; } showAiNotepadPopup(); });
+    $c('#dle-sp-open-ai-notepad').on('click', function () { if (!settings.aiNotepadEnabled) { toastr.warning('Enable the AI Notepad checkbox above to use this feature.', 'Onyx Quill'); return; } showAiNotepadPopup(); });
 
     // ── Features — Scribe ──
     $c('#dle-sp-scribe-enabled').on('change', function () {
@@ -2221,12 +2193,12 @@ function bindPopupEvents($container) {
         const $btn = $(this), $icon = $btn.find('i');
         // Wave I: hide the rotate glyph, show a goo-spinner while re-indexing.
         $btn.prop('disabled', true); $icon.hide(); $btn.append('<goo-spinner class="dle-btn-goo" size="22" color="currentColor" aria-hidden="true"></goo-spinner>');
-        try { setVaultIndex([]); setIndexTimestamp(0); await buildIndex(); toastr.success(`Indexed ${vaultIndex.length} entries.`, 'DeepLore'); updatePopupIndexStats(); }
-        catch (err) { console.warn('[DLE] Refresh index failed:', err); toastr.error('Couldn\'t refresh your lore. Check your Obsidian connection.', 'DeepLore'); }
+        try { setVaultIndex([]); setIndexTimestamp(0); await buildIndex(); toastr.success(`Indexed ${vaultIndex.length} entries.`, 'Onyx Quill'); updatePopupIndexStats(); }
+        catch (err) { console.warn('[DLE] Refresh index failed:', err); toastr.error('Couldn\'t refresh your lore. Check your Obsidian connection.', 'Onyx Quill'); }
         finally { $btn.prop('disabled', false); $btn.find('.dle-btn-goo').remove(); $icon.show(); }
     });
     $c('#dle-sp-browse-entries').on('click', () => showBrowsePopup());
-    $c('#dle-sp-test-match').on('click', () => toastr.info('Use /dle-simulate in chat for a full match test.', 'DeepLore'));
+    $c('#dle-sp-test-match').on('click', () => toastr.info('Use /oq-simulate in chat for a full match test.', 'Onyx Quill'));
     $c('#dle-sp-cache-ttl').on('input', function () { settings.cacheTTL = numVal($(this).val(), 300); saveSettingsDebounced(); });
     $c('#dle-sp-sync-interval').on('input', function () { settings.syncPollingInterval = numVal($(this).val(), 0); saveSettingsDebounced(); setupSyncPolling(buildIndexWithReuse, buildIndexWithReuse); });
     $c('#dle-sp-index-rebuild-trigger').on('change', function () {
@@ -2364,7 +2336,7 @@ function renderReferenceTab($container) {
         if (!cmd) return;
         try {
             await navigator.clipboard.writeText(cmd);
-            toastr.success(`Copied ${cmd}`, 'DeepLore', { timeOut: 1500 });
+            toastr.success(`Copied ${cmd}`, 'Onyx Quill', { timeOut: 1500 });
         } catch {
             // Clipboard API unavailable (insecure context) — fall back to selection.
             const range = document.createRange();

@@ -132,7 +132,7 @@ test('full-parity: parser flags every round-trip field with W_WI_ROUND_TRIP', ()
         .filter(w => w.code === 'W_WI_ROUND_TRIP')
         .map(w => w.field);
     for (const [, fmKey] of WI_ROUND_TRIP_FIELDS) {
-        assert(flagged.includes(fmKey), `field NOT surfaced by /dle-lint: ${fmKey}`);
+        assert(flagged.includes(fmKey), `field NOT surfaced by /oq-lint: ${fmKey}`);
     }
 });
 

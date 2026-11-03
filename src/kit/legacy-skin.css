@@ -152,3 +152,5 @@ body #toast-container > div.dle-toast .toast-message { color: var(--dk-ink); fon
 body #toast-container > div.dle-toast .toast-message u, body #toast-container > div.dle-toast .toast-message a { color: var(--dk-accent-ink); }
 body #toast-container > div.dle-toast .toast-close-button { color: var(--dk-muted); text-shadow: none; opacity: .8; }
 body #toast-container > div.dle-toast .toast-progress { background: var(--dk-accent); opacity: .5; }
+/* filled accent buttons: no SillyTavern text shadow on them or their label (it blurs dark letters on the accent — 2026-11-03) */
+dialog.popup.dle-skin .popup-controls .popup-button-ok, dialog.popup.dle-skin .popup-controls .popup-button-ok *, dialog.dle-skin .dle-graph-back-btn--accent, dialog.dle-skin .dle-graph-back-btn--accent * { text-shadow: none; }

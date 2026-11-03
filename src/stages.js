@@ -9,7 +9,7 @@ import { evaluateOperator } from './fields.js';
 /** Lazy debugMode read — avoids importing settings.js (ST globals break tests). */
 function _isDebug() {
     try {
-        const ext = globalThis.extension_settings?.deeplore_enhanced;
+        const ext = globalThis.extension_settings?.onyxquill;
         return ext?.debugMode === true;
     } catch { return false; }
 }
@@ -459,7 +459,7 @@ export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, de
     // M-4 (2026-05-22): `arr.slice(-0)` returns the entire array because `-0 === 0`,
     // so a `lookbackDepth=0` call would silently dedup against EVERY historical log
     // entry — the opposite of "no lookback". The settings UI clamps to min 1, but
-    // this function is exported and called from `index.js`, the `/dle-why` slash
+    // this function is exported and called from `index.js`, the `/oq-why` slash
     // command, and external callers that may not respect the UI minimum. Treat
     // `<= 0` as "dedup disabled" to match the semantic the name implies.
     if (lookbackDepth <= 0) {

@@ -17,16 +17,16 @@ export function registerGatingCommands() {
     // ── Per-Chat Pin/Block ──
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-pin',
+        name: 'oq-pin',
         callback: async (_args, entryName) => {
             const name = (entryName || '').trim();
-            if (!name) { toastr.info(tr('dle_cmd_pin_which_toast'), 'DeepLore'); return ''; }
-            if (!await ensureFreshOrToast('/dle-pin')) return '';
+            if (!name) { toastr.info(tr('dle_cmd_pin_which_toast'), 'Onyx Quill'); return ''; }
+            if (!await ensureFreshOrToast('/oq-pin')) return '';
             const entry = await resolveEntryByName(name, vaultIndex, { commandLabel: 'Pin' });
             if (!entry) return '';
             if (!chat_metadata.deeplore_pins) chat_metadata.deeplore_pins = [];
             if (chat_metadata.deeplore_pins.some(p => matchesPinBlock(p, entry))) {
-                toastr.info(trf('dle_cmd_pin_alreadypinned_toast', entry.title), 'DeepLore'); return '';
+                toastr.info(trf('dle_cmd_pin_alreadypinned_toast', entry.title), 'Onyx Quill'); return '';
             }
             if (chat_metadata.deeplore_blocks) {
                 chat_metadata.deeplore_blocks = chat_metadata.deeplore_blocks.filter(b => !matchesPinBlock(b, entry));
@@ -34,7 +34,7 @@ export function registerGatingCommands() {
             chat_metadata.deeplore_pins.push({ title: entry.title, vaultSource: entry.vaultSource || null });
             saveMetadataDebounced();
             notifyPinBlockChanged();
-            toastr.success(trf('dle_toast_entry_pinned', entry.title), 'DeepLore');
+            toastr.success(trf('dle_toast_entry_pinned', entry.title), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -43,29 +43,29 @@ export function registerGatingCommands() {
             isRequired: true,
             enumProvider: () => vaultIndex.map(e => new SlashCommandEnumValue(e.title)),
         })],
-        helpString: 'Pin an entry so it always injects in this chat. Usage: /dle-pin <entry name>.',
+        helpString: 'Pin an entry so it always injects in this chat. Usage: /oq-pin <entry name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-unpin',
+        name: 'oq-unpin',
         callback: async (_args, entryName) => {
             const name = (entryName || '').trim();
-            if (!name) { toastr.info('Unpin which entry? Try: /dle-unpin Eris', 'DeepLore'); return ''; }
+            if (!name) { toastr.info('Unpin which entry? Try: /oq-unpin Eris', 'Onyx Quill'); return ''; }
             if (!chat_metadata.deeplore_pins || chat_metadata.deeplore_pins.length === 0) {
-                toastr.info('No pinned entries.', 'DeepLore'); return '';
+                toastr.info('No pinned entries.', 'Onyx Quill'); return '';
             }
             // Build {title} shape that resolveEntryByName understands so fuzzy / picker fires.
             const pinSet = chat_metadata.deeplore_pins.map(p => ({ ...normalizePinBlock(p), _raw: p }));
             const chosen = await resolveEntryByName(name, pinSet, { commandLabel: 'Unpin' });
             if (!chosen) return '';
             const idx = chat_metadata.deeplore_pins.indexOf(chosen._raw);
-            if (idx === -1) { toastr.info(`"${chosen.title}" is not pinned.`, 'DeepLore'); return ''; }
+            if (idx === -1) { toastr.info(`"${chosen.title}" is not pinned.`, 'Onyx Quill'); return ''; }
             const removedItem = chat_metadata.deeplore_pins.splice(idx, 1)[0];
             const removed = normalizePinBlock(removedItem).title;
             saveMetadataDebounced();
             notifyPinBlockChanged();
-            toastr.success(trf('dle_toast_entry_unpinned', removed), 'DeepLore');
+            toastr.success(trf('dle_toast_entry_unpinned', removed), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -74,21 +74,21 @@ export function registerGatingCommands() {
             isRequired: true,
             enumProvider: () => (chat_metadata.deeplore_pins || []).map(p => new SlashCommandEnumValue(normalizePinBlock(p).title)),
         })],
-        helpString: 'Remove a per-chat pin. Usage: /dle-unpin <entry name>.',
+        helpString: 'Remove a per-chat pin. Usage: /oq-unpin <entry name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-block',
+        name: 'oq-block',
         callback: async (_args, entryName) => {
             const name = (entryName || '').trim();
-            if (!name) { toastr.info(tr('dle_cmd_block_which_toast'), 'DeepLore'); return ''; }
-            if (!await ensureFreshOrToast('/dle-block')) return '';
+            if (!name) { toastr.info(tr('dle_cmd_block_which_toast'), 'Onyx Quill'); return ''; }
+            if (!await ensureFreshOrToast('/oq-block')) return '';
             const entry = await resolveEntryByName(name, vaultIndex, { commandLabel: 'Block' });
             if (!entry) return '';
             if (!chat_metadata.deeplore_blocks) chat_metadata.deeplore_blocks = [];
             if (chat_metadata.deeplore_blocks.some(b => matchesPinBlock(b, entry))) {
-                toastr.info(trf('dle_cmd_block_alreadyblocked_toast', entry.title), 'DeepLore'); return '';
+                toastr.info(trf('dle_cmd_block_alreadyblocked_toast', entry.title), 'Onyx Quill'); return '';
             }
             if (chat_metadata.deeplore_pins) {
                 chat_metadata.deeplore_pins = chat_metadata.deeplore_pins.filter(p => !matchesPinBlock(p, entry));
@@ -96,7 +96,7 @@ export function registerGatingCommands() {
             chat_metadata.deeplore_blocks.push({ title: entry.title, vaultSource: entry.vaultSource || null });
             saveMetadataDebounced();
             notifyPinBlockChanged();
-            toastr.success(trf('dle_toast_entry_blocked', entry.title), 'DeepLore');
+            toastr.success(trf('dle_toast_entry_blocked', entry.title), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -105,28 +105,28 @@ export function registerGatingCommands() {
             isRequired: true,
             enumProvider: () => vaultIndex.map(e => new SlashCommandEnumValue(e.title)),
         })],
-        helpString: 'Block an entry so it never injects in this chat. Usage: /dle-block <entry name>.',
+        helpString: 'Block an entry so it never injects in this chat. Usage: /oq-block <entry name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-unblock',
+        name: 'oq-unblock',
         callback: async (_args, entryName) => {
             const name = (entryName || '').trim();
-            if (!name) { toastr.info('Unblock which entry? Try: /dle-unblock Eris', 'DeepLore'); return ''; }
+            if (!name) { toastr.info('Unblock which entry? Try: /oq-unblock Eris', 'Onyx Quill'); return ''; }
             if (!chat_metadata.deeplore_blocks || chat_metadata.deeplore_blocks.length === 0) {
-                toastr.info('No blocked entries.', 'DeepLore'); return '';
+                toastr.info('No blocked entries.', 'Onyx Quill'); return '';
             }
             const blockSet = chat_metadata.deeplore_blocks.map(b => ({ ...normalizePinBlock(b), _raw: b }));
             const chosen = await resolveEntryByName(name, blockSet, { commandLabel: 'Unblock' });
             if (!chosen) return '';
             const idx = chat_metadata.deeplore_blocks.indexOf(chosen._raw);
-            if (idx === -1) { toastr.info(`"${chosen.title}" is not blocked.`, 'DeepLore'); return ''; }
+            if (idx === -1) { toastr.info(`"${chosen.title}" is not blocked.`, 'Onyx Quill'); return ''; }
             const removedItem = chat_metadata.deeplore_blocks.splice(idx, 1)[0];
             const removed = normalizePinBlock(removedItem).title;
             saveMetadataDebounced();
             notifyPinBlockChanged();
-            toastr.success(trf('dle_toast_entry_unblocked', removed), 'DeepLore');
+            toastr.success(trf('dle_toast_entry_unblocked', removed), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -135,17 +135,17 @@ export function registerGatingCommands() {
             isRequired: true,
             enumProvider: () => (chat_metadata.deeplore_blocks || []).map(b => new SlashCommandEnumValue(normalizePinBlock(b).title)),
         })],
-        helpString: 'Remove a per-chat block. Usage: /dle-unblock <entry name>.',
+        helpString: 'Remove a per-chat block. Usage: /oq-unblock <entry name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-pins',
+        name: 'oq-pins',
         callback: async () => {
             const pins = chat_metadata.deeplore_pins || [];
             const blocks = chat_metadata.deeplore_blocks || [];
             if (pins.length === 0 && blocks.length === 0) {
-                toastr.info(tr('dle_cmd_pins_none_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_pins_none_toast'), 'Onyx Quill');
                 return '';
             }
             let html = '<div class="dle-popup">';
@@ -279,7 +279,7 @@ export function registerGatingCommands() {
                         : raw;
                     saveMetadataDebounced();
                     notifyGatingChanged();
-                    toastr.success(`${label} set to "${raw}" for this chat.`, 'DeepLore');
+                    toastr.success(`${label} set to "${raw}" for this chat.`, 'Onyx Quill');
                     (root.querySelector('.popup-button-ok') || document.querySelector('.popup-button-ok'))?.click();
                 };
                 goBtn?.addEventListener('click', applyTyped);
@@ -296,9 +296,9 @@ export function registerGatingCommands() {
                         saveMetadataDebounced();
                         notifyGatingChanged();
                         if (selected) {
-                            toastr.success(`${label} set to "${selected}" for this chat.`, 'DeepLore');
+                            toastr.success(`${label} set to "${selected}" for this chat.`, 'Onyx Quill');
                         } else {
-                            toastr.success(trf('dle_cmd_clearfield_success_toast', label), 'DeepLore');
+                            toastr.success(trf('dle_cmd_clearfield_success_toast', label), 'Onyx Quill');
                         }
                         document.querySelector('.popup-button-ok')?.click();
                     });
@@ -345,13 +345,13 @@ export function registerGatingCommands() {
                 POPUP_TYPE.TEXT, '', { wide: false },
             );
         } else {
-            toastr.success(`${setLabel} set to "${v}" — ${matchCount} ${matchCount === 1 ? 'entry matches' : 'entries match'}.`, 'DeepLore');
+            toastr.success(`${setLabel} set to "${v}" — ${matchCount} ${matchCount === 1 ? 'entry matches' : 'entries match'}.`, 'Onyx Quill');
         }
     };
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-era',
-        aliases: ['dle-era'],
+        name: 'oq-set-era',
+        aliases: ['oq-era'],
         callback: async (_args, value) => {
             await setScalarGatingField(value, { browseLabel: 'Era', field: 'era', setLabel: 'Era', availableLabel: 'eras' });
             return '';
@@ -361,13 +361,13 @@ export function registerGatingCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             enumProvider: () => [...collectFieldValues('era').values()].map(v => new SlashCommandEnumValue(v.display)),
         })],
-        helpString: 'Set the current era for contextual gating. Usage: /dle-set-era <era>. Run without args to browse available values.',
+        helpString: 'Set the current era for contextual gating. Usage: /oq-set-era <era>. Run without args to browse available values.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-location',
-        aliases: ['dle-loc'],
+        name: 'oq-set-location',
+        aliases: ['oq-loc'],
         callback: async (_args, value) => {
             await setScalarGatingField(value, { browseLabel: 'Location', field: 'location', setLabel: 'Location', availableLabel: 'locations' });
             return '';
@@ -377,12 +377,12 @@ export function registerGatingCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             enumProvider: () => [...collectFieldValues('location').values()].map(v => new SlashCommandEnumValue(v.display)),
         })],
-        helpString: 'Set the current location for contextual gating. Usage: /dle-set-location <location>. Run without args to browse available values.',
+        helpString: 'Set the current location for contextual gating. Usage: /oq-set-location <location>. Run without args to browse available values.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-scene',
+        name: 'oq-set-scene',
         callback: async (_args, value) => {
             await setScalarGatingField(value, { browseLabel: 'Scene Type', field: 'scene_type', setLabel: 'Scene type', availableLabel: 'scene types' });
             return '';
@@ -392,12 +392,12 @@ export function registerGatingCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             enumProvider: () => [...collectFieldValues('scene_type').values()].map(v => new SlashCommandEnumValue(v.display)),
         })],
-        helpString: 'Set the current scene type for contextual gating. Usage: /dle-set-scene <type>. Run without args to browse available values.',
+        helpString: 'Set the current scene type for contextual gating. Usage: /oq-set-scene <type>. Run without args to browse available values.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-characters',
+        name: 'oq-set-characters',
         callback: async (_args, value) => {
             const ctx = ensureCtx();
             const v = (value || '').trim();
@@ -465,9 +465,9 @@ export function registerGatingCommands() {
                         saveMetadataDebounced();
                         notifyGatingChanged();
                         if (selected.size > 0) {
-                            toastr.success(trf('dle_cmd_setcharacters_success_toast', [...selected].join(', ')), 'DeepLore');
+                            toastr.success(trf('dle_cmd_setcharacters_success_toast', [...selected].join(', ')), 'Onyx Quill');
                         } else {
-                            toastr.success(tr('dle_cmd_setcharacters_cleared_toast'), 'DeepLore');
+                            toastr.success(tr('dle_cmd_setcharacters_cleared_toast'), 'Onyx Quill');
                         }
                     },
                 });
@@ -477,7 +477,7 @@ export function registerGatingCommands() {
             ctx.character_present = v.split(',').map(c => c.trim()).filter(Boolean);
             saveMetadataDebounced();
             notifyGatingChanged();
-            toastr.success(trf('dle_cmd_setcharacters_success_toast', ctx.character_present.join(', ')), 'DeepLore');
+            toastr.success(trf('dle_cmd_setcharacters_success_toast', ctx.character_present.join(', ')), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -485,13 +485,13 @@ export function registerGatingCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             enumProvider: () => [...collectFieldValues('character_present').values()].map(v => new SlashCommandEnumValue(v.display)),
         })],
-        helpString: 'Set which characters are present for contextual gating. Usage: /dle-set-characters <name1, name2>. Run without args to browse and toggle.',
+        helpString: 'Set which characters are present for contextual gating. Usage: /oq-set-characters <name1, name2>. Run without args to browse and toggle.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-context-state',
-        aliases: ['dle-ctx'],
+        name: 'oq-context-state',
+        aliases: ['oq-ctx'],
         callback: async () => {
             const ctx = chat_metadata.deeplore_context || {};
             const allDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
@@ -511,21 +511,21 @@ export function registerGatingCommands() {
     // ── Generic Field Commands ──
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-field',
+        name: 'oq-set-field',
         callback: async (_args, input) => {
             const parts = (input || '').trim().split(/\s+/);
             const fieldName = parts[0] || '';
             const value = parts.slice(1).join(' ').trim();
 
             if (!fieldName) {
-                toastr.info(tr('dle_cmd_setfield_which_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_setfield_which_toast'), 'Onyx Quill');
                 return '';
             }
 
             const allDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
             const fd = allDefs.find(d => d.name === fieldName);
             if (!fd) {
-                toastr.warning(`Unknown field "${fieldName}". Defined fields: ${allDefs.map(d => d.name).join(', ')}`, 'DeepLore');
+                toastr.warning(`Unknown field "${fieldName}". Defined fields: ${allDefs.map(d => d.name).join(', ')}`, 'Onyx Quill');
                 return '';
             }
 
@@ -547,7 +547,7 @@ export function registerGatingCommands() {
             const matchCount = countFieldMatches(fd.name, value);
             toastr.success(
                 `${fd.label} set to "${value}"${matchCount > 0 ? ` — ${matchCount} ${matchCount === 1 ? 'entry matches' : 'entries match'}` : ' — no entries match'}.`,
-                'DeepLore',
+                'Onyx Quill',
             );
             return '';
         },
@@ -558,23 +558,23 @@ export function registerGatingCommands() {
                 return allDefs.map(f => new SlashCommandEnumValue(f.name, f.label));
             },
         })],
-        helpString: 'Set a custom gating field value. Usage: /dle-set-field <field_name> [value]. Run with just the field name to browse values.',
+        helpString: 'Set a custom gating field value. Usage: /oq-set-field <field_name> [value]. Run with just the field name to browse values.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-clear-field',
+        name: 'oq-clear-field',
         callback: async (_args, fieldName) => {
             const name = (fieldName || '').trim();
             if (!name) {
-                toastr.info(tr('dle_cmd_clearfield_which_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_clearfield_which_toast'), 'Onyx Quill');
                 return '';
             }
 
             const allDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
             const fd = allDefs.find(d => d.name === name);
             if (!fd) {
-                toastr.warning(`Unknown field "${name}". Defined fields: ${allDefs.map(d => d.name).join(', ')}`, 'DeepLore');
+                toastr.warning(`Unknown field "${name}". Defined fields: ${allDefs.map(d => d.name).join(', ')}`, 'Onyx Quill');
                 return '';
             }
 
@@ -586,7 +586,7 @@ export function registerGatingCommands() {
             }
             saveMetadataDebounced();
             notifyGatingChanged();
-            toastr.success(trf('dle_cmd_clearfield_success_toast', fd.label), 'DeepLore');
+            toastr.success(trf('dle_cmd_clearfield_success_toast', fd.label), 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -596,13 +596,13 @@ export function registerGatingCommands() {
                 return allDefs.map(f => new SlashCommandEnumValue(f.name, f.label));
             },
         })],
-        helpString: 'Clear a gating field value. Usage: /dle-clear-field <field_name>.',
+        helpString: 'Clear a gating field value. Usage: /oq-clear-field <field_name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-clear-all-context',
-        aliases: ['dle-reset-context'],
+        name: 'oq-clear-all-context',
+        aliases: ['oq-reset-context'],
         callback: async () => {
             const ctx = ensureCtx();
             const allDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
@@ -616,12 +616,12 @@ export function registerGatingCommands() {
                 }
             }
             if (cleared === 0) {
-                toastr.info(tr('dle_cmd_clearallcontext_none_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_clearallcontext_none_toast'), 'Onyx Quill');
                 return '';
             }
             saveMetadataDebounced();
             notifyGatingChanged();
-            toastr.success(trPlural('dle_toast_gating_cleared', cleared), 'DeepLore');
+            toastr.success(trPlural('dle_toast_gating_cleared', cleared), 'Onyx Quill');
             return `Cleared ${cleared} fields`;
         },
         helpString: 'Clear all active gating context fields (era, location, scene, characters, custom fields) at once.',
@@ -631,14 +631,14 @@ export function registerGatingCommands() {
     // ── Folder Filter ──
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-set-folder',
-        aliases: ['dle-folder'],
+        name: 'oq-set-folder',
+        aliases: ['oq-folder'],
         callback: async (_args, input) => {
             const value = (input || '').trim();
 
             if (!value) {
                 if (folderList.length === 0) {
-                    toastr.info(tr('dle_cmd_setfolder_nofolders_toast'), 'DeepLore');
+                    toastr.info(tr('dle_cmd_setfolder_nofolders_toast'), 'Onyx Quill');
                     return '';
                 }
                 const current = chat_metadata?.deeplore_folder_filter || [];
@@ -722,7 +722,7 @@ export function registerGatingCommands() {
                                     chat_metadata.deeplore_folder_filter = null;
                                     saveMetadataDebounced();
                                     notifyGatingChanged();
-                                    toastr.success(tr('dle_cmd_setfolder_cleared_toast'), 'DeepLore');
+                                    toastr.success(tr('dle_cmd_setfolder_cleared_toast'), 'Onyx Quill');
                                     (root.querySelector('.popup-button-ok') || document.querySelector('.popup-button-ok'))?.click();
                                     return;
                                 }
@@ -748,7 +748,7 @@ export function registerGatingCommands() {
             // Space-separated, with optional quotes for paths containing spaces.
             const folders = value.match(/"[^"]+"|[^\s]+/g)?.map(f => f.replace(/"/g, '').trim()).filter(Boolean) || [];
             if (folders.length === 0) {
-                toastr.info(tr('dle_cmd_setfolder_which_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_setfolder_which_toast'), 'Onyx Quill');
                 return '';
             }
 
@@ -756,10 +756,10 @@ export function registerGatingCommands() {
             const valid = folders.filter(f => knownPaths.has(f));
             const unknown = folders.filter(f => !knownPaths.has(f));
             if (unknown.length) {
-                toastr.warning(`Unknown folder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`, 'DeepLore');
+                toastr.warning(`Unknown folder${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`, 'Onyx Quill');
             }
             if (valid.length === 0) {
-                toastr.warning(tr('dle_cmd_setfolder_nomatch_toast'), 'DeepLore');
+                toastr.warning(tr('dle_cmd_setfolder_nomatch_toast'), 'Onyx Quill');
                 return '';
             }
 
@@ -771,7 +771,7 @@ export function registerGatingCommands() {
                 if (!e.folderPath) return true;
                 return valid.some(f => e.folderPath === f || e.folderPath.startsWith(f + '/'));
             }).length;
-            toastr.success(`Folder filter: ${valid.join(', ')} — ${matchCount} entries match.`, 'DeepLore');
+            toastr.success(`Folder filter: ${valid.join(', ')} — ${matchCount} entries match.`, 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -783,16 +783,16 @@ export function registerGatingCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-clear-folder',
+        name: 'oq-clear-folder',
         callback: async () => {
             if (!chat_metadata?.deeplore_folder_filter?.length) {
-                toastr.info(tr('dle_cmd_clearfolder_nofilter_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_clearfolder_nofilter_toast'), 'Onyx Quill');
                 return '';
             }
             chat_metadata.deeplore_folder_filter = null;
             saveMetadataDebounced();
             notifyGatingChanged();
-            toastr.success(tr('dle_cmd_clearfolder_cleared_toast'), 'DeepLore');
+            toastr.success(tr('dle_cmd_clearfolder_cleared_toast'), 'Onyx Quill');
             return '';
         },
         helpString: 'Clear the folder filter, allowing entries from all folders to be injected.',

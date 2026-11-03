@@ -11,12 +11,12 @@
  *  - "a character with no folders doesn't use DeepLore": a chat with no folders anywhere is off.
  *  - DeepLore can be switched off (or on) per chat and per character; the chat's switch wins.
  *
- * Store (extension_settings.deeplore_characters, per account):
+ * Store (extension_settings.onyxquill_characters, per account):
  *   { v: 1, chars: { [avatar]: { name, folders: [], runs: { [letter]: { folders: [] } }, on?: false } } }
  * Keyed by the card's avatar file (stable across renames); the name is for showing.
  */
 
-export const CHARS_KEY = 'deeplore_characters';
+export const CHARS_KEY = 'onyxquill_characters';   // was deeplore_characters
 export const CHAT_SWITCH_KEY = 'deeplore_switch';    // chat_metadata: 'on' | 'off' (unset: follow the character)
 
 const arr = v => (Array.isArray(v) ? v : []);
@@ -101,7 +101,7 @@ export function describe({ store, key, name, run, own, chatSwitch } = {}) {
     const st = isOn({ store, key, name, run, own, chatSwitch });
     const n = chatFolders(store, key, run, own).length;
     const who = asStore(store).chars[key]?.name || name || 'This chat';
-    return `${who}${run ? ` · run ${run}` : ''} — DeepLore ${st.on ? 'on' : 'off'} (${st.why})${st.on && n ? `, ${n} folder${n > 1 ? 's' : ''}` : ''}`;
+    return `${who}${run ? ` · run ${run}` : ''} — Onyx Quill ${st.on ? 'on' : 'off'} (${st.why})${st.on && n ? `, ${n} folder${n > 1 ? 's' : ''}` : ''}`;
 }
 
 /**

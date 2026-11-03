@@ -3,10 +3,10 @@
  * Rules: characters-pure.js. The real home is the Filters hub (settings design v11, still WIP);
  * until then: a "This character (WIP)" card at the top of the side panel's Filters tab, and commands.
  *
- *   /dle-char-folders [run]   pick this character's base folders (or, with "run", this run's)
- *   /dle-char on|off          DeepLore for this character (on = follow its folders)
- *   /dle-chat on|off|follow   DeepLore for this chat only (follow = like its character)
- *   /dle-char-status          what this chat reads, and whether DeepLore is on
+ *   /oq-char-folders [run]   pick this character's base folders (or, with "run", this run's)
+ *   /oq-char on|off          DeepLore for this character (on = follow its folders)
+ *   /oq-chat on|off|follow   DeepLore for this chat only (follow = like its character)
+ *   /oq-char-status          what this chat reads, and whether DeepLore is on
  */
 import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { getContext, saveMetadataDebounced, extension_settings } from '../../../../extensions.js';
@@ -22,7 +22,7 @@ import { echo } from './echo.js';
 
 const store = () => asStore(extension_settings?.[CHARS_KEY]);
 const keep = s => { extension_settings[CHARS_KEY] = s; saveSettingsDebounced(); };
-const say = (msg, kind = 'info') => { try { toastr[kind](msg, 'DeepLore'); } catch { /* noop */ } };
+const say = (msg, kind = 'info') => { try { toastr[kind](msg, 'Onyx Quill'); } catch { /* noop */ } };
 
 /** The open chat's character ({ key: avatar, name }), or null in a group chat / no chat. */
 export function currentCharacter() {
@@ -65,7 +65,7 @@ export async function editFolders({ run = false } = {}) {
     keep(setFolders(store(), ch.key, ch.name, picked, run ? st.run : null));
     changed();
     const after = chatStatus();
-    say(`${ch.name}${run ? ` · run ${st.run.toUpperCase()}` : ''}: ${picked.length} folder${picked.length === 1 ? '' : 's'}. ${after.on ? 'DeepLore is on.' : `DeepLore is off — ${after.why}.`}`);
+    say(`${ch.name}${run ? ` · run ${st.run.toUpperCase()}` : ''}: ${picked.length} folder${picked.length === 1 ? '' : 's'}. ${after.on ? 'Onyx Quill is on.' : `Onyx Quill is off — ${after.why}.`}`);
 }
 
 export function setCharacterSwitch(on) {
@@ -73,14 +73,14 @@ export function setCharacterSwitch(on) {
     if (!ch) { say('This chat has no single character.'); return; }
     keep(setCharOn(store(), ch.key, ch.name, on));
     changed();
-    say(`DeepLore ${on ? 'follows the folders' : 'is off'} for ${ch.name}.`);
+    say(`Onyx Quill ${on ? 'follows the folders' : 'is off'} for ${ch.name}.`);
 }
 
 export function setChatSwitch(value) {
     if (value === 'on' || value === 'off') chat_metadata[CHAT_SWITCH_KEY] = value; else delete chat_metadata[CHAT_SWITCH_KEY];
     saveMetadataDebounced();
     changed();
-    say(value === 'on' ? 'DeepLore is on for this chat.' : value === 'off' ? 'DeepLore is off for this chat.' : 'This chat follows its character again.');
+    say(value === 'on' ? 'Onyx Quill is on for this chat.' : value === 'off' ? 'Onyx Quill is off for this chat.' : 'This chat follows its character again.');
 }
 
 // ── any character, not only the open chat's (the settings window's Filters hub, overhaul step 4) ──
@@ -108,7 +108,7 @@ export function setCharacterSwitchFor(key, name, on) {
     changed();
 }
 
-// ── the folder picker (same look as /dle-set-folder: search, indented paths, entry counts) ──
+// ── the folder picker (same look as /oq-set-folder: search, indented paths, entry counts) ──
 
 export async function pickFolders(current, title) {
     if (!folderList.length) { say('No folders found in the vault yet.'); return null; }
@@ -155,16 +155,16 @@ export function renderCharacterCard() {
     const runFolders = c && st.run ? c.runs?.[st.run]?.folders || [] : [];
     $card.html(st.character ? `
         <div class="dle-char-head"><b>${escapeHtml(st.character.name)}</b>${st.run ? ` <span class="dle-text-xs dle-muted">· run ${escapeHtml(st.run.toUpperCase())}</span>` : ''}<span class="dle-wip">WIP</span>
-            <span class="dle-char-state ${st.on ? 'on' : 'off'}">DeepLore ${st.on ? 'on' : 'off'}</span></div>
+            <span class="dle-char-state ${st.on ? 'on' : 'off'}">Onyx Quill ${st.on ? 'on' : 'off'}</span></div>
         <div class="dle-text-xs dle-muted">${escapeHtml(st.why)}</div>
         <div class="dle-char-row"><span class="dle-char-k">Base folders</span><span class="dle-char-chips">${chips(c?.folders || [])}</span><button type="button" class="menu_button dle-char-edit" data-run="0">Edit</button></div>
         ${st.run ? `<div class="dle-char-row"><span class="dle-char-k">Run ${escapeHtml(st.run.toUpperCase())} adds</span><span class="dle-char-chips">${chips(runFolders)}</span><button type="button" class="menu_button dle-char-edit" data-run="1">Edit</button></div>` : ''}
         <div class="dle-char-row"><span class="dle-char-k">This chat adds</span><span class="dle-char-chips">${chips(st.own)}</span></div>
         <div class="dle-char-row dle-char-switches">
-            <label class="checkbox_label"><input type="checkbox" class="dle-char-switch" ${c?.on === false ? '' : 'checked'}> DeepLore for ${escapeHtml(st.character.name)}</label>
-            <select class="text_pole dle-chat-switch" aria-label="DeepLore for this chat"><option value="follow"${!st.chatSwitch ? ' selected' : ''}>This chat: like ${escapeHtml(st.character.name)}</option><option value="on"${st.chatSwitch === 'on' ? ' selected' : ''}>This chat: always on</option><option value="off"${st.chatSwitch === 'off' ? ' selected' : ''}>This chat: off</option></select>
+            <label class="checkbox_label"><input type="checkbox" class="dle-char-switch" ${c?.on === false ? '' : 'checked'}> Onyx Quill for ${escapeHtml(st.character.name)}</label>
+            <select class="text_pole dle-chat-switch" aria-label="Onyx Quill for this chat"><option value="follow"${!st.chatSwitch ? ' selected' : ''}>This chat: like ${escapeHtml(st.character.name)}</option><option value="on"${st.chatSwitch === 'on' ? ' selected' : ''}>This chat: always on</option><option value="off"${st.chatSwitch === 'off' ? ' selected' : ''}>This chat: off</option></select>
         </div>`
-        : `<div class="dle-char-head"><b>Group chat</b><span class="dle-wip">WIP</span><span class="dle-char-state ${st.on ? 'on' : 'off'}">DeepLore ${st.on ? 'on' : 'off'}</span></div><div class="dle-text-xs dle-muted">Characters own folders in one-on-one chats. Here the chat's own folders apply.</div>`);
+        : `<div class="dle-char-head"><b>Group chat</b><span class="dle-wip">WIP</span><span class="dle-char-state ${st.on ? 'on' : 'off'}">Onyx Quill ${st.on ? 'on' : 'off'}</span></div><div class="dle-text-xs dle-muted">Characters own folders in one-on-one chats. Here the chat's own folders apply.</div>`);
     $card.find('.dle-char-edit').on('click', e => editFolders({ run: $(e.currentTarget).attr('data-run') === '1' }));
     $card.find('.dle-char-switch').on('change', e => setCharacterSwitch($(e.currentTarget).is(':checked')));
     $card.find('.dle-chat-switch').on('change', e => setChatSwitch($(e.currentTarget).val()));
@@ -173,17 +173,17 @@ export function renderCharacterCard() {
 export function registerCharacterCommands() {
     const add = props => SlashCommandParser.addCommandObject(SlashCommand.fromProps({ returns: ARGUMENT_TYPE.STRING, ...props }));
     const arg = description => [SlashCommandArgument.fromProps({ description, typeList: [ARGUMENT_TYPE.STRING] })];
-    add({ name: 'dle-char-folders', unnamedArgumentList: arg('"run" to pick the folders of this chat\'s run instead of the character\'s base folders'),
+    add({ name: 'oq-char-folders', unnamedArgumentList: arg('"run" to pick the folders of this chat\'s run instead of the character\'s base folders'),
         callback: async (_a, v) => { await editFolders({ run: String(v || '').trim().toLowerCase() === 'run' }); return ''; },
         helpString: 'Pick the folders this chat\'s character reads (base). With "run": the folders this run adds.' });
-    add({ name: 'dle-char', unnamedArgumentList: arg('on | off'),
-        callback: async (_a, v) => { const x = String(v || '').trim().toLowerCase(); if (x !== 'on' && x !== 'off') { say('Use /dle-char on or /dle-char off.'); return ''; } setCharacterSwitch(x === 'on'); return ''; },
-        helpString: 'DeepLore for this chat\'s character: off, or on (= follow its folders; no folders means off).' });
-    add({ name: 'dle-chat', unnamedArgumentList: arg('on | off | follow'),
-        callback: async (_a, v) => { const x = String(v || '').trim().toLowerCase(); if (!['on', 'off', 'follow'].includes(x)) { say('Use /dle-chat on, off or follow.'); return ''; } setChatSwitch(x); return ''; },
-        helpString: 'DeepLore for this chat only: on, off, or follow (like its character).' });
-    add({ name: 'dle-char-status', callback: async () => { const st = chatStatus(); say(`${st.text}${st.folders.length ? `\n${st.folders.join(', ')}` : ''}`); return st.text; },
-        helpString: 'What this chat reads and whether DeepLore is on.' });
+    add({ name: 'oq-char', unnamedArgumentList: arg('on | off'),
+        callback: async (_a, v) => { const x = String(v || '').trim().toLowerCase(); if (x !== 'on' && x !== 'off') { say('Use /oq-char on or /oq-char off.'); return ''; } setCharacterSwitch(x === 'on'); return ''; },
+        helpString: 'Onyx Quill for this chat\'s character: off, or on (= follow its folders; no folders means off).' });
+    add({ name: 'oq-chat', unnamedArgumentList: arg('on | off | follow'),
+        callback: async (_a, v) => { const x = String(v || '').trim().toLowerCase(); if (!['on', 'off', 'follow'].includes(x)) { say('Use /oq-chat on, off or follow.'); return ''; } setChatSwitch(x); return ''; },
+        helpString: 'Onyx Quill for this chat only: on, off, or follow (like its character).' });
+    add({ name: 'oq-char-status', callback: async () => { const st = chatStatus(); say(`${st.text}${st.folders.length ? `\n${st.folders.join(', ')}` : ''}`); return st.text; },
+        helpString: 'What this chat reads and whether Onyx Quill is on.' });
 }
 
 /**
@@ -202,6 +202,6 @@ export function autoRun() {
     if (!letter) return null;
     chat_metadata.deeplore_context = { ...dc, instance: [letter] };
     saveMetadataDebounced();
-    echo(() => toastr.info(`This new chat is run ${letter.toUpperCase()} — set by itself, so each run's own entries don't all come in at once. Change it in Filters → Instance.`, 'DeepLore'));   // a notice like the others: quiet in Immersion, listed in What changed
+    echo(() => toastr.info(`This new chat is run ${letter.toUpperCase()} — set by itself, so each run's own entries don't all come in at once. Change it in Filters → Instance.`, 'Onyx Quill'));   // a notice like the others: quiet in Immersion, listed in What changed
     return letter;
 }

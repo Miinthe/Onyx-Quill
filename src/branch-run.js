@@ -42,7 +42,7 @@ export async function maybeOfferBranchRun() {
     return chat_metadata?.[STATE_KEY]?.status === 'done';
 }
 
-/** The dialog and, on Start, the copy. Also behind /dle-branch-run. */
+/** The dialog and, on Start, the copy. Also behind /oq-branch-run. */
 export async function offerBranchRun({ fromCommand }) {
     if (busy) return 'Already open.';
     busy = true;
@@ -51,7 +51,7 @@ export async function offerBranchRun({ fromCommand }) {
         const character = first(ctx.character);
         const current = first(ctx.instance).toLowerCase();
         if (!character || !current) {
-            if (fromCommand) toastr.warning('This chat has no Character and Instance set in Filters, so there is no run to branch from.', 'DeepLore');
+            if (fromCommand) toastr.warning('This chat has no Character and Instance set in Filters, so there is no run to branch from.', 'Onyx Quill');
             return 'No run set.';
         }
         const chat = getContext()?.chat || [];
@@ -62,13 +62,13 @@ export async function offerBranchRun({ fromCommand }) {
         const atMessage = chat.length - 1;
         const branchTime = Date.parse(chat[atMessage]?.send_date);
         if (!Number.isFinite(branchTime)) {
-            toastr.warning('Could not read the time of the branch point, so session notes cannot be sorted.', 'DeepLore');
+            toastr.warning('Could not read the time of the branch point, so session notes cannot be sorted.', 'Onyx Quill');
             return 'No branch time.';
         }
 
         try { await ensureIndexFresh(); } catch { /* use what we have */ }
         const next = nextInstanceLetter(vaultIndex, character, current);
-        if (!next) { toastr.error('Ran out of instance letters (z reached).', 'DeepLore'); return 'No letter.'; }
+        if (!next) { toastr.error('Ran out of instance letters (z reached).', 'Onyx Quill'); return 'No letter.'; }
 
         const settings = getSettings();
         const vault = resolveWriteVault('scribe', settings);
@@ -143,7 +143,7 @@ export async function offerBranchRun({ fromCommand }) {
             },
         });
 
-        if (!sameChat()) { toastr.warning('Another chat is open now — nothing was copied. Open the branch again to start it as a run.', 'DeepLore'); return 'Another chat is open now.'; }
+        if (!sameChat()) { toastr.warning('Another chat is open now — nothing was copied. Open the branch again to start it as a run.', 'Onyx Quill'); return 'Another chat is open now.'; }
         if (!ok) {
             if (never) { chat_metadata[STATE_KEY] = { status: 'never' }; saveMetadataDebounced(); }
             return 'Not now.';
@@ -163,7 +163,7 @@ export async function offerBranchRun({ fromCommand }) {
 
         // ── switch this chat to the new run ── (only the branch's own chat: never one opened while the files were copied)
         if (!sameChat()) {
-            toastr.warning(`${written.length} file${written.length === 1 ? '' : 's'} copied, but another chat is open now, so no chat was switched to run ${L}. Open the branch and use /dle-branch-run (copies already there are kept).`, 'DeepLore', { timeOut: 12000 });
+            toastr.warning(`${written.length} file${written.length === 1 ? '' : 's'} copied, but another chat is open now, so no chat was switched to run ${L}. Open the branch and use /oq-branch-run (copies already there are kept).`, 'Onyx Quill', { timeOut: 12000 });
             return 'Another chat is open now.';
         }
         chat_metadata.deeplore_context = { ...ctx, instance: [next] };
@@ -183,11 +183,11 @@ export async function offerBranchRun({ fromCommand }) {
 
         const msg = `Run ${L} started — ${written.length} file${written.length === 1 ? '' : 's'} copied${skipped.length ? `, ${skipped.length} skipped` : ''}.`;
         if (skipped.length) console.warn('[DLE] branch run skipped:', skipped);
-        toastr[skipped.length ? 'warning' : 'success'](msg, 'DeepLore', { timeOut: 8000 });
+        toastr[skipped.length ? 'warning' : 'success'](msg, 'Onyx Quill', { timeOut: 8000 });
         return msg + (skipped.length ? '\nSkipped:\n' + skipped.join('\n') : '');
     } catch (err) {
         console.error('[DLE] branch run failed:', err);
-        toastr.error('Starting the branch as a new run failed: ' + (err?.message || err), 'DeepLore');
+        toastr.error('Starting the branch as a new run failed: ' + (err?.message || err), 'Onyx Quill');
         return 'Failed.';
     } finally {
         busy = false;
@@ -196,7 +196,7 @@ export async function offerBranchRun({ fromCommand }) {
 
 export function registerBranchRunCommand() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-branch-run',
+        name: 'oq-branch-run',
         callback: async () => await offerBranchRun({ fromCommand: true }),
         helpString: 'Start this chat as the next run, copying the run\'s session notes and lore up to this point.',
         returns: ARGUMENT_TYPE.STRING,

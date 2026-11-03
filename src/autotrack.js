@@ -85,7 +85,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
     if (conn.mode !== 'profile' || !conn.profileId) {
         if (!warnedNoProfile) {
             warnedNoProfile = true;
-            try { toastr.info('Story trackers can follow the story by themselves once they have a connection: DeepLore settings → AI Connections → Story Trackers → pick a profile.', 'DeepLore', { timeOut: 12000 }); } catch { /* noop */ }
+            try { toastr.info('Story trackers can follow the story by themselves once they have a connection: Onyx Quill settings → AI Connections → Story Trackers → pick a profile.', 'Onyx Quill', { timeOut: 12000 }); } catch { /* noop */ }
         }
         return [];
     }

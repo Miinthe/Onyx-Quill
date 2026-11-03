@@ -228,7 +228,7 @@ refine_keys:
 selective_logic: not_any   # only fire when neither word is present
 ```
 
-An invalid `selective_logic` value falls back to `and_any` and is flagged by `/dle-lint`. When an entry's primary key matches but the refine gate blocks it, the `/dle-inspect` trace reports the mode-aware reason (e.g. "selective_logic=and_all blocked (1/2 refine keys matched)").
+An invalid `selective_logic` value falls back to `and_any` and is flagged by `/oq-lint`. When an entry's primary key matches but the refine gate blocks it, the `/oq-inspect` trace reports the mode-aware reason (e.g. "selective_logic=and_all blocked (1/2 refine keys matched)").
 
 See [[Writing Vault Entries]] for a complete template.
 

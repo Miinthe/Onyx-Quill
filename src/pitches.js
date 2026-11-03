@@ -90,7 +90,7 @@ function pitchContext(fromMsg) {
     };
 }
 
-const noConn = 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile';
+const noConn = 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile';
 
 /**
  * 💡 Pitch (or 🎲 Roll when the menu says hidden). opts: { comment, fromMsg (index), like: [ids] — "more like these"

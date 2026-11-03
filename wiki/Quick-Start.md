@@ -12,7 +12,7 @@ Get DeepLore injecting lore in five minutes. This page covers the shortest path:
 ![Setup wizard welcome screen explaining what DeepLore does, how the two-stage pipeline works, and a Next button to begin configuration](images/dle-setup-wizard.png)
 
 > [!TIP]
-> Run `/dle-setup` to launch the guided wizard shown above. It walks vault connection, tags, matching, AI search, vault structure, and lorebook import in eight pages. See [[Setup Wizard]].
+> Run `/oq-setup` to launch the guided wizard shown above. It walks vault connection, tags, matching, AI search, vault structure, and lorebook import in eight pages. See [[Setup Wizard]].
 
 To configure manually instead:
 
@@ -54,14 +54,14 @@ The load-bearing pieces:
 ## Step 3: enable and index
 
 1. Check **Enable DeepLore** (SillyTavern → Extensions → DeepLore)
-2. In settings, **Vault** → **Reading** → **Re-read now** (or run `/dle-refresh`)
+2. In settings, **Vault** → **Reading** → **Re-read now** (or run `/oq-refresh`)
 3. The header badge should show "1 entries"
 
 ## Step 4: verify it works
 
 1. Start or continue a chat
 2. Send a message mentioning "magic" or "spellcasting"
-3. Run `/dle-inspect`. Your entry should appear in the pipeline trace
+3. Run `/oq-inspect`. Your entry should appear in the pipeline trace
 4. Press the **📖 button** on the AI message, then **Why these entries**, to open the Context Cartographer and see which entries were injected
 
 ![DLE status output showing vault connection details, 234 indexed entries with tag breakdown, unlimited budget, AI Search enabled, and session statistics](images/dle-status.png)
@@ -70,5 +70,5 @@ The load-bearing pieces:
 
 - Read [[First Steps]] to build out a usable vault
 - Check [[Writing Vault Entries]] for the full frontmatter reference
-- Run `/dle-health` to audit your entries
+- Run `/oq-health` to audit your entries
 - Run `/help slash` to list every DLE slash command (SillyTavern auto-discovers them)

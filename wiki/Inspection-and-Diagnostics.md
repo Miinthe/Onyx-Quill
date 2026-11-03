@@ -3,7 +3,7 @@
 Tools for understanding what DeepLore is doing, why entries did or did not inject, and how the vault is configured. Many of them are also reachable from the [[Drawer|side panel]] (its **Ready** button and its ⋯ menu) and from each reply's 📖 button (**Why these entries**).
 
 > [!NOTE]
-> When something is misbehaving, the fastest path is usually `/dle-health` for config sanity, then `/dle-inspect` for the last generation, then `/dle-diagnostics` for a shareable export.
+> When something is misbehaving, the fastest path is usually `/oq-health` for config sanity, then `/oq-inspect` for the last generation, then `/oq-diagnostics` for a shareable export.
 
 ---
 
@@ -34,7 +34,7 @@ Each message has a DeepLore button (📖) next to SillyTavern's own message butt
 
 ## Pipeline Inspector
 
-View a detailed trace of the last generation with `/dle-inspect`.
+View a detailed trace of the last generation with `/oq-inspect`.
 
 **Shows:**
 - Pipeline mode (two-stage, ai-only, keywords-only)
@@ -55,11 +55,11 @@ View a detailed trace of the last generation with `/dle-inspect`.
 
 **When to use:** debug why an entry was or was not injected in the last generation. The inspector shows the full picture: what matched, what the AI picked, and what got filtered out.
 
-See [[Slash Commands]] for the `/dle-inspect` command reference.
+See [[Slash Commands]] for the `/oq-inspect` command reference.
 
 ### Diagnostics export
 
-`/dle-diagnostics` (alias `/dle-diag`) downloads two files:
+`/oq-diagnostics` (alias `/oq-diag`) downloads two files:
 
 - `dle-diagnostics-<timestamp>.md`: the anonymized report, safe to share.
 - `dle-connections-reference-<timestamp>.md`: your unanonymized connection mapping, for your eyes only.
@@ -106,7 +106,7 @@ When the user stops a generation or the pipeline times out, the abort is recorde
 
 Always-on monkey patches feed several ring buffers:
 
-- `consoleBuffer` (800 entries): every console call. `/dle-logs` drains DLE-prefixed entries from this buffer.
+- `consoleBuffer` (800 entries): every console call. `/oq-logs` drains DLE-prefixed entries from this buffer.
 - `networkBuffer` (300 entries): fetch and XHR calls.
 - `errorBuffer` (100 entries): `window.onerror` and unhandled promise rejections.
 - `eventBuffer` (200 entries): DLE lifecycle events (chat changes, settings updates, index builds, AI circuit transitions).
@@ -119,7 +119,7 @@ The interceptors are wrapped in try/catch so a bug in the diagnostic layer canno
 
 ## Entry Browser
 
-Browse all indexed entries via **Lore › All entries** in the [[Drawer|side panel]], or the `/dle-browse` popup. The list below describes the `/dle-browse` popup; the side panel's list has its own search, filter chips and Select (see [[Drawer|Side Panel]]).
+Browse all indexed entries via **Lore › All entries** in the [[Drawer|side panel]], or the `/oq-browse` popup. The list below describes the `/oq-browse` popup; the side panel's list has its own search, filter chips and Select (see [[Drawer|Side Panel]]).
 
 **Features:**
 - Search by title or keyword (300ms debounce)
@@ -142,8 +142,8 @@ Browse all indexed entries via **Lore › All entries** in the [[Drawer|side pan
 When an entry has keywords but did not inject, you can find out exactly why. The "Why Not?" diagnostic walks the entry through every pipeline stage and stops at the first failure.
 
 **Where to access it:**
-- In the **Entry Browser** (`/dle-browse`): unmatched entries show a "Why not?" button. Click it to see the diagnosis inline.
-- In the **Pipeline Inspector** (`/dle-inspect`): the "Unmatched entries with keywords" section at the bottom shows inline diagnostics. Click an entry to expand.
+- In the **Entry Browser** (`/oq-browse`): unmatched entries show a "Why not?" button. Click it to see the diagnosis inline.
+- In the **Pipeline Inspector** (`/oq-inspect`): the "Unmatched entries with keywords" section at the bottom shows inline diagnostics. Click an entry to expand.
 
 **Diagnostic stages:**
 
@@ -172,7 +172,7 @@ Each diagnosis includes a plain-language explanation and, where applicable, a su
 
 ![Activation Simulation popup replaying 9 chat messages, with blue-highlighted entry names showing which vault entries activated at each Assistant and User message](images/dle-simulate.png)
 
-Replay your chat history step by step with `/dle-simulate`. Shows which entries activate and deactivate at each message.
+Replay your chat history step by step with `/oq-simulate`. Shows which entries activate and deactivate at each message.
 
 **How it works:**
 1. The simulation walks through your chat from message 1 to the end.
@@ -205,7 +205,7 @@ Replay your chat history step by step with `/dle-simulate`. Shows which entries 
 
 ![Entry Relationship Graph popup with 209 nodes and 418 edges, toolbar for Fit, Layout, Reset, PNG export, JSON export, and Analyze, with a legend showing Link, Requires, Excludes, and Cascade edge types](images/dle-graph.png)
 
-Visualize entry relationships as an interactive force-directed graph with `/dle-graph`. Nodes are entries (color-coded by type and tags), edges are wikilinks, requires/excludes connections, and cascade links. Drag, zoom, pan.
+Visualize entry relationships as an interactive force-directed graph with `/oq-graph`. Nodes are entries (color-coded by type and tags), edges are wikilinks, requires/excludes connections, and cascade links. Drag, zoom, pan.
 
 **When to use:** explore the relationship structure of the vault. Identify clusters of related entries, orphaned entries with no connections, and long dependency chains.
 
@@ -217,7 +217,7 @@ Visualize entry relationships as an interactive force-directed graph with `/dle-
 
 ## Entry analytics
 
-Track how often each entry is matched and injected across generations. View with `/dle-analytics`.
+Track how often each entry is matched and injected across generations. View with `/oq-analytics`.
 
 **Shows:**
 - Table sorted by injection count: entry name, match count, injection count, last-used timestamp
@@ -235,7 +235,7 @@ Track how often each entry is matched and injected across generations. View with
 
 ![Health Check results showing 5 errors, 6 warnings, and 12 info items organized by category. Entry Config issues include cooldown on constant and duplicate titles. Gating issues include orphaned requires and circular dependencies](images/dle-health-check.png)
 
-Audit vault entries and settings for common issues with `/dle-health`. Runs 30+ checks across multiple categories.
+Audit vault entries and settings for common issues with `/oq-health`. Runs 30+ checks across multiple categories.
 
 **Check categories:**
 - **Multi-vault:** enabled vaults, API key validation
@@ -254,4 +254,4 @@ Audit vault entries and settings for common issues with `/dle-health`. Runs 30+ 
 
 ## Parser lint
 
-`/dle-lint` (alias `/dle-l`) shows parser warnings and skipped entries from the last vault index build. The toast that appears after `/dle-refresh` mentions warnings or skips when there are any. Run lint to see which files were affected and why (missing frontmatter, malformed YAML, missing lorebook tag, oversized content, etc.).
+`/oq-lint` (alias `/oq-l`) shows parser warnings and skipped entries from the last vault index build. The toast that appears after `/oq-refresh` mentions warnings or skips when there are any. Run lint to see which files were affected and why (missing frontmatter, malformed YAML, missing lorebook tag, oversized content, etc.).

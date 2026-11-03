@@ -26,7 +26,7 @@ import { askOffscreen, suggestTies } from '../cast.js';
 import { getQueue, setQueue, runQueue, stopQueue, queueRunning, queueStopping, getSuggestions, setSuggestions, resetRound, addStaying, removeFromRound, inRound, ownHere, writingAs, setWritingAs } from '../cast-queue.js';
 import { turnIndex } from '../turn-index.js';
 import { useCastView } from '../cast-tab.js';
-import { halvesOf, moveWithin, dropIndex, roundSummary, queueSub, suggestionText, personSub, fixKnown } from './cast-view-pure.js';
+import { halvesOf, moveWithin, dropIndex, roundSummary, queueSub, suggestionText, fixKnown } from './cast-view-pure.js';
 
 const APPEARS_WORDS = { off: 'only when called in', places: 'turns up at their places', plans: 'turns up at their places or comes looking' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -71,10 +71,8 @@ function draw() {
     if (sel && !people.some(x => x.k === sel)) sel = null;
     const q = getQueue();
     const nameOf = x => (x.kind === 'you' ? userName() : x.kind === 'main' ? mainName() : people.find(y => y.c.id === x.cast && y.p.id === x.person)?.p.name ?? '?');
-    // Miinthe 2026-10-18: nobody twice — who is in the round carries their line there, People lists only the others
-    const inRound = x => q.some(y => y.kind === 'npc' && y.cast === x.c.id && y.person === x.p.id);
-    const rest = people.filter(x => !inRound(x));
-    root.append(roundFold(L, q, people, nameOf), peopleFold(L, rest, q, people.filter(x => x.n.here).length), tiesFold(L, people));
+    // People shows everyone, always (Miinthe 2026-11-03, was: only who is not in the round) — the round lists who speaks
+    root.append(roundFold(L, q, people, nameOf), peopleFold(L, people, q, people.filter(x => x.n.here).length), tiesFold(L, people));
     if (scrollToSel) { scrollToSel = false; root.querySelector('.dle-cv-tile.sel, .dle-cv-qi.sel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
 
@@ -88,13 +86,12 @@ function roundFold(L, q, people, nameOf) {
     const { mine, ai } = halvesOf(q);
     const body = [];
     let no = 0;
-    const opened = new Set();   // a person twice in the round opens under their first row only
     const personOf = x => (x.kind === 'npc' ? people.find(y => y.c.id === x.cast && y.p.id === x.person) || null : null);
     const list = (half, items, none) => {
         body.push(el('div', 'dle-cv-half', half === 'mine' ? 'Your half' : 'Then the AI'));
         if (!items.length) { body.push(el('div', 'dle-cv-none', none)); return; }
         const box = el('div', 'dle-cv-qlist'); box.dataset.half = half;
-        for (const x of items) box.append(queueItem(x, ++no, nameOf(x), { L, person: personOf(x), opened, speaking }));
+        for (const x of items) box.append(queueItem(x, ++no, nameOf(x), { person: personOf(x), speaking }));
         body.push(box);
     };
     // you're out of the scene: Send writes as one of your own NPCs (Miinthe, 2026-10-19)
@@ -148,7 +145,7 @@ function roundFold(L, q, people, nameOf) {
     return f;
 }
 
-function queueItem(x, no, name, { L, person = null, opened, speaking = null } = {}) {
+function queueItem(x, no, name, { person = null, speaking = null } = {}) {
     const wrap = el('div', 'dle-cv-qitem'); wrap.dataset.q = x.id;
     const it = el('div', 'dle-cv-qi' + (isMine(x) ? ' mine' : ' ai'));
     const grip = K.iconButton({ icon: 'grip', title: 'Drag to change the order (or use the arrow keys)' });
@@ -165,23 +162,13 @@ function queueItem(x, no, name, { L, person = null, opened, speaking = null } = 
     it.append(grip, el('span', 'dle-cv-no', String(no)), el('span', 'dle-cv-ic', icon));
     const main = el('span', 'dle-cv-main');
     const t = el('span', 'dle-cv-t'); t.textContent = name;
-    // one of the Cast: their own line too ("here · 2 plans"), and a tap opens them right here (Miinthe 2026-10-18)
-    const off = person ? L.state.cast?.[person.c.id]?.[person.p.id]?.offscreen || [] : [];
-    const veiled = !!person?.p.hidden && !peek.has(person.k);
+    // one of the Cast: just how their line gets written (Miinthe 2026-11-03: the round offers ✍️ and ✕ only — their overview
+    // with wants, plans and what they know opens from their tile in People, not here)
     const yours = !!person && speaksOf(person.p) === 'mine' && !isMine(x);   // ✍️ you write their lines, none written yet
-    const sub = person ? `${yours ? 'yours to write — empty, they say nothing' : queueSub(x)} · ${personSub(person.n, off, { veiled, speaking: speaking?.person === person.p.id && speaking?.cast === person.c.id })}` : queueSub(x);
+    const talking = !!person && speaking?.person === person.p.id && speaking?.cast === person.c.id;
+    const sub = `${yours ? 'yours to write — empty, they say nothing' : queueSub(x)}${talking ? ' · ✍️ speaking…' : ''}`;
     const s = el('span', 'dle-cv-s'); s.textContent = sub; s.title = sub;
     main.append(t, s); it.append(main);
-    const open = !!person && sel === person.k && !opened.has(person.k);
-    if (person) {
-        main.classList.add('dle-cv-open'); main.setAttribute('role', 'button'); main.tabIndex = 0;
-        main.title = open ? `Close ${person.p.name}` : `Open ${person.p.name}: wants, plans, what they know`;
-        main.setAttribute('aria-expanded', String(open));
-        const toggle = () => { sel = sel === person.k ? null : person.k; draw(); };
-        main.addEventListener('click', toggle);
-        main.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
-        if (open) it.classList.add('sel');
-    }
     if (x.kind === 'npc') {
         const w = K.iconButton({ icon: 'line', title: isMine(x) ? 'Change what you wrote, or let the AI write it' : `Write ${name}’s line yourself`, on: writing === x.id, onClick: () => { writing = writing === x.id ? null : x.id; draw(); if (writing) root.querySelector('.dle-cv-writebox textarea')?.focus(); } });
         w.classList.add('dle-cv-write'); it.append(w);
@@ -192,7 +179,10 @@ function queueItem(x, no, name, { L, person = null, opened, speaking = null } = 
     wrap.append(it);
     if (writing === x.id) {
         const box = el('div', 'dle-cv-writebox');
-        const ta = el('textarea', 'dk-field'); ta.rows = 2;
+        // room for a couple of paragraphs, and it grows with the text (Miinthe 2026-11-03: "this tiny field can be jarring")
+        const ta = el('textarea', 'dk-field dle-cv-writeta'); ta.rows = 6;
+        const grow = () => { ta.style.height = 'auto'; ta.style.height = `${Math.min(ta.scrollHeight + 2, Math.round(window.innerHeight * 0.6))}px`; };
+        ta.addEventListener('input', grow); requestAnimationFrame(grow);
         ta.placeholder = `${name}’s line, in your words`;
         ta.title = 'It goes out under their name, in your half of the round';
         ta.value = drafts.has(x.id) ? drafts.get(x.id) : (x.text || '');
@@ -204,7 +194,6 @@ function queueItem(x, no, name, { L, person = null, opened, speaking = null } = 
         box.append(ta, r);
         wrap.append(box);
     }
-    if (open) { opened.add(person.k); wrap.append(personBox(person, off, veiled, { speak: true })); }
     return wrap;
 }
 
@@ -240,9 +229,9 @@ function startDrag(e, wrap, id) {
 // ── People ──────────────────────────────────────────────────────────────────
 
 /**
- * People: a grid of who is not in this round (Miinthe 2026-10-18) — picture, name, here / away, and a + that puts them in
+ * People: a grid of everyone (Miinthe 2026-10-18; since 2026-11-03 also who is in the round) — picture, name, here / away, and a + that puts them in
  * (the AI writes their line; someone set to "✍️ you write their lines" goes to your half with the box open). You and the
- * main character get a tile too while they are out of the round. Tap a picture to open the person below the grid.
+ * main character get a tile too. Tap a picture to open the person's overview (wants, plans, what they know) — only here.
  */
 function peopleFold(L, people, q, present) {
     const speaking = npcSpeaking();
@@ -275,11 +264,13 @@ function peopleFold(L, people, q, present) {
     };
     const first = n => String(n || '?').trim().charAt(0).toUpperCase() || '?';
     const ctx = getContext();
-    const ours = [];   // You and the main character: after the favorites, before everyone else
+    const ours = [];   // You and the main character: their own row on top
     // You and the main character: always a tile — here (in this round or not) or away, with Leave / Back (Miinthe, 2026-10-19)
     const away = sceneAway();
-    const seat = (kind, who) => (away[who] ? 'away' : q.some(x => x.kind === kind) ? 'here · in this round' : 'here');
-    const leaveOf = who => ({ away: away[who], toggle: () => { const was = away[who]; setSceneAway(who, !was); K.notify({ title: 'Cast', text: `${who === 'user' ? userName() : mainName()} ${was ? 'is back in the scene' : 'left the scene'}.`, undo: K.chatOnly(() => setSceneAway(who, was), () => getContext()?.chatId ?? null) }); } });
+    const seat = (kind, who) => (away[who] ? 'away' : q.some(x => x.kind === kind) ? 'in this round' : 'here');   // in the round = here (shorter, fits the tile)
+    // coming back puts them into the round again — a round changed while they were away no longer has them (2026-11-03)
+    const setAway = (who, a) => { setSceneAway(who, a); const kind = who === 'user' ? 'you' : 'main'; if (!a && !getQueue().some(x => x.kind === kind)) setQueue(addItem(getQueue(), { kind })); };
+    const leaveOf = who => ({ away: away[who], toggle: () => { const was = away[who]; setAway(who, !was); K.notify({ title: 'Cast', text: `${who === 'user' ? userName() : mainName()} ${was ? 'is back in the scene' : 'left the scene'}.`, undo: K.chatOnly(() => setAway(who, was), () => getContext()?.chatId ?? null) }); } });
     ours.push(tile({ pic: user_avatar ? getThumbnailUrl('persona', user_avatar) : '', letter: '🙂', name: userName(), state: seat('you', 'user'), dim: away.user, add: away.user || q.some(x => x.kind === 'you') ? null : () => setQueue(addItem(getQueue(), { kind: 'you' })), addTitle: 'Your message from the chat box, in this round', leave: leaveOf('user') }));
     const mainCard = ctx?.groupId ? null : ctx?.characters?.[ctx?.characterId];
     if (mainCard) ours.push(tile({ pic: mainCard?.avatar ? `/thumbnail?type=avatar&file=${encodeURIComponent(mainCard.avatar)}` : '', letter: first(mainName()), name: mainName(), state: seat('main', 'main'), dim: away.main, add: away.main || q.some(x => x.kind === 'main') ? null : () => setQueue(addItem(getQueue(), { kind: 'main' })), addTitle: `${mainName()} replies in this round`, leave: leaveOf('main') }));
@@ -292,11 +283,12 @@ function peopleFold(L, people, q, present) {
         const { c, p, k, n } = x;
         const own = speaksOf(p) === 'mine';
         const talking = speaking?.person === p.id && speaking?.cast === c.id;
+        const inRnd = q.some(y => y.kind === 'npc' && y.cast === c.id && y.person === p.id);   // already in the round: no +
         const t = tile({
             pic: p.card ? `/thumbnail?type=avatar&file=${encodeURIComponent(p.card)}` : '', letter: p.hidden ? '🙈' : first(p.name), name: p.name,
-            state: talking ? '✍️ speaking…' : `${n.here ? 'here' : 'away'}${n.muted ? ' · muted' : ''}`, dim: !n.here, selected: sel === k,
+            state: talking ? '✍️ speaking…' : `${inRnd && n.here ? 'in this round' : n.here ? 'here' : 'away'}${n.muted ? ' · muted' : ''}`, dim: !n.here, selected: sel === k,
             open: () => { sel = sel === k ? null : k; scrollToSel = !!sel; draw(); },   // a tile far down jumps to the top: follow it
-            add: () => {
+            add: inRnd ? null : () => {
                 if (!own) { addStaying(c.id, p.id); return; }
                 const nq = addItem(getQueue(), { kind: 'npc', cast: c.id, person: p.id });
                 writing = nq.filter(y => y.kind === 'npc' && y.cast === c.id && y.person === p.id).at(-1)?.id || null;
@@ -307,10 +299,11 @@ function peopleFold(L, people, q, present) {
             fav: { on: !!p.fav, toggle: () => setFav(c, p, !p.fav) },
             addTitle: own ? `Into this round — you write ${p.name}’s line` : `Into this round — the AI writes ${p.name}’s line; they stay every round until you take them out`,
         });
-        if (sel === k) { t.classList.add('wide'); openTile = t; } else { if (!p.fav && ours.length) grid.append(...ours.splice(0)); grid.append(t); }
+        if (sel === k) { t.classList.add('wide'); openTile = t; } else grid.append(t);
     }
-    grid.append(...ours);
-    const body = [];
+    // you and the main character: their own top row, the Cast (favorites first) starts below it (Miinthe, 2026-11-03)
+    const top = el('div', 'dle-cv-grid dle-cv-ours'); top.append(...ours);
+    const body = [top];
     const x = order.find(y => y.k === sel);
     if (x && openTile) {
         const box = el('div', 'dle-cv-opened');
@@ -318,7 +311,6 @@ function peopleFold(L, people, q, present) {
         body.push(box);
     }
     if (grid.children.length) body.push(grid);
-    else if (!openTile) body.push(el('div', 'dle-cv-none', 'Everyone is in this round.'));
     // everyone in the scene, {{user}} and the main character too (Miinthe 2026-11-03: "Present: 1" with 3 people there looked wrong)
     const f = K.fold({ title: 'People', summary: `Present: ${present + (away.user ? 0 : 1) + (mainCard && !away.main ? 1 : 0)}`, open: folds.people, body, onToggle: v => { folds.people = v; if (!v && sel) { sel = null; draw(); } } });   // closing People lets go of the opened person (Miinthe, 2026-10-16)
     f.classList.add('dle-cv-people');
@@ -460,7 +452,7 @@ function setMuted(c, p, on) {
 /** Speak now: their own message, right away (Miinthe 2026-10-18: on the tile / in their details, no bar at the bottom). */
 function speakNow(c, p) { const why = cannotSpeak(); if (why) { say(why); return; } speakAs(c.id, p.id); }
 
-function personBox({ c, p, k, n }, off, veiled, { speak = false } = {}) {
+function personBox({ c, p, k, n }, off, veiled) {   // Speak now lives on their tile
     const box = el('div', 'dle-cv-person');
     // here / away
     const hr = el('div', 'dle-cv-erow');
@@ -584,10 +576,6 @@ function personBox({ c, p, k, n }, off, veiled, { speak = false } = {}) {
         const busy = asking.has(k);
         const b = K.button({ label: busy ? 'Asking…' : `📜 What has ${p.name} been up to?`, disabled: busy, title: 'One helper call: what they did while away', onClick: async () => { asking.add(k); draw(); try { await askOffscreen(c.id, p.id); } finally { asking.delete(k); render(); } } });
         b.classList.add('dle-cv-away'); ft.append(b);
-    }
-    if (speak) {   // opened from the round: Speak now here (Hold back is the ✕ on their row)
-        const b = K.button({ label: 'Speak now', icon: 'castround', disabled: queueRunning(), title: `${p.name} speaks now: their own message`, onClick: () => speakNow(c, p) });
-        b.classList.add('dle-cv-speak'); ft.prepend(b);
     }
     if (ft.children.length) box.append(ft);
     return box;

@@ -1933,7 +1933,7 @@ test('convertWiEntry: NaN / Infinity numbers skipped (defensive)', () => {
 });
 
 test('parseVaultFile: W_WI_ROUND_TRIP fires for round-tripped WI fields', () => {
-    // Parser must surface every Wave 2 round-trip field via /dle-lint so authors
+    // Parser must surface every Wave 2 round-trip field via /oq-lint so authors
     // can see what survived the import. A field that emits on import but doesn't
     // flag on parse is the silent-downgrade contract violation we built this for.
     const file = {
@@ -7076,7 +7076,7 @@ test('uiCascadeState: every entry has a reason field', () => {
 // ============================================================================
 // The cooldown/warmup/probability gate block was copy-pasted across the primary
 // keyword, cascade, recursion, and BM25 paths and drifted: BM25 probability
-// skips were never recorded (invisible to /dle-why), recursion warmup drops
+// skips were never recorded (invisible to /oq-why), recursion warmup drops
 // were never recorded, and the cooldown pre-check existed in two variants.
 
 import { matchEntries as matchEntriesUnit, passesRuntimeGates } from '../src/pipeline/match.js';
@@ -7165,7 +7165,7 @@ test('RG-7: #12 — BM25 probability drop is now RECORDED in probabilitySkipped 
     assert(fuzzyStats.candidates > 0, 'BM25 produced candidates');
     assert(!matched.some(e => e.title === 'Volcano Lore'), 'probability-0 entry not matched');
     const rec = probabilitySkipped.find(r => r.title === 'Volcano Lore');
-    assert(rec !== undefined, 'BM25 probability skip recorded (was invisible to /dle-why pre-fix)');
+    assert(rec !== undefined, 'BM25 probability skip recorded (was invisible to /oq-why pre-fix)');
     assertEqual(rec?.vaultSource, 'vaultB', 'record carries vaultSource (gotcha #50)');
     setFuzzyIdx(null);
 });

@@ -52,15 +52,15 @@ See [Writing Vault Entries](Writing-Vault-Entries) for the full guide.
 An entry tagged `lorebook-guide` is a writing or style reference, not story lore. Guide entries are indexed but never reach the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins.
 
 ### How do summaries work? Do I need them?
-The `summary` frontmatter field is used **only** in AI search. It tells the AI when to pick the entry. It is not injected into the writing AI's prompt; the entry's full content handles that. In keyword-only mode, summaries are unused. In two-stage mode, entries without a summary can still be selected but accuracy is significantly worse. Run `/dle-summarize` to auto-generate summaries for entries that are missing them. Summaries truncate to ~600 characters in the manifest by default (`aiSearchManifestSummaryLength`).
+The `summary` frontmatter field is used **only** in AI search. It tells the AI when to pick the entry. It is not injected into the writing AI's prompt; the entry's full content handles that. In keyword-only mode, summaries are unused. In two-stage mode, entries without a summary can still be selected but accuracy is significantly worse. Run `/oq-summarize` to auto-generate summaries for entries that are missing them. Summaries truncate to ~600 characters in the manifest by default (`aiSearchManifestSummaryLength`).
 
 ### Can I organize entries in folders?
-Yes. DeepLore scans your entire vault recursively for notes with the lorebook tag. Folder structure does not affect matching. Folder paths can also be used as a per-chat filter via `/dle-set-folder` to scope a chat to one part of your vault.
+Yes. DeepLore scans your entire vault recursively for notes with the lorebook tag. Folder structure does not affect matching. Folder paths can also be used as a per-chat filter via `/oq-set-folder` to scope a chat to one part of your vault.
 
 ## Troubleshooting
 
 ### My entries are not injecting
-Run `/dle-health` first. It catches most problems. Common causes:
+Run `/oq-health` first. It catches most problems. Common causes:
 1. Missing lorebook tag on the entry.
 2. Scan depth too low (keywords are not reaching far enough back in chat).
 3. Token budget full (too many entries trying to inject).
@@ -72,7 +72,7 @@ See [Troubleshooting](Troubleshooting) for detailed diagnostics.
 - Write better `summary` fields. Describe **when** to select the entry, not what it contains.
 - Increase scan depth so AI search sees more chat context.
 - Switch to two-stage mode if you were in AI-only. Keyword pre-filtering shrinks the candidate set the AI has to choose from.
-- Run `/dle-inspect` after a generation to see what AI search received and what it selected.
+- Run `/oq-inspect` after a generation to see what AI search received and what it selected.
 
 ### "Open in Obsidian" links are not working
 The vault connection **Name** in DLE settings must match the Obsidian vault name exactly. If that is correct, restart Obsidian. The deep-link handler can become unresponsive after long sessions or updates. See [Troubleshooting / Deep Links](Troubleshooting#deep-links-open-in-obsidian) for full steps.
@@ -80,7 +80,7 @@ The vault connection **Name** in DLE settings must match the Obsidian vault name
 ### How do I see what DeepLore injected?
 Three ways:
 1. **Context Cartographer.** Press the 📖 button on any AI message, then **Why these entries**, to see exactly what was injected, why, and at what token cost.
-2. **`/dle-inspect`.** Shows the full pipeline trace from the last generation.
+2. **`/oq-inspect`.** Shows the full pipeline trace from the last generation.
 3. **The side panel.** **Lore › Sent** shows the entries sent with the last reply.
 
 ## vs. built-in World Info
@@ -94,7 +94,7 @@ SillyTavern's built-in World Info matches keywords from a JSON file. DeepLore re
 - Diagnostics: relationship graph, activation simulator, the live side panel.
 
 ### Can I import my existing SillyTavern lorebooks?
-Yes. Run `/dle-import` to convert World Info JSON exports into Obsidian vault notes with proper frontmatter. It handles standard WI exports, V2 character cards, and entry arrays. As of v2.5 the importer reads **every** WI field: most land natively (keys, secondary keys, `constant`, `order`→`priority`, `position`, `depth`, `probability`, `disable`, `role`, `excludeRecursion`, and all four `selectiveLogic` modes), and the rest round-trip into the vault as frontmatter so nothing is silently dropped. After import, DLE offers to AI-generate summaries for the new entries, reusing the `/dle-summarize` pipeline. See [[For World Info Users]] for the full field-by-field cheat sheet.
+Yes. Run `/oq-import` to convert World Info JSON exports into Obsidian vault notes with proper frontmatter. It handles standard WI exports, V2 character cards, and entry arrays. As of v2.5 the importer reads **every** WI field: most land natively (keys, secondary keys, `constant`, `order`→`priority`, `position`, `depth`, `probability`, `disable`, `role`, `excludeRecursion`, and all four `selectiveLogic` modes), and the rest round-trip into the vault as frontmatter so nothing is silently dropped. After import, DLE offers to AI-generate summaries for the new entries, reusing the `/oq-summarize` pipeline. See [[For World Info Users]] for the full field-by-field cheat sheet.
 
 ### Can I use both at the same time?
-You can, but it is not recommended. Both systems inject lore into the prompt, so you pay double in token budget. To migrate, import your World Info with `/dle-import` and then disable the built-in World Info on entries DLE now owns.
+You can, but it is not recommended. Both systems inject lore into the prompt, so you pay double in token budget. To migrate, import your World Info with `/oq-import` and then disable the built-in World Info on entries DLE now owns.

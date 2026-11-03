@@ -90,7 +90,7 @@ Maximum tokens DLE can inject per generation:
 - **3000 to 5000:** balanced, works for most setups
 - **Unlimited:** DLE uses as much as it needs. Watch your overall context usage
 
-Start with scan depth 4 and budget 3000, then adjust based on `/dle-inspect` output.
+Start with scan depth 4 and budget 3000, then adjust based on `/oq-inspect` output.
 
 ## Enable AI search
 
@@ -98,7 +98,7 @@ When you're ready to switch from keywords-only to two-stage:
 
 1. Go to **Settings → Lore selection → Mode → How lore is picked** and select **keywords, then the judge**
 2. In **Settings → AI & connections**, select or create a SillyTavern Connection Manager profile for AI search, pointed at a fast, cheap model (Haiku, GPT-4o-mini, or any local model that handles structured output well)
-3. Run `/dle-status`. It should show "AI search: enabled"
+3. Run `/oq-status`. It should show "AI search: enabled"
 
 > [!NOTE]
 > AI features use SillyTavern Connection Manager profiles. The old Custom Proxy mode was removed in v2.5 — if an old config still has it selected, the health check flags it and points you to pick a profile.
@@ -107,7 +107,7 @@ AI search earns its keep when your vault is large or entries have nuanced trigge
 
 ## Audit entry quality
 
-Run `/dle-health` regularly. It checks for:
+Run `/oq-health` regularly. It checks for:
 
 - Missing or empty keywords
 - Duplicate keywords across entries
@@ -122,9 +122,9 @@ Aim for grade A or A+.
 
 Three diagnostics show what the pipeline picked:
 
-1. **`/dle-inspect`:** shows the last pipeline trace. What matched, why, and what was injected
+1. **`/oq-inspect`:** shows the last pipeline trace. What matched, why, and what was injected
 2. **Context Cartographer** (📖 on AI messages → **Why these entries**): shows the per-message source list with token counts
-3. **`/dle-simulate`:** replays the entire chat showing which entries activate at each message
+3. **`/oq-simulate`:** replays the entire chat showing which entries activate at each message
 
 ## Common early mistakes
 

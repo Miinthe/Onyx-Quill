@@ -20,7 +20,7 @@
  * agnostic too.
  */
 /** Historical install-folder ref — used as the fallback when the URL shape is unexpected. */
-export const FALLBACK_REF = 'third-party/sillytavern-DeepLore-Enhanced';
+export const FALLBACK_REF = 'third-party/Onyx-Quill';
 
 /**
  * Pure: extract the extensions-root-relative ref from a module URL pathname.

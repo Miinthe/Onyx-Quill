@@ -22,7 +22,7 @@ import { trf } from '../i18n/i18n.js';
  * toastr.error(...); console.error(...); return ''; }` copies scattered across
  * the command modules.
  *
- * @param {string} cmdName - the slash command name (e.g. '/dle-pin') for the log line
+ * @param {string} cmdName - the slash command name (e.g. '/oq-pin') for the log line
  * @returns {Promise<boolean>} true if fresh, false if the refresh failed (already toasted)
  */
 export async function ensureFreshOrToast(cmdName) {
@@ -30,7 +30,7 @@ export async function ensureFreshOrToast(cmdName) {
         await ensureIndexFresh();
         return true;
     } catch (err) {
-        toastr.error(trf('dle_cmd_refresh_error_toast', classifyError(err)), 'DeepLore');
+        toastr.error(trf('dle_cmd_refresh_error_toast', classifyError(err)), 'Onyx Quill');
         console.error(`[DLE] ensureIndexFresh failed in ${cmdName}:`, err);
         return false;
     }
@@ -41,7 +41,7 @@ export async function ensureFreshOrToast(cmdName) {
  * match wins immediately. Otherwise tries fuzzy: 0 matches → toast + null; 1 →
  * info toast + use; 2+ → modal picker, returns null on cancel.
  *
- * Used by /dle-pin, /dle-unpin, /dle-block, /dle-unblock, /dle-optimize-keys so a
+ * Used by /oq-pin, /oq-unpin, /oq-block, /oq-unblock, /oq-optimize-keys so a
  * typo or partial name no longer drops on the floor with "Couldn't find X" —
  * common enough to be frustrating.
  *
@@ -58,12 +58,12 @@ export async function resolveEntryByName(name, candidates, { commandLabel }) {
     const titles = candidates.map(c => c.title);
     const matches = fuzzyTitleMatchAll(name, titles, 0.6);
     if (matches.length === 0) {
-        toastr.warning(trf('dle_helper_resolveentrybyname_nomatch_toast', name), 'DeepLore');
+        toastr.warning(trf('dle_helper_resolveentrybyname_nomatch_toast', name), 'Onyx Quill');
         return null;
     }
     if (matches.length === 1) {
         const match = candidates.find(c => c.title === matches[0].title);
-        toastr.info(`Matched "${match.title}" (${Math.round(matches[0].similarity * 100)}%).`, 'DeepLore');
+        toastr.info(`Matched "${match.title}" (${Math.round(matches[0].similarity * 100)}%).`, 'Onyx Quill');
         return match;
     }
 

@@ -14,7 +14,7 @@
  *    The place tracker's judge entries (e.g. "Judge · Where the scene is") are its rules.
  *    With no spot established, the parent will do ("somewhere in the kitchen").
  *  - HERE sets DeepLore's own location filter (`deeplore_context.location`, what
- *    /dle-set-location does by hand) to the place's id — so entries with `location:` for
+ *    /oq-set-location does by hand) to the place's id — so entries with `location:` for
  *    other spots drop out (unless the board says not to: `setsLocation: false`).
  *  - Entries on a place, by their role:  'place' (or no role) — the place itself: pinned while
  *    the scene is here · 'only' — exist only while the scene is here · 'often' — Miinthe's Gerry the

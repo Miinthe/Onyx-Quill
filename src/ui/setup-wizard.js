@@ -198,7 +198,7 @@ function wireNavigation() {
         // connection. isPageValid() only guards the Page-2 → Page-3 transition.
         if (!connectionVerified) {
             const proceed = await callGenericPopup(
-                tr('dle_wiz_finish_unverified_confirm', 'Your Obsidian connection has not been verified on the Connection step. DeepLore will be enabled but may not work until the connection succeeds.\n\nFinish anyway?'),
+                tr('dle_wiz_finish_unverified_confirm', 'Your Obsidian connection has not been verified on the Connection step. Onyx Quill will be enabled but may not work until the connection succeeds.\n\nFinish anyway?'),
                 POPUP_TYPE.CONFIRM, '', {
                     okButton: tr('dle_wiz_finish_anyway_btn', 'Finish anyway'),
                     cancelButton: tr('dle_wiz_go_back_btn', 'Go back'),
@@ -213,7 +213,7 @@ function wireNavigation() {
             await applyWizardSettings();
         } catch (err) {
             console.error('[DLE] Wizard finish error:', err);
-            toastr.warning(tr('dle_wiz_index_build_failed_toast', 'Setup saved but index build failed — it will retry on first generation.'), 'DeepLore');
+            toastr.warning(tr('dle_wiz_index_build_failed_toast', 'Setup saved but index build failed — it will retry on first generation.'), 'Onyx Quill');
         }
         // Close popup regardless — settings are already saved before buildIndex().
         closeWizardPopup();
@@ -318,7 +318,7 @@ function wireSkip() {
     $wizard.find('#dle-wiz-skip').on('click', () => {
         persistWizardSkip(currentPage);
         wizardFinished = true; // already persisted skip; stop the close handler double-writing
-        toastr.info(tr('dle_wizard_skip_toast', 'Setup paused. Reopen it any time with /dle-setup.'), 'DeepLore');
+        toastr.info(tr('dle_wizard_skip_toast', 'Setup paused. Reopen it any time with /oq-setup.'), 'Onyx Quill');
         closeWizardPopup();
     });
 }
@@ -472,8 +472,8 @@ function wireDemoVault() {
     $wizard.find('#dle-wiz-demo-copy').on('click', () => {
         const path = $wizard.find('#dle-wiz-demo-path').text();
         navigator.clipboard.writeText(path).then(
-            () => toastr.info(tr('dle_wiz_path_copied', 'Path copied to clipboard'), 'DeepLore'),
-            () => toastr.warning(tr('dle_wiz_path_copy_failed', 'Failed to copy — select and copy manually'), 'DeepLore'),
+            () => toastr.info(tr('dle_wiz_path_copied', 'Path copied to clipboard'), 'Onyx Quill'),
+            () => toastr.warning(tr('dle_wiz_path_copy_failed', 'Failed to copy — select and copy manually'), 'Onyx Quill'),
         );
     });
 
@@ -491,7 +491,7 @@ function wireDemoVault() {
         updateNavButtons();
         // API key is the only field the user must still enter.
         $wizard.find('#dle-wiz-api-key').val('').focus();
-        toastr.info(tr('dle_wiz_demo_fields_filled', 'Connection fields filled — enter your Obsidian API key and click Test'), 'DeepLore');
+        toastr.info(tr('dle_wiz_demo_fields_filled', 'Connection fields filled — enter your Obsidian API key and click Test'), 'Onyx Quill');
     });
 }
 
@@ -562,11 +562,11 @@ function wireVaultScan() {
                     .removeClass('dle-wizard-btn-verified');
                 $wizard.find('#dle-wiz-conn-result').hide();
                 updateNavButtons();
-                toastr.info(trf('dle_vaultscan_filled_toast', `${picked.host || host}:${picked.port}`), 'DeepLore');
+                toastr.info(trf('dle_vaultscan_filled_toast', `${picked.host || host}:${picked.port}`), 'Onyx Quill');
             }
         } catch (err) {
             console.error('[DLE] Wizard vault scan error:', err);
-            toastr.error(tr('dle_vaultscan_failed_toast', 'Vault scan didn\'t find anything. Make sure Obsidian is running.'), 'DeepLore');
+            toastr.error(tr('dle_vaultscan_failed_toast', 'Vault scan didn\'t find anything. Make sure Obsidian is running.'), 'Onyx Quill');
         } finally {
             $btn.prop('disabled', false).html(orig);
         }
@@ -716,7 +716,7 @@ async function loadAiProfiles() {
             $select.after(
                 '<div class="dle-wiz-no-profiles-help dle-text-xs dle-muted" style="margin-top:6px;">'
                 + '<i class="fa-solid fa-circle-info"></i> '
-                + tr('dle_wiz_no_profiles_help', 'DeepLore routes AI through SillyTavern <strong>Connection Profiles</strong>. Create one in <strong>API Connections</strong> (the plug icon in the top bar) → <strong>Connection Profile</strong>, then reopen this step. Or choose <strong>Keywords Only</strong> on the previous step to skip AI for now.')
+                + tr('dle_wiz_no_profiles_help', 'Onyx Quill routes AI through SillyTavern <strong>Connection Profiles</strong>. Create one in <strong>API Connections</strong> (the plug icon in the top bar) → <strong>Connection Profile</strong>, then reopen this step. Or choose <strong>Keywords Only</strong> on the previous step to skip AI for now.')
                 + '</div>',
             );
             return;
@@ -848,7 +848,7 @@ async function runVaultStructureCreation() {
             const folder = ($wizard.find('#dle-wiz-sessions-path').val().trim()) || 'Sessions';
             getSettings().scribeFolder = folder;
             saveSettingsDebounced();
-            await writeNote(host, port, apiKey, `${folder}/.gitkeep`, '# Session Scribe\nThis folder is used by DeepLore Session Scribe.\n', useHttps);
+            await writeNote(host, port, apiKey, `${folder}/.gitkeep`, '# Session Scribe\nThis folder is used by Onyx Quill Session Scribe.\n', useHttps);
             outcome.sessions = 'created';
         } catch (err) {
             outcome.sessions = 'failed';
@@ -903,7 +903,7 @@ function wireImport() {
         $wizard.find('#dle-wiz-import-file-name').text(file.name);
         const reader = new FileReader();
         reader.onload = () => { importJsonData = /** @type {string} */ (reader.result); };
-        reader.onerror = () => { toastr.error(tr('dle_wiz_import_read_file_failed', 'Failed to read file.'), 'DeepLore'); };
+        reader.onerror = () => { toastr.error(tr('dle_wiz_import_read_file_failed', 'Failed to read file.'), 'Onyx Quill'); };
         reader.readAsText(file);
     });
 
@@ -915,13 +915,13 @@ function wireImport() {
             const data = await loadWorldInfo(name);
             if (!data) {
                 // ${0}=lorebook name. English: 'Failed to load lorebook "${0}".'
-                toastr.error(trf('dle_wiz_import_load_lorebook_failed', name), 'DeepLore');
+                toastr.error(trf('dle_wiz_import_load_lorebook_failed', name), 'Onyx Quill');
                 return;
             }
             importJsonData = JSON.stringify(data, null, 2);
         } catch (err) {
             console.error('[DLE] Wizard loadWorldInfo error:', err);
-            toastr.error(tr('dle_wiz_import_load_lorebook_error', 'Couldn\'t load that lorebook. Try a different one or paste the JSON directly.'), 'DeepLore');
+            toastr.error(tr('dle_wiz_import_load_lorebook_error', 'Couldn\'t load that lorebook. Try a different one or paste the JSON directly.'), 'Onyx Quill');
         }
     });
 
@@ -938,7 +938,7 @@ function wireImport() {
         }
 
         if (!jsonText) {
-            toastr.warning(tr('dle_wiz_import_no_data', 'No data to import. Select a lorebook, upload a file, or paste JSON first.'), 'DeepLore');
+            toastr.warning(tr('dle_wiz_import_no_data', 'No data to import. Select a lorebook, upload a file, or paste JSON first.'), 'Onyx Quill');
             return;
         }
 
@@ -1080,8 +1080,8 @@ function buildSummary() {
     const vaultNameLower = vaultName.toLowerCase();
     if (wizardState.demoAutofilled || vaultNameLower.includes('duskfrost')) {
         items.push('<i class="fa-solid fa-flask"></i> ' + tr('dle_wiz_summary_demo_detected', '<strong>Demo vault detected!</strong> Try mentioning "Duskfrost" or "Bellsummit" in chat to see lore injection.'));
-        items.push('<i class="fa-solid fa-lightbulb"></i> ' + tr('dle_wiz_summary_tip_health', 'Run <code>/dle-health</code> to see the health check (edge-case entries will flag intentional warnings)'));
-        items.push('<i class="fa-solid fa-lightbulb"></i> ' + tr('dle_wiz_summary_tip_graph', 'Run <code>/dle-graph</code> to see the full relationship graph'));
+        items.push('<i class="fa-solid fa-lightbulb"></i> ' + tr('dle_wiz_summary_tip_health', 'Run <code>/oq-health</code> to see the health check (edge-case entries will flag intentional warnings)'));
+        items.push('<i class="fa-solid fa-lightbulb"></i> ' + tr('dle_wiz_summary_tip_graph', 'Run <code>/oq-graph</code> to see the full relationship graph'));
     }
 
     $summary.html(items.map((item, i) => `<div class="dle-wizard-summary-item" style="animation-delay: ${i * 120}ms">${item}</div>`).join(''));
@@ -1095,9 +1095,9 @@ function wireDoneActions() {
 
         setTimeout(() => {
             switch (action) {
-                case 'health': executeCommand('/dle-health'); break;
-                case 'graph': executeCommand('/dle-graph'); break;
-                case 'browse': executeCommand('/dle-browse'); break;
+                case 'health': executeCommand('/oq-health'); break;
+                case 'graph': executeCommand('/oq-graph'); break;
+                case 'browse': executeCommand('/oq-browse'); break;
                 case 'settings':
                     import('./settings-ui.js').then(m => m.openSettingsPopup?.()).catch(() => {});
                     break;

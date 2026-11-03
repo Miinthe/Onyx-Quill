@@ -10,7 +10,7 @@ export const MAX_PRIORITY_VALUE = 999;
  * Wave 2 (WI parity) — Tier C round-trip preservation table.
  * Pairs are [ST wiEntry key, vault frontmatter key (snake_case)].
  *
- * These ST World Info fields land in the vault frontmatter as-is so /dle-lint
+ * These ST World Info fields land in the vault frontmatter as-is so /oq-lint
  * can surface them via W_WI_ROUND_TRIP, but DLE does not act on them at the
  * pipeline level (no enforcement). selectiveLogic is intentionally absent —
  * handled with native enforcement in Wave 3.
@@ -18,7 +18,7 @@ export const MAX_PRIORITY_VALUE = 999;
  * Keep this table aligned with WI_ROUND_TRIP_FIELDS in core/pipeline.js (parser
  * side). A drift between the two is the regression class to guard against —
  * a field that's emitted on import but not flagged by the parser will appear
- * to "vanish" to authors reading /dle-lint output, which is exactly the silent
+ * to "vanish" to authors reading /oq-lint output, which is exactly the silent
  * downgrade we built this contract to kill.
  */
 export const WI_ROUND_TRIP_FIELDS = [
@@ -170,7 +170,7 @@ export const NATIVE_FIELD_MAP = [
     },
     {
         // C.3: round-trip-only group fields — parseVaultFile emits
-        // W_NOT_IMPLEMENTED for these so /dle-lint surfaces them.
+        // W_NOT_IMPLEMENTED for these so /oq-lint surfaces them.
         // (BUG-047 sticky, BUG-048 delay, BUG-052 group*)
         wiKey: 'sticky',
         bucket: null,
@@ -900,7 +900,7 @@ export function convertWiEntry(wiEntry, lorebookTag, options = {}) {
     }
 
     // Wave 2 (WI parity) — Tier C round-trip preservation. ST fields DLE does
-    // NOT enforce, but which we preserve verbatim so /dle-lint surfaces them
+    // NOT enforce, but which we preserve verbatim so /oq-lint surfaces them
     // and authors can see what ST had originally configured. Snake_case in the
     // vault for readability; parser (core/pipeline.js) emits W_WI_ROUND_TRIP for
     // these to distinguish from W_NOT_IMPLEMENTED (planned-to-implement fields).
@@ -930,7 +930,7 @@ export function convertWiEntry(wiEntry, lorebookTag, options = {}) {
             // Arrays/objects: stringify defensively rather than dropping silently.
             // ST shouldn't emit these for any WI_ROUND_TRIP_FIELDS member today,
             // but if a future ST adds e.g. a tag-list field we'd rather preserve
-            // it (visible via /dle-lint) than lose it.
+            // it (visible via /oq-lint) than lose it.
             fm.push(`${fmKey}: ${yamlEscape(JSON.stringify(raw))}`);
         }
         bump('roundTripped', fmKey);
@@ -1450,7 +1450,7 @@ export function fuzzyTitleMatch(aiTitle, candidateTitles, threshold = 0.6) {
 /**
  * All-results variant of fuzzyTitleMatch — returns every candidate that scores
  * at or above the threshold, sorted descending by similarity. Used by slash
- * commands (`/dle-pin`, `/dle-block`, etc.) to surface multiple plausible
+ * commands (`/oq-pin`, `/oq-block`, etc.) to surface multiple plausible
  * matches via a tie-break picker when the user typed something ambiguous.
  *
  * @param {string} query

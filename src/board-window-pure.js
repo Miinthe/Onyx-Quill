@@ -284,7 +284,7 @@ export const v1Sig = v1 => JSON.stringify(arr(v1?.trackers).map(defOf));
 
 /**
  * The board to show: the stored v2 board, brought in line with the v1 board when the v1
- * board was changed elsewhere (/dle-tracker commands) after the window last saved.
+ * board was changed elsewhere (/oq-tracker commands) after the window last saved.
  * A steps tracker whose step names still match keeps everything v2 knows; one whose steps
  * changed is taken from v1 (its extras on those steps are lost — reported in `changed`);
  * trackers added by command are added, removed ones removed. Without a v2 board: v1 converted.
@@ -310,7 +310,7 @@ export function reconcile(v2, sig, v1, name = 'Storyboard') {
 }
 
 /**
- * LOCAL PATCH (Miinthe, 2026-10-05) — engine on v2, step 5 (one board store): what the Story tab and the /dle-tracker
+ * LOCAL PATCH (Miinthe, 2026-10-05) — engine on v2, step 5 (one board store): what the Story tab and the /oq-tracker
  * commands change — a tracker's name, steps, direction, "may skip", trackers added or removed (`defs`, the engine's
  * definitions) — goes into the board. Everything else the board knows stays: a step whose name is still there keeps
  * its id, links, needs, fork and detours; a tracker keeps its icon, colour, folder, starts and triggers. A new step

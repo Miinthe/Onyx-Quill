@@ -10,7 +10,7 @@ A 9-page first-run wizard. Walks through Obsidian connection, lorebook tag, sear
 
 ![Setup Wizard welcome screen with step indicator, explanation of the two-stage pipeline, and Next button to begin guided configuration](images/dle-setup-wizard.png)
 
-**Open it:** run `/dle-setup`, or use the side panel's ⋯ → **Setup wizard**. The wizard also opens automatically the first time you load DeepLore.
+**Open it:** run `/oq-setup`, or use the side panel's ⋯ → **Setup wizard**. The wizard also opens automatically the first time you load DeepLore.
 
 You can re-run the wizard any time. It prefills from your current settings, so re-running is non-destructive unless you change a value.
 
@@ -22,9 +22,9 @@ The most-used actions sit in the [[Drawer|side panel]]'s header, next to **Ready
 
 | Button | Action | Slash command |
 |---|---|---|
-| **Refresh** | Read your vault again. | `/dle-refresh` |
-| **Scribe** | Write session notes now. | `/dle-scribe` |
-| **New lore** | The AI suggests entries from the chat. | `/dle-newlore` |
+| **Refresh** | Read your vault again. | `/oq-refresh` |
+| **Scribe** | Write session notes now. | `/oq-scribe` |
+| **New lore** | The AI suggests entries from the chat. | `/oq-newlore` |
 | **New run** | A fresh chat as the next run, with the same folders. | |
 
 The rest are in the side panel's **⋯** menu: Graph, Open the board, Pins and blocks, Try matching, Reroll lore, Review the vault with Mero, Write missing summaries, Optimize keywords, Import World Info, the notebooks, Setup wizard, Diagnostics and Settings. The [[DeepLore Bar]]'s 📖 menu has Open the board, Write a new entry…, Move an entry… and Setup and settings.
@@ -39,7 +39,7 @@ Convert SillyTavern World Info JSON into Obsidian vault entries with proper fron
 
 ![Import SillyTavern World Info popup with three options: select an existing lorebook from dropdown, browse a local JSON file, or paste JSON text directly](images/dle-import-worldbook.png)
 
-**Open it:** `/dle-import [folder]`. Without a folder argument, entries are written to the vault root. Example: `/dle-import Imported` writes to the `Imported/` folder.
+**Open it:** `/oq-import [folder]`. Without a folder argument, entries are written to the vault root. Example: `/oq-import Imported` writes to the `Imported/` folder.
 
 Three ways to feed the importer:
 
@@ -65,7 +65,7 @@ Three ways to feed the importer:
 - **v2.5:** `role` (ST integer 0/1/2) to `role: system | user | assistant`
 - **v2.5:** `selectiveLogic` (all 4 modes: AND_ANY, AND_ALL, NOT_ALL, NOT_ANY) to `selective_logic:` with native enforcement on the keyword path
 
-**Round-trip preserved** — landed in vault frontmatter as snake_case, surfaced by `/dle-lint` for visibility. DLE does NOT act on these; remove the lines if you don't need them preserved:
+**Round-trip preserved** — landed in vault frontmatter as snake_case, surfaced by `/oq-lint` for visibility. DLE does NOT act on these; remove the lines if you don't need them preserved:
 
 - Tier "planned to implement" (`W_NOT_IMPLEMENTED`): `sticky`, `delay`, `group`, `group_weight`
 - Tier "intentionally ignored" (`W_WI_ROUND_TRIP`, **v2.5**): `vectorized`, `selective`, `use_probability`, `prevent_recursion`, `delay_until_recursion`, `group_override`, `use_group_scoring`, `case_sensitive`, `match_whole_words`, `automation_id`, `add_memo`, `display_index`, plus 6 `match_*` scan-source toggles
@@ -91,6 +91,6 @@ See [[For World Info Users]] for the full field-mapping cheat sheet and the two 
 - The one-shot WI Priority flip warning toast still fires (priority semantics differ across systems — review your entries' sort order after import).
 - A duplicate filename is suffixed `_imported`, `_imported_2`, and so on, up to 20 attempts. Files are never silently overwritten.
 - If AI search is enabled, after the report popup the importer offers to generate AI summaries for the imported entries (replacing the default `"Imported from SillyTavern World Info"` placeholder). You review each summary before write.
-- The vault index rebuilds once at the end. Don't trigger `/dle-refresh` mid-import.
+- The vault index rebuilds once at the end. Don't trigger `/oq-refresh` mid-import.
 
 **When to use it:** migrating from SillyTavern's built-in World Info to an Obsidian vault. Import once, then enrich the entries with summaries, wikilinks, and the additional frontmatter fields DLE supports. Running both extensions side by side works but doubles your maintenance and can double-inject entries.

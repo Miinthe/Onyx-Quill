@@ -5672,7 +5672,7 @@ test('LIB-GONE-2: v6 → v6 is a no-op; a notice that only named the Librarian g
 // docs/gotchas.md #69 codifies the contract: every ST WI field has a documented
 // home (no silent drops). These guards live in regression suite because the
 // drift class is invisible — a field that's emitted on import but unflagged by
-// the parser will appear "vanished" to authors reading /dle-lint output.
+// the parser will appear "vanished" to authors reading /oq-lint output.
 
 test('WI-PARITY-1: importer and parser WI_ROUND_TRIP_FIELDS tables are aligned (set-equality)', async () => {
     // Audit fix-up: pre-fix this used substring match which (a) matched any
@@ -5686,7 +5686,7 @@ test('WI-PARITY-1: importer and parser WI_ROUND_TRIP_FIELDS tables are aligned (
     const parserSet = new Set(parserTable);
     const onlyImporter = [...importerSet].filter(k => !parserSet.has(k));
     const onlyParser = [...parserSet].filter(k => !importerSet.has(k));
-    assert(onlyImporter.length === 0, `WI-PARITY-1: importer-only fields (parser won't flag via /dle-lint): ${onlyImporter.join(', ')}`);
+    assert(onlyImporter.length === 0, `WI-PARITY-1: importer-only fields (parser won't flag via /oq-lint): ${onlyImporter.join(', ')}`);
     assert(onlyParser.length === 0, `WI-PARITY-1: parser-only fields (importer doesn't emit them): ${onlyParser.join(', ')}`);
     assert(importerSet.size === parserSet.size, `WI-PARITY-1: table size mismatch — importer ${importerSet.size}, parser ${parserSet.size}`);
 });
@@ -5718,7 +5718,7 @@ test('WI-PARITY-4: EM positions 5/6 prepend ## Example Dialogue subheader', asyn
 
 test('WI-PARITY-5: parser emits W_WI_ROUND_TRIP distinct from W_NOT_IMPLEMENTED', async () => {
     // Different user signals: BUG-numbered fields = planned, no-BUG = intentionally ignored.
-    // Collapsing the two codes back into one would lose author-facing clarity in /dle-lint.
+    // Collapsing the two codes back into one would lose author-facing clarity in /oq-lint.
     const { parseVaultFile } = await import('../core/pipeline.js');
     const file = {
         filename: 'test.md',
@@ -5888,8 +5888,8 @@ test('RENAME-2: parseExtensionRef resolves old folder, renamed folder, and junk 
     assertEqual(parseExtensionRef('/some/unexpected/path.js'), FALLBACK_REF,
         'RENAME-2: unexpected URL shape must fall back to the historical ref');
     assertEqual(parseExtensionRef(''), FALLBACK_REF, 'RENAME-2: empty pathname must fall back');
-    assertEqual(FALLBACK_REF, 'third-party/sillytavern-DeepLore-Enhanced',
-        'RENAME-2: fallback must stay the historical name so existing installs survive');
+    assertEqual(FALLBACK_REF, 'third-party/Onyx-Quill',
+        'RENAME-2: fallback is the Onyx Quill repo folder (only used when the path cannot be read)');
 });
 
 test('RENAME-3: locale + icon fetches resolve relative to import.meta.url (location-agnostic)', () => {
@@ -5944,7 +5944,7 @@ test('CLEAR-1: resetVaultIndexState wipes index + all derived state, bumps entit
     assertEqual(S.indexTimestamp, 0, 'CLEAR-1: indexTimestamp reset to 0');
     assertNull(S.previousIndexSnapshot, 'CLEAR-1: previousIndexSnapshot nulled (next build = cold start, no bogus change toast)');
     const report = S.getIndexBuildReport();
-    assertEqual(report.warnCount, 0, 'CLEAR-1: indexBuildReport warnCount reset (stale /dle-lint warnings gone)');
+    assertEqual(report.warnCount, 0, 'CLEAR-1: indexBuildReport warnCount reset (stale /oq-lint warnings gone)');
     assertEqual(report.skipped.length, 0, 'CLEAR-1: indexBuildReport skipped[] reset');
     assertEqual(S.vaultAvgTokens, 0, 'CLEAR-1: vaultAvgTokens reset');
     assertEqual(S.mentionWeights.size, 0, 'CLEAR-1: mentionWeights emptied');
@@ -6033,21 +6033,21 @@ test('CLEAR-4: after clear the BUG-367 guard has nothing to preserve — 0-file 
     S.setVaultIndex(prior);
 });
 
-test('CLEAR-5: /dle-clear registered + Clear Cache button routes through the shared routine', () => {
+test('CLEAR-5: /oq-clear registered + Clear Cache button routes through the shared routine', () => {
     const winPath = (rel) => fileURLToPath(new URL(rel, import.meta.url));
     const cv = readFileSync(winPath('../src/ui/commands-vault.js'), 'utf8');
-    assert(/name: 'dle-clear'/.test(cv), 'CLEAR-5: /dle-clear slash command registered');
-    assert(cv.includes('clearVaultIndexAndCache'), 'CLEAR-5: /dle-clear calls the shared wipe-and-stop routine');
-    assert(!/name: 'dle-force-refresh'/.test(cv) && !/name: 'dle-rebuild'/.test(cv),
-        'CLEAR-5: phantom commands stay unregistered (locked decision — /dle-clear only)');
+    assert(/name: 'oq-clear'/.test(cv), 'CLEAR-5: /oq-clear slash command registered');
+    assert(cv.includes('clearVaultIndexAndCache'), 'CLEAR-5: /oq-clear calls the shared wipe-and-stop routine');
+    assert(!/name: 'oq-force-refresh'/.test(cv) && !/name: 'oq-rebuild'/.test(cv),
+        'CLEAR-5: phantom commands stay unregistered (locked decision — /oq-clear only)');
     const ca = readFileSync(winPath('../src/ui/commands-admin.js'), 'utf8');
     assert(ca.includes('clearVaultIndexAndCache'), 'CLEAR-5: Clear Cache button uses the shared routine');
     assert(!/import\s*{[^}]*clearIndexCache[^}]*}\s*from/.test(ca),
         'CLEAR-5: IDB-only clearIndexCache no longer imported by the button file (gotcha #95)');
-    assert(ca.includes("cmd: '/dle-clear'"), 'CLEAR-5: /dle-clear listed in DLE_COMMANDS (palette + Reference tab)');
+    assert(ca.includes("cmd: '/oq-clear'"), 'CLEAR-5: /oq-clear listed in DLE_COMMANDS (palette + Reference tab)');
 });
 
-test('CLEAR-6: no user-facing copy references unregistered /dle-force-refresh or /dle-rebuild', () => {
+test('CLEAR-6: no user-facing copy references unregistered /oq-force-refresh or /oq-rebuild', () => {
     // Issue #39 root cause 3: error toasts and settings copy pointed users at
     // commands that were never registered. Scan all runtime copy surfaces.
     const winPath = (rel) => fileURLToPath(new URL(rel, import.meta.url));
@@ -6068,8 +6068,8 @@ test('CLEAR-6: no user-facing copy references unregistered /dle-force-refresh or
     for (const f of files) {
         let content;
         try { content = readFileSync(f, 'utf8'); } catch { continue; }
-        if (content.includes('/dle-force-refresh')) violations.push(`${f}: /dle-force-refresh`);
-        if (content.includes('/dle-rebuild')) violations.push(`${f}: /dle-rebuild`);
+        if (content.includes('/oq-force-refresh')) violations.push(`${f}: /oq-force-refresh`);
+        if (content.includes('/oq-rebuild')) violations.push(`${f}: /oq-rebuild`);
     }
     assertEqual(violations.length, 0,
         `CLEAR-6: phantom command references in runtime copy:\n  ${violations.join('\n  ')}`);
@@ -6078,7 +6078,7 @@ test('CLEAR-6: no user-facing copy references unregistered /dle-force-refresh or
 test('CLEAR-7: resetVaultIndexState bumps buildEpoch — the epoch fence for in-flight async producers', async () => {
     // Hardening fix (2026-07-03): finalizeIndex's fire-and-forget cache save and boot
     // hydration's IDB read both capture buildEpoch before their first await and bail
-    // on change. Without this bump, a save/hydration still in flight when /dle-clear
+    // on change. Without this bump, a save/hydration still in flight when /oq-clear
     // runs would repopulate the just-wiped IDB store / live index (Issue #39 redux).
     // Bumping is safe: in-flight builds already treat an epoch change as "discard"
     // (BUG-015 zombie guard), and a build started after the clear captures the new
@@ -6118,14 +6118,14 @@ test("CLEAR-8: clearIndexCache reports failure — clearVaultIndexAndCache route
     // never the success toast, never the busy warning.
     const cv = readFileSync(winPath('../src/ui/commands-vault.js'), 'utf8');
     assert(/reason === 'idb'/.test(cv) && cv.includes('dle_cmd_clear_idb_failed_toast'),
-        "CLEAR-8: /dle-clear error-toasts on reason:'idb'");
+        "CLEAR-8: /oq-clear error-toasts on reason:'idb'");
     const ca = readFileSync(winPath('../src/ui/commands-admin.js'), 'utf8');
     assert(/reason === 'idb'/.test(ca) && ca.includes('dle_cmd_clear_idb_failed_toast'),
         "CLEAR-8: Clear Cache button error-toasts on reason:'idb'");
     // Locale key exists in canonical EN (all-locale key-set parity is pinned by i18n.test.mjs).
     const en = JSON.parse(readFileSync(winPath('../locales/dle.en.json'), 'utf8'));
-    assert(typeof en.dle_cmd_clear_idb_failed_toast === 'string' && en.dle_cmd_clear_idb_failed_toast.includes('/dle-clear'),
-        'CLEAR-8: dle_cmd_clear_idb_failed_toast present in EN locale and points at retrying /dle-clear');
+    assert(typeof en.dle_cmd_clear_idb_failed_toast === 'string' && en.dle_cmd_clear_idb_failed_toast.includes('/oq-clear'),
+        'CLEAR-8: dle_cmd_clear_idb_failed_toast present in EN locale and points at retrying /oq-clear');
 });
 
 test('CLEAR-9: finalizeIndex cache save is epoch-fenced — un-awaited save cannot repopulate IDB after a clear (source guard)', () => {

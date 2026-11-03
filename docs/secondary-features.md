@@ -230,7 +230,7 @@ Custom Canvas-based force-directed graph visualization (no external library).
 First import in `index.js` (`import './src/diagnostics/boot.js';` at top of file, before any other DLE imports). Installs console/fetch/XHR/error interceptors and starts PerformanceObserver (long-task tracking) at **module-eval time** so DLE captures cold-start bugs in itself and other extensions. This runs before any other DLE code.
 
 ### flight-recorder.js
-Ring buffer of per-generation event summaries (`generationBuffer`, size **50** — increased from 20). Started via `startFlightRecorder()` imported and called near the end of `init()`. Records pipeline runs, AI calls, errors, aborts. Used by `/dle-diagnostics` export.
+Ring buffer of per-generation event summaries (`generationBuffer`, size **50** — increased from 20). Started via `startFlightRecorder()` imported and called near the end of `init()`. Records pipeline runs, AI calls, errors, aborts. Used by `/oq-diagnostics` export.
 
 **`recordAbort(msg)`** — dynamically imported and called from `onGenerate()`'s catch block on user abort.
 
@@ -301,7 +301,7 @@ Each generation gets a 6-char correlation ID (`Math.random().toString(36).slice(
 
 `ensureIndexFreshMs`, `pinBlockMs`, `contextualGatingMs`, `reinjectionCooldownMs`, `requiresExcludesMs`, `stripDedupMs`, `formatGroupMs`, `trackGenerationMs`, `recordAnalyticsMs`, `perChatCountsMs`
 
-Visible in `/dle-inspect` timing section (collapsible "Stage Timing" table with per-stage ms and total) and included in diagnostic export trace data.
+Visible in `/oq-inspect` timing section (collapsible "Stage Timing" table with per-stage ms and total) and included in diagnostic export trace data.
 
 ### Additional pushEvent Kinds
 Beyond the existing `init`, `obsidian_circuit`, `search_mode`, `cache_save`, `cache_load`, `scribe`, `enabled`, etc.:
@@ -313,8 +313,8 @@ Beyond the existing `init`, `obsidian_circuit`, `search_mode`, `cache_save`, `ca
 - **`drawer`** — `open`, `close`
 
 ### Slash Commands (Diagnostics)
-- **`/dle-debug [on|off]`** — Toggle debug mode. No argument = toggle current state. Persists to settings.
-- **`/dle-logs [N]`** — Show last N DLE console entries (default 50, max 500). Filters `consoleBuffer` for entries with `dle: true` flag. Displays in popup with copy button.
+- **`/oq-debug [on|off]`** — Toggle debug mode. No argument = toggle current state. Persists to settings.
+- **`/oq-logs [N]`** — Show last N DLE console entries (default 50, max 500). Filters `consoleBuffer` for entries with `dle: true` flag. Displays in popup with copy button.
 
 ### `globalThis.__DLE_DEBUG` Namespace
 Read-only object created on `init()`. Three getters (no setters):
@@ -326,5 +326,5 @@ Read-only object created on `init()`. Three getters (no setters):
 
 For browser console debugging. Read-only — mutations have no effect on DLE state. Installed/torn down by a `debugMode` observer (`installDebugNamespace`, `index.js:2763`): turning debugMode off deletes `__DLE_DEBUG` and clears `aiPromptBuffer` so captured prompts can't be re-exposed.
 
-### `/dle-inspect` Timing Section
+### `/oq-inspect` Timing Section
 Now shows `genId` at the top of the trace view. When timing data is present on the trace, displays a collapsible "Stage Timing" table listing each `*Ms` field with its value and a total row. Collapsed by default to keep the inspect view compact.

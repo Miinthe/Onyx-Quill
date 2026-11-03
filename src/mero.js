@@ -4,7 +4,7 @@
  * mock-up v13, in host mode), mounted by mero-window.js.
  *
  * Storage:
- *   extension_settings.deeplore_mero = { chars: { [avatar]: { talks } }, notes: { char, run, board }, settings }
+ *   extension_settings.onyxquill_mero = { chars: { [avatar]: { talks } }, notes: { char, run, board }, settings }
  *   chat_metadata.deeplore_mero_notes = [notes for this chat]
  * Mero's AI connection is the pinned "Mero" profile in DeepLore's AI connections (no inherit).
  */
@@ -395,7 +395,7 @@ async function answerWithLookups(system, messages, conn, steps, onStep, { web = 
  */
 async function answerFor(t, history, said, { opener = false } = {}) {
     const conn = resolveConnectionConfig('mero');
-    if (!conn.profileId) throw new Error('Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile');
+    if (!conn.profileId) throw new Error('Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile');
     // "Mero is typing…" from the first moment — the board summary below can take up to 20 seconds, and nothing showing
     // then looked like she was broken (Miinthe, 2026-11-02)
     busyOn(t.id); changed();
@@ -430,7 +430,7 @@ async function answerInner(t, history, said, { opener }, conn) {
     lastTold.set(t.id, { model: conn.profileId, sections: [
         ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
         ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
-        ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
+        ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries Onyx Quill sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
         ['🔎 Her lookups', lookups ? `She can look things up (lore, board, chat, Cast${web ? ', the web' : ''}) — what she looked up shows above her answer.` : 'Not with this connection — she sees only what is listed here.'],
     ] });
@@ -449,7 +449,7 @@ async function answerInner(t, history, said, { opener }, conn) {
             }
         }
         if (!raw.trim()) {
-            // a vault review: the answer length from Settings (Answer length for /dle-review), and time to read it all
+            // a vault review: the answer length from Settings (Answer length for /oq-review), and time to read it all
             const rt = getSettings().reviewResponseTokens;
             const callConn = vault ? { ...conn, ...(rt > 0 ? { maxTokens: rt } : {}), timeout: Math.max(conn.timeout || 0, 300000) } : conn;
             // the talk as real turns: her last message, the ones before as history (a pasted script let a model write Miinthe's lines)
@@ -491,7 +491,7 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
     if (!opener) t.msgs.push({ who: 'miinthe', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
     if (t.state !== 'open') t.state = 'open';
     t.updated = new Date().toISOString(); saveStore();
-    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
     const first = !t.msgs.some(m => m.who === 'mero');
     try {
         const r = await answerFor(t, t.msgs.slice(), said, { opener });
@@ -703,7 +703,7 @@ export function setMomentsAside(keys) { const g = glowStore(); putGlow({ ...g, d
 export async function talkAboutMoments(keys) {
     const moments = meroGlow().moments.filter(m => keys.includes(m.key));
     if (!moments.length) return { ok: false, error: 'that moment is gone (its message was deleted?)' };
-    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
     const t = newTalk('yap'); if (!t) return { ok: false, error: 'Open a character chat first.' };
     t.title = moments[0].quiet ? `Quiet: ${moments[0].tracker}` : `Big moment: ${moments[0].text}`.slice(0, 80); t.mine = true;
     setMomentsAside(keys);
@@ -714,12 +714,12 @@ export async function talkAboutMoments(keys) {
 export const reviewEntries = () => (vaultIndex || []).filter(e => !e.guide);
 
 /**
- * 📚 Review the vault (/dle-review, ⋯ → Review the vault with Mero): a new talk where the whole vault is in front of
+ * 📚 Review the vault (/oq-review, ⋯ → Review the vault with Mero): a new talk where the whole vault is in front of
  * Mero for every answer in it. Miinthe 2026-10-18: it used to go into the story chat as her message and stay there.
  * Returns { talk, done } — `done` resolves like sendToMero — or { error }.
  */
 export function startVaultReview(question = '') {
-    if (!resolveConnectionConfig('mero').profileId) return { error: 'Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
     const t = newTalk('yap'); if (!t) return { error: 'Open a character chat first.' };
     t.title = '📚 Vault review'; t.mine = true; t.review = true; saveStore();
     const ask = String(question || '').trim() || 'Could you look over my whole vault? What doesn\'t fit together, what is missing, which entries could be connected?';

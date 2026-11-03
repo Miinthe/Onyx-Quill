@@ -66,7 +66,7 @@ function resolveAiFallback(aiResult, trace, settings, { bootstrapActive, vaultSn
 
 /**
  * Full entry-selection pipeline. 3-mode branching: keywords-only, two-stage, ai-only.
- * Records a trace for the Pipeline Inspector (/dle-inspect).
+ * Records a trace for the Pipeline Inspector (/oq-inspect).
  * @returns {Promise<{ finalEntries: VaultEntry[], matchedKeys: Map<string, string>, trace: object }>}
  */
 export async function runPipeline(chat, externalSnapshot, contextualGatingContext, { pins = [], blocks = [], folderFilter = null, signal = null, onStatus = null, genId = null, budget = null } = {}) {
@@ -247,7 +247,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
                         const nonConstant = kwResult.matched.filter(e => !e.constant && !e.bootstrap);
                         if (nonConstant.length === 0 && kwResult.matched.length > 0) {
                             console.warn('[DLE] AI-only mode failed and keyword fallback found only constants/bootstraps — lore coverage is minimal');
-                            dedupWarning('AI search hit a snag — only your always-send lore is active.', 'ai_fallback', { hint: 'Check AI connection in DeepLore settings.' });
+                            dedupWarning('AI search hit a snag — only your always-send lore is active.', 'ai_fallback', { hint: 'Check AI connection in Onyx Quill settings.' });
                         }
                     }
                     return kwResult.matched;

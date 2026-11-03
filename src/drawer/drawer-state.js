@@ -19,27 +19,27 @@ export const TAB_LABELS = {
 };
 
 export const TOOL_ACTIONS = {
-    'health': '/dle-health',
-    'inspect': '/dle-inspect',
-    'status': '/dle-status',
-    'simulate': '/dle-simulate',
-    'ai-review': '/dle-review',
-    'notebook': '/dle-notebook',
-    'ai-notebook': '/dle-ai-notepad',
-    'summarize': '/dle-summarize',
-    'import-wi': '/dle-import',
-    'optimize-keys': '/dle-optimize-keys',
-    'graph': '/dle-graph',
-    'scribe-history': '/dle-scribe-history',
-    'setup': '/dle-setup',
-    'pins-blocks': '/dle-pins',
-    'refresh': '/dle-refresh',
+    'health': '/oq-health',
+    'inspect': '/oq-inspect',
+    'status': '/oq-status',
+    'simulate': '/oq-simulate',
+    'ai-review': '/oq-review',
+    'notebook': '/oq-notebook',
+    'ai-notebook': '/oq-ai-notepad',
+    'summarize': '/oq-summarize',
+    'import-wi': '/oq-import',
+    'optimize-keys': '/oq-optimize-keys',
+    'graph': '/oq-graph',
+    'scribe-history': '/oq-scribe-history',
+    'setup': '/oq-setup',
+    'pins-blocks': '/oq-pins',
+    'refresh': '/oq-refresh',
 };
 
 export const EXPAND_ACTIONS = {
-    'injection': '/dle-why',
-    'browse': '/dle-browse',
-    'gating': '/dle-context-state',
+    'injection': '/oq-why',
+    'browse': '/oq-browse',
+    'gating': '/oq-context-state',
 };
 
 // the same words as Settings › How lore is picked (bug hunt 2026-10-17: Diagnostics said "AI Only")

@@ -351,7 +351,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
     // delete the prior good cache key and leave nothing for the next hydration.
     if (!skipCacheSave) {
         // Epoch fence (gotcha #95): this save is fire-and-forget — the build's finally
-        // clears `indexing` before the save's IDB transaction exists, so /dle-clear can
+        // clears `indexing` before the save's IDB transaction exists, so /oq-clear can
         // pass its indexing guard and wipe IDB while this save is still opening the DB;
         // the save would then commit the pre-clear entries AFTER the wipe. Threading the
         // build's captured epoch lets saveIndexToCache bail at write time if
@@ -537,7 +537,7 @@ export async function buildIndex() {
                             });
                             // Audit fix-up (round 2): compact the per-entry copy
                             // to release ~50MB at 5k WI-imported entries × 22
-                            // W_WI_ROUND_TRIP objects. /dle-lint renderer
+                            // W_WI_ROUND_TRIP objects. /oq-lint renderer
                             // (src/ui/commands-lint.js) reconstructs message +
                             // suggestedFix from CODE_LABELS at display time, so
                             // only {code, field} need to round-trip into reused
@@ -651,11 +651,11 @@ export async function buildIndex() {
 
         // Once-per-page-load: subsequent rebuilds stay silent.
         if (!_parserLedgerToastShown && (buildReport.warnCount > 0 || buildReport.skipCount > 0)) {
-            const parts = [`DLE indexed ${entries.length} entries.`];
+            const parts = [`Onyx Quill indexed ${entries.length} entries.`];
             if (buildReport.warnCount > 0) parts.push(`${buildReport.warnCount} warning${buildReport.warnCount === 1 ? '' : 's'}`);
             if (buildReport.skipCount > 0) parts.push(`${buildReport.skipCount} skipped`);
             dedupWarning(
-                `${parts.join(', ').replace(/,([^,]*)$/, ';$1')}. Run /dle-lint for details.`,
+                `${parts.join(', ').replace(/,([^,]*)$/, ';$1')}. Run /oq-lint for details.`,
                 'parser_ledger_summary',
                 { timeOut: OBSIDIAN_TOAST_TIMEOUT },
             );
@@ -665,7 +665,7 @@ export async function buildIndex() {
         if (entries.length === 0 && !vaultFetchFailed) {
             const tag = settings.lorebookTag || 'lorebook';
             dedupWarning(
-                `Connected to Obsidian but found 0 entries with the '${tag}' tag. Add \`tags: [${tag}]\` to your note frontmatter to make entries visible to DeepLore.`,
+                `Connected to Obsidian but found 0 entries with the '${tag}' tag. Add \`tags: [${tag}]\` to your note frontmatter to make entries visible to Onyx Quill.`,
                 'zero_entries',
                 { timeOut: OBSIDIAN_TOAST_TIMEOUT },
             );
@@ -681,24 +681,24 @@ export async function buildIndex() {
                 const v = httpsVaults[0];
                 const probe = await diagnoseFetchFailure(v.host, v.port, v.apiKey);
                 if (probe.diagnosis === 'cert') {
-                    userMsg = `HTTPS certificate not trusted. Switch to HTTP in vault settings (uncheck HTTPS, port ${probe.httpPort}), or trust the certificate. Run /dle-health for help.`;
+                    userMsg = `HTTPS certificate not trusted. Switch to HTTP in vault settings (uncheck HTTPS, port ${probe.httpPort}), or trust the certificate. Run /oq-health for help.`;
                 } else if (probe.diagnosis === 'auth') {
-                    userMsg = `Connected via HTTP but authentication failed. Check your vault API key. Run /dle-health for help.`;
+                    userMsg = `Connected via HTTP but authentication failed. Check your vault API key. Run /oq-health for help.`;
                 } else {
-                    userMsg = `Cannot reach Obsidian on either HTTPS or HTTP. Check that Obsidian is running with the Local REST API plugin enabled. Run /dle-health for diagnostics.`;
+                    userMsg = `Cannot reach Obsidian on either HTTPS or HTTP. Check that Obsidian is running with the Local REST API plugin enabled. Run /oq-health for diagnostics.`;
                 }
             } catch { /* probe failed, fall through to generic classification */ }
         }
 
         if (userMsg === raw) {
             if (/ECONNREFUSED|Failed to fetch|NetworkError|fetch/i.test(raw)) {
-                userMsg = `Connection failed. Check: (1) Obsidian is running, (2) Local REST API plugin is enabled, (3) port is correct. Run /dle-health for diagnostics. (${raw})`;
+                userMsg = `Connection failed. Check: (1) Obsidian is running, (2) Local REST API plugin is enabled, (3) port is correct. Run /oq-health for diagnostics. (${raw})`;
             } else if (/No enabled vaults/i.test(raw)) {
-                userMsg = 'No enabled vaults configured. Go to DeepLore settings → Vault Connections and add a vault.';
+                userMsg = 'No enabled vaults configured. Go to Onyx Quill settings → Vault Connections and add a vault.';
             } else if (/401|403|auth/i.test(raw)) {
-                userMsg = `Authentication failed. Check your vault API key in settings. Run /dle-health for diagnostics. (${raw})`;
+                userMsg = `Authentication failed. Check your vault API key in settings. Run /oq-health for diagnostics. (${raw})`;
             } else if (/timeout|timed out/i.test(raw)) {
-                userMsg = `Obsidian connection timed out. Check that the REST API plugin is running. Run /dle-health for diagnostics. (${raw})`;
+                userMsg = `Obsidian connection timed out. Check that the REST API plugin is running. Run /oq-health for diagnostics. (${raw})`;
             }
         }
         dedupError(userMsg, 'obsidian_build_fail');
@@ -728,14 +728,14 @@ export function getMaxResponseTokens() {
  * Issue #39 (v2.6): wipe-and-stop cache clear. Empties the IndexedDB vault cache
  * AND the live in-memory index (plus all derived state, via
  * state.js:resetVaultIndexState) WITHOUT re-fetching from Obsidian. Callers:
- * the /dle-cache-info "Clear Cache" button and the /dle-clear slash command.
+ * the /oq-cache-info "Clear Cache" button and the /oq-clear slash command.
  *
  * This is the intentional user override for the BUG-367 empty-preserve guard
  * (see the zero-files branch in buildIndex above): the guard carries prior
  * entries forward when a vault returns 0 files, so a user who emptied their
  * Obsidian vault could never get rid of the cached entries — every rebuild
  * re-preserved and re-saved them. After a clear the prior index is empty, the
- * guard has nothing to preserve, and a subsequent /dle-refresh against an
+ * guard has nothing to preserve, and a subsequent /oq-refresh against an
  * emptied vault commits []. Do NOT weaken the guard itself; clearing is the
  * escape hatch (docs/gotchas.md #95).
  *
@@ -756,7 +756,7 @@ export function getMaxResponseTokens() {
  *          stats, and matching all see an empty index — that part is real and
  *          correct), but the IndexedDB wipe failed, so cached entries may
  *          hydrate back on the next reload. Callers MUST surface this as an
- *          error ("retry /dle-clear"), never a success toast.
+ *          error ("retry /oq-clear"), never a success toast.
  */
 export async function clearVaultIndexAndCache() {
     if (indexing) {
@@ -779,7 +779,7 @@ export async function clearVaultIndexAndCache() {
  */
 export async function hydrateFromCache() {
     try {
-        // Epoch fence (gotcha #95): a /dle-clear completing while the IDB read below
+        // Epoch fence (gotcha #95): a /oq-clear completing while the IDB read below
         // is in flight bumps buildEpoch (resetVaultIndexState); without this check the
         // setVaultIndex below would overwrite the wipe with the pre-clear entries.
         // Bailing before setVaultIndex also skips the background buildIndex trigger
@@ -821,7 +821,7 @@ export async function hydrateFromCache() {
                 // Short-lived timestamp so retries happen on cooldown, not after TTL.
                 const s = getSettings();
                 setIndexTimestamp(Date.now() - (s.cacheTTL * 1000) + 30_000); // retry in ~30s
-                dedupWarning('Couldn\'t reach your vault — using your saved cache for now.', 'obsidian_cache_fallback', { timeOut: CACHE_FALLBACK_TOAST_TIMEOUT, hint: 'Check that Obsidian is running, then /dle-refresh.' });
+                dedupWarning('Couldn\'t reach your vault — using your saved cache for now.', 'obsidian_cache_fallback', { timeOut: CACHE_FALLBACK_TOAST_TIMEOUT, hint: 'Check that Obsidian is running, then /oq-refresh.' });
             }
         });
 
@@ -1101,7 +1101,7 @@ export async function buildIndexWithReuse() {
 
                     if (canReuse) {
                         // Unchanged — reuse existing entry. Roll forward its
-                        // `_parserWarnings` so /dle-lint still surfaces them.
+                        // `_parserWarnings` so /oq-lint still surfaces them.
                         allEntries.push(existing);
                         if (existing._parserWarnings && existing._parserWarnings.length > 0) {
                             buildReport.warnCount++;
@@ -1211,7 +1211,7 @@ export async function buildIndexWithReuse() {
                 // Only mark ever-loaded when all vaults confirmed reachable.
                 setIndexEverLoaded(true);
             }
-            // Publish ledger even on no-change early-return so /dle-lint reflects
+            // Publish ledger even on no-change early-return so /oq-lint reflects
             // the live index's warning state after a reuse-sync tick.
             setIndexBuildReport(buildReport);
             if (settings.debugMode) {
@@ -1294,11 +1294,11 @@ export async function buildIndexWithReuse() {
         });
 
         if (!_parserLedgerToastShown && (buildReport.warnCount > 0 || buildReport.skipCount > 0)) {
-            const parts = [`DLE indexed ${dedupedEntries.length} entries.`];
+            const parts = [`Onyx Quill indexed ${dedupedEntries.length} entries.`];
             if (buildReport.warnCount > 0) parts.push(`${buildReport.warnCount} warning${buildReport.warnCount === 1 ? '' : 's'}`);
             if (buildReport.skipCount > 0) parts.push(`${buildReport.skipCount} skipped`);
             dedupWarning(
-                `${parts.join(', ').replace(/,([^,]*)$/, ';$1')}. Run /dle-lint for details.`,
+                `${parts.join(', ').replace(/,([^,]*)$/, ';$1')}. Run /oq-lint for details.`,
                 'parser_ledger_summary',
                 { timeOut: OBSIDIAN_TOAST_TIMEOUT },
             );

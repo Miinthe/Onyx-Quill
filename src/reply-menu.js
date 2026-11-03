@@ -11,7 +11,7 @@ import { feedOf } from './echo.js';
 import * as K from './kit/kit.js';
 
 const BTN_CLASS = 'mes_dle_more';
-const html = `<div title="DeepLore" class="mes_button ${BTN_CLASS}" role="button" tabindex="0" aria-label="DeepLore: this message" aria-haspopup="menu">${K.icon('book')}</div>`;
+const html = `<div title="Onyx Quill" class="mes_button ${BTN_CLASS}" role="button" tabindex="0" aria-label="Onyx Quill: this message" aria-haspopup="menu">${K.icon('book')}</div>`;
 
 function addButtons() {
     // on the message itself, next to SillyTavern's own ⋯ and Edit (mock-up v13) — not inside SillyTavern's folded
@@ -39,7 +39,7 @@ function items(n) {
     const sources = m.extra?.deeplore_sources;
     const changes = feedOf().filter(x => x.i === n).length;
     return [
-        { heading: `DeepLore · message #${n}` },
+        { heading: `Onyx Quill · message #${n}` },
         { label: 'Pitch from here', icon: 'pitch', onClick: () => window.__dleOpenPitches?.(n) },
         // Miinthe, 2026-10-19: Mero opens with this message attached (also: 📎 in her box, or @reply-#n)
         { label: 'Ask Mero about this', icon: 'mero', onClick: () => window.__dleAskMero?.({ label: `#${n} ${m.name}: ${String(m.mes || '').replace(/\s+/g, ' ').slice(0, 60)}`, text: `#${n} ${m.name}: ${String(m.mes || '').slice(0, 2500)}` }) },

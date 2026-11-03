@@ -175,13 +175,13 @@ export async function createDrawerPanel() {
             <div class="drawer-toggle drawer-header">
                 <div id="deeploreDrawerIcon"
                      class="drawer-icon interactable closedIcon dle-drawer-icon-svg"
-                     title="Open DeepLore drawer"
+                     title="Open Onyx Quill drawer"
                      tabindex="0"
                      role="button"
                      aria-expanded="false"
-                     aria-label="Open DeepLore drawer"><i class="fa-solid fa-book-open fa-fw" aria-hidden="true"></i></div>
+                     aria-label="Open Onyx Quill drawer"><i class="fa-solid fa-book-open fa-fw" aria-hidden="true"></i></div>
             </div>
-            <div id="deeplore-panel" class="drawer-content closedDrawer fillRight" role="region" aria-label="DeepLore panel">
+            <div id="deeplore-panel" class="drawer-content closedDrawer fillRight" role="region" aria-label="Onyx Quill panel">
                 <div id="deeplore-panelheader" class="fa-solid fa-grip drag-grabber" aria-hidden="true"></div>
                 <div class="dle-drawer-controls">
                     <div class="dle-drawer-pin" title="Pin drawer open">
@@ -194,7 +194,7 @@ export async function createDrawerPanel() {
                     <!-- NOTE: Do NOT use right_menu_button class on <button> elements — ST applies
                          background-color: rgb(240,240,240) which creates a white square. The lock avoids
                          this because it's a checkbox+label, not a button. Style manually instead. -->
-                    <button type="button" class="dle-drawer-settings" title="Open DeepLore settings" aria-label="Open DeepLore settings">
+                    <button type="button" class="dle-drawer-settings" title="Open Onyx Quill settings" aria-label="Open Onyx Quill settings">
                         <i class="fa-solid fa-gear" aria-hidden="true"></i>
                     </button>
                     <button type="button" id="dle-drawer-close" class="dle-drawer-close" title="Close drawer" aria-label="Close drawer">

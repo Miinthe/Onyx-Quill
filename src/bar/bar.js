@@ -153,7 +153,7 @@ async function reevaluate() {
 
 function bookItems() {
     return [
-        { heading: 'DeepLore' },
+        { heading: 'Onyx Quill' },
         ...(locked() ? [] : [{ label: panelOpen() ? 'Close the side panel' : 'Open the side panel', icon: getSettings().drawerSide === 'left' ? 'panelL' : 'panel', onClick: togglePanel }]),
         // one two-way switch (Miinthe, 2026-10-19: "lock / unlock the side panel" from the bar's menu); the header's lock does
         // the same, so this presses it and both stay in step. Not on a phone — the panel can't be locked there.
@@ -225,7 +225,7 @@ function draw() {
     document.body.classList.toggle('dle-bar-has-hot', hot.length > 0 && s.barHideStQr !== false);
     const dot = pb.dot ? `<span class="dle-dot${pb.dot === 'mero' ? '' : ' ' + pb.dot}"></span>` : '';
     const pCls = (pb.pressed ? ' on' : '') + (pb.icon === 'mail' ? ' env' + (pb.dot ? ' ' + pb.dot : '') : '') + (st.hold && !pb.pressed ? ' wiggle' : '');
-    const book = db('book', 'book', 'DeepLore menu');
+    const book = db('book', 'book', 'Onyx Quill menu');
     // Settings › Interface › The bar › My notes: off → no button (and an open window closes); the notes stay in their file
     if (s.notesEnabled === false && notesOpen()) closeNotes();
     const rc = st.phone ? '' : ' · right-click: lock / unlock';
@@ -416,7 +416,7 @@ function mount() {
         bar = document.createElement('div');
         bar.id = 'dle-bar';
         bar.className = 'dle-bar dk';
-        bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'DeepLore bar');
+        bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Onyx Quill bar');
         bar.innerHTML = '<button type="button" class="dle-bar-bubble" hidden>⏸ Waiting for your answer</button><button type="button" class="dle-bar-bubble mero" hidden>☆ Mero wants to talk</button><div class="dle-bar-main"></div><div id="dle-bar-work"></div>';
         bar.addEventListener('click', onClick);
         bar.addEventListener('pointerdown', onGrab);

@@ -9,7 +9,7 @@ import { getSettings } from '../../settings.js';
 import { saveSettingsDebounced } from '../../../../../../script.js';
 import { vaultIndex, setIndexTimestamp } from '../state.js';
 import { buildIndex, clearVaultIndexAndCache } from '../vault/vault.js';
-// graph.js (~3140 LOC) is lazy-loaded inline below — only paid for when /dle-graph runs.
+// graph.js (~3140 LOC) is lazy-loaded inline below — only paid for when /oq-graph runs.
 import { showBrowsePopup } from './popups.js';
 import { parseWorldInfoJson, importEntries } from '../vault/import.js';
 import { world_names, loadWorldInfo } from '../../../../../world-info.js';
@@ -18,8 +18,8 @@ import { tr, trf } from '../i18n/i18n.js';
 
 export function registerVaultCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-graph',
-        aliases: ['dle-g'],
+        name: 'oq-graph',
+        aliases: ['oq-g'],
         callback: async () => {
             const { showGraphPopup } = await import('../graph/graph.js');
             await showGraphPopup();
@@ -30,8 +30,8 @@ export function registerVaultCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-browse',
-        aliases: ['dle-b'],
+        name: 'oq-browse',
+        aliases: ['oq-b'],
         callback: async () => {
             await showBrowsePopup();
             return '';
@@ -41,8 +41,8 @@ export function registerVaultCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-refresh',
-        aliases: ['dle-r'],
+        name: 'oq-refresh',
+        aliases: ['oq-r'],
         callback: async () => {
             // Don't pre-clear vaultIndex — buildIndex replaces it atomically. Pre-clearing
             // would give any concurrent generation zero entries during rebuild.
@@ -50,10 +50,10 @@ export function registerVaultCommands() {
                 setIndexTimestamp(0);
                 await buildIndex();
                 const msg = `Indexed ${vaultIndex.length} entries.`;
-                toastr.success(msg, 'DeepLore');
+                toastr.success(msg, 'Onyx Quill');
                 return msg;
             } catch (err) {
-                console.warn('[DLE] /dle-refresh failed:', err);
+                console.warn('[DLE] /oq-refresh failed:', err);
                 notify.error(trf('dle_cmd_refresh_error_toast', classifyError(err)), { category: 'obsidian_connect', copyable: true });
                 return '';
             }
@@ -63,12 +63,12 @@ export function registerVaultCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-clear',
+        name: 'oq-clear',
         callback: async () => {
             // Issue #39: wipe-and-stop. Clears the IndexedDB cache AND the live
             // in-memory index without re-fetching — the intentional override for
-            // the BUG-367 empty-preserve guard (emptied vault → /dle-clear →
-            // /dle-refresh commits []). See docs/gotchas.md #95.
+            // the BUG-367 empty-preserve guard (emptied vault → /oq-clear →
+            // /oq-refresh commits []). See docs/gotchas.md #95.
             const result = await clearVaultIndexAndCache();
             if (!result.ok) {
                 if (result.reason === 'idb') {
@@ -82,15 +82,15 @@ export function registerVaultCommands() {
                 return '';
             }
             const msg = tr('dle_cmd_cacheinfo_cleared_toast');
-            toastr.success(msg, 'DeepLore');
+            toastr.success(msg, 'Onyx Quill');
             return msg;
         },
-        helpString: 'Clear the vault cache AND the live index without re-fetching (wipe-and-stop). Run /dle-refresh to re-index from Obsidian.',
+        helpString: 'Clear the vault cache AND the live index without re-fetching (wipe-and-stop). Run /oq-refresh to re-index from Obsidian.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-import',
+        name: 'oq-import',
         callback: async (_args, folderArg) => {
             const folder = (folderArg || '').trim();
 
@@ -106,7 +106,7 @@ export function registerVaultCommands() {
                 `<div class="dle-popup">
                     <h3>Import SillyTavern World Info</h3>
                     <p>Import entries from an existing SillyTavern lorebook, a local JSON file, or paste JSON directly.</p>
-                    ${folder ? `<p>Target folder: <strong>${escapeHtml(folder)}</strong></p>` : '<p>Entries will be created in the vault root. Pass a folder name as argument, e.g. <code>/dle-import Imported</code></p>'}
+                    ${folder ? `<p>Target folder: <strong>${escapeHtml(folder)}</strong></p>` : '<p>Entries will be created in the vault root. Pass a folder name as argument, e.g. <code>/oq-import Imported</code></p>'}
 
                     <!-- Lorebook dropdown -->
                     <div id="dle-import-lb-section" class="dle-mb-2${hasLorebooks ? '' : ' dle-hidden'}">
@@ -145,7 +145,7 @@ export function registerVaultCommands() {
                             try {
                                 const data = await loadWorldInfo(name);
                                 if (!data) {
-                                    toastr.error(trf('dle_toast_lorebook_load_failed', name), 'DeepLore');
+                                    toastr.error(trf('dle_toast_lorebook_load_failed', name), 'Onyx Quill');
                                     return;
                                 }
                                 const json = JSON.stringify(data, null, 2);
@@ -172,7 +172,7 @@ export function registerVaultCommands() {
                                 capturedJson = text;
                             };
                             reader.onerror = () => {
-                                toastr.error(tr('dle_cmd_import_readfailed_toast'), 'DeepLore');
+                                toastr.error(tr('dle_cmd_import_readfailed_toast'), 'Onyx Quill');
                             };
                             reader.readAsText(file);
                         });
@@ -184,7 +184,7 @@ export function registerVaultCommands() {
 
             const jsonText = capturedJson.trim();
             if (!jsonText) {
-                toastr.warning(tr('dle_cmd_import_nojson_toast'), 'DeepLore');
+                toastr.warning(tr('dle_cmd_import_nojson_toast'), 'Onyx Quill');
                 return '';
             }
 
@@ -199,15 +199,15 @@ export function registerVaultCommands() {
             try {
                 JSON.parse(jsonText);
             } catch (parseErr) {
-                console.warn('[DLE] /dle-import JSON parse failed:', parseErr);
-                toastr.error(tr('dle_cmd_import_invalidjson_toast'), 'DeepLore');
+                console.warn('[DLE] /oq-import JSON parse failed:', parseErr);
+                toastr.error(tr('dle_cmd_import_invalidjson_toast'), 'Onyx Quill');
                 return '';
             }
 
             try {
                 const { entries, source } = parseWorldInfoJson(jsonText);
                 if (entries.length === 0) {
-                    toastr.info(tr('dle_cmd_import_noentries_toast'), 'DeepLore');
+                    toastr.info(tr('dle_cmd_import_noentries_toast'), 'Onyx Quill');
                     return '';
                 }
 
@@ -215,7 +215,7 @@ export function registerVaultCommands() {
                     (!e.content || !e.content.trim()) && (!e.key || !e.key.length || e.key.every(k => !k.trim())),
                 ).length;
                 if (emptyCount > 0) {
-                    toastr.warning(trf('dle_cmd_import_emptyentries_toast', emptyCount), 'DeepLore');
+                    toastr.warning(trf('dle_cmd_import_emptyentries_toast', emptyCount), 'Onyx Quill');
                 }
 
                 const confirmed = await callGenericPopup(
@@ -225,7 +225,7 @@ export function registerVaultCommands() {
                 );
                 if (!confirmed) return '';
 
-                const progressToast = toastr.info(`Importing 0/${entries.length} entries...`, 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
+                const progressToast = toastr.info(`Importing 0/${entries.length} entries...`, 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
                 const result = await importEntries(entries, folder, (done, total) => {
                     progressToast.find('.toast-message').text(`Importing ${done}/${total} entries...`);
                 });
@@ -280,7 +280,7 @@ export function registerVaultCommands() {
                 // but user-visible behaviour differs. One-shot warning per import.
                 if (result.imported > 0) {
                     dedupWarning(
-                        "WI 'Order' is inverted in DLE Priority (lower = higher priority). Verify your entries sort as expected.",
+                        "WI 'Order' is inverted in Onyx Quill Priority (lower = higher priority). Verify your entries sort as expected.",
                         'wi_import_priority_flip',
                         { timeOut: 15000 },
                     );
@@ -308,7 +308,7 @@ export function registerVaultCommands() {
                             if (imported.length > 0) {
                                 const { summarizeEntries } = await import('./commands-ai.js');
                                 const sumResult = await summarizeEntries(imported);
-                                toastr.success(`Summaries: ${sumResult.generated} written, ${sumResult.skipped} skipped, ${sumResult.failed} failed.`, 'DeepLore');
+                                toastr.success(`Summaries: ${sumResult.generated} written, ${sumResult.skipped} skipped, ${sumResult.failed} failed.`, 'Onyx Quill');
                                 if (sumResult.generated > 0) needsRebuild = true;
                             }
                         }
@@ -330,7 +330,7 @@ export function registerVaultCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: false,
         })],
-        helpString: 'Import SillyTavern World Info JSON into the Obsidian vault. Usage: /dle-import <folder>. Example: /dle-import Imported.',
+        helpString: 'Import SillyTavern World Info JSON into the Obsidian vault. Usage: /oq-import <folder>. Example: /oq-import Imported.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 }

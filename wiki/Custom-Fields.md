@@ -112,23 +112,23 @@ era:                    # multiple values
 Use slash commands to set the current context:
 
 ```
-/dle-set-field era medieval
-/dle-set-field threat_level 5
-/dle-clear-field era
-/dle-clear-all-context
+/oq-set-field era medieval
+/oq-set-field threat_level 5
+/oq-clear-field era
+/oq-clear-all-context
 ```
 
-Without a value argument, `/dle-set-field` shows a selection popup listing all values found in your vault with entry counts.
+Without a value argument, `/oq-set-field` shows a selection popup listing all values found in your vault with entry counts.
 
 The built-in fields have shorthand aliases:
 ```
-/dle-set-era medieval
-/dle-set-location tavern
-/dle-set-scene combat
-/dle-set-characters Eris, Kael
+/oq-set-era medieval
+/oq-set-location tavern
+/oq-set-scene combat
+/oq-set-characters Eris, Kael
 ```
 
-View all active filters with `/dle-context-state` (alias: `/dle-ctx`).
+View all active filters with `/oq-context-state` (alias: `/oq-ctx`).
 
 You can also set context from the side panel's **Filters** tab, in its **Fields** fold (values set there are for this chat only).
 
@@ -168,7 +168,7 @@ These entries always bypass contextual gating regardless of field values:
 - **Constants** (tagged `lorebook-always`)
 - **Seeds** (tagged `lorebook-seed`)
 - **Bootstrap** entries (tagged `lorebook-bootstrap`)
-- **Pinned** entries (per-chat pins via `/dle-pin`)
+- **Pinned** entries (per-chat pins via `/oq-pin`)
 
 ## Integration
 
@@ -176,12 +176,12 @@ These entries always bypass contextual gating regardless of field values:
 - **Lore › All entries:** your own fields appear as filter chips
 - **Graph:** color nodes by any custom field value
 - **AI manifest:** field labels shown in AI search manifests for better selection
-- **`/dle-inspect`:** shows per-field mismatch reasons (e.g., `era: medieval != renaissance`)
-- **`/dle-status`:** shows custom field count and names
+- **`/oq-inspect`:** shows per-field mismatch reasons (e.g., `era: medieval != renaissance`)
+- **`/oq-status`:** shows custom field count and names
 
 ## Related: folder filtering
 
-Beyond field-based gating, DLE supports per-chat folder filtering via `/dle-set-folder`. This restricts injection to entries from specific vault folders, complementing custom field gating. See [[Injection and Context Control#Per-Chat Folder Filter]] for details.
+Beyond field-based gating, DLE supports per-chat folder filtering via `/oq-set-folder`. This restricts injection to entries from specific vault folders, complementing custom field gating. See [[Injection and Context Control#Per-Chat Folder Filter]] for details.
 
 ## See also
 

@@ -399,7 +399,7 @@ export function yamlEscape(str) {
 /**
  * User-friendly message shown when no vault entries are loaded.
  */
-export const NO_ENTRIES_MSG = 'No entries found. Check your Obsidian vault connection, or run /dle-health to troubleshoot.';
+export const NO_ENTRIES_MSG = 'No entries found. Check your Obsidian vault connection, or run /oq-health to troubleshoot.';
 
 /**
  * Classify an error into a user-friendly message based on common patterns.
@@ -432,7 +432,7 @@ export function classifyError(err) {
         // L-9: Custom Proxy mode (and its enableCorsProxy requirement) was removed in
         // v2.5 — AI calls now route server-side through Connection Profiles. Point users
         // at that path instead of the dead config flag.
-        return 'Blocked by browser security (CORS). Pick a Connection Profile in DLE Settings → Connection → AI Connections.';
+        return 'Blocked by browser security (CORS). Pick a Connection Profile in Onyx Quill Settings → Connection → AI Connections.';
     }
     if (/ECONNREFUSED|Failed to fetch|NetworkError|fetch failed/i.test(raw)) {
         return 'Could not connect. Check that the service is running.';

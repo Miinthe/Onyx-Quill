@@ -23,7 +23,7 @@
  *   - SCRIBE_*         Session Scribe summarizer
  *   - AUTO_SUGGEST_*   Auto-Suggest lore analyst
  *   - OPTIMIZE_KEYS_*  Keyword optimization assistant
- *   - SUMMARIZE_*      /dle-summarize-range default
+ *   - SUMMARIZE_*      /oq-summarize-range default
  */
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -139,7 +139,7 @@ Guidelines:
 Respond with a JSON object: {"suggested": ["keyword1", "keyword2", ...], "reasoning": "Brief explanation of changes"}`;
 
 // ══════════════════════════════════════════════════════════════════════════
-// /dle-summarize-range — chat range summarizer
+// /oq-summarize-range — chat range summarizer
 // ══════════════════════════════════════════════════════════════════════════
 
 export const SUMMARIZE_PROMPT = "You are a session summarizer. Read the following chat range and write a concise prose summary that preserves: who acted, what happened, key decisions, and emotional tone. Output the summary only — no preamble, no meta-commentary, no headers.";

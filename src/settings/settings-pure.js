@@ -54,7 +54,7 @@ function everyN(onKey, nKey, min, max) {
 }
 
 export const SECTIONS = [
-    { id: 'vault', name: 'Vault', icon: 'vault', grp: 'Lore', lead: 'Where your lore lives and how DeepLore reaches it.', cards: [
+    { id: 'vault', name: 'Vault', icon: 'vault', grp: 'Lore', lead: 'Where your lore lives and how Onyx Quill reaches it.', cards: [
         { t: 'Vaults', custom: 'vaults', rows: [
             { id: 'v-conflict', label: 'When two vaults have the same entry', type: 'select', key: 'multiVaultConflictResolution', opts: [['all', 'keep both'], ['first', 'first vault wins'], ['last', 'last vault wins'], ['merge', 'merge (combine keywords)']], old: 'Multi-vault conflict resolution' },
         ] },
@@ -81,13 +81,13 @@ export const SECTIONS = [
         ] },
         // Miinthe, 2026-10-27: deleting a run's last chat asks to clean the run up in Obsidian; this is where its files go
         { t: 'Cleaning up a run', rows: [
-            { id: 'v-rcmode', label: 'A cleaned-up run’s files', tip: 'When you delete the last chat of a run, DeepLore asks whether to clean the run up in Obsidian. Nothing goes without your yes.', type: 'seg', key: 'runCleanupMode', opts: [['trash', 'move to the trash folder'], ['delete', 'delete for good']], old: 'Delete instance / run files' },
-            { id: 'v-rctrash', label: 'Trash folder', hint: 'in your vault · DeepLore never reads it', tip: 'Each cleanup gets its own folder in here. Drag a file back out to undo; empty it in Obsidian.', type: 'text', key: 'runTrashFolder', fx: 'rebuild', old: 'Deleted runs folder' },
+            { id: 'v-rcmode', label: 'A cleaned-up run’s files', tip: 'When you delete the last chat of a run, Onyx Quill asks whether to clean the run up in Obsidian. Nothing goes without your yes.', type: 'seg', key: 'runCleanupMode', opts: [['trash', 'move to the trash folder'], ['delete', 'delete for good']], old: 'Delete instance / run files' },
+            { id: 'v-rctrash', label: 'Trash folder', hint: 'in your vault · Onyx Quill never reads it', tip: 'Each cleanup gets its own folder in here. Drag a file back out to undo; empty it in Obsidian.', type: 'text', key: 'runTrashFolder', fx: 'rebuild', old: 'Deleted runs folder' },
             { id: 'v-rcnow', label: 'Clean up a run', tip: 'Any run your vault has stamps for — also ones whose chats were deleted earlier', type: 'btn', btn: 'Clean up a run…', act: 'cleanupRun', old: 'Delete an instance' },
         ] },
     ] },
     { id: 'filters', name: 'Filters', icon: 'filter', grp: 'Lore', custom: 'hub' },
-    { id: 'select', name: 'Lore selection', icon: 'lore', grp: 'Lore', lead: 'How DeepLore finds the lore for a reply.', cards: [
+    { id: 'select', name: 'Lore selection', icon: 'lore', grp: 'Lore', lead: 'How Onyx Quill finds the lore for a reply.', cards: [
         { t: 'Mode', rows: [
             { id: 's-mode', label: 'How lore is picked', type: 'seg', opts: [['keywords-only', 'keywords only'], ['two-stage', 'keywords, then the judge'], ['ai-only', 'the judge only']], old: 'Search mode / AI search enabled',
                 read: s => (!s.aiSearchEnabled ? 'keywords-only' : s.aiSearchMode === 'ai-only' ? 'ai-only' : 'two-stage'),
@@ -142,10 +142,10 @@ export const SECTIONS = [
             { id: 'b-pen', label: 'Hold one back after', hint: 'times in a row', type: 'num', key: 'decayPenaltyThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Penalize after N in a row' },
         ] },
     ] },
-    { id: 'inject', name: 'Where it goes', icon: 'ssend', grp: 'Lore', lead: 'Where DeepLore’s parts go in the prompt.', cards: [
+    { id: 'inject', name: 'Where it goes', icon: 'ssend', grp: 'Lore', lead: 'Where Onyx Quill’s parts go in the prompt.', cards: [
         { t: 'How', rows: [
-            { id: 'i-mode', label: 'Place DeepLore’s parts', tip: '“In SillyTavern’s prompt list”: drag each part where you want it there; the positions below then step aside', type: 'seg', key: 'injectionMode', opts: [['extension', 'by these settings'], ['prompt_list', 'in the prompt list']], fx: 'injmode', old: 'Injection mode / prompt list / prompt manager' },
-            { id: 'i-wi', label: 'Let World Info see DeepLore’s lore', type: 'switch', key: 'allowWIScan', old: 'Allow World Info scan' },
+            { id: 'i-mode', label: 'Place Onyx Quill’s parts', tip: '“In SillyTavern’s prompt list”: drag each part where you want it there; the positions below then step aside', type: 'seg', key: 'injectionMode', opts: [['extension', 'by these settings'], ['prompt_list', 'in the prompt list']], fx: 'injmode', old: 'Injection mode / prompt list / prompt manager' },
+            { id: 'i-wi', label: 'Let World Info see Onyx Quill’s lore', type: 'switch', key: 'allowWIScan', old: 'Allow World Info scan' },
         ] },
         { t: 'Lore entries', rows: [
             { id: 'i-pos', label: 'Position', type: 'select', key: 'injectionPosition', opts: POS, num: true, dis: promptList, disWhy: 'Placed in the prompt list', old: 'Injection position' },
@@ -189,9 +189,9 @@ export const SECTIONS = [
             { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job, sign-off and web search back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', more: true, old: 'Reset her settings' },
         ] },
     ] },
-    { id: 'story', name: 'Story & memory', icon: 'story', grp: 'Story', lead: 'What DeepLore writes down, and the story tools.', cards: [
+    { id: 'story', name: 'Story & memory', icon: 'story', grp: 'Story', lead: 'What Onyx Quill writes down, and the story tools.', cards: [
         { t: 'Trackers and board', sum: 'they live on the board', rows: [
-            { id: 't-chat', label: 'Trackers, board, Cast', tip: 'This chat: its board and DeepLore on or off', type: 'btn', btn: 'This chat…', act: 'scopeChat' },
+            { id: 't-chat', label: 'Trackers, board, Cast', tip: 'This chat: its board and Onyx Quill on or off', type: 'btn', btn: 'This chat…', act: 'scopeChat' },
             { id: 't-board', label: 'The board', type: 'btn', btn: 'Open', act: 'openBoard' },
         ] },
         { t: 'New entries', rows: [
@@ -222,13 +222,13 @@ export const SECTIONS = [
     ] },
     { id: 'iface', name: 'Interface', icon: 'iface', grp: 'Look', lead: 'Colors, the bar, notices, removing things, and the graph.', cards: [
         { t: 'Look', rows: [
-            { id: 'ui-theme', label: 'Colors', tip: 'Follow SillyTavern’s theme (your own colors too), or keep DeepLore always light or dark', type: 'seg', key: 'dkTheme', opts: [['follow', 'follow SillyTavern'], ['light', 'light'], ['dark', 'dark']] },
+            { id: 'ui-theme', label: 'Colors', tip: 'Follow SillyTavern’s theme (your own colors too), or keep Onyx Quill always light or dark', type: 'seg', key: 'dkTheme', opts: [['follow', 'follow SillyTavern'], ['light', 'light'], ['dark', 'dark']] },
             // one accent you pick (Miinthe, 2026-11-03): Mero, active tabs, main buttons, selected things; a few ready colors + your own
-            { id: 'ui-accent', label: 'Accent color', tip: 'DeepLore’s own color: Mero, the active tab, main buttons, what is selected. Made readable on your theme by itself', type: 'color', key: 'accentColor', fx: 'accent',
+            { id: 'ui-accent', label: 'Accent color', tip: 'Onyx Quill’s own color: Mero, the active tab, main buttons, what is selected. Made readable on your theme by itself', type: 'color', key: 'accentColor', fx: 'accent',
                 opts: [['', 'Mero pink (default)', '#ff4f98'], ['#ff6b6b', 'coral'], ['#f08a3c', 'orange'], ['#2bb3a6', 'teal'], ['#4c8dff', 'blue'], ['#8f95d8', 'lavender'], ['#a36bff', 'purple']] },
         ] },
         { t: 'The bar', rows: [
-            { id: 'ui-bar', label: 'Show the DeepLore bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },
+            { id: 'ui-bar', label: 'Show the Onyx Quill bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },
             { id: 'ui-notes', label: 'My notes', tip: 'A notes button on the bar: your own notes, never sent to the AI', type: 'switch', key: 'notesEnabled' },
             // each action button on or off (Miinthe, 2026-11-03: "toggle those action buttons on and off in the general setting menu")
             { id: 'ui-b-reev', label: 'Button: Re-evaluate and swipe', tip: 'On the bar, after the divider (on a phone in ⋯)', type: 'switch', key: 'barReev' },
@@ -263,7 +263,7 @@ export const SECTIONS = [
             { id: 'a-debug', label: 'Debug mode', tip: 'More detail in the browser console', type: 'switch', key: 'debugMode', fx: 'debug', old: 'Debug mode' },
             { id: 'a-diag', label: 'Diagnostics', tip: 'Health, recent activity, session stats', type: 'btn', btn: 'Open', act: 'diagnostics', old: 'Diagnostics / health' },
             { id: 'a-export', label: 'Export diagnostics', tip: 'A file to share, with names removed', type: 'btn', btn: 'Export', act: 'exportDiagnostics', old: 'Export diagnostics' },
-            { id: 'a-breaker', label: 'The AI pause', tip: 'After repeated AI errors DeepLore pauses its AI; this clears it', type: 'btn', btn: 'Reset', act: 'resetBreaker', old: 'Reset AI breaker / circuit breaker' },
+            { id: 'a-breaker', label: 'The AI pause', tip: 'After repeated AI errors Onyx Quill pauses its AI; this clears it', type: 'btn', btn: 'Reset', act: 'resetBreaker', old: 'Reset AI breaker / circuit breaker' },
             { id: 'a-try', label: 'Try matching', tip: 'Replays this chat and shows which entries each message calls up (the side panel’s Try matching)', type: 'btn', btn: 'Open', act: 'tryMatching', old: 'Test Match / Simulate' },
             { id: 'a-review', label: 'Answer length for a vault review', hint: 'tokens · 0 = Mero’s own', type: 'num', key: 'reviewResponseTokens', old: 'Review response tokens' },
         ] },
@@ -518,7 +518,7 @@ export function resetToDefaults(settings, defaults) {
 const clone = v => (typeof v === 'object' && v !== null ? JSON.parse(JSON.stringify(v)) : v);
 
 /** The warning before Reset all (plain HTML for SillyTavern's confirm window). */
-export const RESET_WARNING = '<div style="text-align:left;max-width:460px"><p><strong>Put every DeepLore setting back to its default?</strong></p>'
-    + '<p>Every switch, number and choice in these settings goes back to how DeepLore comes. This can’t be undone.</p>'
-    + '<p><b>Nothing of yours is erased.</b> These stay: your vault and AI connections, your own prompts and edited prompts, your words for Fix spelling, starred Quick Replies, your saved draft, character budgets, the graph layout and usage stats. DeepLore stays on or off as it is now.</p>'
+export const RESET_WARNING = '<div style="text-align:left;max-width:460px"><p><strong>Put every Onyx Quill setting back to its default?</strong></p>'
+    + '<p>Every switch, number and choice in these settings goes back to how Onyx Quill comes. This can’t be undone.</p>'
+    + '<p><b>Nothing of yours is erased.</b> These stay: your vault and AI connections, your own prompts and edited prompts, your words for Fix spelling, starred Quick Replies, your saved draft, character budgets, the graph layout and usage stats. Onyx Quill stays on or off as it is now.</p>'
     + '<p>Your boards, runs, lore, notes and Mero’s talks are not part of the settings and are never touched.</p></div>';

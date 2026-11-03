@@ -148,14 +148,14 @@ Diagnostics exports for bug reports are pseudonymized before they leave your mac
 
 - **SillyTavern 1.12.14+**
 - **Obsidian** with the **Local REST API** plugin enabled
-- A lore vault (your existing one works; `/dle-import` converts World Info JSON into vault entries)
+- A lore vault (your existing one works; `/oq-import` converts World Info JSON into vault entries)
 - Optional: any LLM provider for AI search; keywords-only mode works without one
 
 ## Install
 
 1. SillyTavern → Extensions → **Install Extension**
 2. Paste: `https://github.com/pixelnull/sillytavern-DeepLore`
-3. Run `/dle-setup`. It opens with a welcome screen that lets you pick a path — try the demo, connect a vault, or import existing World Info — then walks through vault connection (with a localhost vault scanner), tags, search mode, and provider. Skip steps and resume later if you want.
+3. Run `/oq-setup`. It opens with a welcome screen that lets you pick a path — try the demo, connect a vault, or import existing World Info — then walks through vault connection (with a localhost vault scanner), tags, search mode, and provider. Skip steps and resume later if you want.
 
 <p align="center">
   <img src="https://i.imgur.com/8Mktt2y.png" alt="Setup wizard first page" width="640">
@@ -190,7 +190,7 @@ Full feature docs: [**Wiki →**](https://github.com/pixelnull/sillytavern-DeepL
 ## Known rough edges
 
 - **Still beta.** Hundreds of bugs fixed across the 2.x line, but the surface is big.
-- **World Info parity gaps:** no regex keys, and `sticky`/`delay`/`group` scoring is preserved on import but not acted on (round-tripped, not enforced). Case-sensitivity, whole-word matching, and all four `selective_logic` modes (`and_any`/`and_all`/`not_all`/`not_any`) are supported. Import handles the rest; a few advanced WI behaviors downgrade and are flagged by `/dle-lint`.
+- **World Info parity gaps:** no regex keys, and `sticky`/`delay`/`group` scoring is preserved on import but not acted on (round-tripped, not enforced). Case-sensitivity, whole-word matching, and all four `selective_logic` modes (`and_any`/`and_all`/`not_all`/`not_any`) are supported. Import handles the rest; a few advanced WI behaviors downgrade and are flagged by `/oq-lint`.
 - **Obsidian API keys stored plaintext** in ST's extension settings JSON (platform limitation). Use a dedicated lorebook vault, not your personal one.
 
 See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the complete list.

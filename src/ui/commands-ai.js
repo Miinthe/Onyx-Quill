@@ -25,22 +25,22 @@ import { abortWith } from '../diagnostics/interceptors.js';
 
 export function registerAiCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-optimize-keys',
+        name: 'oq-optimize-keys',
         callback: async (_args, entryName) => {
-            if (!await ensureFreshOrToast('/dle-optimize-keys')) return '';
+            if (!await ensureFreshOrToast('/oq-optimize-keys')) return '';
             if (vaultIndex.length === 0) {
-                toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+                toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
                 return '';
             }
             const name = (entryName || '').trim();
             if (!name) {
-                toastr.info(tr('dle_cmd_optimizekeys_usage_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_optimizekeys_usage_toast'), 'Onyx Quill');
                 return '';
             }
             // Shared fuzzy resolver so a typo / partial name doesn't drop on the floor.
             const entry = await resolveEntryByName(name, vaultIndex, { commandLabel: 'Optimize keys' });
             if (!entry) return '';
-            const loadingToast = toastr.info(trf('dle_cmd_optimizekeys_loading_toast', entry.title), 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
+            const loadingToast = toastr.info(trf('dle_cmd_optimizekeys_loading_toast', entry.title), 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
             try {
                 const result = await optimizeEntryKeys(entry);
                 toastr.clear(loadingToast);
@@ -58,16 +58,16 @@ export function registerAiCommands() {
             isRequired: true,
             enumProvider: () => vaultIndex.map(e => new SlashCommandEnumValue(e.title)),
         })],
-        helpString: 'Suggest better keywords for an entry using AI. Usage: /dle-optimize-keys <entry name>.',
+        helpString: 'Suggest better keywords for an entry using AI. Usage: /oq-optimize-keys <entry name>.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     const newloreCallback = async () => {
         if (!chat || chat.length === 0) {
-            toastr.info(tr('dle_cmd_newlore_nochat_toast'), 'DeepLore');
+            toastr.info(tr('dle_cmd_newlore_nochat_toast'), 'Onyx Quill');
             return '';
         }
-        const loadingToast = toastr.info(tr('dle_cmd_newlore_analyzing_toast'), 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
+        const loadingToast = toastr.info(tr('dle_cmd_newlore_analyzing_toast'), 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
         try {
             const suggestions = await runAutoSuggest();
             toastr.clear(loadingToast);
@@ -80,33 +80,33 @@ export function registerAiCommands() {
         return '';
     };
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-newlore',
+        name: 'oq-newlore',
         callback: newloreCallback,
         helpString: 'Analyze the chat for characters, locations, and concepts not in your lorebook, and suggest new entries to create.',
         returns: ARGUMENT_TYPE.STRING,
     }));
     // Backwards-compatible alias.
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-suggest',
+        name: 'oq-suggest',
         callback: newloreCallback,
-        helpString: 'Analyze the chat and suggest new lorebook entries. Alias for /dle-newlore.',
+        helpString: 'Analyze the chat and suggest new lorebook entries. Alias for /oq-newlore.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-scribe',
+        name: 'oq-scribe',
         callback: async (_args, userPrompt) => {
             if (scribeInProgress) {
-                toastr.warning(tr('dle_cmd_scribe_inprogress_toast'), 'DeepLore');
+                toastr.warning(tr('dle_cmd_scribe_inprogress_toast'), 'Onyx Quill');
                 return '';
             }
             // BUG-AUDIT-H23: missing scribeFolder would write to "undefined/".
             const settings = getSettings();
             if (!settings.scribeFolder) {
-                toastr.warning(tr('dle_cmd_scribe_nofolder_toast'), 'DeepLore');
+                toastr.warning(tr('dle_cmd_scribe_nofolder_toast'), 'Onyx Quill');
                 return '';
             }
-            toastr.info(tr('dle_cmd_scribe_writing_toast'), 'DeepLore');
+            toastr.info(tr('dle_cmd_scribe_writing_toast'), 'Onyx Quill');
             await runScribe(userPrompt?.trim() || '');
             return 'Session note written.';
         },
@@ -115,24 +115,24 @@ export function registerAiCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: false,
         })],
-        helpString: 'Write a session summary note to Obsidian. Usage: /dle-scribe <focus topic>. Example: /dle-scribe What happened with the sword?',
+        helpString: 'Write a session summary note to Obsidian. Usage: /oq-scribe <focus topic>. Example: /oq-scribe What happened with the sword?',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-review',
+        name: 'oq-review',
         callback: async (_args, userPrompt) => {
             try {
             await ensureIndexFresh();
 
             // BUG-AUDIT Fix 21: lorebook-guide entries are writing guides and must
-            // never reach the writing AI. /dle-review previously dumped raw vaultIndex,
+            // never reach the writing AI. /oq-review previously dumped raw vaultIndex,
             // leaking guide content as a persistent user message. Mirrors writer-visible
             // contract from getWriterVisibleEntries() / matchTextForExternal.
             const reviewEntries = vaultIndex.filter(e => !e.guide);
 
             if (reviewEntries.length === 0) {
-                toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+                toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
                 return '';
             }
 
@@ -151,14 +151,14 @@ export function registerAiCommands() {
             const { startVaultReview } = await import('../mero.js');
             const { openMeroTalk } = await import('../mero-window.js');
             const r = startVaultReview(userPrompt);
-            if (r.error) { toastr.warning(r.error, 'DeepLore'); return ''; }
+            if (r.error) { toastr.warning(r.error, 'Onyx Quill'); return ''; }
             openMeroTalk(r.talk.id);
-            r.done.then(res => { if (!res?.ok) toastr.warning(`Mero could not answer: ${res?.error || 'no answer'}`, 'DeepLore'); });
+            r.done.then(res => { if (!res?.ok) toastr.warning(`Mero could not answer: ${res?.error || 'no answer'}`, 'Onyx Quill'); });
 
             return '';
             } catch (err) {
-                console.warn('[DLE] /dle-review failed:', err);
-                toastr.error(tr('dle_cmd_review_error_msg'), 'DeepLore');
+                console.warn('[DLE] /oq-review failed:', err);
+                toastr.error(tr('dle_cmd_review_error_msg'), 'Onyx Quill');
                 return '';
             }
         },
@@ -167,22 +167,22 @@ export function registerAiCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: false,
         })],
-        helpString: 'Have Mero review your entire vault in a new talk (nothing goes into the story chat). Usage: /dle-review <question>. Example: /dle-review What inconsistencies do you see?',
+        helpString: 'Have Mero review your entire vault in a new talk (nothing goes into the story chat). Usage: /oq-review <question>. Example: /oq-review What inconsistencies do you see?',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-summarize',
+        name: 'oq-summarize',
         callback: async () => {
-            if (!await ensureFreshOrToast('/dle-summarize')) return '';
+            if (!await ensureFreshOrToast('/oq-summarize')) return '';
             if (vaultIndex.length === 0) {
-                toastr.info(NO_ENTRIES_MSG, 'DeepLore');
+                toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
                 return '';
             }
 
             const missingSummary = vaultIndex.filter(e => !e.summary || !e.summary.trim());
             if (missingSummary.length === 0) {
-                toastr.success(tr('dle_cmd_summarize_allhave_toast'), 'DeepLore');
+                toastr.success(tr('dle_cmd_summarize_allhave_toast'), 'Onyx Quill');
                 return '';
             }
 
@@ -198,7 +198,7 @@ export function registerAiCommands() {
             let msg = `Done: ${result.generated} written, ${result.skipped} skipped, ${result.failed} failed`;
             if (result.aborted > 0) msg += `, ${result.aborted} aborted`;
             msg += '.';
-            toastr.success(msg, 'DeepLore');
+            toastr.success(msg, 'Onyx Quill');
 
             if (result.generated > 0) {
                 setIndexTimestamp(0);
@@ -212,18 +212,18 @@ export function registerAiCommands() {
 
     // #15 — Dedicated summary feature: AI-summarize a chat range, hide originals, prepend summary.
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-summarize-range',
+        name: 'oq-summarize-range',
         callback: async (_args, rangeArg) => {
             if (!chat || chat.length === 0) {
-                toastr.info(tr('dle_cmd_summarizerange_nochat_toast'), 'DeepLore');
+                toastr.info(tr('dle_cmd_summarizerange_nochat_toast'), 'Onyx Quill');
                 return '';
             }
             const range = parseRange(rangeArg || '', chat.length);
             if (!range) {
-                toastr.warning(tr('dle_cmd_summarizerange_usage_toast'), 'DeepLore');
+                toastr.warning(tr('dle_cmd_summarizerange_usage_toast'), 'Onyx Quill');
                 return '';
             }
-            const loading = toastr.info(`Summarizing messages ${range.start}–${range.end}...`, 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
+            const loading = toastr.info(`Summarizing messages ${range.start}–${range.end}...`, 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
             // L-16: summarizeRange accepts a signal but nothing ever passed one, so a
             // slow summary couldn't be cancelled and would mutate the chat even after
             // the user switched away. Abort on CHAT_CHANGED so it bails before the
@@ -240,7 +240,7 @@ export function registerAiCommands() {
                     notify.error(result.error, { copyable: true });
                     return '';
                 }
-                toastr.success(`Summarized ${result.hiddenCount} messages. ID: ${result.summaryId} (use /dle-summarize-rollback ${result.summaryId} to undo).`, 'DeepLore', { timeOut: 8000 });
+                toastr.success(`Summarized ${result.hiddenCount} messages. ID: ${result.summaryId} (use /oq-summarize-rollback ${result.summaryId} to undo).`, 'Onyx Quill', { timeOut: 8000 });
                 return result.summaryId;
             } catch (err) {
                 toastr.clear(loading);
@@ -255,20 +255,20 @@ export function registerAiCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
         })],
-        helpString: 'AI-summarize a chat range, hide originals, prepend the summary. Usage: /dle-summarize-range <range>. Examples: 5-15 (range), 10- (from 10 to end), -8 (last 8 messages), 7 (single message).',
+        helpString: 'AI-summarize a chat range, hide originals, prepend the summary. Usage: /oq-summarize-range <range>. Examples: 5-15 (range), 10- (from 10 to end), -8 (last 8 messages), 7 (single message).',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-summarize-rollback',
+        name: 'oq-summarize-rollback',
         callback: async (_args, idArg) => {
             const id = (idArg || '').trim();
             const result = await rollbackSummary(id || 'all');
             if (!result.ok) {
-                toastr.warning(result.error || 'Rollback failed', 'DeepLore');
+                toastr.warning(result.error || 'Rollback failed', 'Onyx Quill');
                 return '';
             }
-            toastr.success(`Restored ${result.restored} messages, removed ${result.removed} summary message${result.removed === 1 ? '' : 's'}.`, 'DeepLore');
+            toastr.success(`Restored ${result.restored} messages, removed ${result.removed} summary message${result.removed === 1 ? '' : 's'}.`, 'Onyx Quill');
             return '';
         },
         unnamedArgumentList: [SlashCommandArgument.fromProps({
@@ -283,7 +283,7 @@ export function registerAiCommands() {
                 ];
             },
         })],
-        helpString: 'Roll back a /dle-summarize-range operation. Usage: /dle-summarize-rollback [id|all].',
+        helpString: 'Roll back a /oq-summarize-range operation. Usage: /oq-summarize-rollback [id|all].',
         returns: ARGUMENT_TYPE.STRING,
     }));
 }
@@ -312,7 +312,7 @@ export async function summarizeEntries(entries) {
 
     for (let i = 0; i < entries.length; i++) {
         const entry = entries[i];
-        toastr.info(`Generating summary ${i + 1}/${entries.length}: "${entry.title}"...`, 'DeepLore', { timeOut: 0, extendedTimeOut: 0 });
+        toastr.info(`Generating summary ${i + 1}/${entries.length}: "${entry.title}"...`, 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
 
         try {
             // LOCAL PATCH 2026-08-03 (Miinthe): rewritten. The old prompt said "max 600 chars"

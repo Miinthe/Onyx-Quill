@@ -8,7 +8,7 @@
  */
 
 export const PANELS = ['dl', 'notes', 'world'];
-export const NAMES = { dl: 'DeepLore', notes: 'My notes', world: 'World' };
+export const NAMES = { dl: 'Onyx Quill', notes: 'My notes', world: 'World' };
 export const ICONS = { dl: 'panel', notes: 'notebook', world: 'globe' };
 export const COLORS = { dl: 'var(--dk-accent)', notes: 'var(--dk-wait)', world: 'var(--dk-good)' };
 

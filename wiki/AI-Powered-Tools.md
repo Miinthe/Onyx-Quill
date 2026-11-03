@@ -20,9 +20,9 @@ Auto-summarizes your roleplay into timestamped markdown notes written back to yo
 3. The summary is written as a markdown file with frontmatter (`tags: lorebook-session`, `date`, `character`) to the configured Session Folder (default `Sessions`)
 4. The vault re-indexes so the new note is searchable
 
-**On-demand:** `/dle-scribe` writes a summary immediately. Optional focus topic: `/dle-scribe What happened during the trial?`
+**On-demand:** `/oq-scribe` writes a summary immediately. Optional focus topic: `/oq-scribe What happened during the trial?`
 
-**Browse past summaries:** `/dle-scribe-history` opens a popup of the current chat's notes.
+**Browse past summaries:** `/oq-scribe-history` opens a popup of the current chat's notes.
 
 **Connection options:**
 - **Inherit** (default): resolves to AI Search settings
@@ -47,7 +47,7 @@ Scans recent chat for characters, places, items, and concepts that lack a vault 
 
 **Flow:**
 
-1. Every N messages (default 10), or on-demand via `/dle-newlore`, the AI scans recent chat
+1. Every N messages (default 10), or on-demand via `/oq-newlore`, the AI scans recent chat
 2. It compares against existing entries and identifies gaps (case-insensitive title match)
 3. Suggestions appear in a popup with title, type, keywords, summary, and content
 4. Accept to write the entry to Obsidian, or reject to skip
@@ -59,13 +59,13 @@ Scans recent chat for characters, places, items, and concepts that lack a vault 
 2. Choose **Where they go**: by what they're about (the run's folder or the character's base folder), or always the **Target folder**
 3. Pick a connection for the **New lore** job in Settings › AI & connections
 
-`/dle-newlore` triggers on-demand without enabling automatic suggestions. Accepted entries are written with proper frontmatter (type, priority, tags, keys, summary).
+`/oq-newlore` triggers on-demand without enabling automatic suggestions. Accepted entries are written with proper frontmatter (type, priority, tags, keys, summary).
 
 ---
 
 ## Optimize Keys
 
-`/dle-optimize-keys <entry name>` asks an AI to analyze an entry and suggest better keywords. The AI considers the entry's content, summary, and current keys to recommend additions and refinements: synonyms, related terms, trigger phrases.
+`/oq-optimize-keys <entry name>` asks an AI to analyze an entry and suggest better keywords. The AI considers the entry's content, summary, and current keys to recommend additions and refinements: synonyms, related terms, trigger phrases.
 
 **When to use:** an entry isn't triggering as expected, or you want a second opinion on key choices after writing the entry.
 
@@ -75,13 +75,13 @@ Scans recent chat for characters, places, items, and concepts that lack a vault 
 
 **Connection:** independent (Inherit / Connection Profile). Defaults to Inherit (resolves to AI Search settings).
 
-Suggestions appear in a popup for review. Apply changes in Obsidian, then run `/dle-refresh` to pick them up.
+Suggestions appear in a popup for review. Apply changes in Obsidian, then run `/oq-refresh` to pick them up.
 
 ---
 
 ## Auto-Summary Generation
 
-`/dle-summarize` scans every indexed entry, finds those without a `summary` frontmatter field, and generates summaries one at a time. Each suggestion is shown in a review popup where you can edit, approve, or skip before it is written to the entry's frontmatter in Obsidian.
+`/oq-summarize` scans every indexed entry, finds those without a `summary` frontmatter field, and generates summaries one at a time. Each suggestion is shown in a review popup where you can edit, approve, or skip before it is written to the entry's frontmatter in Obsidian.
 
 **When to use:** after importing entries from World Info, or when you have a backlog of entries without summaries. The `summary` field is what AI Search reads to decide whether an entry is relevant, so filling missing summaries directly improves selection quality.
 
@@ -107,4 +107,4 @@ Most useful for long conversations where important plot points have scrolled pas
 - [[AI Notepad]]: AI-managed session notes (separate from Auto Lorebook and from Scribe)
 - [[Pipeline]]: where each AI tool fits into the generation flow
 - [[Settings Reference]]: every setting documented
-- [[Slash Commands]]: every `/dle-*` command
+- [[Slash Commands]]: every `/oq-*` command

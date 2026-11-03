@@ -9,7 +9,7 @@ import { validateSettings } from './core/utils.js';
 import { runMigrations, PROXY_DEPRECATION_MODE_KEYS } from './src/settings-migrations-pure.js';
 export { runMigrations, PROXY_DEPRECATION_MODE_KEYS };
 
-export const MODULE_NAME = 'deeplore_enhanced';
+export const MODULE_NAME = 'onyxquill';   // was 'deeplore_enhanced' (copied over at start: src/onyx-start-pure.js)
 
 export const PROMPT_TAG = 'deeplore_enhanced';
 export const PROMPT_TAG_PREFIX = 'deeplore_';
@@ -284,7 +284,7 @@ export const defaultSettings = {
     // source — some accept it as continuation, others may ignore).
     responsePrefillSeed: '',
     responsePrefillMode: 'off',
-    // #15: dedicated summary feature — /dle-summarize-range AI prompt + budgets.
+    // #15: dedicated summary feature — /oq-summarize-range AI prompt + budgets.
     summarySystemPrompt: '',     // empty = use built-in default in summarize.js
     summaryMaxTokens: 400,
     summaryTimeout: 30000,

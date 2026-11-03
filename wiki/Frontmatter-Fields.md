@@ -21,7 +21,7 @@ Every entry needs YAML frontmatter between `---` fences at the top of the file. 
 | `excludeRecursion` | boolean | `false` | If `true`, this entry is skipped during recursive link scanning. Note: camelCase, not snake_case. |
 | `constant` | boolean | `false` | If `true`, this entry is always injected regardless of keywords or AI. Equivalent to the `#lorebook-always` tag. |
 | `refine_keys` | array | `[]` | Secondary keywords. By default at least one refine key must **also** match (alongside a primary `keys` match) for the entry to trigger. The matching rule is set by `selective_logic`. See [[Advanced Entry Gating]]. |
-| `selective_logic` | string | `and_any` | How `refine_keys` are matched: `and_any` (≥1 refine key must match), `and_all` (all must match), `not_all` (at least one must miss), `not_any` (none may match). Invalid values fall back to `and_any` and are flagged by `/dle-lint`. |
+| `selective_logic` | string | `and_any` | How `refine_keys` are matched: `and_any` (≥1 refine key must match), `and_all` (all must match), `not_all` (at least one must miss), `not_any` (none may match). Invalid values fall back to `and_any` and are flagged by `/oq-lint`. |
 | `cascade_links` | array | `[]` | Entry titles to automatically pull in when this entry matches. Unlike wikilink recursion, cascade links are pulled unconditionally (no keyword check needed). See [[Advanced Entry Gating]]. |
 | `cooldown` | number | *(none)* | After triggering, skip this entry for N generations. Only values greater than 0 take effect. |
 | `warmup` | number | *(none)* | Require the keyword to appear N or more times in the scan text before triggering. Only values greater than 0 take effect. |
@@ -158,7 +158,7 @@ Both methods are also invisible to the selection AI's manifest (summaries and co
 
 ## Common mistakes
 
-Easy-to-hit frontmatter footguns. Each produces a warning in `/dle-lint` when `lenientAuthoring` is on, and a silent skip/drop when off. Diagnose a single entry via `/dle-inspect`.
+Easy-to-hit frontmatter footguns. Each produces a warning in `/oq-lint` when `lenientAuthoring` is on, and a silent skip/drop when off. Diagnose a single entry via `/oq-inspect`.
 
 **Field-name case.** YAML keys are case-sensitive. Canonical field names are lowercase (except `scanDepth` and `excludeRecursion`, which are camelCase).
 ```yaml
@@ -231,7 +231,7 @@ requires:
   - Bloodchain
 ```
 
-Run `/dle-lint` after authoring to catch all of these at once.
+Run `/oq-lint` after authoring to catch all of these at once.
 
 ---
 

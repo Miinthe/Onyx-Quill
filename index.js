@@ -1,5 +1,5 @@
 /**
- * DeepLore — entry point.
+ * Onyx Quill — entry point (built on DeepLore by pixelnull).
  * Wires the generation interceptor, ST event listeners, and UI initialization.
  */
 // MUST be the first import — installs console/fetch/XHR/error interceptors at module-eval
@@ -8,6 +8,9 @@ import './src/diagnostics/boot.js';
 // Wave I: register the <goo-spinner> custom element (side-effect import — self-defines via
 // customElements.define). Must run before any drawer/settings/wizard HTML that uses the tag.
 import './src/vendor/goo-spinner.js';
+// Onyx Quill start-up: copies the settings over from their DeepLore names (before anything reads them) and
+// notices the original DeepLore switched on at the same time (then Onyx Quill stays off).
+import { deepLoreClash, showClashNotice } from './src/onyx-start.js';
 // Runtime-derived install-folder ref — survives a repo/folder rename (see src/ext-path.js).
 import { EXTENSION_REF } from './src/ext-path.js';
 import {
@@ -270,10 +273,10 @@ function _teardownDleExtension() {
 
 // ── PM-mode entry registration (shared by init + CHAT_CHANGED + CHAT_LOADED + latch) ──
 const PM_DISPLAY_NAMES_BASE = {
-    'deeplore_notebook': 'DLE Author\'s Notebook',
-    'deeplore_ai_notepad': 'DLE AI Notepad',
-    'deeplore_story_trackers': 'DLE Story Trackers',   // LOCAL PATCH (Miinthe, 2026-10-03)
-    'deeplore_author_notes': 'DLE Author\'s Notes (Mero)',   // LOCAL PATCH (Miinthe, 2026-10-05)
+    'deeplore_notebook': 'Onyx Quill Author\'s Notebook',
+    'deeplore_ai_notepad': 'Onyx Quill AI Notepad',
+    'deeplore_story_trackers': 'Onyx Quill Story Trackers',   // LOCAL PATCH (Miinthe, 2026-10-03)
+    'deeplore_author_notes': 'Onyx Quill Author\'s Notes (Mero)',   // LOCAL PATCH (Miinthe, 2026-10-05)
 };
 
 /**
@@ -294,8 +297,8 @@ function ensurePmEntriesRegistered() {
         'deeplore_author_notes',     // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes
     ];
     const displayNames = {
-        [`${PROMPT_TAG_PREFIX}constants`]: 'DLE Constants',
-        [`${PROMPT_TAG_PREFIX}lore`]: 'DLE Lore Entries',
+        [`${PROMPT_TAG_PREFIX}constants`]: 'Onyx Quill Constants',
+        [`${PROMPT_TAG_PREFIX}lore`]: 'Onyx Quill Lore Entries',
         ...PM_DISPLAY_NAMES_BASE,
     };
     for (const id of ids) {
@@ -783,7 +786,7 @@ async function _maybeShowProxyDeprecationNotice() {
     const title = tr('dle_proxy_migration_title', 'Custom Proxy mode removed');
     const explainer = tr(
         'dle_proxy_migration_explainer',
-        "DeepLore v2.5 removed the Custom Proxy connection mode. The Connection Profile path is more reliable and matches SillyTavern's connection system. Your affected features have been switched to Connection Profile, but you may need to set up profiles in SillyTavern's Connection Manager. Click below to jump to the right settings page.",
+        "Onyx Quill v2.5 removed the Custom Proxy connection mode. The Connection Profile path is more reliable and matches SillyTavern's connection system. Your affected features have been switched to Connection Profile, but you may need to set up profiles in SillyTavern's Connection Manager. Click below to jump to the right settings page.",
     );
     const affectedHeader = tr('dle_proxy_migration_affected', 'Affected features:');
     const okLabel = tr('dle_proxy_migration_open_settings', 'Open Settings');
@@ -1019,7 +1022,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         const _ooc = routeOoc(chatMessages);
         if (_ooc.onlyOoc && (type === 'normal' || !type)) {
             abort(true);
-            try { toastr.info('That was only for Mero — no story reply. Her answer is in the ☆ Mero tab.', 'DeepLore', { timeOut: 6000 }); } catch { /* noop */ }
+            try { toastr.info('That was only for Mero — no story reply. Her answer is in the ☆ Mero tab.', 'Onyx Quill', { timeOut: 6000 }); } catch { /* noop */ }
             return;
         }
     } catch (err) { console.warn('[DLE] [OOC] routing skipped:', err?.message || err); }
@@ -1038,7 +1041,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         return;
     }
 
-    // /dle-review and similar bypass the full pipeline by setting skipNextPipeline.
+    // /oq-review and similar bypass the full pipeline by setting skipNextPipeline.
     if (skipNextPipeline) {
         setSkipNextPipeline(false);
         if (settings.debugMode) console.debug('[DLE] Pipeline skipped (skipNextPipeline flag)');
@@ -1214,7 +1217,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         if (vaultSnapshot.length === 0) {
             if (!indexEverLoaded) {
                 dedupWarning(
-                    'No lorebook entries found. Run /dle-health to check your Obsidian connection and vault settings.',
+                    'No lorebook entries found. Run /oq-health to check your Obsidian connection and vault settings.',
                     'obsidian_empty_vault', { timeOut: 10000 },
                 );
             }
@@ -1930,7 +1933,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     const pct = Math.round(ratio * 100);
                     toastr.warning(
                         trf('dle_warn_context_usage', pct, totalTokens, injectedCount),
-                        'DeepLore',
+                        'Onyx Quill',
                         { preventDuplicates: true, timeOut: 8000 },
                     );
                     setLastWarningRatio(ratio);
@@ -1971,7 +1974,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             try { const { recordAbort } = await import('./src/diagnostics/flight-recorder.js'); recordAbort(err?.message || 'user stop'); } catch { /* noop */ }
         } else {
             console.error('[DLE] Error during generation:', err);
-            dedupError('Couldn\'t load your lore. Try /dle-refresh, or /dle-health for diagnostics.', 'pipeline', { hint: classifyError(err) });
+            dedupError('Couldn\'t load your lore. Try /oq-refresh, or /oq-health for diagnostics.', 'pipeline', { hint: classifyError(err) });
         }
     } finally {
         // BUG-233 + BUG-AUDIT (Fix 4): tear down abort listeners every time. onStop and
@@ -2013,11 +2016,12 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     }
 }
 
-// ST discovers the interceptor via globalThis.<extension_id>_onGenerate.
-globalThis.deepLoreEnhanced_onGenerate = onGenerate;
+// ST calls the interceptor named in manifest.json (generate_interceptor). Its own name, so it never
+// collides with the original DeepLore's deepLoreEnhanced_onGenerate. Off while the original DeepLore is on.
+globalThis.onyxQuill_onGenerate = deepLoreClash ? async () => {} : onGenerate;
 
 // External API for other extensions / scripts to match vault entries against arbitrary text.
-globalThis.deepLoreEnhanced_matchText = matchTextForExternal;
+globalThis.onyxQuill_matchText = matchTextForExternal;
 
 // ============================================================================
 // Initialization
@@ -2229,7 +2233,7 @@ async function _doInit() {
                         // Phase 2: not registered after 10s — surface the deferral, then
                         // keep trying in the background until a character is picked.
                         dedupWarning(
-                            'PM-mode init deferred — pick a character to finish registering DLE prompts.',
+                            'PM-mode init deferred — pick a character to finish registering Onyx Quill prompts.',
                             'pm_init_deferred',
                             { hint: 'promptManager not ready (no active character). Will retry on chat/character load.' },
                         );
@@ -2254,7 +2258,7 @@ async function _doInit() {
                 // Skip if a build was already triggered by early user generation.
                 if (indexEverLoaded || indexing) return;
                 try {
-                    // Epoch fence (gotcha #95): if a /dle-clear lands while hydrateFromCache
+                    // Epoch fence (gotcha #95): if a /oq-clear lands while hydrateFromCache
                     // awaits its IDB read, hydration bails and returns false — but falling
                     // through to buildIndex here would re-fetch from Obsidian and overwrite
                     // the clear (wipe-and-stop means STOP). Only auto-build when no
@@ -2498,7 +2502,7 @@ async function _doInit() {
                             dedupWarning(
                                 `Session Scribe auto-run failed: ${err?.message || 'unknown error'}.`,
                                 'scribe_auto_trigger_fail',
-                                { hint: 'Background scribe failure — manual /dle-scribe still works.' },
+                                { hint: 'Background scribe failure — manual /oq-scribe still works.' },
                             );
                         });
                     }
@@ -2521,7 +2525,7 @@ async function _doInit() {
                                 dedupWarning(
                                     `Auto Lorebook run failed: ${err?.message || 'unknown error'}.`,
                                     'autosuggest_auto_trigger_fail',
-                                    { hint: 'Background auto-lorebook failure — manual /dle-newlore still works.' },
+                                    { hint: 'Background auto-lorebook failure — manual /oq-newlore still works.' },
                                 );
                             }
                         })();
@@ -2714,7 +2718,7 @@ async function _doInit() {
                     invalidateSettingsCache();
                     try { saveSettingsDebounced(); } catch { /* no-op */ }
                     dedupWarning(
-                        `A connection profile used by ${cleared} DLE feature${cleared === 1 ? '' : 's'} was deleted. Re-bind in DLE settings.`,
+                        `A connection profile used by ${cleared} Onyx Quill feature${cleared === 1 ? '' : 's'} was deleted. Re-bind in Onyx Quill settings.`,
                         'profile_deleted',
                     );
                 }
@@ -3046,14 +3050,16 @@ async function _doInit() {
 
         _dleInitCount++;
         pushEvent('init', { initCount: _dleInitCount, vaultCount: (getSettings().vaults || []).filter(v => v.enabled).length });
-        console.log('[DLE] DeepLore client extension initialized');
+        console.log('[DLE] Onyx Quill client extension initialized');
     } catch (err) {
         console.error('[DLE] Failed to initialize:', err);
-        toastr.error('DeepLore failed to initialize. Check the browser console (F12) for details.', 'DLE Error', { timeOut: 0 });
+        toastr.error('Onyx Quill failed to initialize. Check the browser console (F12) for details.', 'Onyx Quill Error', { timeOut: 0 });
     }
 }
 
 jQuery(async function () {
+    // The original DeepLore is switched on too: Onyx Quill stays off (nothing set up) and says why.
+    if (deepLoreClash) { console.warn(`[Onyx Quill] the original DeepLore (${deepLoreClash}) is on — Onyx Quill stays off`); showClashNotice(); return; }
     // Overhaul step 1: load the shared parts' stylesheet and keep their colors in step with SillyTavern's theme.
     try { followTheme(document, { frame: true }); } catch (err) { console.warn('[DLE] shared parts: theme colors not loaded', err); }
     // DeepLore's older pop-ups (graph, Browse, Why, health, notebooks, wizard, confirms…) in the new look

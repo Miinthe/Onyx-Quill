@@ -11,7 +11,7 @@ register('./_st-stub-loader.mjs', import.meta.url, { data: { root } });
 
 const notices = [];
 const ST = globalThis.__ST = {
-    chat: [], chat_metadata: {}, extension_settings: { deeplore_enhanced: { enabled: true, storyTrackerConnectionMode: 'profile', storyTrackerProfileId: 'test-profile' } },
+    chat: [], chat_metadata: {}, extension_settings: { onyxquill: { enabled: true, storyTrackerConnectionMode: 'profile', storyTrackerProfileId: 'test-profile' } },
     chatId: 'Claude test', character: { name: 'test bot 1', avatar: 'test bot 1.png' },
     helper: [],                 // scripted helper answers (objects), used in order
     calls: [],                  // what the helper was asked
@@ -52,7 +52,7 @@ export async function engine() {
 export function resetChat() {
     ST.chat.splice(0);
     for (const k of Object.keys(ST.chat_metadata)) delete ST.chat_metadata[k];
-    for (const k of Object.keys(ST.extension_settings)) if (k !== 'deeplore_enhanced') delete ST.extension_settings[k];
+    for (const k of Object.keys(ST.extension_settings)) if (k !== 'onyxquill') delete ST.extension_settings[k];
     ST.helper.splice(0); ST.calls.splice(0); ST.swipes = 0; notices.splice(0);
 }
 

@@ -161,15 +161,15 @@ export function wireToolsTab($drawer) {
         // BUG-359: gate on generation lock, indexing, or master-disabled.
         const settings = getSettings();
         if (!settings.enabled) {
-            toastr.warning(tr('dle_toast_disabled'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_disabled'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         if (generationLock) {
-            toastr.warning(tr('dle_toast_gen_in_progress'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_gen_in_progress'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         if (indexing) {
-            toastr.warning(tr('dle_toast_indexing'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_indexing'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         executeCommand(cmd);
@@ -212,7 +212,7 @@ export function wireTabExpand($drawer) {
                     if (typeof msgIdx === 'number' && Number.isFinite(msgIdx)) _opts.msgIdx = msgIdx;
                     showSourcesPopup(sources, _opts);
                 } else {
-                    toastr.info(tr('dle_toast_no_sources'), 'DeepLore', { timeOut: 3000 });
+                    toastr.info(tr('dle_toast_no_sources'), 'Onyx Quill', { timeOut: 3000 });
                 }
                 return;
             }
@@ -220,7 +220,7 @@ export function wireTabExpand($drawer) {
             if (cmd) executeCommand(cmd);
         } catch (err) {
             console.error('[DLE] Tab expand error:', err);
-            toastr.error(tr('dle_toast_expand_failed'), 'DeepLore');
+            toastr.error(tr('dle_toast_expand_failed'), 'Onyx Quill');
         }
     });
 }
@@ -312,7 +312,7 @@ export function wireStatusActions($drawer) {
                     if (nextFolders.length) chat_metadata.deeplore_folder_filter = nextFolders;
                     saveMetadataDebounced();
                     notifyGatingChanged();
-                    toastr.success(`Run ${next.toUpperCase()} open — instance and folders carried over.`, 'DeepLore', { timeOut: 6000 });
+                    toastr.success(`Run ${next.toUpperCase()} open — instance and folders carried over.`, 'Onyx Quill', { timeOut: 6000 });
                     announceToScreenReader(`New run ${next} started`);
                 } catch (err) {
                     console.error('[DLE] New run failed:', err);
@@ -334,7 +334,7 @@ export function wireStatusActions($drawer) {
                     try {
                         toastr.error(
                             trf('dle_toast_refresh_failed', err?.message || 'unknown error'),
-                            'DeepLore',
+                            'Onyx Quill',
                             { timeOut: 10000 },
                         );
                     } catch { /* toastr unavailable */ }
@@ -346,11 +346,11 @@ export function wireStatusActions($drawer) {
                 break;
             }
             case 'scribe': {
-                if (generationLock) { toastr.warning(tr('dle_toast_generation_running'), 'DeepLore', { timeOut: 2000 }); return; }
+                if (generationLock) { toastr.warning(tr('dle_toast_generation_running'), 'Onyx Quill', { timeOut: 2000 }); return; }
                 const $scribeBtn = $(this);
                 // Wave I carve-out (NOT an oversight): scribe deliberately keeps fa-spin on its OWN
                 // feather glyph rather than the hide-icon + goo-spinner pattern the refresh button
-                // uses above. /dle-scribe is fire-and-forget (executeCommand swallows the promise and
+                // uses above. /oq-scribe is fire-and-forget (executeCommand swallows the promise and
                 // its resolution doesn't map to scribe completion), so the only re-enable signal is the
                 // 15s timeout below — converting to a goo would risk an orphaned spinner. See gotcha #87.
                 $scribeBtn.prop('disabled', true).find('i').addClass('fa-spin');
@@ -365,13 +365,13 @@ export function wireStatusActions($drawer) {
                 let _scribeSeenRunning = false;
                 const _scribeWatch = setInterval(() => {
                     if (scribeInProgress) { _scribeSeenRunning = true; return; }
-                    // /dle-scribe dispatches asynchronously, so the flag is not set the instant the
+                    // /oq-scribe dispatches asynchronously, so the flag is not set the instant the
                     // button is clicked — allow a grace window before calling it a no-show.
                     if (!_scribeSeenRunning && Date.now() - _scribeClickedAt < 10000) return;
                     clearInterval(_scribeWatch);
                     $scribeBtn.prop('disabled', false).find('i').removeClass('fa-spin');
                     if (!_scribeSeenRunning) {
-                        toastr.warning(tr('dle_toast_scribe_timeout'), 'DeepLore', { timeOut: 4000 });
+                        toastr.warning(tr('dle_toast_scribe_timeout'), 'Onyx Quill', { timeOut: 4000 });
                         announceToScreenReader('Scribe did not start.');
                     }
                 }, 500);
@@ -380,14 +380,14 @@ export function wireStatusActions($drawer) {
                     clearInterval(_scribeWatch);
                     $scribeBtn.prop('disabled', false).find('i').removeClass('fa-spin');
                 }, 600000);
-                executeCommand('/dle-scribe');
+                executeCommand('/oq-scribe');
                 break;
             }
-            case 'newlore': executeCommand('/dle-newlore'); break;
-            case 'graph': executeCommand('/dle-graph'); break;
+            case 'newlore': executeCommand('/oq-newlore'); break;
+            case 'graph': executeCommand('/oq-graph'); break;
             case 'clear-picks': {
                 if (generationLock) {
-                    toastr.warning(tr('dle_toast_gen_in_progress_picks'), 'DeepLore', { timeOut: 2500 });
+                    toastr.warning(tr('dle_toast_gen_in_progress_picks'), 'Onyx Quill', { timeOut: 2500 });
                     return;
                 }
                 const settings = getSettings();
@@ -432,7 +432,7 @@ export function wireStatusActions($drawer) {
                     });
                 }
                 announceToScreenReader('Search cache cleared — next generation will re-select lore.');
-                toastr.info(tr('dle_toast_cache_cleared'), 'DeepLore');
+                toastr.info(tr('dle_toast_cache_cleared'), 'Onyx Quill');
                 break;
             }
         }
@@ -442,11 +442,11 @@ export function wireStatusActions($drawer) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(this).trigger('click'); }
     });
 
-    // Top status (dot + pipeline label) → /dle-status. Mirrors footer health icons.
+    // Top status (dot + pipeline label) → /oq-status. Mirrors footer health icons.
     $drawer.on('click keydown', '.dle-clickable-status', function (e) {
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
         if (e.type === 'keydown') e.preventDefault();
-        executeCommand('/dle-status');
+        executeCommand('/oq-status');
     });
 
     // Browse search help icon toggles the syntax popover beside it.
@@ -465,7 +465,7 @@ export function wireStatusActions($drawer) {
             showSetupWizard(getWizardResumeStep());
         } catch (err) {
             console.error('[DLE] Setup wizard error:', err);
-            toastr.error('Failed to open setup wizard.', 'DeepLore');
+            toastr.error('Failed to open setup wizard.', 'Onyx Quill');
         }
     });
     $drawer.on('click', '.dle-setup-banner-dismiss', () => {
@@ -508,14 +508,14 @@ export function wireInjectionTab($drawer) {
         const $btn = $(this);
         const sources = _currentVerdictForChat()?.injectedSources ?? null;
         if (!sources || sources.length === 0) {
-            toastr.warning(tr('dle_toast_no_entries_copy'), 'DeepLore', { timeOut: 2000 });
+            toastr.warning(tr('dle_toast_no_entries_copy'), 'Onyx Quill', { timeOut: 2000 });
             return;
         }
         const n = sources.length;
         const titles = sources.map(s => s.title).join('\n');
         navigator.clipboard.writeText(titles).then(
-            () => { toastr.success(trPlural('dle_toast_titles_copied', n), 'DeepLore', { timeOut: 2000 }); $btn.focus(); },
-            () => toastr.warning(tr('dle_toast_clipboard_denied'), 'DeepLore', { timeOut: 3000 }),
+            () => { toastr.success(trPlural('dle_toast_titles_copied', n), 'Onyx Quill', { timeOut: 2000 }); $btn.focus(); },
+            () => toastr.warning(tr('dle_toast_clipboard_denied'), 'Onyx Quill', { timeOut: 3000 }),
         );
     });
 
@@ -547,7 +547,7 @@ export function wireInjectionTab($drawer) {
         }
         $(this).addClass('dle-why-fixit-active').attr('aria-pressed', 'true');
         announceToScreenReader(`Pinned ${title}`);
-        toastr.info(trf('dle_toast_entry_pinned', title), 'DeepLore', { timeOut: 2000 });
+        toastr.info(trf('dle_toast_entry_pinned', title), 'Onyx Quill', { timeOut: 2000 });
         saveMetadataDebounced();
         notifyPinBlockChanged();
     });
@@ -564,7 +564,7 @@ export function wireInjectionTab($drawer) {
  */
 export async function moveEntryFlow(entry, { entries } = {}) {
     if (generationLock) {
-        toastr.warning('A message is generating — wait for it to finish before moving entries.', 'DeepLore');
+        toastr.warning('A message is generating — wait for it to finish before moving entries.', 'Onyx Quill');
         return;
     }
     // overhaul (2026-10-15, Lore → All entries → Select): several entries go through ONE folder pick, then each is
@@ -597,7 +597,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
     const folders = [...known].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const options = folders.filter(f => f !== currentFolder);
     if (options.length === 0) {
-        toastr.info('No other folders to move this into.', 'DeepLore');
+        toastr.info('No other folders to move this into.', 'Onyx Quill');
         return;
     }
 
@@ -822,7 +822,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
 
     const dest = picked;
     if (!dest) {
-        toastr.info('No destination folder was selected — nothing moved.', 'DeepLore');
+        toastr.info('No destination folder was selected — nothing moved.', 'Onyx Quill');
         return;
     }
     if (dest === currentFolder) return;
@@ -841,7 +841,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
             }
         }
         if (ok) {
-            toastr.success(`Moved ${ok} of ${moving.length} to ${dest}`, 'DeepLore', { timeOut: 4000 });
+            toastr.success(`Moved ${ok} of ${moving.length} to ${dest}`, 'Onyx Quill', { timeOut: 4000 });
             try {
                 let prev = JSON.parse(accountStorage.getItem('dle-move-recent') || '[]');
                 if (!Array.isArray(prev)) prev = [];
@@ -854,7 +854,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
     const result = await moveEntryToFolder(entry, dest);
 
     if (result.ok) {
-        toastr.success(`Moved to ${dest}`, 'DeepLore', { timeOut: 4000 });
+        toastr.success(`Moved to ${dest}`, 'Onyx Quill', { timeOut: 4000 });
         announceToScreenReader(`Moved ${entry.title} to ${dest}`);
         // Remember it, newest first, capped at 6. accountStorage syncs across browsers, so
         // a destination typed once on the desktop becomes a one-tap option on the phone —
@@ -991,7 +991,7 @@ export function wireBrowseTab($drawer) {
     $drawer.find('[data-sort]').on('change', function () {
         ds.browseSort = $(this).val();
         try { accountStorage.setItem('dle-browse-sort', ds.browseSort); } catch { /* noop */ }
-        toastr.info(trf('dle_toast_sorted_by', $(this).find('option:selected').text()), 'DeepLore', { timeOut: 1500 });
+        toastr.info(trf('dle_toast_sorted_by', $(this).find('option:selected').text()), 'Onyx Quill', { timeOut: 1500 });
         scheduleRender(renderBrowseTab);
     });
 
@@ -1013,7 +1013,7 @@ export function wireBrowseTab($drawer) {
         ds.browseQuickFilter = (ds.browseQuickFilter === qf) ? null : qf;
         scheduleRender(renderBrowseTab);
         const label = $(this).text();
-        toastr.info(ds.browseQuickFilter ? `Quick filter: ${label}` : 'Quick filter cleared', 'DeepLore', { timeOut: 1500 });
+        toastr.info(ds.browseQuickFilter ? `Quick filter: ${label}` : 'Quick filter cleared', 'Onyx Quill', { timeOut: 1500 });
         announceToScreenReader(ds.browseQuickFilter ? `${label} filter on` : 'Quick filter off');
     });
     $drawer.on('keydown', '.dle-qf-pill', function (e) {
@@ -1033,7 +1033,7 @@ export function wireBrowseTab($drawer) {
         $drawer.find('[data-filter="folder"]').val('');
         updateFilterActiveIndicators($drawer);
         scheduleRender(renderBrowseTab);
-        toastr.info(tr('dle_toast_filters_cleared'), 'DeepLore', { timeOut: 2000 });
+        toastr.info(tr('dle_toast_filters_cleared'), 'Onyx Quill', { timeOut: 2000 });
     });
 
     // gotcha #83: open obsidian:// links WITHOUT navigating the ST top frame. A plain
@@ -1063,7 +1063,7 @@ export function wireBrowseTab($drawer) {
         if (idx !== -1) {
             chat_metadata.deeplore_pins.splice(idx, 1);
             announceToScreenReader(`Unpinned ${title}`);
-            toastr.info(trf('dle_toast_entry_unpinned', title), 'DeepLore', { timeOut: 2000 });
+            toastr.info(trf('dle_toast_entry_unpinned', title), 'Onyx Quill', { timeOut: 2000 });
         } else {
             // Pin → also remove from blocks (mutually exclusive).
             chat_metadata.deeplore_pins.push({ title, vaultSource });
@@ -1074,7 +1074,7 @@ export function wireBrowseTab($drawer) {
                 });
             }
             announceToScreenReader(`Pinned ${title}`);
-            toastr.info(trf('dle_toast_entry_pinned', title), 'DeepLore', { timeOut: 2000 });
+            toastr.info(trf('dle_toast_entry_pinned', title), 'Onyx Quill', { timeOut: 2000 });
         }
         saveMetadataDebounced();
         notifyPinBlockChanged();
@@ -1094,7 +1094,7 @@ export function wireBrowseTab($drawer) {
         // Don't move a file out from under a generation that is mid-flight — the pipeline
         // holds entry objects by reference and the index is rebuilt on success.
         if (generationLock) {
-            toastr.warning('A message is generating — wait for it to finish before moving entries.', 'DeepLore');
+            toastr.warning('A message is generating — wait for it to finish before moving entries.', 'Onyx Quill');
             return;
         }
         const title = $(this).data('entry');
@@ -1132,7 +1132,7 @@ export function wireBrowseTab($drawer) {
         if (idx !== -1) {
             chat_metadata.deeplore_blocks.splice(idx, 1);
             announceToScreenReader(`Unblocked ${title}`);
-            toastr.info(trf('dle_toast_entry_unblocked', title), 'DeepLore', { timeOut: 2000 });
+            toastr.info(trf('dle_toast_entry_unblocked', title), 'Onyx Quill', { timeOut: 2000 });
         } else {
             // Block → also remove from pins (mutually exclusive).
             chat_metadata.deeplore_blocks.push({ title, vaultSource });
@@ -1143,7 +1143,7 @@ export function wireBrowseTab($drawer) {
                 });
             }
             announceToScreenReader(`Blocked ${title}`);
-            toastr.info(trf('dle_toast_entry_blocked', title), 'DeepLore', { timeOut: 2000 });
+            toastr.info(trf('dle_toast_entry_blocked', title), 'Onyx Quill', { timeOut: 2000 });
         }
         saveMetadataDebounced();
         notifyPinBlockChanged();
@@ -1428,7 +1428,7 @@ export function wireBrowseTab($drawer) {
         try {
             const mod = await import('../ui/popups.js');
             if (typeof mod.runBatchOptimize !== 'function') {
-                toastr.error(tr('dle_toast_batch_optimize_unavailable'), 'DeepLore');
+                toastr.error(tr('dle_toast_batch_optimize_unavailable'), 'Onyx Quill');
                 return;
             }
             await mod.runBatchOptimize(trks);
@@ -1640,14 +1640,14 @@ export function wireGatingTab($drawer) {
         const field = $group.data('field');
         if (!field) return;
 
-        // Built-in fields have dedicated commands; custom fields fall through to generic /dle-set-field.
+        // Built-in fields have dedicated commands; custom fields fall through to generic /oq-set-field.
         const cmdMap = {
-            era: '/dle-set-era',
-            location: '/dle-set-location',
-            scene_type: '/dle-set-scene',
-            character_present: '/dle-set-characters',
+            era: '/oq-set-era',
+            location: '/oq-set-location',
+            scene_type: '/oq-set-scene',
+            character_present: '/oq-set-characters',
         };
-        const cmd = cmdMap[field] || `/dle-set-field ${field}`;
+        const cmd = cmdMap[field] || `/oq-set-field ${field}`;
         executeCommand(cmd);
     });
 
@@ -1665,12 +1665,12 @@ export function wireGatingTab($drawer) {
             }
         }
         if (cleared === 0) {
-            toastr.info(tr('dle_toast_no_gating_filters'), 'DeepLore', { timeOut: 2000 });
+            toastr.info(tr('dle_toast_no_gating_filters'), 'Onyx Quill', { timeOut: 2000 });
             return;
         }
         saveMetadataDebounced();
         notifyGatingChanged();
-        toastr.success(trPlural('dle_toast_gating_cleared', cleared), 'DeepLore', { timeOut: 2000 });
+        toastr.success(trPlural('dle_toast_gating_cleared', cleared), 'Onyx Quill', { timeOut: 2000 });
     });
 
     $drawer.find('.dle-manage-fields-btn').on('click', () => openRuleBuilder());
@@ -1812,7 +1812,7 @@ export function wireGatingTab($drawer) {
                             chat_metadata.deeplore_folder_filter = null;
                             saveMetadataDebounced();
                             notifyGatingChanged();
-                            toastr.success(tr('dle_toast_folder_filter_cleared'), 'DeepLore');
+                            toastr.success(tr('dle_toast_folder_filter_cleared'), 'Onyx Quill');
                             document.querySelector('.popup-button-ok')?.click();
                             return;
                         }
@@ -1864,15 +1864,15 @@ export function wireGatingTab($drawer) {
         if (!cmd) return;
         const settings = getSettings();
         if (!settings.enabled) {
-            toastr.warning(tr('dle_toast_disabled'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_disabled'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         if (generationLock) {
-            toastr.warning(tr('dle_toast_gen_in_progress'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_gen_in_progress'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         if (indexing) {
-            toastr.warning(tr('dle_toast_indexing'), 'DeepLore', { timeOut: 2500 });
+            toastr.warning(tr('dle_toast_indexing'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
         executeCommand(cmd);
@@ -1932,13 +1932,13 @@ export function wireGatingTab($drawer) {
         if (cleared === 0) return;
         saveMetadataDebounced();
         notifyGatingChanged();
-        toastr.success(`Cleared ${cleared} filter${cleared !== 1 ? 's' : ''}.`, 'DeepLore', { timeOut: 1500 });
+        toastr.success(`Cleared ${cleared} filter${cleared !== 1 ? 's' : ''}.`, 'Onyx Quill', { timeOut: 1500 });
     });
 
     $drawer.on('click', '[data-action="goto-ai-connections"]', function (e) {
         e.stopPropagation();
         announceToScreenReader('Open Settings, then Setup, then AI Connections.');
-        toastr.info(tr('dle_toast_goto_ai_connections'), 'DeepLore', { timeOut: 4000 });
+        toastr.info(tr('dle_toast_goto_ai_connections'), 'Onyx Quill', { timeOut: 4000 });
     });
     $drawer.on('keydown', '[data-action="goto-ai-connections"]', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(this).trigger('click'); }
@@ -1962,9 +1962,9 @@ export function wireHealthIcons($drawer) {
         e.preventDefault();
         const area = $(this).data('health');
         switch (area) {
-            case 'vault': executeCommand('/dle-health'); break;
-            case 'connection': executeCommand('/dle-status'); break;
-            case 'pipeline': executeCommand('/dle-inspect'); break;
+            case 'vault': executeCommand('/oq-health'); break;
+            case 'connection': executeCommand('/oq-status'); break;
+            case 'pipeline': executeCommand('/oq-inspect'); break;
             case 'cache': {
                 const ageMs = indexTimestamp ? Date.now() - indexTimestamp : 0;
                 const ageSec = Math.round(ageMs / 1000);

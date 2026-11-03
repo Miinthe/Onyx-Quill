@@ -23,7 +23,7 @@
  *   - SCRIBE_*         会话 Scribe 汇总器
  *   - AUTO_SUGGEST_*   自动建议 lore 分析师
  *   - OPTIMIZE_KEYS_*  关键字优化助手
- *   - SUMMARIZE_*      /dle-summarize-range 默认
+ *   - SUMMARIZE_*      /oq-summarize-range 默认
  */
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -139,7 +139,7 @@ export const OPTIMIZE_KEYS_PROMPT = `你是一个 lorebook 系统的关键字优
 用 JSON 对象响应: {"suggested": ["keyword1", "keyword2", ...], "reasoning": "改变的简短说明"}`;
 
 // ══════════════════════════════════════════════════════════════════════════
-// /dle-summarize-range — 聊天范围汇总器
+// /oq-summarize-range — 聊天范围汇总器
 // ══════════════════════════════════════════════════════════════════════════
 
 export const SUMMARIZE_PROMPT = "你是一个会话汇总器。阅读以下聊天范围并写一个简洁的散文汇总,保留:谁行动、发生了什么、关键决定和情感语气。仅输出汇总 — 没有前言、没有元注释、没有标题。";

@@ -7,7 +7,7 @@ If you pick **keywords-only** on the tags-and-search-mode page, the AI search pa
 ## When it runs
 
 - **Automatically** on first load when the extension has never been configured
-- **Manually** any time with `/dle-setup`
+- **Manually** any time with `/oq-setup`
 
 You can re-run the wizard whenever you want to reconfigure. It prefills with your current settings.
 
@@ -106,7 +106,7 @@ Both are checkboxes. Status indicators show success or error for each.
 
 ### 7. Import
 
-Optional. Import an existing SillyTavern lorebook into your Obsidian vault. You can also import later with `/dle-import`.
+Optional. Import an existing SillyTavern lorebook into your Obsidian vault. You can also import later with `/oq-import`.
 
 Import methods:
 

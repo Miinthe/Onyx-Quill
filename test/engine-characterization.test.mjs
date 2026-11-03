@@ -40,7 +40,7 @@ function useBoard(raw) {
     const board = M.normalizeBoard(raw, raw.name);
     // engine on v2, step 5: one board store (board-store.js) — the old store is no longer written
     delete st.extension_settings.deeplore_storyboards;
-    st.extension_settings.deeplore_storyboards_v2 = { boards: { [board.name]: { board } }, characters: {}, oneStore: 1 };
+    st.extension_settings.onyxquill_storyboards = { boards: { [board.name]: { board } }, characters: {}, oneStore: 1 };
     st.chat_metadata.deeplore_board = board.name;
     st.chat_metadata.deeplore_board_state = M.freshState(board);
     T.saveTrackers(M.toEngineList(board, st.chat_metadata.deeplore_board_state, []));
@@ -64,7 +64,7 @@ function timeline() {
 }
 /** Engine on v2, step 1: the v2 state agrees with the engine's list about every step tracker (empty = agree). */
 function disagree() {
-    const lv = st.extension_settings.deeplore_storyboards_v2?.boards?.[st.chat_metadata.deeplore_board];
+    const lv = st.extension_settings.onyxquill_storyboards?.boards?.[st.chat_metadata.deeplore_board];
     if (!lv || !st.chat_metadata.deeplore_board_state?.v2steps) return [];
     const board = M.normalizeBoard(lv.board, st.chat_metadata.deeplore_board);
     return M.engineDiff(board, T.getTrackers(), M.normalizeState(st.chat_metadata.deeplore_board_state, board)).map(d => `${d.tracker}.${d.field}: v2 ${JSON.stringify(d.v2)} ≠ engine ${JSON.stringify(d.engine)}`);
@@ -399,8 +399,8 @@ test('the board window: a chat moved onto another board starts it fresh — no p
     resetChat();
     st.chat.push({ name: 'test bot 1', is_user: false, is_system: false, mes: 'Hello.', send_date: '0', extra: {} });
     useBoard(BOARD2);
-    const copy = { ...structuredClone(st.extension_settings.deeplore_storyboards_v2.boards['Engine test 2'].board), name: 'Copy', applied: [] };
-    st.extension_settings.deeplore_storyboards_v2.boards.Copy = { board: copy };
+    const copy = { ...structuredClone(st.extension_settings.onyxquill_storyboards.boards['Engine test 2'].board), name: 'Copy', applied: [] };
+    st.extension_settings.onyxquill_storyboards.boards.Copy = { board: copy };
     say('user', 'We walk to the gate.');
     T.moveTracker('Quest', { delta: 2 });
     assertEqual(pos()[0], 'Quest: Home');
@@ -438,7 +438,7 @@ const BS = await import('../src/board-store.js');
 test('one store: a board only the old store had, a character default and a rename come over once; the old store stays as it was', () => {
     const oldStore = { boards: { 'Old one': { name: 'Old one', trackers: [{ id: 'mood', name: 'Mood', steps: ['Calm', 'Cross'], direction: 'both', skip: false }] } }, characters: { 'kettle.png': 'Old one' }, renamed: { 'Older name': 'Old one' } };
     st.extension_settings.deeplore_storyboards = structuredClone(oldStore);
-    st.extension_settings.deeplore_storyboards_v2 = { boards: {} };
+    st.extension_settings.onyxquill_storyboards = { boards: {} };
     const s = BS.boardStore();
     assertEqual([Object.keys(s.boards), s.characters, s.renamed, s.oneStore], [['Old one'], { 'kettle.png': 'Old one' }, { 'Older name': 'Old one' }, 1]);
     assertEqual(BS.getBoard('Old one').trackers[0].steps.map(x => x.name), ['Calm', 'Cross']);
@@ -492,7 +492,7 @@ function openOldChat() {
     resetChat();
     st.chat.push(...structuredClone(OLD.chat));
     Object.assign(st.chat_metadata, structuredClone(OLD.chat_metadata));
-    st.extension_settings.deeplore_storyboards_v2 = { boards: { [OLD.board.name]: { board: M.normalizeBoard(OLD.board, OLD.board.name) } }, characters: {}, oneStore: 1 };
+    st.extension_settings.onyxquill_storyboards = { boards: { [OLD.board.name]: { board: M.normalizeBoard(OLD.board, OLD.board.name) } }, characters: {}, oneStore: 1 };
 }
 
 test('stored chats: an old chat gets its step log rebuilt from its history on first read — what the old engine did, entry by entry', async () => {
@@ -520,7 +520,7 @@ test('stored chats: after the rebuild, deleting back to every point gives exactl
 });
 
 // ── step 7: no old engine ───────────────────────────────────────────────────
-test('/dle-tracker-rewind: the trackers go back to where they stood at a message — as a move by hand now; items and later messages stay', async () => {
+test('/oq-tracker-rewind: the trackers go back to where they stood at a message — as a move by hand now; items and later messages stay', async () => {
     resetChat();
     st.chat.push({ name: 'test bot 1', is_user: false, is_system: false, mes: 'Hello.', send_date: '0', extra: {} });
     useBoard(BOARD);

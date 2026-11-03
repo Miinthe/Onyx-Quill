@@ -288,7 +288,7 @@ export function renderFooter() {
         $ai.attr('aria-label', 'AI search: enabled but no calls yet').attr('title', 'AI search: enabled but no calls yet — will activate on first generation');
     } else {
         $ai.removeClass('dle-health-ok dle-health-warn dle-health-error');
-        $ai.attr('aria-label', 'AI search: disabled').attr('title', 'AI search: disabled — enable in DeepLore settings');
+        $ai.attr('aria-label', 'AI search: disabled').attr('title', 'AI search: disabled — enable in Onyx Quill settings');
     }
     if (!breakerOpen && $reset.length) {
         $reset.addClass('dle-hidden');

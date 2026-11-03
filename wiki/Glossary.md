@@ -90,16 +90,16 @@ A frontmatter field listing entry titles that must ALL be matched for this entry
 A frontmatter field listing entry titles that BLOCK this entry. If any excluded entry is matched, this entry is filtered out.
 
 **Contextual gating**
-Filtering based on narrative context using gating fields. Ships with four default fields (era, location, scene type, present characters); users can define additional custom fields via the **Manage Fields** rule builder. Field definitions are stored in `DeepLore/field-definitions.yaml` in the vault. Set fields via `/dle-set-field <name> [value]` or built-in aliases (`/dle-set-era`, `/dle-set-location`, etc.). See [[Features#Contextual Gating]].
+Filtering based on narrative context using gating fields. Ships with four default fields (era, location, scene type, present characters); users can define additional custom fields via the **Manage Fields** rule builder. Field definitions are stored in `DeepLore/field-definitions.yaml` in the vault. Set fields via `/oq-set-field <name> [value]` or built-in aliases (`/oq-set-era`, `/oq-set-location`, etc.). See [[Features#Contextual Gating]].
 
 **Pin**
-A per-chat override that forces an entry to always inject, bypassing keyword matching and gating. Set via `/dle-pin <name>`.
+A per-chat override that forces an entry to always inject, bypassing keyword matching and gating. Set via `/oq-pin <name>`.
 
 **Block**
-A per-chat override that prevents an entry from ever injecting, even if it matches. Overrides constants. Set via `/dle-block <name>`.
+A per-chat override that prevents an entry from ever injecting, even if it matches. Overrides constants. Set via `/oq-block <name>`.
 
 **Folder filter**
-A per-chat restriction that limits which vault entries are considered, by filtering on folder path. Set via `/dle-set-folder` (or the side panel's Filters tab → **Change folders and fields…**). Only entries whose `folderPath` starts with one of the allowed folders are included in matching.
+A per-chat restriction that limits which vault entries are considered, by filtering on folder path. Set via `/oq-set-folder` (or the side panel's Filters tab → **Change folders and fields…**). Only entries whose `folderPath` starts with one of the allowed folders are included in matching.
 
 ## Injection
 

@@ -63,7 +63,7 @@ export function showChangesToast(changes) {
     // true, so we must override it here or the markup renders as literal text and
     // the CTA click handler never binds. All dynamic content above is already
     // escaped piecewise (truncList + escapeHtml), so this is safe.
-    const $toast = toastr.info(parts.join('<br>'), 'DeepLore', {
+    const $toast = toastr.info(parts.join('<br>'), 'Onyx Quill', {
         timeOut: SYNC_TOAST_TIMEOUT,
         extendedTimeOut: SYNC_EXTENDED_TIMEOUT,
         progressBar: true,

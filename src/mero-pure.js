@@ -21,7 +21,7 @@
  * The writer gets one `[Author's notes]` block: 🚫 first, then 🧭, 📄, then 💡 as "a possible thread — never force it".
  */
 
-export const MERO_KEY = 'deeplore_mero';              // extension_settings: { v, chars: { [avatar]: { talks } }, notes: { char, run, board }, settings }
+export const MERO_KEY = 'onyxquill_mero';              // extension_settings: { v, chars: { [avatar]: { talks } }, notes: { char, run, board }, settings }
 export const CHAT_NOTES_KEY = 'deeplore_mero_notes';  // chat_metadata: [notes] for this chat
 
 export const TAGS = { yap: '💭 Yapping', plan: '🗺 Planning', fb: '✋ Feedback', game: '🎲 Games' };
@@ -295,7 +295,7 @@ const GROUND_WEB = `- You can also search the web (search_web, then read_page fo
 export const groundRules = (lookups, web = false) => [GROUND_HEAD, lookups ? GROUND_LOOKUPS : GROUND_NAMES_ONLY, ...(lookups && web ? [GROUND_WEB] : []), GROUND_TAIL].join('\n');
 export const GROUND_RULES = groundRules(false);
 
-/** A vault review talk: the whole vault is in front of her (what /dle-review used to post into the story chat). */
+/** A vault review talk: the whole vault is in front of her (what /oq-review used to post into the story chat). */
 const VAULT_REVIEW = 'Miinthe asked you to review her lore vault (all of it is below). Be concrete and name the entries: contradictions between entries, gaps, connections she may not have made, entries that say too little to be useful. Never rewrite her entries — say what you would change and why, and let her decide.';
 
 export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, firstAnswer = false, boardMap = [], lookups = false, web = false, pitchAsked = false } = {}) {

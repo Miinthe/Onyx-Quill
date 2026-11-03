@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues and how to fix them. Run `/dle-health` first; it catches most problems automatically. For a shareable bug report, run `/dle-diagnostics` (see [[Inspection and Diagnostics#Diagnostics export]]).
+Common issues and how to fix them. Run `/oq-health` first; it catches most problems automatically. For a shareable bug report, run `/oq-diagnostics` (see [[Inspection and Diagnostics#Diagnostics export]]).
 
 ## Connection issues
 
@@ -42,19 +42,19 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ## Entries not matching
 
 ### Keywords not triggering
-- **Run:** `/dle-inspect` after sending a message and check the keyword-matches section.
+- **Run:** `/oq-inspect` after sending a message and check the keyword-matches section.
 - **Check:** **Messages to read** is not 0 (Settings → Lore selection → Keywords).
 - **Check:** Keywords are in the entry's `keys:` frontmatter field, not just in the content body.
 - **Check:** "Whole words only" (Settings → Lore selection → Keywords, behind More). With it on, "ai" will not match "artificial".
 - **Check:** "Case sensitive" (same place). With it on, "Eris" will not match "eris".
 - **Check:** The entry has the configured lorebook tag (default: `lorebook`).
-- **Try:** `/dle-lint` to see if the entry was skipped during the last index build.
+- **Try:** `/oq-lint` to see if the entry was skipped during the last index build.
 
 ### Entries matching but not injecting
-- **Check:** Token budget. The entry may be cut for space. Run `/dle-inspect` to see budget-cut entries.
+- **Check:** Token budget. The entry may be cut for space. Run `/oq-inspect` to see budget-cut entries.
 - **Check:** Gating rules. The entry may have `requires` or `excludes` that are not met.
-- **Check:** Contextual gating. With era/location/scene filters set, entries may be gated out. Run `/dle-context-state` to see active filters, or `/dle-clear-all-context` to reset.
-- **Check:** Per-chat blocks. Run `/dle-pins` to see if the entry is blocked.
+- **Check:** Contextual gating. With era/location/scene filters set, entries may be gated out. Run `/oq-context-state` to see active filters, or `/oq-clear-all-context` to reset.
+- **Check:** Per-chat blocks. Run `/oq-pins` to see if the entry is blocked.
 - **Check:** Per-entry cooldown.
 - **Check:** Re-injection cooldown. The entry may be skipped because it injected recently.
 - **Check:** Folder filter. The entry may live outside the active folder set.
@@ -80,14 +80,14 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ### AI search returning empty results
 - **Check:** Entries have a `summary:` field. AI search relies on summaries to decide relevance.
 - **Check:** AI search scan depth is not too low. The AI needs enough chat context to judge relevance.
-- **Try:** Run `/dle-status` to verify AI search is enabled and configured.
+- **Try:** Run `/oq-status` to verify AI search is enabled and configured.
 - **Try:** Switch from AI-only to two-stage mode. Two-stage uses keywords as a safety net.
 
 ### AI search too expensive
 - **Fix:** Use two-stage mode instead of AI-only. Keywords pre-filter, reducing AI workload.
 - **Fix:** Use a cheaper model (Claude Haiku, GPT-4o-mini).
 - **Fix:** Reduce **Entry Description Length** (`aiSearchManifestSummaryLength`) to send less text per entry.
-- **Fix:** Check `/dle-status` for cache hit rate. High cache hits mean fewer API calls.
+- **Fix:** Check `/oq-status` for cache hit rate. High cache hits mean fewer API calls.
 
 ### "AI Search Throttled"
 - AI calls are throttled to a minimum of 500ms between requests. If you regenerate rapidly, the AI call is skipped and keywords are used instead.
@@ -103,7 +103,7 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 - After 2 consecutive AI failures (timeouts, errors), the circuit breaker trips and AI search is disabled for 30 seconds.
 - During this period, the pipeline falls back to keyword-only matching.
 - After 30 seconds, a single half-open probe is allowed. If it succeeds, the circuit breaker resets and AI search resumes normally.
-- **Fix:** Check that your connection profile works (test it in SillyTavern's main API panel). Run `/dle-status` to see circuit breaker state.
+- **Fix:** Check that your connection profile works (test it in SillyTavern's main API panel). Run `/oq-status` to see circuit breaker state.
 
 ### Per-vault circuit breaker
 - In multi-vault setups, each vault (identified by host:port) has its own independent circuit breaker with exponential backoff (2s → 4s → 8s → 15s max).
@@ -113,10 +113,10 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ## Lore not injecting
 
 ### Extension enabled but nothing happens
-1. Run `/dle-refresh` to rebuild the index.
+1. Run `/oq-refresh` to rebuild the index.
 2. Check the header badge. Does it show entries? "0 entries" means your notes are not being indexed.
-3. Run `/dle-health` for a full diagnostic.
-4. Check the browser console (F12) for `[DLE]` error messages, or run `/dle-logs`.
+3. Run `/oq-health` for a full diagnostic.
+4. Check the browser console (F12) for `[DLE]` error messages, or run `/oq-logs`.
 
 ### "No vault entries loaded"
 - **No tagged notes:** make sure at least one note has the lorebook tag in its frontmatter `tags:` field.
@@ -131,7 +131,7 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ## Cache and sync issues
 
 ### Stale entries (edits in Obsidian not showing up)
-- **Quick fix:** run `/dle-refresh` to force a full rebuild.
+- **Quick fix:** run `/oq-refresh` to force a full rebuild.
 - **Check:** **Keep the index for** (Settings → Vault → Reading). With it set high (e.g. 300s), changes take up to 5 minutes to appear.
 - **Check:** Sync polling interval. Controls how often DeepLore checks for changes in the background.
 - **Fix:** Lower cache TTL to 60-120s for faster updates during active editing.
@@ -144,14 +144,14 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 ## Extension errors
 
 ### JavaScript errors in console
-1. Open the browser console (F12) and filter for `[DLE]`, or run `/dle-logs`.
+1. Open the browser console (F12) and filter for `[DLE]`, or run `/oq-logs`.
 2. Note the exact error message.
 3. Try disabling the extension, refreshing, and re-enabling.
-4. If the error persists, [report it on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with the error message. Attach the output of `/dle-diagnostics` if you can.
+4. If the error persists, [report it on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with the error message. Attach the output of `/oq-diagnostics` if you can.
 
 ### Extension freezes SillyTavern
 - This can happen if the generation lock gets stuck.
-- **Quick fix:** run `/dle-refresh` in chat to reset the lock.
+- **Quick fix:** run `/oq-refresh` in chat to reset the lock.
 - If chat input is frozen, refresh the page. The lock auto-recovers after 30 seconds.
 
 ### Conflicts with other extensions
@@ -162,13 +162,13 @@ If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate
 
 ## Still stuck?
 
-1. Run `/dle-health` and review all errors and warnings.
-2. Run `/dle-logs` (or check the browser console) for `[DLE]` messages.
-3. Run `/dle-status` to see the full extension state.
-4. Run `/dle-diagnostics` to export an anonymized report.
+1. Run `/oq-health` and review all errors and warnings.
+2. Run `/oq-logs` (or check the browser console) for `[DLE]` messages.
+3. Run `/oq-status` to see the full extension state.
+4. Run `/oq-diagnostics` to export an anonymized report.
 5. [Open an issue on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with:
    - Your DeepLore version (Settings › Advanced › Reference › **About**)
    - The error message or unexpected behavior
    - Steps to reproduce
-   - `/dle-status` output
+   - `/oq-status` output
    - The diagnostic report from step 4 (verify the privacy section before attaching)

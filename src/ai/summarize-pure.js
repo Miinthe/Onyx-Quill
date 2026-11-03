@@ -118,7 +118,7 @@ export function applyHideAndPrepend(chatArr, range, summaryId, summaryText, summ
         hiddenCount++;
     }
     const summaryMsg = {
-        name: 'DeepLore Summary',
+        name: 'Onyx Quill Summary',
         is_user: false,
         is_system: false,
         send_date: new Date().toISOString(),

@@ -186,7 +186,7 @@ After the main pipeline, per-chat pins and blocks are applied:
 
 ### Folder filtering
 
-If a per-chat folder filter is active (set via `/dle-set-folder`), entries whose vault folder path falls outside the filter are removed. Folder filtering runs twice: as a pre-filter inside `runPipeline` (so AI search doesn't waste selections on filtered entries), and again post-pipeline as the authoritative gate. Constants, seeds, bootstrap entries, and pinned entries are exempt.
+If a per-chat folder filter is active (set via `/oq-set-folder`), entries whose vault folder path falls outside the filter are removed. Folder filtering runs twice: as a pre-filter inside `runPipeline` (so AI search doesn't waste selections on filtered entries), and again post-pipeline as the authoritative gate. Constants, seeds, bootstrap entries, and pinned entries are exempt.
 
 ### Contextual gating
 
@@ -247,7 +247,7 @@ After injection, the pipeline updates internal state:
 
 ## Inspecting the pipeline
 
-Use the `/dle-inspect` slash command to see a detailed trace of the last generation:
+Use the `/oq-inspect` slash command to see a detailed trace of the last generation:
 
 - Which entries matched by keywords (and which keywords triggered them)
 - Which entries were selected by AI (with confidence and reasons)

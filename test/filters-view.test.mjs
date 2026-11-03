@@ -23,8 +23,8 @@ const ENTRIES = [
 ];
 
 test('commands and values', () => {
-    assertEqual(setCommandFor('era'), '/dle-set-era', 'built-in');
-    assertEqual(setCommandFor('character'), '/dle-set-field character', 'custom');
+    assertEqual(setCommandFor('era'), '/oq-set-era', 'built-in');
+    assertEqual(setCommandFor('character'), '/oq-set-field character', 'custom');
     assertEqual(valuesOf(DEFS[0], { era: ['past', ''] }), ['past'], 'list');
     assertEqual(valuesOf(DEFS[1], { character: 'Kettle' }), ['Kettle'], 'single');
     assertEqual(valuesOf(DEFS[1], { character: '' }), [], 'empty');

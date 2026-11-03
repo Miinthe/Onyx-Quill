@@ -5492,7 +5492,7 @@ button.dle-chip-x:focus-visible { outline: 2px solid var(--dle-focus); outline-o
     row-gap: 5px;   /* the bars were touching; they read as one block at 2px */
 }
 /* "971" and "Two-Stage" are reference numbers, not live state — they cost the width the
-   bars actually need to be legible. Dropped on mobile; both are still in /dle-status and
+   bars actually need to be legible. Dropped on mobile; both are still in /oq-status and
    the entry count is on the Browse tab badge. */
 #deeplore-panel.dle-mobile .dle-status-stats { display: none; }
 #deeplore-panel.dle-mobile .dle-status-row {

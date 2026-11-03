@@ -36,7 +36,7 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 - **Session Scribe:** auto-summarize sessions back to your Obsidian vault as timestamped notes.
 - **Auto Lorebook:** AI suggests new entries from chat content; accept or reject each one.
 - **Author's Notebook and AI Notepad:** per-chat scratchpads (one human-written, one AI-written) injected as context.
-- **World Info import:** `/dle-import` converts SillyTavern World Info JSON exports into vault entries.
+- **World Info import:** `/oq-import` converts SillyTavern World Info JSON exports into vault entries.
 - **Relationship graph:** force-directed layout, 200+ nodes, Louvain clustering, gap analysis, focus mode.
 - **Fine-grained matching:** cooldown, warmup, probability, refine keys, cascade links, per-entry injection overrides, entry decay.
 - **Bootstrap entries:** seed and bootstrap injection for early conversations on new chats.
@@ -47,7 +47,7 @@ New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get i
 
 - **SillyTavern 1.12.14+**
 - **Obsidian** with the **Local REST API** plugin enabled
-- A lore vault. Your existing Obsidian vault works; `/dle-import` converts World Info JSON if you're migrating.
+- A lore vault. Your existing Obsidian vault works; `/oq-import` converts World Info JSON if you're migrating.
 - For AI search: any LLM provider via a SillyTavern Connection Manager profile. Keywords-only mode runs without any provider.
 
 ## Wiki pages

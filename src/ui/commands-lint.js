@@ -1,5 +1,5 @@
 /**
- * DeepLore — /dle-lint slash command.
+ * DeepLore — /oq-lint slash command.
  * Reads the parser warning ledger populated by buildIndex / buildIndexWithReuse.
  * Manual invoke only — auto-run after index build is OFF per user directive.
  */
@@ -40,12 +40,12 @@ const CODE_LABELS = {
     W_NOT_IMPLEMENTED: {
         key: 'dle_lint_w_notimpl',
         title: 'Imported field preserved but not enforced',
-        hint: 'Field round-trips through customFields but DLE does not act on it yet.',
+        hint: 'Field round-trips through customFields but Onyx Quill does not act on it yet.',
     },
     W_WI_ROUND_TRIP: {
         key: 'dle_lint_w_wiroundtrip',
         title: 'WI field preserved for round-trip readability',
-        hint: 'Field was imported from SillyTavern World Info. DLE does not act on it (no plan to). Remove if you don\'t need it preserved.',
+        hint: 'Field was imported from SillyTavern World Info. Onyx Quill does not act on it (no plan to). Remove if you don\'t need it preserved.',
     },
     W_INVALID: {
         key: 'dle_lint_w_invalid',
@@ -247,7 +247,7 @@ export async function openLintPopup() {
         const nodataHeader = escapeHtml(trf('dle_cmd_lint_html_header', '').trim());
         const nodataMsg = escapeHtml(_resolved(
             'dle_cmd_lint_nodata_msg',
-            'No index build has run yet. Trigger a vault refresh (/dle-refresh) and try again.',
+            'No index build has run yet. Trigger a vault refresh (/oq-refresh) and try again.',
         ));
         await callGenericPopup(
             `<div class="dle-popup"><h3>${nodataHeader}</h3><p>${nodataMsg}</p></div>`,
@@ -267,8 +267,8 @@ export async function openLintPopup() {
 
 export function registerLintCommand() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dle-lint',
-        aliases: ['dle-l'],
+        name: 'oq-lint',
+        aliases: ['oq-l'],
         callback: async () => {
             await openLintPopup();
             return '';

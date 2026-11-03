@@ -1,12 +1,12 @@
 /**
  * LOCAL PATCH (Miinthe, 2026-10-05) — engine on v2, step 5 (`13 engine on v2 plan.md`): ONE board store.
  *
- *   extension_settings.deeplore_storyboards_v2 = { boards: { [name]: { board } }, characters: { [avatar]: name },
+ *   extension_settings.onyxquill_storyboards = { boards: { [name]: { board } }, characters: { [avatar]: name },
  *                                                  renamed: { [old]: new }, oneStore: 1 }
  *
  * Every board is kept here only, in the v2 shape the window edits. The engine's older parts still read a tracker's
  * definitions in the v1 shape (names, steps by name) — `engineBoard()` makes that from the v2 board when asked, it is
- * never stored. Edits from the Story tab and the /dle-tracker commands go into the v2 board (`saveDefs`).
+ * never stored. Edits from the Story tab and the /oq-tracker commands go into the v2 board (`saveDefs`).
  *
  * Once, on first use: every board that so far lived only in the old store (`deeplore_storyboards`, made by commands
  * before the window existed), and any edit made there since the window last saved, comes in; so do the character
@@ -18,7 +18,7 @@ import { STORE_KEY, asStore } from './storyboard-pure.js';
 import { normalizeBoard } from './board-model-pure.js';
 import { toV1Board, reconcile, mergeDefs } from './board-window-pure.js';
 
-export const V2_KEY = 'deeplore_storyboards_v2';
+export const V2_KEY = 'onyxquill_storyboards';   // was deeplore_storyboards_v2
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 
 /** The store (created and filled from the old one on first use). */

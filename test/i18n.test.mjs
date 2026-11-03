@@ -450,7 +450,8 @@ for (const loc of TRANSLATION_LOCALES) {
         // − 313 Librarian / Emma keys removed with the Librarian (2026-10-19) = 2362
         // − 1 unused (dle_librarian_activity_tab, 2026-11-02; the Emma-named keys were renamed, not removed) = 2361
         // + 1 dle_carto_diff_same (📖 Why: same as last turn, 2026-11-03) = 2362
-        assertEqual(keys.length, 2362, `${loc} key count matches canonical (2362)`);
+        // − 6 companion-card keys (Kara, Nott, the Companions pop-up; removed for Onyx Quill, 2026-11-03) = 2356
+        assertEqual(keys.length, 2356, `${loc} key count matches canonical (2356)`);
     });
 }
 

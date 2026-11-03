@@ -22,7 +22,7 @@ function pushEventSafe(kind, data) {
 /** @type {import('../core/pipeline.js').VaultEntry[]} */
 export let vaultIndex = [];
 
-// Per-build parser ledger. Consumed by /dle-lint and the post-index summary toast.
+// Per-build parser ledger. Consumed by /oq-lint and the post-index summary toast.
 export let indexBuildReport = {
     okCount: 0,
     warnCount: 0,
@@ -366,7 +366,7 @@ export function setFuzzySearchIndex(v) { fuzzySearchIndex = v; }
  *     rebuilds from Obsidian — the empty index alone already forces that)
  *   - previousIndexSnapshot → null (next build is treated as a cold start; no
  *     bogus "N entries removed" change toast)
- *   - indexBuildReport → empty ledger (/dle-lint stops showing warnings for
+ *   - indexBuildReport → empty ledger (/oq-lint stops showing warnings for
  *     entries that no longer exist)
  *   - derived structures: mentionWeights, folderList, vaultAvgTokens,
  *     entityNameSet, entityShortNameRegexes (via the setter, so

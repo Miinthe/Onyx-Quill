@@ -593,7 +593,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const toast = t => notify({ text: t, tone: 'mero', doc: document });
   const lbl = (el, ic, text) => { if (el) el.innerHTML = I(ic) + (text ? `<span>${esc(text)}</span>` : ''); };
-  if (!HOST) { document.body.innerHTML = '<p style="padding:16px">Open this from DeepLore\'s side panel.</p>'; return; }
+  if (!HOST) { document.body.innerHTML = '<p style="padding:16px">Open this from Onyx Quill\'s side panel.</p>'; return; }
   // line icons (v13): words stay, emoji only for story things
   $$('.ri[data-ic]').forEach(b => b.insertAdjacentHTML('afterbegin', I(b.dataset.ic)));
   $$('[data-close], #told-x').forEach(b => { b.innerHTML = I('close'); });
