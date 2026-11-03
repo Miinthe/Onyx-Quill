@@ -211,7 +211,7 @@ function normTracker(t, i) {
             ...(p.fav === true ? { fav: true } : {}),   // ★ a favorite: first in the Cast tab's People (Miinthe 2026-10-18, per board)
             speaks: ['call', 'suggest', 'self', 'mine'].includes(p.speaks) ? p.speaks : 'suggest',
             appears: ['off', 'places', 'plans'].includes(p.appears) ? p.appears : 'plans', odds: Number(p.odds) >= 1 ? Math.round(Number(p.odds)) : 3, ...note(p) }));   // appearing (step 2)   // when they speak (step 3): call only · suggests themselves · steps in by themselves
-        return { ...base, people, pinHere: t.pinHere !== false, setsPresent: t.setsPresent === true, director: t.director !== false, ...(t.keep ? { keep: entryPart(t.keep) } : {}) };
+        return { ...base, people, pinHere: t.pinHere !== false, setsPresent: t.setsPresent === true, director: t.director !== false, ...(t.ties === 'write' || t.ties === 'off' ? { ties: t.ties } : {}), ...(t.keep ? { keep: entryPart(t.keep) } : {}) };
     }
     // state
     const fields = withIds(arr(t.fields).filter(isObj)).map(f => {
@@ -345,6 +345,7 @@ export function normalizeState(raw, board) {
             const own = arr(v.dates).filter(d => isObj(d) && d.id && d.name && Number.isFinite(Number(d.due)));
             if (own.length) out.states[t.id].dates = own.map(d => ({ ...d, due: Math.round(Number(d.due)) }));
         } else if (t.kind === 'cast' && isObj(s.cast?.[t.id])) {
+            const tieSteps = h => arr(h).filter(x => isObj(x) && x.w).map(x => ({ w: String(x.w), ...(Number.isFinite(x.i) ? { i: x.i } : {}), ...(x.q ? { q: String(x.q) } : {}) }));
             // each person as this chat has them (cast-pure.js personNow reads it; what's missing is the board's)
             const ids = new Set(arr(t.people).map(p => p.id));
             out.cast[t.id] = Object.fromEntries(Object.entries(s.cast[t.id]).filter(([pid, v]) => ids.has(pid) && isObj(v)).map(([pid, v]) => [pid, {
@@ -356,7 +357,10 @@ export function normalizeState(raw, board) {
                 // what they did while away (cast-pure offscreenChanges) — was dropped here, so the Cast tab never showed it (found 2026-10-18)
                 ...(arr(v.offscreen).length ? { offscreen: arr(v.offscreen).filter(x => isObj(x) && x.text).map(x => ({ text: String(x.text), ...(Number.isFinite(x.from) ? { from: x.from } : {}), ...(Number.isFinite(x.to) ? { to: x.to } : {}) })) } : {}),
                 // ties (2026-11-02): how they feel about someone — cast-pure.js normTie keeps the shape
-                ...(arr(v.ties).length ? { ties: arr(v.ties).filter(x => isObj(x) && x.to && x.w).map(x => ({ to: String(x.to), w: String(x.w), ...(x.tr === 'up' || x.tr === 'down' ? { tr: x.tr } : {}), ...(x.q ? { q: String(x.q) } : {}), ...(Number.isFinite(x.i) ? { i: x.i } : {}), ...(x.pin === true ? { pin: true } : {}) })) } : {}),
+                ...(arr(v.ties).length ? { ties: arr(v.ties).filter(x => isObj(x) && x.to && x.w).map(x => ({ to: String(x.to), w: String(x.w), ...(x.tr === 'up' || x.tr === 'down' ? { tr: x.tr } : {}), ...(x.q ? { q: String(x.q) } : {}), ...(Number.isFinite(x.i) ? { i: x.i } : {}), ...(x.pin === true ? { pin: true } : {}), ...(arr(x.h).length ? { h: tieSteps(x.h) } : {}) })) } : {}),
+                // smart ties (2026-11-03): suggestions waiting for ✓ / ✕, and the ones turned down (bug: dropped here at first)
+                ...(arr(v.tieSug).length ? { tieSug: arr(v.tieSug).filter(x => isObj(x) && x.to && x.w).map(x => ({ to: String(x.to), w: String(x.w), ...(x.tr === 'up' || x.tr === 'down' ? { tr: x.tr } : {}), ...(x.q ? { q: String(x.q) } : {}), ...(Number.isFinite(x.i) ? { i: x.i } : {}), src: x.src === 'seed' ? 'seed' : 'scene', ...(x.why ? { why: String(x.why) } : {}) })) } : {}),
+                ...(arr(v.tieNo).length ? { tieNo: arr(v.tieNo).filter(x => typeof x === 'string') } : {}),
                 ...(arr(v.knows).length ? { knows: arr(v.knows).filter(k => isObj(k) && k.fact).map(k => ({ id: String(k.id ?? ''), fact: String(k.fact), how: String(k.how || 'saw'), ...(k.quote ? { quote: String(k.quote) } : {}), ...(Number.isFinite(k.i) ? { i: k.i } : {}) })) } : {}),
             }]));
         }

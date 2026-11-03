@@ -42,7 +42,7 @@
 .dle-cv-mode span { opacity: .8; }
 .dle-cv-erow { display: flex; gap: 6px; align-items: center; min-width: 0; }
 .dle-cv-erow input.dk-field { flex: 1; min-width: 0; min-height: 28px; height: 28px; padding: 0 8px; }
-.dle-cv-erow select.dk-field { width: auto; flex: none; max-width: 112px; min-height: 28px; height: 28px; padding: 0 4px; }
+.dle-cv-erow select.dk-field { width: auto; flex: none; max-width: 120px; min-height: 28px; height: 28px; padding: 0 4px 0 8px; }
 .dle-cv-erow .dk-ib { width: 24px; height: 24px; }
 .dle-cv-person textarea.dk-field { resize: vertical; }
 .dle-cv-thought { margin: 0; padding-left: 8px; border-left: 2px solid var(--dk-line); font-style: italic; color: var(--dk-muted); }
@@ -119,3 +119,11 @@ button.dle-cv-face:focus-visible { outline: 2px solid var(--dk-accent); outline-
 /* 4 small icons 24 px; 12 rows corners 8 */
 .dle-cv .dle-cv-grip { width: 24px; height: 24px; }
 .dle-cv-open { border-radius: 8px; }
+/* smart ties (2026-11-03): ✨ suggestions wait for ✓ / ✕; + Tie and ✨ Suggest side by side; a tie's story */
+.dle-cv-tie.sug { border: 1px dashed var(--dk-line-strong); border-radius: 6px; }
+.dle-cv-tie.sug .dle-cv-tiel { color: var(--dk-muted); }
+.dle-cv-tie.sug .dle-cv-tiel b { color: var(--dk-ink); font-weight: 600; }
+.dle-cv-sugm { font-size: .9em; }
+.dle-cv-tietools { display: flex; gap: 4px; flex-wrap: wrap; }
+.dle-cv-tietools[hidden] { display: none; }
+.dle-cv-th { font-style: normal; color: var(--dk-ink); margin-bottom: 2px; }

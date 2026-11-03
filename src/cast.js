@@ -16,10 +16,10 @@ import { callAI } from './ai/ai.js';
 import { turnIndex } from './turn-index.js';
 import { echo } from './echo.js';
 import { replaying } from './cast-queue.js';   // a regenerate replaying the round: nobody new joins
-import { live, saveLiveState, liveWriterLines } from './board-live.js';
+import { live, saveLiveState, liveWriterLines, entryText } from './board-live.js';
 import { autoTrackEnabled, undoCollection } from './autotrack.js';
 import { placeOf, trackerOf } from './board-model-pure.js';
-import { presentPeople, directedPeople, directorUser, DIRECTOR_SYSTEM, DIRECTOR_SCHEMA, parseDirectorAll, validateDirector, validateComes, applyCastChanges, describeCastChange, appearAtPlaces, awayCandidates, personOf, OFFSCREEN_SYSTEM, OFFSCREEN_SCHEMA, offscreenUser, parseOffscreen, offscreenChanges, leftAt, backFrom, EXIT_SYSTEM, EXIT_SCHEMA, exitUser, exitFrom, RETURN_SYSTEM, RETURN_SCHEMA, returnUser } from './cast-pure.js';
+import { presentPeople, directedPeople, directorUser, DIRECTOR_SYSTEM, DIRECTOR_SCHEMA, parseDirectorAll, validateDirector, validateComes, applyCastChanges, describeCastChange, appearAtPlaces, awayCandidates, personOf, OFFSCREEN_SYSTEM, OFFSCREEN_SCHEMA, offscreenUser, parseOffscreen, offscreenChanges, leftAt, backFrom, EXIT_SYSTEM, EXIT_SCHEMA, exitUser, exitFrom, RETURN_SYSTEM, RETURN_SCHEMA, returnUser, personNow, SEED_SYSTEM, SEED_SCHEMA, seedUser, seedSugs, withSug, runningCasts } from './cast-pure.js';
 
 const SKIP_TYPES = new Set(['quiet', 'swipe', 'regenerate', 'continue', 'impersonate']);
 /** How many recent messages the director reads (newest last). */
@@ -116,7 +116,7 @@ export async function runDirector(chatMessages, type, signal) {
     if (!all.length) return applied;
     saveLiveState(applyCastChanges(L.board, L.state, all, at, { who: 'director' }));
     // a notice when plans or wants change, someone learned something, left or came (thoughts stay quiet, in the Cast tab)
-    for (const ch of all.filter(c => c.field === 'plans' || c.field === 'wants' || (c.field === 'knows' && !c.add?.offscreen) || c.field === 'here' || c.field === 'offscreen')) {
+    for (const ch of all.filter(c => c.field === 'plans' || c.field === 'wants' || (c.field === 'knows' && !c.add?.offscreen) || c.field === 'here' || c.field === 'offscreen' || c.field === 'tieSug')) {   // ✨ a suggested tie: a notice, or it goes unseen (2026-11-03)
         if (ch.field === 'plans' && !ch.added?.length && !ch.ended?.length) continue;   // only reworded
         notice(L.board, ch);
     }
@@ -161,6 +161,43 @@ export async function askOffscreen(castId, personId) {
     const ch = await writeOffscreen(castId, personId, { from: leftAt(L.state, cast, p), to: turnIndex(getContext()?.chat), who: 'asked' });
     if (!ch) { try { toastr.info(`No answer about ${escapeHtml(p.name)} this time — try again.`, 'Cast'); } catch { /* noop */ } return null; }
     return ch[0].to?.at?.(-1)?.text ?? null;
+}
+
+/**
+ * ✨ Suggest ties (Miinthe, 2026-11-03 — smart ties round 1): starting ties for one person from their card, their lore and
+ * the recent messages, put up as suggestions (✓ / ✕ in the Cast tab). One call per press, never by itself (her rule:
+ * no new automatic calls). Returns how many came, or null when it could not ask.
+ */
+export async function suggestTies(castId, personId) {
+    const L = live();
+    const cast = L?.board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
+    if (!p) return null;
+    const conn = resolveConnectionConfig('storyTracker');
+    if (conn.mode !== 'profile' || !conn.profileId) { try { toastr.info('Suggest ties uses the story helper\'s connection: DeepLore settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
+    const ctx = getContext();
+    const targets = [...runningCasts(L.board, L.state).flatMap(c => (c.people || []).map(x => x.name)).filter(n => n.toLowerCase() !== p.name.toLowerCase()), ctx?.groupId ? '' : (ctx?.name2 || ''), ctx?.name1 || ''].filter((v, k, a) => v && a.indexOf(v) === k);
+    const now = personNow(L.state, cast, p);
+    const lore = (p.entries || []).filter(t => (p.kinds || {})[t] !== 'judge').map(t => entryText(t)).filter(Boolean).join('\n\n');
+    const messages = (ctx?.chat || []).filter(m => m && !m.is_system && typeof m.mes === 'string' && m.mes.trim()).slice(-DIRECTOR_WINDOW).map(m => ({ name: m.name, mes: m.mes }));
+    const chat0 = openChatId();
+    let sugs = [];
+    try {
+        const r = await callAI(SEED_SYSTEM, seedUser({ name: p.name, card: cardText(p), lore, messages, targets, ties: now.ties }), { ...conn, timeout: Math.max(Number(conn.timeout) || 0, DIRECTOR_TIMEOUT), maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'storyTracker', skipThrottle: true, jsonSchema: SEED_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.4 });
+        sugs = seedSugs(r?.text, { targets, now });
+        if (!sugs.length) console.debug('[DLE] suggest ties: nothing usable in', String(r?.text ?? '').slice(0, 400));
+    } catch (err) {
+        // bug hunt 2026-11-03: a failed call ended "Thinking…" without a word
+        if (err?.name !== 'AbortError') { console.warn('[DLE] cast suggest ties failed:', err?.message || err); try { toastr.warning(`Couldn't get suggestions for ${escapeHtml(p.name)} — the story helper's model didn't answer. Try again.`, 'Cast'); } catch { /* noop */ } }
+        return null;
+    }
+    if (openChatId() !== chat0) return null;
+    if (!sugs.length) return 0;
+    const L2 = live(); if (!L2) return null;
+    const now2 = personNow(L2.state, cast, p);
+    let list = now2.tieSug;
+    for (const x of sugs) list = withSug(list, x);
+    saveLiveState(applyCastChanges(L2.board, L2.state, [{ kind: 'cast', col: castId, person: personId, field: 'tieSug', from: now2.tieSug, to: list, said: sugs.map(x => `${x.to}: ${x.w}`), who: 'asked' }], turnIndex(ctx?.chat), { who: 'asked' }));
+    return sugs.length;
 }
 
 /**

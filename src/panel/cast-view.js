@@ -19,10 +19,10 @@ import * as K from '../kit/kit.js';
 import { live, saveLiveState, notifyLive, sceneAway, setSceneAway } from '../board-live.js';
 import { boardStore, putBoard } from '../board-store.js';
 import { BOARD_KEY } from '../storyboard-pure.js';
-import { runningCasts, personNow, handChange, HOW_WORDS, MAX_PLANS, appearsOf, oddsOf, castLines } from '../cast-pure.js';
+import { runningCasts, personNow, handChange, handChanges, HOW_WORDS, MAX_PLANS, appearsOf, oddsOf, castLines, withTie, turnDown } from '../cast-pure.js';
 import { SPEAKS_WORDS, speaksOf, moveItem, addItem, setText, isMine } from '../cast-voice-pure.js';
 import { speakAs, cannotSpeak, npcSpeaking } from '../cast-voice.js';
-import { askOffscreen } from '../cast.js';
+import { askOffscreen, suggestTies } from '../cast.js';
 import { getQueue, setQueue, runQueue, stopQueue, queueRunning, queueStopping, getSuggestions, setSuggestions, resetRound, addStaying, removeFromRound, inRound, ownHere, writingAs, setWritingAs } from '../cast-queue.js';
 import { turnIndex } from '../turn-index.js';
 import { useCastView } from '../cast-tab.js';
@@ -319,7 +319,8 @@ function peopleFold(L, people, q, present) {
     }
     if (grid.children.length) body.push(grid);
     else if (!openTile) body.push(el('div', 'dle-cv-none', 'Everyone is in this round.'));
-    const f = K.fold({ title: 'People', summary: `Present: ${present}`, open: folds.people, body, onToggle: v => { folds.people = v; if (!v && sel) { sel = null; draw(); } } });   // closing People lets go of the opened person (Miinthe, 2026-10-16)
+    // everyone in the scene, {{user}} and the main character too (Miinthe 2026-11-03: "Present: 1" with 3 people there looked wrong)
+    const f = K.fold({ title: 'People', summary: `Present: ${present + (away.user ? 0 : 1) + (mainCard && !away.main ? 1 : 0)}`, open: folds.people, body, onToggle: v => { folds.people = v; if (!v && sel) { sel = null; draw(); } } });   // closing People lets go of the opened person (Miinthe, 2026-10-16)
     f.classList.add('dle-cv-people');
     return f;
 }
@@ -327,11 +328,14 @@ function peopleFold(L, people, q, present) {
 // ── Ties (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 5) ─────────────────────
 // How each Cast person feels about the others, the main character and {{user}}: a few words, ↗ warming / ↘ cooling.
 // The director writes them when the scene shows it; tap a line for the quote; ✎ edit · 📌 the AI leaves it · ✕ remove.
+// Smart ties (Miinthe, 2026-11-03): ✨ suggestions wait for ✓ / ✕ (the director's, or ✨ Suggest ties — one call per press);
+// tapping a tie also shows its story, the feelings it had before.
 const openQuote = new Set();
+const seeding = new Set();          // ✨ Suggest ties waiting for its answer
 function tiesFold(L, people) {
     const body = [];
     const targets = x => [...people.filter(y => y.k !== x.k).map(y => y.p.name), mainName(), userName()].filter((v, k, a) => v && a.indexOf(v) === k);
-    let count = 0;
+    let count = 0, sugCount = 0;
     for (const x of people) {
         const { c, p, k, n } = x, veiled = !!p.hidden && !peek.has(k);
         const sec = el('div', 'dle-cv-ties');
@@ -351,7 +355,7 @@ function tiesFold(L, people) {
                 const ed = K.iconButton({ icon: 'edit', title: 'Edit this tie', onClick: () => {
                     const i = el('input', 'dk-field'); i.value = t.w; i.setAttribute('aria-label', `How ${p.name} feels about ${t.to}`);
                     let done = false;
-                    const save = () => { if (done) return; done = true; const v = i.value.trim(); i.blur(); if (v && v !== t.w) set(n.ties.map((y, m) => (m === j ? { ...y, w: v, pin: true } : y))); setTimeout(render, 0); };
+                    const save = () => { if (done) return; done = true; const v = i.value.trim(); i.blur(); if (v && v !== t.w) set(withTie(n.ties, { ...t, w: v, tr: '', q: '', i: null, pin: true })); setTimeout(render, 0); };
                     i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') { done = true; i.blur(); setTimeout(render, 0); } });
                     i.addEventListener('blur', save);
                     line.replaceWith(i); i.focus(); i.select();
@@ -361,9 +365,39 @@ function tiesFold(L, people) {
                 const rm = K.iconButton({ icon: 'close', title: 'Remove this tie', onClick: () => set(n.ties.filter((_, m) => m !== j)) });
                 r.append(line, ed, pin, rm);
                 sec.append(r);
-                if (openQuote.has(`${k}|${t.to}`)) sec.append(el('div', 'dle-cv-tq', t.q ? `“${esc(t.q)}”${t.i != null ? ` · #${t.i}` : ''}` : 'Set by hand.'));
+                if (openQuote.has(`${k}|${t.to}`)) {
+                    const q = el('div', 'dle-cv-tq', t.q ? `“${esc(t.q)}”${t.i != null ? ` · #${t.i}` : ''}` : 'Set by hand.');
+                    // its story (2026-11-03): what it was before, oldest first — "strangers (#12) → friendly (#30) → now"
+                    if (t.h?.length) q.prepend(el('div', 'dle-cv-th', `<span class="dle-cv-mini">Before:</span> ${t.h.map(x => `<span title="${x.q ? esc(`“${x.q}”`) : 'set by hand'}">${esc(x.w)}${x.i != null ? ` <span class="dle-cv-mini">#${x.i}</span>` : ''}</span>`).join(' → ')} → <b>now</b>`));
+                    sec.append(q);
+                }
             });
-            if (!n.ties.length) sec.append(el('div', 'dle-cv-none', 'No ties yet.'));
+            // ✨ suggested ties, waiting for ✓ / ✕ (2026-11-03)
+            n.tieSug.forEach(t => {
+                sugCount++;
+                const r = el('div', 'dle-cv-tie sug');
+                const line = el('button', 'dle-cv-tiel'); line.type = 'button';
+                line.innerHTML = `<span class="dle-cv-sugm" aria-hidden="true">✨</span> → <span class="${t.to === userName() ? 'dle-cv-tu' : t.to === mainName() ? 'dle-cv-tm' : ''}">${esc(t.to)}</span>: <b>${esc(t.w)}</b>${t.tr ? ` <span class="dle-cv-tr ${t.tr}" title="${t.tr === 'up' ? 'warming' : 'cooling'}">${t.tr === 'up' ? '↗' : '↘'}</span>` : ''}`;
+                line.title = 'Suggested — tap for where it comes from';
+                line.setAttribute('aria-label', `Suggested: ${p.name} toward ${t.to}: ${t.w}`);
+                const id = `${k}|sug|${t.to}`;
+                line.addEventListener('click', () => { if (openQuote.has(id)) openQuote.delete(id); else openQuote.add(id); draw(); });
+                const rest = n.tieSug.filter(y => y.to !== t.to);
+                const yes = K.iconButton({ icon: 'check', title: `Keep it: ${p.name} → ${t.to}: ${t.w}`, onClick: () => {
+                    const L2 = live(); if (!L2) return;
+                    const { src: _src, why: _why, ...tie } = t;
+                    saveLiveState(handChanges(L2.board, L2.state, c.id, p.id, { ties: withTie(n.ties, { ...tie, pin: false }), tieSug: rest }, turnIndex(getContext()?.chat)));
+                } });
+                const no = K.iconButton({ icon: 'close', title: 'No — and don\'t suggest it again', onClick: () => {
+                    const L2 = live(); if (!L2) return;
+                    saveLiveState(handChanges(L2.board, L2.state, c.id, p.id, { tieSug: rest, tieNo: turnDown(n.tieNo, t) }, turnIndex(getContext()?.chat)));
+                } });
+                r.append(line, yes, no);
+                sec.append(r);
+                if (openQuote.has(id)) sec.append(el('div', 'dle-cv-tq', [t.why ? esc(t.why) : '', t.q ? `“${esc(t.q)}”${t.i != null ? ` · #${t.i}` : ''}` : ''].filter(Boolean).join('<br>') || (t.src === 'seed' ? 'From ✨ Suggest ties.' : 'From the scene.')));
+            });
+            if (!n.ties.length && !n.tieSug.length) sec.append(el('div', 'dle-cv-none', 'No ties yet.'));
+            const tools = el('div', 'dle-cv-tietools');
             const add = K.button({ label: 'Tie', icon: 'plus', kind: 'quiet' });
             add.classList.add('dle-cv-addtie');
             add.addEventListener('click', () => {
@@ -374,19 +408,30 @@ function tiesFold(L, people) {
                 let saved = false;
                 const save = () => { const v = i.value.trim(); if (!v || saved) return; saved = true; const list = n.ties.filter(y => y.to.toLowerCase() !== who.value.toLowerCase()); set([...list, { to: who.value, w: v, tr: '', q: '', i: null, pin: true }]); };
                 i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); i.blur(); } });
-                r.addEventListener('focusout', () => setTimeout(() => { if (r.contains(document.activeElement)) return; if (i.value.trim()) save(); else { r.remove(); add.hidden = false; } if (pending) render(); }));
-                r.append(who, i); add.hidden = true; add.before(r); i.focus();
+                r.addEventListener('focusout', () => setTimeout(() => { if (r.contains(document.activeElement)) return; if (i.value.trim()) save(); else { r.remove(); tools.hidden = false; } if (pending) render(); }));
+                r.append(who, i); tools.hidden = true; tools.before(r); i.focus();
             });
-            sec.append(add);
+            const busy = seeding.has(k);
+            const seed = K.button({ label: busy ? 'Thinking…' : 'Suggest', icon: 'wand', kind: 'quiet', title: `✨ Suggest ties for ${p.name} from their card, their lore and the recent chat — one AI call, you keep or drop each`, onClick: async () => {
+                if (seeding.has(k)) return;
+                seeding.add(k); draw();
+                let got = null;
+                try { got = await suggestTies(c.id, p.id); } finally { seeding.delete(k); }
+                if (got === 0) say(`No new ties to suggest for ${p.name}.`);
+                draw();
+            } });
+            seed.disabled = busy;
+            tools.append(add, seed);
+            sec.append(tools);
         }
         body.push(sec);
     }
     // what the writer gets this turn: ties of people in the scene only
     const told = castLines(L.board, L.state).filter(l => / feels: /.test(l));
     body.push(el('div', 'dle-cv-tiew', `<b>The writer gets</b> ${told.length ? told.map(esc).join(' ') : 'nothing: nobody in the scene has ties yet.'}`));
-    const f = K.fold({ title: 'Ties', summary: `${count} tie${count === 1 ? '' : 's'}`, open: folds.ties, body, onToggle: v => { folds.ties = v; } });
+    const f = K.fold({ title: 'Ties', summary: `${count} tie${count === 1 ? '' : 's'}${sugCount ? ` · ${sugCount} suggested` : ''}`, open: folds.ties, body, onToggle: v => { folds.ties = v; } });
     f.classList.add('dle-cv-tiesf');
-    f.title = 'How Cast people feel about each other, the main character and you. The director fills them in when the scene shows it.';
+    f.title = 'How Cast people feel about each other, the main character and you. The director notices them in the scene (on the board: ask me / write them / off); ✨ Suggest asks once for starting ties.';
     return f;
 }
 

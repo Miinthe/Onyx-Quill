@@ -156,6 +156,8 @@
 .dk-field:hover { border-color: var(--dk-line-strong); }
 .dk-field:focus { outline: none; border-color: var(--dk-accent); box-shadow: 0 0 0 2px var(--dk-accent-soft); }
 textarea.dk-field { resize: vertical; }
+/* a dropdown must look like one (Miinthe 2026-11-03: the + Tie picker showed one name and no arrow, so {{user}} and the main character in it went unseen) */
+select.dk-field { appearance: none; -webkit-appearance: none; padding-right: 20px !important; background-image: linear-gradient(45deg, transparent 50%, var(--dk-muted) 50%), linear-gradient(135deg, var(--dk-muted) 50%, transparent 50%); background-position: right 10px center, right 6px center; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; cursor: pointer; }
 .dk-field::placeholder { color: var(--dk-muted); opacity: .8; }
 .dk-labeled { display: flex; flex-direction: column; gap: 4px; font-size: var(--dk-fs); }
 .dk-labeled > span { color: var(--dk-muted); }

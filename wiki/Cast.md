@@ -57,9 +57,14 @@ Tap a person to open them:
 
 How each Cast person feels about the others, the main character and your persona: a few words, no meters. For example "Jun → {{user}}: distrusts, but follows anyway ↗". ↗ means warming, ↘ cooling. The main character and your persona's own story stays on the board; ties are always a Cast person's feelings.
 
-- The Cast's director writes them as part of its usual pass (no extra AI call), only when the newest messages show a feeling, and always with the line that shows it. **Tap a tie** to see that line and the message number.
-- ✎ edits a tie, 📌 pins it (the AI leaves a pinned tie alone), ✕ removes it, **+ Tie** adds one by hand (pinned).
-- At most 3 new ties a turn and 8 per person; a hidden person's ties stay veiled until you Peek.
+- **The director notices them** as part of its usual pass (no extra AI call), only when the newest messages show a feeling, and always with the line that shows it. What it does with them is set per Cast on the board, under the Cast's **Options › Ties the director notices**:
+  - **ask me** (the default): they arrive as ✨ suggestions in the Ties list, with a notice. ✓ keeps one as a tie, ✕ turns it down, and a turned-down tie is never suggested again.
+  - **write them**: they go straight in, as before.
+  - **off**: the director leaves ties alone; only yours and ✨ Suggest.
+- **✨ Suggest** (under each person) asks once for starting ties, read from their character card, their lore entries and the recent chat. It costs one AI call per press, on the story helper's connection, and never runs by itself. Each suggestion says where it comes from (tap it); you keep or drop each one.
+- **Tap a tie** to see the line it came from and the message number, and its story: the feelings it had before ("Before: strangers → friendly → now", the last 5).
+- ✎ edits a tie (the old feeling goes into its story), 📌 pins it (the AI leaves a pinned tie alone), ✕ removes it, **+ Tie** adds one by hand (pinned). The **▾** list picks who it is toward: another Cast person, the main character or your persona.
+- At most 3 new ties a turn, 8 per person and 4 suggestions waiting per person; a hidden person's ties stay veiled until you Peek.
 - **The writer gets** (the box at the bottom): the ties of people in the scene only.
 
 ---

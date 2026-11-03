@@ -5683,6 +5683,7 @@ function castPanel(el, t) {
     ${card(`People (${t.people.length})`, `<div class="pills">${t.people.map((p, k) => `<span class="pill" data-pp="${k}">${p.hidden ? '🙈 ' : ''}${esc(p.name)}<button class="x" data-px="${k}" aria-label="Remove ${esc(p.name)}">✕</button></span>`).join('')}<button class="add" id="cp-add">+ person</button></div>`)}
     ${card('Options',
       line('The director', 'before each reply, a helper updates the plans and thoughts of the people in the scene — one call, only while someone is here', swH('cp-dir', t.director !== false), t.director !== false) + '<div class="sub"></div>'
+      + line('Ties the director notices', 'how people feel about each other, read from the scene · ask me: ✓ / ✕ in the Cast tab · write them: straight in · off: only yours and ✨ Suggest ties — no extra call either way', segH('cp-ties', [['suggest', 'ask me'], ['write', 'write them'], ['off', 'off']], t.ties || 'suggest'), t.director !== false, true) + '<div class="sub"></div>'
       + line('Pin their entries while they are here', 'their linked entries always reach the writer while they are in the scene', swH('cp-pin', t.pinHere !== false), t.pinHere !== false) + '<div class="sub"></div>'
       + line('Sets DeepLore\'s Characters Present', 'who is here becomes “Characters Present” in Filters (with the main character) — off: you set it by hand', swH('cp-present', !!t.setsPresent), !!t.setsPresent))}
     ${entryCard(t.keep ||= { entries: [], kinds: {} }, t, 'what counts as being in the scene').replace(/<h4>[^<]*<\/h4>/, '<h4>When is someone in the scene</h4>')}
@@ -5693,6 +5694,7 @@ function castPanel(el, t) {
   el.querySelectorAll('[data-px]').forEach(b => b.onclick = ev => { ev.stopPropagation(); sel = { kind: 'person', t: t.id, i: +b.dataset.px }; deleteSel(); });
   el.querySelector('#cp-add').onclick = () => addPersonDialog(t);
   wireSw(el, 'cp-dir', on => { t.director = on; touch(); });
+  wireSeg(el, 'cp-ties', v => { if (v === 'suggest') delete t.ties; else t.ties = v; touch(); });
   wireSw(el, 'cp-pin', on => { t.pinHere = on; touch(); });
   wireSw(el, 'cp-present', on => { t.setsPresent = on; touch(); });
   wireEntrySection(el, t.keep, t, 'what counts as being in the scene');

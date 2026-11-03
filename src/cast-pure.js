@@ -58,7 +58,55 @@ export function normTie(t) {
     if (!isObj(t)) return null;
     const to = String(t.to ?? '').trim().slice(0, 60), w = clip(t.w, 80);
     if (!to || !w) return null;
-    return { to, w, tr: t.tr === 'up' || t.tr === 'down' ? t.tr : '', q: t.q ? clip(t.q, 200) : '', i: Number.isFinite(t.i) ? t.i : null, pin: t.pin === true };
+    const h = arr(t.h).filter(x => isObj(x) && String(x.w ?? '').trim()).map(x => ({ w: clip(x.w, 80), i: Number.isFinite(x.i) ? x.i : null, q: x.q ? clip(x.q, 200) : '' })).slice(-TIE_HISTORY);
+    return { to, w, tr: t.tr === 'up' || t.tr === 'down' ? t.tr : '', q: t.q ? clip(t.q, 200) : '', i: Number.isFinite(t.i) ? t.i : null, pin: t.pin === true, ...(h.length ? { h } : {}) };
+}
+
+/**
+ * SMART TIES, round 1 (Miinthe, 2026-11-03: "we go with your suggestions" — starting ties on a button, suggestions instead
+ * of silent changes, a tie's story; her rule: no new automatic AI calls, button presses are fine).
+ * A tie's story: `h`, its earlier feelings, oldest first ({ w, i, q }), at most TIE_HISTORY — "strangers → friendly → now".
+ */
+export const TIE_HISTORY = 5;
+/** Suggested ties waiting for ✓ / ✕, per person (the oldest drop out). */
+export const MAX_TIE_SUGS = 4;
+/** Ties she said ✕ to (to + feeling): never suggested again, the newest this many kept. */
+export const MAX_TIE_NO = 12;
+/** What the director does with ties, per Cast on the board: 'suggest' (✓ / ✕ in the Cast tab — the default), 'write', 'off'. */
+export const tieModeOf = cast => (cast?.ties === 'write' || cast?.ties === 'off' ? cast.ties : 'suggest');
+/** A suggested tie: a tie plus where it came from — src 'scene' (the director, with its quote) or 'seed' (✨ Suggest ties) — and why. */
+export function normSug(t) {
+    const n = normTie({ ...t, pin: false, h: [] });
+    if (!n) return null;
+    delete n.pin;
+    return { ...n, src: t.src === 'seed' ? 'seed' : 'scene', why: t.why ? clip(t.why, 160) : '' };
+}
+const noKey = (to, w) => `${low(to)}|${low(w)}`;
+/**
+ * The ties with `tie` put in: one toward the same person is replaced and its feeling goes into the story (`h`); the
+ * newest first to be kept when there are too many (pinned ones always).
+ */
+export function withTie(list, tie) {
+    const out = arr(list).map(x => ({ ...x }));
+    const k = out.findIndex(x => low(x.to) === low(tie.to));
+    let h = [];
+    if (k !== -1) {
+        const old = out[k];
+        h = [...arr(old.h), ...(sameText(old.w, tie.w) ? [] : [{ w: old.w, i: old.i ?? null, q: old.q || '' }])].slice(-TIE_HISTORY);
+        out.splice(k, 1);
+    }
+    const nu = normTie({ ...tie, h });
+    if (!nu) return out;
+    out.push(nu);
+    while (out.length > MAX_TIES) { const j = out.findIndex(x => !x.pin); if (j === -1) break; out.splice(j, 1); }
+    return out;
+}
+/** Suggestions with `sug` put in (one per person it is about; the oldest drop out). */
+export function withSug(list, sug) {
+    const out = arr(list).filter(x => low(x.to) !== low(sug.to));
+    const n = normSug(sug);
+    if (n) out.push(n);
+    return out.slice(-MAX_TIE_SUGS);
 }
 
 // ── reading ─────────────────────────────────────────────────────────────────
@@ -77,6 +125,8 @@ export function personNow(st, cast, p) {
         thoughts: isObj(raw.thoughts) && raw.thoughts.text ? raw.thoughts : null,
         knows: arr(raw.knows),
         ties: arr(raw.ties).map(normTie).filter(Boolean),
+        tieSug: arr(raw.tieSug).map(normSug).filter(Boolean),
+        tieNo: arr(raw.tieNo).filter(x => typeof x === 'string'),
         // 🔇 muted in this chat (Miinthe 2026-10-18): they never step in, offer, turn up or get thought for by themselves —
         // + and Speak now still bring them in
         muted: raw.muted === true,
@@ -295,6 +345,50 @@ export function handChange(board, st, castId, personId, field, to, i) {
         : { field, from: now[field], to };
     return applyCastChanges(board, st, [{ ...ch, kind: 'cast', col: castId, person: personId, who: 'hand' }], i, { who: 'hand' });
 }
+
+/** Several fields set by hand at once (✓ on a suggested tie: the tie in, the suggestion out) — one save, each logged. */
+export function handChanges(board, st, castId, personId, fields, i) {
+    const cast = board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
+    if (!p) return st;
+    const now = personNow(st, cast, p);
+    const chs = Object.entries(fields).map(([field, to]) => ({ field, from: now[field], to, kind: 'cast', col: castId, person: personId, who: 'hand' }));
+    return applyCastChanges(board, st, chs, i, { who: 'hand' });
+}
+
+// ── ✨ Suggest ties (2026-11-03): starting ties for one person, on a button — one call per press, never by itself ──
+
+export const SEED_SYSTEM = `You suggest how one person in a roleplay feels about the other people in it, as starting points the author can accept or not. Read their character card, their lore and the recent messages. Suggest 2 to 4 ties, only toward people listed under PEOPLE, and only where the card, the lore or the messages give a reason — a history, a role, something said or done. Never invent a history nobody mentions; with no reason for someone, leave them out. Answer JSON only: {"ties": [{"to": a name from PEOPLE, "feel": a few plain words ("old friends, a little tense", "owes her a favor", "wary of him"), "why": one short sentence saying where it comes from ("her card: they grew up together")}]}.`;
+export const SEED_SCHEMA = { name: 'cast_seed_ties', strict: false, value: { type: 'object', properties: { ties: { type: 'array', items: { type: 'object', properties: { to: { type: 'string' }, feel: { type: 'string' }, why: { type: 'string' } }, required: ['to', 'feel', 'why'] } } }, required: ['ties'] } };
+
+/** The question for ✨ Suggest ties. `targets`: the names they may have ties to. */
+export function seedUser({ name, card = '', lore = '', messages = [], targets = [], ties = [] }) {
+    const lines = [`THE PERSON: ${name}`, `PEOPLE: ${targets.join(', ')}`];
+    if (ties.length) lines.push(`TIES THEY ALREADY HAVE (don't repeat): ${ties.map(t => `${t.to}: ${t.w}`).join('; ')}`);
+    if (card) lines.push('', `${name.toUpperCase()}'S CARD:`, clip(card, 3000));
+    if (lore) lines.push('', `${name.toUpperCase()}'S LORE:`, clip(lore, 3000));
+    if (messages.length) lines.push('', 'RECENT MESSAGES (oldest first):', ...messages.map(m => `${m.name}: ${clip(m.mes, 600)}`));
+    return lines.join('\n');
+}
+
+/** The checked answer of ✨ Suggest ties: suggestions to known people, none she already has or turned down. */
+export function seedSugs(text, { targets = [], now = { ties: [], tieSug: [], tieNo: [] } } = {}) {
+    let raw = null;
+    try { raw = JSON.parse(String(text ?? '').replace(/^[^{]*/, '').replace(/[^}]*$/, '')); } catch { return []; }
+    const out = [];
+    for (const t of arr(raw?.ties).slice(0, 4)) {
+        const want = low(t?.to), to = targets.find(nm => low(nm) === want) || targets.find(nm => low(nm).split(/\s+/)[0] === want.split(/\s+/)[0]);
+        const w = clip(t?.feel, 80);
+        if (!to || !w || out.some(x => low(x.to) === low(to))) continue;
+        if (arr(now.ties).some(x => low(x.to) === low(to) && sameText(x.w, w))) continue;
+        if (arr(now.tieNo).includes(noKey(to, w))) continue;
+        const n = normSug({ to, w, src: 'seed', why: t?.why });
+        if (n) out.push(n);
+    }
+    return out;
+}
+
+/** ✕ on a suggestion: remembered so it is not suggested again. */
+export const turnDown = (tieNo, sug) => [...arr(tieNo).filter(x => x !== noKey(sug.to, sug.w)), noKey(sug.to, sug.w)].slice(-MAX_TIE_NO);
 
 // ── appearing (step 2, 2026-10-13): at their places, and when a plan sends them looking ──
 
@@ -622,10 +716,13 @@ export function validateDirector(people, board, st, messages = [], { mainName = 
             changes.push(...k.changes.map(c => ({ ...c, who: 'director' })));
             rejected.push(...k.rejected);
         }
-        // ties (2026-11-02): to someone the story has, shown by a word-for-word line; a pinned one stays as Miinthe set it
-        if (arr(d?.ties).length) {
+        // ties (2026-11-02): to someone the story has, shown by a word-for-word line; a pinned one stays as Miinthe set it.
+        // Smart ties (2026-11-03): the Cast's tie mode — 'suggest' puts them up for ✓ / ✕, 'write' writes them, 'off' ignores them
+        const mode = tieModeOf(cast);
+        if (arr(d?.ties).length && mode !== 'off') {
             const names = [...runningCasts(board, st).flatMap(c2 => arr(c2.people).map(x => x.name)).filter(nm => low(nm) !== low(p.name)), mainName, userName].filter(Boolean);
-            const list = now.ties.map(x => ({ ...x })), said = [];
+            let list = now.ties.map(x => ({ ...x })), sugs = now.tieSug.map(x => ({ ...x }));
+            const said = [];
             let firstQuote = null;
             for (const t of arr(d.ties).slice(0, TIES_PER_TURN)) {
                 const want = low(t?.to), to = names.find(nm => low(nm) === want) || names.find(nm => low(nm).split(/\s+/)[0] === want.split(/\s+/)[0]);
@@ -638,16 +735,25 @@ export function validateDirector(people, board, st, messages = [], { mainName = 
                 const tr = TREND[low(t?.trend)] || '';
                 if (old && sameText(old.w, w) && !tr) continue;
                 const tie = { to, w, tr, q: clip(quote, 200), i: Number.isFinite(messages[mi]?._i) ? messages[mi]._i : null, pin: false };
-                // an updated tie moves to the end: it is new news — the trim below drops the oldest first (bug hunt
-                // 2026-11-03: an update kept its old place and was dropped in the same turn, its change line still shown)
-                if (old) list.splice(list.indexOf(old), 1);
-                list.push(tie);
+                if (mode === 'suggest') {
+                    if (now.tieNo.includes(noKey(to, w))) continue;                                           // she said ✕ to it
+                    const waiting = sugs.find(x => low(x.to) === low(to));
+                    if (waiting && sameText(waiting.w, w)) continue;                                         // already waiting
+                    sugs = withSug(sugs, { ...tie, src: 'scene', why: clip(d?.why, 160) });
+                } else {
+                    // an updated tie moves to the end: it is new news — the trim drops the oldest first (bug hunt
+                    // 2026-11-03: an update kept its old place and was dropped in the same turn, its change line still shown)
+                    list = withTie(list, tie);
+                }
                 said.push(`${to}: ${w}`); firstQuote ||= quote;
             }
-            // the newest ones kept when there are too many (pinned ones always)
-            while (list.length > MAX_TIES) { const k = list.findIndex(x => !x.pin); if (k === -1) break; list.splice(k, 1); }
-            const kept = said.filter(x => list.some(t => x.startsWith(`${t.to}: `)));
-            if (kept.length) changes.push({ ...base, field: 'ties', from: now.ties, to: list, said: kept, quote: firstQuote });
+            if (mode === 'suggest') {
+                const kept = said.filter(x => sugs.some(t => x.startsWith(`${t.to}: `)));
+                if (kept.length) changes.push({ ...base, field: 'tieSug', from: now.tieSug, to: sugs, said: kept, quote: firstQuote });
+            } else {
+                const kept = said.filter(x => list.some(t => x.startsWith(`${t.to}: `)));
+                if (kept.length) changes.push({ ...base, field: 'ties', from: now.ties, to: list, said: kept, quote: firstQuote });
+            }
         }
         const learned = arr(d?.learned).filter(x => low(x?.kind) !== 'everyday');
         if (arr(d?.learned).length > learned.length) rejected.push({ what: `${p.name}: ${arr(d.learned).length - learned.length} everyday fact(s)`, reason: 'everyday — not worth knowing' });
@@ -715,7 +821,7 @@ export function describeCastChange(board, ch) {
     if (ch.field === 'here' && ch.to && ch.arrive === 'plan') return `${n} comes looking for you${p?.hidden ? '' : ch.reason ? ` — ${ch.reason}` : ''}`;
     if (ch.field === 'here') return `${n} ${ch.to ? 'comes into the scene' : 'leaves the scene'}`;
     if (ch.field === 'muted') return ch.to ? `${n} is muted: quiet until you bring them in` : `${n} is unmuted`;
-    if (p?.hidden) return ch.field === 'ties' ? `${n}'s feelings about someone changed (hidden)` : ch.field === 'offscreen' ? `${n} was busy while away (hidden)` : ch.field === 'knows' ? `${n} learned something (hidden)` : ch.field === 'plans' ? `${n}'s plans changed (hidden)` : ch.field === 'wants' ? `${n} wants something new (hidden)` : `${n} (hidden)`;
+    if (p?.hidden) return ch.field === 'ties' || ch.field === 'tieSug' ? `${n}'s feelings about someone changed (hidden)` : ch.field === 'offscreen' ? `${n} was busy while away (hidden)` : ch.field === 'knows' ? `${n} learned something (hidden)` : ch.field === 'plans' ? `${n}'s plans changed (hidden)` : ch.field === 'wants' ? `${n} wants something new (hidden)` : `${n} (hidden)`;
     if (ch.field === 'knows') return `${n} now knows: ${ch.add?.fact} (${HOW_WORDS[ch.add?.how] || ch.add?.how})`;
     if (ch.field === 'plans') {
         const parts = [...arr(ch.added).map(t => `new plan: ${t}`), ...arr(ch.ended).map(e => `${e.status === 'done' ? 'done' : 'dropped'}: ${e.text}`)];
@@ -724,6 +830,8 @@ export function describeCastChange(board, ch) {
     if (ch.field === 'wants') return `${n} now wants: ${ch.to}`;
     if (ch.field === 'thoughts') return `${n} thinks: ${ch.to?.text ?? ''}`;
     if (ch.field === 'ties') return arr(ch.said).length ? `${n} → ${arr(ch.said).join(' · ')}` : `${n}: ties changed`;
+    if (ch.field === 'tieSug') return arr(ch.said).length ? `${n} → suggested: ${arr(ch.said).join(' · ')}` : `${n}: suggested ties changed`;
+    if (ch.field === 'tieNo') return `${n}: a suggested tie turned down`;
     if (ch.field === 'offscreen') return `${n}, while away: ${arr(ch.to).at(-1)?.text ?? ''}`;
     return n;
 }
