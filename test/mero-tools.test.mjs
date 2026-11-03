@@ -7,10 +7,10 @@
  * Run: npm run test:mero-tools
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { TOOL_DEFS, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS } from '../src/mero-tools-pure.js';
+import { TOOL_DEFS, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS, passingError } from '../src/mero-tools-pure.js';
 import { normTalk, versionsOf, showVersion, addVersion, dropSwipes, parseMeroAnswer, askedForPitch } from '../src/mero-pure.js';
 import { talkPitchPrompt, parseTalkPitches, editedPitch, normPitch } from '../src/pitches-pure.js';
-import { normAsk, normAsks, takeAsks, askAnswerText, answerAsks, ASK_FORMAT } from '../src/ask-pure.js';
+import { normAsk, normAsks, takeAsks, askAnswerText, answerAsks, ASK_FORMAT, withAsked } from '../src/ask-pure.js';
 import { parseBoardMero, buildBoardMeroPrompt } from '../src/board-mero-pure.js';
 
 const LORE = [
@@ -244,6 +244,29 @@ test('the board\'s Mero asks with the same cards', () => {
 test('"Anything to add?" goes along with the answers', () => {
     const done = answerAsks([{ q: 'Who?', opts: ['Kettle', 'Spoon'] }], [{ picked: [0] }]);
     assertEqual([askAnswerText(done), 'and it happens at night'].filter(Boolean).join('\n\n'), 'Who? → Kettle\n\nand it happens at night');
+});
+
+test('a passing hiccup keeps lookups on; a refusal of tools switches them off', () => {
+    for (const e of [new Error('Request timed out (120s)'), new Error('Too Many Requests'), { message: 'x', status: 503 }, new Error('Failed to fetch'), new Error('Bad gateway')]) assert(passingError(e), String(e.message));
+    for (const e of [new Error('Bad Request'), { message: 'x', status: 400 }, new Error('Jinja template error: tools not supported')]) assert(!passingError(e), String(e.message));
+});
+
+test('a lookup line names each entry once', () => {
+    const twice = [{ title: 'Kettle', keys: ['kettle'], content: 'a kettle' }, { title: 'Kettle', keys: ['kettle'], content: 'the kettle again' }];
+    const r = runTool('search_lore', { query: 'kettle' }, { entries: twice });
+    assertEqual(r.got.split('·').length, 1);
+});
+
+test('Mero\'s question cards stay visible to her later answers and to Pitch', () => {
+    assertEqual(withAsked({ t: 'A quick question first:', asks: [{ q: 'Who finds it?' }, { q: 'At night?' }] }), 'A quick question first:\n[asked: Who finds it? · At night?]');
+    assertEqual(withAsked({ t: 'plain' }), 'plain');
+    const talk = { title: 'x', msgs: [{ who: 'miinthe', t: 'plan it' }, { who: 'mero', t: 'One thing:', asks: [{ q: 'Who finds the sugar?', opts: ['a', 'b'] }] }] };
+    const first = talkPitchPrompt(talk, {}, { ask: true });
+    assert(first.user.includes('[asked: Who finds the sugar?]'));
+    assertEqual((first.system.match(/Answer with JSON only/g) || []).length, 1);
+    assert(first.system.includes('{"open": [question, …], "items": ['));
+    const later = talkPitchPrompt(talk, {}, { ask: false });
+    assert(!later.system.includes('"open": [question'));
 });
 
 summary('mero-tools');

@@ -156,7 +156,7 @@ export function renderPeople(body, w) {
 
 // ── acting ──────────────────────────────────────────────────────────────────
 
-export function onFeedClick(e, body, w, section) {
+export function onFeedClick(e, body, w) {
     if (handleAsClick(e)) return true;
     const q = s => e.target.closest(s);
     if (q('[data-ff]')) { filter = q('[data-ff]').dataset.ff; H.render(); return true; }
@@ -244,8 +244,10 @@ function postMenu(anchor, w) {
 }
 async function again(w, p) {
     rewriting.add(p.id); H.render();
+    const cid = H.chat();
     try {
         const v = await writeAgain(w, p);
+        if (H.chat() !== cid) return;   // another chat opened meanwhile (hunt 2: a branch has the same post and got the rewrite)
         if (v) H.save(updatePost(H.store(), p.id, x => addPostVersion(x, v)));
         else K.notify({ title: 'World', text: 'Nothing came back. Try again.', tone: 'warn' });
     } catch (err) { K.notify({ title: 'World', text: `It couldn't be written again: ${err?.message || err}`, tone: 'warn' }); }
@@ -451,7 +453,8 @@ export async function pulse(w) {
         ...peopleOf(L.board, L.state).map(x => { const now = personNow(L.state, x.cast, x.p); return { key: x.key, name: x.p.name, knows: now.knows.map(k => k.fact), plans: now.plans.map(p => p.text), wants: now.wants || '' }; })]
         .filter(t => !w.people?.[t.key]?.muted);
     const msgs = H.store().records.filter(r => r.kind === 'msg');
-    const open = [...new Set(msgs.filter(m => m.from !== USER && m.to !== USER && !m.answered && li - m.i <= 8).map(m => `${nameOf(m.from)} ↔ ${nameOf(m.to)}`))];
+    // two-person conversations only (hunt 2: group lines were listed as "Kettle ↔ Kitchen crew")
+    const open = [...new Set(msgs.filter(m => !m.group && m.from !== USER && m.to !== USER && !m.answered && li - m.i <= 8).map(m => `${nameOf(m.from)} ↔ ${nameOf(m.to)}`))];
     feedBusy = true;
     const cid = H.chat();
     try {

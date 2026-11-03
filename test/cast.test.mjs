@@ -177,6 +177,20 @@ test('the director is told only about the people in the scene: card, wants, plan
     assertEqual(parseDirector('nonsense'), []);
 });
 
+test('🔇 muted, or a cast with the director off: never thought for, never sent out — even when someone else brings the director in (bug hunt 2026-11-03)', () => {
+    const b = board();
+    const st = withHere(b, ['kettle', 'gerry'], { gerry: { muted: true } });
+    const u = directorUser(b, st, [{ name: 'Miinthe', mes: 'Hello, both of you.' }]);
+    assert(u.includes('## Kettle') && !u.includes('## Gerry'), 'only Kettle is directed');
+    assert(u.includes('Also in the scene, but not yours to direct (leave them out): Gerry the Caterpillar'));
+    const r = validateDirector([{ person: 'Kettle', thoughts: 'x', plans: [] }, { person: 'Gerry', thoughts: 'quiet thoughts', plans: [{ id: null, text: 'nap', status: 'new' }], leave: true, speak: true }], b, st);
+    assertEqual(r.changes.map(c => c.person), ['kettle']);
+    assertEqual([r.leaves, r.wishes], [[], []]);
+    const off = board({}, { director: false });
+    assertEqual(directorUser(off, withHere(off, ['kettle']), [{ name: 'Miinthe', mes: 'Hi.' }]), '', 'director off for the cast: nothing to ask');
+    assertEqual(validateDirector([{ person: 'Kettle', thoughts: 'x', plans: [] }], off, withHere(off, ['kettle'])).changes, []);
+});
+
 test('walking out: the director says who wants to leave — never someone who only gets called in', () => {
     const b = board({ gerry: { speaks: 'call' } });
     const st = withHere(b, ['kettle', 'gerry']);

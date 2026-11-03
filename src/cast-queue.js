@@ -53,6 +53,12 @@ let sentDirect = false;         // you pressed Send: after the main reply, the A
 let regenSeq = null;            // the AI turns of a regenerated round, in their order — played again in that order
 let replay = false;             // that replay is running (cast.js: no new arrivals or speakers meanwhile)
 export const replaying = () => replay;
+/**
+ * The open chat — a round belongs to the chat it started in (bug hunt 2026-11-03: switching chats between two turns, or
+ * while the helper thought, let the round go on in the new chat — its turns, its queue, the helper's moves written there).
+ */
+const chatNow = () => getContext()?.getCurrentChatId?.() ?? null;
+let roundAbort = null;          // the round's helper calls: stopped by a chat change
 
 export function onQueueChanged(cb) { listeners.add(cb); return () => listeners.delete(cb); }
 const notify = () => { for (const cb of listeners) { try { cb(); } catch { /* noop */ } } };
@@ -177,7 +183,7 @@ function nextRound() {
     }
     setQueue(q);
 }
-async function sitOuts() {
+async function sitOuts(signal) {
     const L = live(); if (!L) return;
     const hand = getStay();
     const free = getQueue().filter(x => !isMine(x) && (x.kind === 'main' || (x.kind === 'npc' && x.stay && !x.why && !x.exit && !x.text && !writesOwn(x) && !hand.some(h => h.cast === x.cast && h.person === x.person))));
@@ -189,10 +195,10 @@ async function sitOuts() {
     const messages = (getContext()?.chat || []).filter(m => m && !m.is_system && typeof m.mes === 'string').slice(-6).map(m => ({ name: m.name, mes: m.mes }));
     let speak = null;
     try {
-        const r = await callAI(SPEAKS_SYSTEM, speaksUser({ messages, people }), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: SPEAKS_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
+        const r = await callAI(SPEAKS_SYSTEM, speaksUser({ messages, people }), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: SPEAKS_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0, signal });
         speak = parseSpeaks(r?.text, people.map(p => p.name));
-    } catch (err) { console.warn('[DLE] cast round: who speaks — skipped:', err?.message || err); }
-    if (!speak) return;   // unreadable: everyone speaks, as before
+    } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast round: who speaks — skipped:', err?.message || err); }
+    if (!speak || signal?.aborted) return;   // unreadable: everyone speaks, as before
     const quiet = people.filter(p => !speak.includes(p.name));
     if (!quiet.length) return;
     // never an empty AI half
@@ -216,8 +222,9 @@ function writesOwn(x) {
     return speaksOf(p) === 'mine';
 }
 
-async function aiItem(x) {
+async function aiItem(x, gone = () => false) {
     await waitForIdle();
+    if (gone()) return false;
     const why = cannotSpeak();
     if (why) { try { toastr.info(why, 'Cast'); } catch { /* noop */ } return false; }
     if (x.kind === 'main') {
@@ -225,7 +232,9 @@ async function aiItem(x) {
         const before = getContext().chat.length;
         const giveBack = holdBox();
         try { await getContext().generate('normal'); } catch (err) { console.warn('[DLE] cast round: the main reply failed:', err?.message || err); giveBack(); return false; }
-        await done;
+        // generate() is back once the reply is written; a generation that never got going (no connection) sends no
+        // GENERATION_ENDED — waiting for it alone hung the round and kept what she had typed (bug hunt 2026-11-03)
+        await Promise.race([done, new Promise(r => setTimeout(r, 1500))]);
         giveBack();
         if (getContext().chat.length <= before || getContext().chat.at(-1)?.is_user) return false;   // no reply came: stop the round
         takeWishes();
@@ -241,48 +250,59 @@ export async function runQueue() {
     if (running) return;
     running = true; stopAsked = false; notify();
     let finished = false;
+    const chat0 = chatNow(), gone = () => chatNow() !== chat0;
+    const ac = roundAbort = new AbortController();
     try {
         const box = document.getElementById('send_textarea');
         // your half: check first that your message is there (nothing is posted otherwise)
         const q0 = getQueue();
         for (const x of q0.filter(isMine)) {
-            if (stopAsked) return;
+            if (stopAsked || gone()) return;
             takeOff(x);
             if (x.kind === 'you') {
                 const text = box?.value?.trim();
                 if (!text) continue;   // nothing in the chat box: only your NPC lines this round (Miinthe: "I cannot just speak as Kettle")
                 box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true }));
-                await sendMessageAsUser(text, '');
+                try { await sendMessageAsUser(text, ''); } catch (err) {   // not sent: her text goes back in the box, the round stops
+                    console.warn('[DLE] cast round: your message could not be sent:', err?.message || err);
+                    box.value = text + (box.value ? ` ${box.value}` : ''); box.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
                 try { await getContext().saveChat?.(); } catch { /* noop */ }
             } else await postAs(x.cast, x.person, x.text);
         }
         // who actually has something to add now (Miinthe, 2026-10-19: "they should sit out at times … that counts for the
         // main character"): those in the round only because they step in by themselves, and the main character, may sit
         // this one out. People you added by hand, lines you wrote, someone saying goodbye or who asked to speak stay in.
-        if (!replay && !stopAsked) await sitOuts();
+        if (!replay && !stopAsked && !gone()) await sitOuts(ac.signal);
         // no main character this round: DeepLore's helper and director only run inside his reply, so they run now —
         // who came or left, what people know, plans, who wants to leave (live 2026-10-14: with the Toaster out, Spoon
         // never got to think, so she never left)
-        if (!getQueue().some(y => y.kind === 'main')) {
+        if (!gone() && !getQueue().some(y => y.kind === 'main')) {
             await waitForIdle();
             const chat = getContext()?.chat || [];
-            try { await runAutoTrack(chat, 'normal'); } catch (err) { console.warn('[DLE] cast round: the helper skipped:', err?.message || err); }
-            try { await runDirector(chat, 'normal'); } catch (err) { console.warn('[DLE] cast round: the director skipped:', err?.message || err); }
+            if (!gone()) { try { await runAutoTrack(chat, 'normal', ac.signal); } catch (err) { console.warn('[DLE] cast round: the helper skipped:', err?.message || err); } }
+            if (!gone()) { try { await runDirector(chat, 'normal', ac.signal); } catch (err) { console.warn('[DLE] cast round: the director skipped:', err?.message || err); } }
+            if (gone()) return;
             takeWishes();
         }
         // the AI half, in its order
         for (let guard = 0; guard < MAX_TURNS; guard++) {
-            if (stopAsked) return;
+            if (stopAsked || gone()) return;
             const x = getQueue().find(y => !isMine(y));
             if (!x) break;
             takeOff(x);
             if (writesOwn(x)) continue;   // ✍️ you write their lines: left empty, they say nothing this round
-            if (!await aiItem(x)) return;
+            if (!await aiItem(x, gone)) return;
         }
-        finished = true;
+        finished = !gone();
     } finally {
-        running = false; stopAsked = false; notify();
-        if (finished) nextRound();
+        if (roundAbort === ac) roundAbort = null;
+        // another chat now: the chat change already reset the round (and a round there may be running) — touch nothing
+        if (!gone()) {
+            running = false; stopAsked = false; notify();
+            if (finished) nextRound();
+        }
     }
 }
 
@@ -305,9 +325,10 @@ export function takeOverSend(type, abort) {
     if (!last?.is_user) return false;                          // only a send with your message
     try { abort(true); } catch { return false; }
     sentDirect = false;
-    const text = last.mes;
+    const text = last.mes, chat0 = chatNow();
     setTimeout(async () => {
         await waitForIdle();
+        if (chatNow() !== chat0) return;   // she went to another chat meanwhile: her message stays where she sent it
         const now = getContext(), m = now.chat?.at(-1);
         if (m?.is_user && m.mes === text) { try { await now.deleteLastMessage(); } catch { /* noop */ } }
         const box = document.getElementById('send_textarea');
@@ -338,31 +359,34 @@ export function takeOverRegen(type, abort) {
     if (type !== 'regenerate' || !regenSeq || running) return false;
     const seq = regenSeq; regenSeq = null;
     try { abort(true); } catch { return false; }
+    const chat0 = chatNow();
     setTimeout(async () => {
         await waitForIdle();
+        if (chatNow() !== chat0) return;   // another chat now: the old chat's round is not replayed here
         const L = live(); if (!L) return;
         const keep = getQueue().filter(x => x.kind === 'npc' && isMine(x));   // lines you wrote for the next round wait
         setQueue(normalizeQueue(seq.map((x, k) => ({ id: `r${k}${Date.now().toString(36)}`, ...x })), L.board));
         replay = true;
         try { await runQueue(); } finally { replay = false; }
-        if (keep.length) setQueue(normalizeQueue([...keep, ...getQueue()], L.board));
+        if (keep.length && chatNow() === chat0) setQueue(normalizeQueue([...keep, ...getQueue()], L.board));
     }, 300);
     return true;
 }
 
 /** After a plain Send and the main reply: the AI half's NPCs, in order; then the next round. */
-async function runAfterSend() {
-    if (running) return;
+async function runAfterSend(chat0 = chatNow()) {
+    if (running || chatNow() !== chat0) return;
     running = true; notify();
+    const gone = () => chatNow() !== chat0;
     try {
         takeWishes();   // the main reply is there: who steps in after it
         for (let guard = 0; guard < MAX_TURNS; guard++) {
             const x = aiNpcs(getQueue())[0];
-            if (!x || stopAsked) break;
+            if (!x || stopAsked || gone()) break;
             takeOff(x);
-            if (!await aiItem(x)) break;
+            if (!await aiItem(x, gone)) break;
         }
-    } finally { running = false; stopAsked = false; notify(); nextRound(); }
+    } finally { if (!gone()) { running = false; stopAsked = false; notify(); nextRound(); } }
 }
 
 function wire() {
@@ -378,7 +402,7 @@ function wire() {
         if (type && !['normal', 'regenerate', undefined].includes(type)) return;
         const m = getContext()?.chat?.[Number(id)];
         if (!m || m.is_user || npcOfMessage(m)) return;
-        if (sentDirect) { sentDirect = false; setTimeout(() => runAfterSend(), 600); return; }
+        if (sentDirect) { sentDirect = false; const chat0 = chatNow(); setTimeout(() => runAfterSend(chat0), 600); return; }
         takeWishes();
     });
     // regenerate, like a group chat: the whole round after your last line is redone — in the same order (takeOverRegen)
@@ -395,7 +419,7 @@ function wire() {
         sentDirect = false;
         if (running) { stopAsked = true; try { toastr.info('Stopped — the rest of this round is skipped. Press ▶ Go to play it again.', 'Cast'); } catch { /* noop */ } notify(); }
     });
-    es.on(et.CHAT_CHANGED, () => { running = false; stopAsked = false; sentDirect = false; regenSeq = null; notify(); });
+    es.on(et.CHAT_CHANGED, () => { roundAbort?.abort(); roundAbort = null; running = false; stopAsked = false; sentDirect = false; regenSeq = null; notify(); });
 }
 
 /** Wire the hooks (index.js at start-up). */

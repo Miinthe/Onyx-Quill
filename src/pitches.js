@@ -154,7 +154,8 @@ export async function pitchFromTalk(talkId, { ask = true } = {}) {
     const c = pitchContext(null), names = castNames();
     // what this talk already made (in this chat): Mero writes those again only when the talk changed them
     const ids = new Set(t.msgs.flatMap(m => m.pitchIds || []));
-    const already = store().list.filter(p => ids.has(p.id)).map(p => (p.plan ? `${p.plan.goal || p.text} (plan: ${p.plan.beats.map(b => b.text).join(' → ')})` : p.text));
+    // with what the card parked as still open — else a second press asks about it again (bug hunt 2026-11-03)
+    const already = store().list.filter(p => ids.has(p.id)).map(p => (p.plan ? `${p.plan.goal || p.text} (plan: ${p.plan.beats.map(b => b.text).join(' → ')})` : p.text) + (p.open ? ` — Still open (parked on the card, don't ask again): ${p.open}` : ''));
     const { system, user } = talkPitchPrompt(t, { persona: c.persona, character: c.character, user: c.user, names: c.names, board: c.board, castNames: names, donts: c.donts, replies: c.replies, already }, { ask });
     busy = 'talk'; changed();
     try {

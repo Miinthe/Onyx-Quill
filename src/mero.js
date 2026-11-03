@@ -29,7 +29,7 @@ import {
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
     askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
-import { TOOL_DEFS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep } from './mero-tools-pure.js';
+import { TOOL_DEFS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep, passingError } from './mero-tools-pure.js';
 import { callWithTools, toolsPossible } from './ai/tool-call.js';
 import { askAnswerText, answerAsks } from './ask-pure.js';
 import { boardSummary, namedTrackers, trackerDetails, nowLine } from './mero-board-pure.js';
@@ -156,6 +156,13 @@ const writerSinks = new Set();
 /** fn(type) → [{ kind: 'dont'|'steer'|'fact', text }] for the reply being written. */
 export function addWriterSink(fn) { writerSinks.add(fn); return () => writerSinks.delete(fn); }
 
+/** Only the sinks' lines (guided swipe, slop guard) for the reply being written — an NPC's own voice gets these too (cast-voice.js). */
+export function writerSinkLines(type = 'normal') {
+    const out = [];
+    for (const fn of writerSinks) { try { out.push(...(fn(type) || [])); } catch (err) { console.warn('[DLE] writer line skipped:', err?.message || err); } }
+    return out;
+}
+
 /** The `[Author's notes]` block for the reply being written now (index.js, every generation). */
 export function authorNotesForGeneration(type = 'normal') {
     try {
@@ -183,7 +190,11 @@ export const INITIATIVE = [
 const lastTold = new Map();   // talk id → the sections Mero was sent for her last answer (ⓘ)
 export const meroTold = id => lastTold.get(id) || null;
 let busy = 0;
+const busyIn = new Map();   // talk id → Mero answers running there — "typing…" shows only in that talk (bug hunt 2026-11-03)
+const busyOn = id => { busy++; busyIn.set(id, (busyIn.get(id) || 0) + 1); };
+const busyOff = id => { busy--; const n = (busyIn.get(id) || 1) - 1; if (n > 0) busyIn.set(id, n); else busyIn.delete(id); };
 export const meroBusy = () => busy > 0;
+export const meroBusyIn = () => [...busyIn.keys()];
 
 /** What Mero is told: the board, the latest replies, the lore the writer got, the cards, notes. */
 function contextPackage() {
@@ -378,8 +389,8 @@ async function answerFor(t, history, said, { opener = false } = {}) {
     if (!conn.profileId) throw new Error('Mero has no connection yet — DeepLore settings → AI Connections → Mero ☆ → pick a profile');
     // "Mero is typing…" from the first moment — the board summary below can take up to 20 seconds, and nothing showing
     // then looked like she was broken (Miinthe, 2026-11-02)
-    busy++; changed();
-    try { return await answerInner(t, history, said, { opener }, conn); } finally { busy--; changed(); }
+    busyOn(t.id); changed();
+    try { return await answerInner(t, history, said, { opener }, conn); } finally { busyOff(t.id); changed(); }
 }
 async function answerInner(t, history, said, { opener }, conn) {
     // her summary of the board, written now if the board changed since (quiet, one call; mero-map.js)
@@ -420,7 +431,10 @@ async function answerInner(t, history, said, { opener }, conn) {
             catch (err) {
                 // a profile that can't do tools: remember it for this session, answer the old way
                 console.warn('[DLE] Mero: lookups failed, answering without them:', err?.message || err);
-                if (!steps.length) { noTools.add(conn.profileId); nolook = true; }   // e.g. LM Studio: the model's template can't take tools
+                // e.g. LM Studio: the model's template can't take tools (or, after a few lookups, tool results) — but a
+                // timeout / rate limit / server hiccup is not that: lookups stay on for the next answer
+                if (!passingError(err)) noTools.add(conn.profileId);
+                nolook = !steps.length;
                 steps.length = 0; raw = '';
             }
         }
@@ -493,6 +507,9 @@ const riiBefore = (t, k) => { for (let i = k - 1; i >= 0; i--) if (t.msgs[i].who
 export async function redoMero(talkId, k) {
     const t = findTalk(talkId); if (!t) return { ok: false, error: 'no such talk' };
     if (k !== lastMeroIndex(t) || t.msgs.slice(k + 1).some(m => m.who === 'miinthe')) return { ok: false, error: 'Only her last answer can be redone.' };
+    // only an answer to Miinthe's message — a write-up, Pitch's questions, "nothing to pitch" follow Mero's own words (bug hunt 2026-11-03)
+    const mk = t.msgs[k];
+    if (t.msgs[k - 1]?.who !== 'miinthe' || (mk.pitchIds || []).length || mk.pcheck) return { ok: false, error: 'This one can\'t be answered again — it isn\'t an answer to your message.' };
     const history = t.msgs.slice(0, k);
     if (!history.some(m => m.who === 'miinthe')) return { ok: false, error: 'She spoke first here — there is nothing to answer again.' };
     try {
@@ -534,6 +551,7 @@ export async function editMsg(talkId, k, text, { again = false } = {}) {
     m.t = said;
     if (!again) { t.updated = new Date().toISOString(); saveStore(); return { ok: true }; }
     if (t.msgs.slice(k + 1).some(x => x.who === 'miinthe')) { saveStore(); return { ok: false, error: 'Only your last message can be asked again.' }; }
+    if (busyIn.has(t.id)) { saveStore(); return { ok: false, error: 'Mero is still answering — your words are saved; ask again when she is done.' }; }
     t.msgs.splice(k + 1);
     dropSwipes(t.msgs);
     t.updated = new Date().toISOString(); saveStore();
@@ -552,6 +570,9 @@ export async function editMsg(talkId, k, text, { again = false } = {}) {
 export function noteTalkPitches(talkId, { text, pitchNos = [], planNos = [], pitchIds = [], asks = [] } = {}) {
     const t = findTalk(talkId); if (!t) return;
     dropSwipes(t.msgs);
+    // a new write-up or new questions: older question sets she never answered close (bug hunt 2026-11-03: two live
+    // "Skip, write it as is" sets showed at once)
+    for (const m of t.msgs) if (m.who === 'mero' && Array.isArray(m.asks) && m.asks.length && !m.asks.some(a => a.done)) m.asks.forEach(a => { a.done = 'skipped'; });
     t.msgs.push({ who: 'mero', t: String(text || '…'), at: new Date().toISOString(), ...(pitchNos.length ? { pitchNos, planNos, pitchIds } : {}), ...(asks.length ? { asks, pcheck: true } : {}) });
     t.updated = new Date().toISOString(); saveStore();
 }
@@ -635,7 +656,10 @@ export function routeOoc(chatMessages) {
     if (!found || !m?.is_user) return { onlyOoc: false };
     const sp = splitOoc(m.mes);
     if (!sp.said.length || m.extra?.deeplore_ooc_sent) return { onlyOoc: sp.onlyOoc };
-    try { m.extra = { ...(m.extra || {}), deeplore_ooc_sent: true }; } catch { /* noop */ }
+    // Hunt 2 (2026-11-03): SillyTavern hands the interceptor shallow COPIES of the messages — `extra` is still the stored
+    // message's own object. Replacing it (as this did) marked only the copy, so every swipe / regenerate sent the same
+    // [OOC] to Mero again; marking it in place keeps the mark on her message.
+    try { if (m.extra && typeof m.extra === 'object') m.extra.deeplore_ooc_sent = true; else m.extra = { deeplore_ooc_sent: true }; } catch { /* noop */ }
     let t = meroTalks().find(x => x.tag === 'fb' && x.state === 'open');
     if (!t) { t = newTalk('fb'); if (t) t.title = 'From the story box'; }
     if (t) void sendToMero(t.id, sp.said.map(x => `[OOC: ${x}]`).join('\n'));
@@ -723,7 +747,7 @@ async function gameLine(t, what, extra = {}) {
     const game = t.game, conn = resolveConnectionConfig('mero');
     let line = '';
     if (conn.profileId) {
-        busy++; changed();
+        busyOn(t.id); changed();
         try {
             const st = store().settings;
             const before = t.msgs.filter(m => m.who === 'mero').map(m => m.t);
@@ -731,7 +755,7 @@ async function gameLine(t, what, extra = {}) {
             const r = await callAI(system, user, { ...conn, maxTokens: Math.min(Number(conn.maxTokens) || 300, 300), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
             line = safeLine(r?.text, game, what);
         } catch (err) { console.warn('[DLE] Mero (games): no line, a ready-made one instead:', err?.message || err); }
-        finally { busy--; }
+        finally { busyOff(t.id); }
     }
     // a guess made meanwhile asked for a newer line: this one is old news (the end of a game always speaks)
     if (lineAsked.get(t.id) !== ask && !['won', 'lost'].includes(what)) { changed(); return; }

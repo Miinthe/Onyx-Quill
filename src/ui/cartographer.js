@@ -138,8 +138,11 @@ export function showSourcesPopup(sources, opts = {}) {
     html += buildCopyButton(plainLines.join('\n'));
     html += `<h3>${escapeHtml(trf('dle_carto_title', trPlural('dle_carto_entry_count', sources.length), totalTokens))}</h3>`;
 
-    if (diff.added.length > 0 || diff.removed.length > 0) {
+    if (diff.added.length > 0 || diff.removed.length > 0 || diff.same?.length > 0) {
         html += `<div class="dle-card dle-text-sm">`;
+        if (diff.same?.length > 0) {
+            html += `<span>${escapeHtml(trf('dle_carto_diff_same', diff.same.length))}</span> <span class="dle-muted">${diff.same.map(s => escapeHtml(s.title)).join(', ')}</span><br>`;
+        }
         if (diff.added.length > 0) {
             const addedLabels = diff.added.map(s => `${escapeHtml(s.title)} ${formatMatchReason(s.matchedBy)}`);
             html += `<span class="dle-success">${escapeHtml(trf('dle_carto_diff_added', diff.added.length))}</span> <span class="dle-muted">${addedLabels.join(', ')}</span><br>`;

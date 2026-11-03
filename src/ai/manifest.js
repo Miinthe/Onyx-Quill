@@ -66,7 +66,7 @@ export function buildCandidateManifest(candidates, excludeBootstrap = false, set
                 const includeList = Array.isArray(s.aiManifestIncludeFields) ? s.aiManifestIncludeFields : [];
                 const includeSet = includeList.length > 0 ? new Set(includeList) : null;
                 const pairs = Object.entries(entry.customFields)
-                    .filter(([k, v]) => v != null && v !== '' && (!Array.isArray(v) || v.length > 0))
+                    .filter(([, v]) => v != null && v !== '' && (!Array.isArray(v) || v.length > 0))
                     .filter(([k]) => {
                         if (includeSet) return includeSet.has(k);
                         return !WI_PARITY_FIELD_SET.has(k);

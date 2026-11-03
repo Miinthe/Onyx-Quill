@@ -145,6 +145,16 @@ test('buildPerEntry: missing stage arrays tolerated', () => {
 
 section('Verdict — diffVerdicts');
 
+test('diffVerdicts: entries sent again are listed as same (Miinthe, 2026-11-03)', () => {
+    const prev = { injectedSources: [{ title: 'A' }, { title: 'B' }] };
+    const cur = { injectedSources: [{ title: 'B' }, { title: 'C' }] };
+    const d = diffVerdicts(cur, prev);
+    assertEqual(d.same.map(s => s.title), ['B']);
+    assertEqual(d.added.map(s => s.title), ['C']);
+    assertEqual(d.removed.map(s => s.title), ['A']);
+    assertEqual(diffVerdicts(cur, null).same, []);
+});
+
 test('diffVerdicts: previous null → empty diff', () => {
     const cur = buildVerdict({ trace: null, injectedSources: [{ title: 'A', vaultSource: '' }], chatId: null, msgIdx: 0, epoch: 0, lockEpoch: 0 });
     const { added, removed } = diffVerdicts(cur, null);

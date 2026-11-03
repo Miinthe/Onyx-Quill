@@ -8,25 +8,29 @@ You can switch it off in **Settings › Interface › The bar › Show the DeepL
 
 ## The buttons (PC)
 
-From left to right:
+From left to right (the buttons that open something first, in a fixed order; the actions after the divider):
 
 - **📖 DeepLore menu**: Open (or Close) the side panel, **Open the board**, **Write a new entry…**, **Move an entry…**, and **Setup and settings**.
 - **Side-panel button**: opens the [[Drawer|side panel]]; press it again to close it. It also carries Mero's signal (see below).
-- **Your starred Quick Replies**: one button each. A star belongs to its set, so it only shows in chats where that set is on.
-- **All quick replies**: the sets SillyTavern has on here: global ones, this chat's and this character's (only those set to visible). Press ☆ next to one to put it on the bar (★ takes it off again). With no set on here, it says so.
 - **My notes**: your own notes, never sent to the AI (switch it off in Settings › Interface › The bar). See [[My Notes]].
+- **🌐 World**: only where the board's world layer is on.
+- **⚡ All quick replies**: opens every Quick Reply of the sets SillyTavern has on here (global ones, this chat's and this character's) as an extra row on top of the bar, in the bar's own look; tap one to run it. **📌** at the end of the row turns it into the chooser: which ones sit on the bar (☆ / ★) and in what order; **Done** goes back. With no set on here, it says so.
+- **Your starred Quick Replies**: right after ⚡, one button each. A star belongs to its set, so it only shows in chats where that set is on.
 - **Re-evaluate and swipe**: undo what the newest reply changed on the board, ask again, and write a new swipe.
 - **🧭 Guided swipe**: swipe the newest reply with a direction ("less flowery, he's colder here"). The button holds the direction: while one is in force it is lit with a dot and its tooltip shows the direction; press it for **Swipe again with it**, **Change the direction…**, **Keep it as a 🧭 note** (it then stays until you switch it off, in [[Mero]]'s notes) or **Drop it**. It clears itself when you send your next message.
+- **✓ Fix spelling**: corrects typos, capitals, punctuation and small grammar slips in what you typed, without changing your words or style. *Actions*, "speech", line breaks, {{macros}} and [OOC: …] stay exactly as they were. A notice above the message box lists what changed ("beleive → believe"), with **Undo**. It makes one small call with [[Mero]]'s AI. If the correction would change too much, your text stays as it was and the notice says why. Nothing is sent: you still press Send.
 - **Simple send**: post what you typed as your message, without asking for a reply.
 - **Keep as a draft**: put what you typed aside. Press it again to put it back. The draft follows you to other devices. If the box already has other text, DeepLore asks before it swaps the two, so nothing you typed is lost.
 
 While DeepLore is choosing lore, its working line shows on the bar too.
 
-**Floating icon drawer:** other extensions' floating icons (like CarrotKernel's 🥕) can wait in a small, low tab on top of the bar, at its left end, instead of floating over your chat. Tap the tab and they open in a row just above the bar, icons only (hover for the name). Tap one to use it as usual; hold it (or right-click on a PC) for that extension's own options. A number on an icon shows on the tab too. It's off at first: **Settings › Interface › The bar › Floating icon drawer** (off, phone only, always), and **Icons in the drawer › Choose…** has a switch per icon; switched off, an icon floats where it was before.
+**Floating icon drawer:** other extensions' floating icons (like CarrotKernel's 🥕) can wait in a small, low tab on top of the bar, at its left end, instead of floating over your chat. Tap the tab and they open as an extra row right on top of the bar, the size of the bar's own buttons (hover for the name); ▼ at its end closes it. Tap one to use it as usual; hold it (or right-click on a PC) for that extension's own options. A number on an icon shows on the tab too. It's off at first: **Settings › Interface › The bar › Floating icon drawer** (off, phone only, always), and **Icons in the drawer › Choose…** has a switch per icon; switched off, an icon floats where it was before.
+
+**Switching buttons off:** Settings › Interface › The bar has a switch for each action button (Re-evaluate, Guided swipe, Fix spelling, Simple send, Keep as a draft). A button switched off is gone from the bar; on a phone, ⋯ goes away when all of them are off.
 
 ## On a phone
 
-The bar has five buttons: 📖, the side-panel button, **Quick replies**, **My notes**, and **More** (re-evaluate, guided swipe, simple send, draft). Quick replies and More take over the bar's row when you tap them; **‹** goes back. While a swipe direction is set, More shows a dot. Pull the handle up for more room.
+The bar has five buttons: 📖, the side-panel button, **Quick replies**, **My notes**, and **More** (re-evaluate, guided swipe, fix spelling, simple send, draft). Quick replies and More take over the bar's row when you tap them; **‹** goes back. While a swipe direction is set, More shows a dot. Pull the handle up for more room.
 
 ---
 

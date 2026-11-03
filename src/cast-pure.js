@@ -90,6 +90,13 @@ export function presentPeople(board, st) {
     return out;
 }
 
+/**
+ * The people the director thinks for: in the scene, their cast's director not switched off, not 🔇 muted (a muted
+ * person "gets no director thoughts" — `18 overhaul checklist.md`; bug hunt 2026-11-03: they were thought for, and
+ * could be sent out with a goodbye, whenever someone else in the scene brought the director in).
+ */
+export const directedPeople = (board, st) => presentPeople(board, st).filter(x => x.cast.director !== false && !x.now.muted);
+
 /** Find a person by the name the helper used ("Kettle", "kettle", or the card's full name). */
 function findPerson(board, st, name) {
     const n = low(name);
@@ -487,7 +494,7 @@ export const DIRECTOR_SCHEMA = {
  * board as the writer sees it, `messages` → the newest messages ({ name, mes }).
  */
 export function directorUser(board, st, messages, { cardText = () => '', boardLines = [], placeName = () => null, nowI = null, mainName = '', userName = '' } = {}) {
-    const here = presentPeople(board, st), away = awayCandidates(board, st, nowI);
+    const here = directedPeople(board, st), away = awayCandidates(board, st, nowI);
     if (!here.length && !away.length) return '';
     const lines = [];
     if (mainName || userName) lines.push(`THE MAIN CHARACTER: ${mainName || '(none)'} · THE AUTHOR'S CHARACTER: ${userName || '(unnamed)'}`, '');
@@ -518,6 +525,8 @@ export function directorUser(board, st, messages, { cardText = () => '', boardLi
     }
     const others = runningCasts(board, st).flatMap(c => arr(c.people).filter(p => !personNow(st, c, p).here && !away.some(a => a.p.id === p.id)).map(p => p.name));
     if (others.length) lines.push('', `Not in the scene (leave them out): ${others.join(', ')}`);
+    const quiet = presentPeople(board, st).filter(x => !here.some(h => h.cast.id === x.cast.id && h.p.id === x.p.id)).map(x => x.p.name);
+    if (quiet.length) lines.push('', `Also in the scene, but not yours to direct (leave them out): ${quiet.join(', ')}`);
     if (arr(boardLines).length) lines.push('', 'WHERE THE STORY STANDS', ...boardLines);
     lines.push('', 'NEWEST MESSAGES (oldest first)');
     for (const m of arr(messages)) lines.push(`${m.name || (m.is_user ? 'User' : 'Character')}: ${String(m.mes || '').trim()}`);
@@ -569,7 +578,7 @@ export function validateComes(away, board, st, nowI = null) {
  */
 export function validateDirector(people, board, st, messages = [], { mainName = '', userName = '' } = {}) {
     const changes = [], rejected = [], wishes = [], leaves = [];   // wishes: who wants to speak after the reply; leaves: who wants to walk out (they say so first)
-    const here = presentPeople(board, st);
+    const here = directedPeople(board, st);
     const done = new Set();
     for (const d of arr(people)) {
         const f = here.find(x => low(x.p.name) === low(d?.person)) || here.find(x => low(x.p.name).split(/\s+/)[0] === low(d?.person).split(/\s+/)[0]);
@@ -629,12 +638,16 @@ export function validateDirector(people, board, st, messages = [], { mainName = 
                 const tr = TREND[low(t?.trend)] || '';
                 if (old && sameText(old.w, w) && !tr) continue;
                 const tie = { to, w, tr, q: clip(quote, 200), i: Number.isFinite(messages[mi]?._i) ? messages[mi]._i : null, pin: false };
-                if (old) Object.assign(old, tie); else list.push(tie);
+                // an updated tie moves to the end: it is new news — the trim below drops the oldest first (bug hunt
+                // 2026-11-03: an update kept its old place and was dropped in the same turn, its change line still shown)
+                if (old) list.splice(list.indexOf(old), 1);
+                list.push(tie);
                 said.push(`${to}: ${w}`); firstQuote ||= quote;
             }
             // the newest ones kept when there are too many (pinned ones always)
             while (list.length > MAX_TIES) { const k = list.findIndex(x => !x.pin); if (k === -1) break; list.splice(k, 1); }
-            if (said.length) changes.push({ ...base, field: 'ties', from: now.ties, to: list, said, quote: firstQuote });
+            const kept = said.filter(x => list.some(t => x.startsWith(`${t.to}: `)));
+            if (kept.length) changes.push({ ...base, field: 'ties', from: now.ties, to: list, said: kept, quote: firstQuote });
         }
         const learned = arr(d?.learned).filter(x => low(x?.kind) !== 'everyday');
         if (arr(d?.learned).length > learned.length) rejected.push({ what: `${p.name}: ${arr(d.learned).length - learned.length} everyday fact(s)`, reason: 'everyday — not worth knowing' });

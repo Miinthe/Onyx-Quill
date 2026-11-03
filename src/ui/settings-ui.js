@@ -33,17 +33,9 @@ import { matchEntries } from '../pipeline/pipeline.js';
 import { setupSyncPolling } from '../vault/sync.js';
 import { abortWith } from '../diagnostics/interceptors.js';
 import { showNotebookPopup, showBrowsePopup, showAiNotepadPopup } from './popups.js';
-import {
-    resolvePromptOrOverride,
-    loadPrompts as loadDlePrompts,
-    getPromptStatusGrid as getDlePromptStatusGrid,
-} from '../prompts/prompt-store.js';
-import {
-    bindPromptsTabHandlers,
-    renderPromptsGrid,
-    buildPromptsConnection,
-    bulkDeletePromptsThroughCage,
-} from './prompts-tab.js';
+import { resolvePromptOrOverride } from '../prompts/prompt-store.js';
+import { bindPromptsTabHandlers, renderPromptsGrid } from './prompts-tab.js';
+import { RESET_WARNING, resetToDefaults } from '../settings/settings-pure.js';
 import { DLE_PROMPTS_DEFAULT_DIR } from '../prompts/prompt-api.js';
 import { runHealthCheck } from './diagnostics.js';
 import { DLE_COMMANDS } from './commands-admin.js';
@@ -1681,95 +1673,16 @@ export async function scanForVaultFlow() {
 /** Reset every DeepLore setting (asks first); vaults, AI connections, prompt presets and analytics stay. → true when reset. */
 export async function resetAllSettingsFlow() {
     const settings = getSettings();
-    const confirmed = await callGenericPopup(
-        '<div style="text-align:center;"><p><strong>Reset all DeepLore settings to defaults?</strong></p><p>This cannot be undone. Your vault connections and AI connection profiles will be preserved.</p></div>',
-        POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel' },
-    );
+    // Miinthe, 2026-11-03: "reset should not erase anything? reset should just put everything back to default, it should also
+    // warn you" — what stays is listed in the warning; what she made or connected is kept (settings-pure.js RESET_KEEPS).
+    // The old second step (delete her edited prompt files from the vault) is gone: the Prompts tab has its own reset.
+    const confirmed = await callGenericPopup(RESET_WARNING, POPUP_TYPE.CONFIRM, '', { okButton: 'Reset settings', cancelButton: 'Cancel' });
     if (!confirmed) return false;
-
-    // BUG-AUDIT-H21: preserve user-created data (promptPresets, analyticsData)
-    // alongside connections — wiping them on "reset settings" would be data loss.
-    const savedPromptPresets = JSON.parse(JSON.stringify(settings.promptPresets || {}));
-    const savedOwnPrompts = JSON.parse(JSON.stringify(settings.ownPrompts || []));   // her own prompt pieces are her writing (2026-10-17)
-    const savedAnalyticsData = JSON.parse(JSON.stringify(settings.analyticsData || {}));
-    const savedVaults = JSON.parse(JSON.stringify(settings.vaults || []));
-    const savedPort = settings.obsidianPort;
-    const savedKey = settings.obsidianApiKey;
-    const savedConnections = {
-        aiSearchConnectionMode: settings.aiSearchConnectionMode,
-        aiSearchProfileId: settings.aiSearchProfileId,
-        aiSearchProxyUrl: settings.aiSearchProxyUrl,
-        aiSearchModel: settings.aiSearchModel,
-        scribeConnectionMode: settings.scribeConnectionMode,
-        scribeProfileId: settings.scribeProfileId,
-        scribeProxyUrl: settings.scribeProxyUrl,
-        scribeModel: settings.scribeModel,
-        autoSuggestConnectionMode: settings.autoSuggestConnectionMode,
-        autoSuggestProfileId: settings.autoSuggestProfileId,
-        autoSuggestProxyUrl: settings.autoSuggestProxyUrl,
-        autoSuggestModel: settings.autoSuggestModel,
-        aiNotepadConnectionMode: settings.aiNotepadConnectionMode,
-        aiNotepadProfileId: settings.aiNotepadProfileId,
-        aiNotepadProxyUrl: settings.aiNotepadProxyUrl,
-        aiNotepadModel: settings.aiNotepadModel,
-        optimizeKeysConnectionMode: settings.optimizeKeysConnectionMode,
-        optimizeKeysProfileId: settings.optimizeKeysProfileId,
-        optimizeKeysProxyUrl: settings.optimizeKeysProxyUrl,
-        optimizeKeysModel: settings.optimizeKeysModel,
-        // overhaul step 4: the story helper's and Mero's pinned connections are AI connection profiles too
-        storyTrackerConnectionMode: settings.storyTrackerConnectionMode,
-        storyTrackerProfileId: settings.storyTrackerProfileId,
-        storyTrackerModel: settings.storyTrackerModel,
-        meroConnectionMode: settings.meroConnectionMode,
-        meroProfileId: settings.meroProfileId,
-        meroModel: settings.meroModel,
-    };
-
-    for (const [key, value] of Object.entries(defaultSettings)) {
-        settings[key] = (typeof value === 'object' && value !== null)
-            ? JSON.parse(JSON.stringify(value))
-            : value;
-    }
-
-    settings.vaults = savedVaults;
-    settings.promptPresets = savedPromptPresets;
-    settings.ownPrompts = savedOwnPrompts;
-    settings.analyticsData = savedAnalyticsData;
-    settings.obsidianPort = savedPort;
-    settings.obsidianApiKey = savedKey;
+    resetToDefaults(settings, defaultSettings);
     settings._vaultsMigrated = true;
-    Object.assign(settings, savedConnections);
-
     invalidateSettingsCache();
     saveSettingsDebounced();
-
-    // Q10b — vault prompt overrides are user-owned files, not extension
-    // settings. Settings reset leaves them untouched by default. If any
-    // exist, offer a second confirm to also bulk-delete them through the
-    // six-layer cage (mirrors the Prompts tab "Reset All Prompts" button).
-    const connection = buildPromptsConnection(settings);
-    if (connection) {
-        try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
-        const overrideKeys = getDlePromptStatusGrid().filter(r => r.source === 'vault').map(r => r.key);
-        if (overrideKeys.length > 0) {
-            const alsoClear = await callGenericPopup(
-                `<div style="text-align:center;"><p><strong>Also delete ${overrideKeys.length} customized prompt file(s) from your vault?</strong></p><p>Prompt files live in your Obsidian vault, not extension settings, so they survive Reset All Settings. Delete them too?</p><p>Each delete will pass through the six-layer safety cage.</p></div>`,
-                POPUP_TYPE.CONFIRM, '', { okButton: 'Delete prompt files', cancelButton: 'Keep prompt files' },
-            );
-            if (alsoClear) {
-                const { deleted, failures } = await bulkDeletePromptsThroughCage(connection, overrideKeys);
-                try { await loadDlePrompts(settings.aiPromptLocale, connection); } catch { /* non-fatal */ }
-                if (failures.length === 0) {
-                    toastr.success(`Deleted ${deleted} prompt file(s).`, 'DeepLore');
-                } else {
-                    toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'DeepLore');
-                    console.warn('[DLE prompts] reset-settings prompt cleanup failures:', failures);
-                }
-            }
-        }
-    }
-
-    toastr.success('All settings reset to defaults. Connections preserved.', 'DeepLore');
+    toastr.success('Settings are back to their defaults. Your connections, prompts, words and lists stayed.', 'DeepLore');
     return true;
 }
 

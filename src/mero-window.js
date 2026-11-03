@@ -14,7 +14,7 @@ import { resolveEntryVault, openObsidianUri } from './helpers.js';
 import { getTrackers } from './trackers.js';
 import { live } from './board-live.js';
 import {
-    onMeroChanged, meroWhere, meroTalks, meroNotes, meroSettings, meroBusy, meroTold, newTalk, updateTalk, deleteTalk,
+    onMeroChanged, meroWhere, meroTalks, meroNotes, meroSettings, meroBusy, meroBusyIn, meroTold, newTalk, updateTalk, deleteTalk,
     boardMapHere, setBoardMapHere, remakeBoardMapHere,
     addNote, updateNote, removeNote, keepCard, dropCard, redoWithNote, sendToMero, whereAreWe,
     meroGlow, seeGlow, pickContext, mentionList, mentionResolve, setMomentsAside, talkAboutMoments, meroConnectionName,
@@ -35,7 +35,7 @@ function load() {
     let trackers = [];
     try { trackers = [...getTrackers().map(t => t.name), ...(live()?.board.trackers || []).map(t => t.name)]; } catch { /* no board */ }
     return clone({
-        where: meroWhere(), talks: meroTalks(), notes: meroNotes(), settings: meroSettings(), busy: meroBusy(),
+        where: meroWhere(), talks: meroTalks(), notes: meroNotes(), settings: meroSettings(), busy: meroBusy(), busyIn: meroBusyIn(),
         connection: meroConnectionName(), trackers: [...new Set(trackers)], popped, working: meroWorking(), lastIndex: (getContext()?.chat || []).length - 1,
         requests: requestsHere(), holding: replyWaits(), looking: meroLooking(), glow: meroGlow(), pitches: P.pitchesView(),
         profiles: (extension_settings?.connectionManager?.profiles || []).map(p => ({ id: p.id, name: p.name || p.id })), profileId: getSettings().meroProfileId || '',

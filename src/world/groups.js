@@ -192,11 +192,16 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
         const later = [];
         can = can.filter(k => { const wt = replyWait({ ...nowOf(w, k), lastI: li }); if (wt) later.push({ k, wt }); return !wt; });
         let st = H.store();
-        for (const { k, wt } of later) st = addRecord(st, { kind: 'gwait', id: newId('gw'), group: g.id, msg: m.id, who: k, wait: wt, auto: true }, li);
+        // one wait per member and group: a second message moves it to the newest (hunt 2: two waits = two late answers)
+        for (const { k, wt } of later) {
+            const old = st.records.find(r => r.kind === 'gwait' && r.group === g.id && r.who === k);
+            st = old ? { ...st, records: st.records.map(r => (r === old ? { ...r, msg: m.id } : r)) } : addRecord(st, { kind: 'gwait', id: newId('gw'), group: g.id, msg: m.id, who: k, wait: wt, auto: true }, li);
+        }
         if (later.length) H.save(st);
     }
     if (!can.length || busy.has(g.id)) return;
     busy.add(g.id); H.render();
+    let seen = Number(m.n) || 0;   // the newest message the call saw (the follow-up below)
     try {
         const dm = discretionMap(w);   // who they never gossip about (built once)
         const people = can.map(k => {
@@ -204,7 +209,9 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
             const x = personByKey(L.board, k); const now = x ? personNow(L.state, x.cast, x.p) : null;
             return { key: k, name: nameOf(k), card: x ? cardText(x.p) : '', knows: now ? now.knows.map(f => f.fact) : [], quirks: w.people?.[k]?.quirks || '', discretion: dm.get(k) || '' };
         });
-        const thread = groupMsgs(H.store(), g.id).map(x => ({ who: nameOf(x.from), text: textOf(x) }));
+        const msgs = groupMsgs(H.store(), g.id);
+        seen = Math.max(seen, ...msgs.map(x => Number(x.n) || 0));
+        const thread = msgs.map(x => ({ who: nameOf(x.from), text: textOf(x) }));
         const pr = groupPrompt({ groupName: g.name, people, others: g.members.filter(k => !can.includes(k)).map(nameOf), thread, max: only ? 1 : groupMax(w.alive.pace), userName: nameOf(USER), alone: !!only });
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 700), caller: 'world', skipThrottle: true, jsonSchema: GROUP_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         if (window.__dleWorldDebug) console.log('[DLE] world group', g.name, r?.text);
@@ -214,30 +221,48 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
         for (const rep of replies) {
             await new Promise(res => setTimeout(res, 700 + Math.min(2500, rep.text.length * 25)));
             if (H.chat() !== cid) return;
-            H.save(addRecord(H.store(), { ...newMessage({ store: H.store(), from: rep.who.key, to: groupConv(g.id), text: rep.text, clock, i: li, look: 'phone', id: newId('w') }), conv: groupConv(g.id), group: g.id, alts: [rep.text], s: 0 }, li));
+            const s2 = addRecord(H.store(), { ...newMessage({ store: H.store(), from: rep.who.key, to: groupConv(g.id), text: rep.text, clock, i: li, look: 'phone', id: newId('w') }), conv: groupConv(g.id), group: g.id, alts: [rep.text], s: 0 }, li);
+            // they answered now: an older wait of theirs here is done (else they chimed in a second time later)
+            H.save({ ...s2, records: s2.records.filter(r => !(r.kind === 'gwait' && r.group === g.id && r.who === rep.who.key)) });
             H.render(); H.changed();
         }
     } catch (err) { console.warn('[DLE] world: group answer failed', err?.message || err); }
-    finally { busy.delete(g.id); H.render(); H.changed(); }
+    finally {
+        busy.delete(g.id); H.render(); H.changed();
+        // she wrote again while they answered: that message is answered now (hunt 2: it got no answer at all)
+        if (!only && !these && H.chat() === cid) {
+            const next = groupMsgs(H.store(), g.id).filter(x => x.mine && Number(x.n) > seen).at(-1);
+            if (next) answer(w, g, next);
+        }
+    }
 }
 
+// one run at a time (hunt 2: it runs several times after each reply — a second run answered the same wait again)
+let delivering = false;
 /** After the story moved on: members who were slow, busy or asleep may chime in now (one call each, they may pass). */
 export async function deliverGroups(w) {
-    if (!H || !w || w.paused) return;
-    const li = lastI(), st = H.store();
-    for (const x of st.records.filter(r => r.kind === 'gwait')) {
-        const g = groupsOf(st).find(y => y.id === x.group), m = st.records.find(r => r.kind === 'msg' && r.id === x.msg);
-        if (!g || !m || !g.members.includes(x.who)) { H.save({ ...H.store(), records: H.store().records.filter(r => r.id !== x.id) }); continue; }
-        if (w.people?.[x.who]?.muted || !waitOver(x.wait, { lastI: li, ...nowOf(w, x.who) })) continue;
-        H.save({ ...H.store(), records: H.store().records.filter(r => r.id !== x.id) });
-        await answer(w, g, m, { only: x.who });
-    }
+    if (!H || !w || w.paused || delivering) return;
+    delivering = true;
+    const li = lastI(), st = H.store(), cid = H.chat();
+    try {
+        for (const x of st.records.filter(r => r.kind === 'gwait')) {
+            if (H.chat() !== cid) return;   // another chat opened meanwhile: its groups are not these
+            if (!H.store().records.some(r => r.id === x.id)) continue;   // answered meanwhile (Answer now)
+            const g = groupsOf(st).find(y => y.id === x.group), m = st.records.find(r => r.kind === 'msg' && r.id === x.msg);
+            if (!g || !m || !g.members.includes(x.who)) { H.save({ ...H.store(), records: H.store().records.filter(r => r.id !== x.id) }); continue; }
+            if (w.people?.[x.who]?.muted || busy.has(g.id) || !waitOver(x.wait, { lastI: li, ...nowOf(w, x.who) })) continue;   // busy: next time
+            H.save({ ...H.store(), records: H.store().records.filter(r => r.id !== x.id) });
+            await answer(w, g, m, { only: x.who });
+        }
+    } finally { delivering = false; }
 }
 
 /** Answer now (Miinthe: "sometimes you just want to chat regardless"): everyone still waiting in this group may answer now, together. */
 async function nudge(w, g) {
     const st = H.store(), ws = st.records.filter(r => r.kind === 'gwait' && r.group === g.id);
     if (!ws.length) return;
+    // someone is still writing here: the waits stay (hunt 2: they were dropped, and nobody answered)
+    if (busy.has(g.id)) { K.notify({ title: 'World', text: 'Someone is still writing in this group. Try again in a moment.' }); return; }
     H.save({ ...st, records: st.records.filter(r => !ws.includes(r)) });
     const m = st.records.filter(r => r.kind === 'msg' && r.group === g.id).sort((a, b) => a.n - b.n).at(-1);
     if (m) await answer(w, g, m, { these: [...new Set(ws.map(x => x.who))] });

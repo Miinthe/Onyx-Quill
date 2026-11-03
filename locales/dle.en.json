@@ -302,6 +302,7 @@
   "dle_carto_click_to_expand": "click to expand",
   "dle_carto_diff_added": "+${0} new:",
   "dle_carto_diff_removed": "-${0} removed:",
+  "dle_carto_diff_same": "${0} same as last turn:",
   "dle_carto_entry_count_one": "${0} entry",
   "dle_carto_entry_count_other": "${0} entries",
   "dle_carto_footer_named": "Click entry names to open in Obsidian. Click entries to expand content preview.",

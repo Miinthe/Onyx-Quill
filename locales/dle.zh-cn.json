@@ -303,6 +303,7 @@
   "dle_carto_click_to_expand": "点击展开",
   "dle_carto_diff_added": "+${0} 新增：",
   "dle_carto_diff_removed": "-${0} 移除：",
+  "dle_carto_diff_same": "与上一轮相同 ${0} 条：",
   "dle_carto_entry_count_one": "${0} 个词条",
   "dle_carto_entry_count_other": "${0} 个词条",
   "dle_carto_footer_named": "点击词条名在 Obsidian 中打开。点击词条展开内容预览。",

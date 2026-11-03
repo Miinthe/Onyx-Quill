@@ -66,9 +66,11 @@ hookRumors(hooks);
 hookFeed({ ...hooks, goto: sec => { section = sec; render(); } });
 /** A tick for messages, then — with the same reason — for the feed (stage 4). */
 async function tick(w, trigger, moment = null) {
+    const cid = chatNow();   // each step checks: another chat opened meanwhile gets none of this one's (hunt 2)
     const reason = await maybeTick(w, trigger, moment);
-    if (!reason) return;
+    if (!reason || chatNow() !== cid) return;
     await feedTick(w, (REASON_WORDS[reason] || 'time has passed').replace('{{user}}', 'the player'));
+    if (chatNow() !== cid) return;
     // stage 5: then the rumors — a reply (or a big moment in it) may start one from the scene; word of mouth goes on
     rumorTick(w, { scene: trigger === 'reply' || trigger === 'moment' });
 }
@@ -254,7 +256,7 @@ function onClick(e) {
     const r = e.target.closest('[data-sec]');
     if (r) { if (section === r.dataset.sec && section === 'msgs') resetMessagesView(); section = r.dataset.sec; render(); return; }
     if (section === 'msgs' && e.target.closest('.dle-wd-body') && onMessagesClick(e, win.querySelector('.dle-wd-body'), worldHere())) return;
-    if (section !== 'msgs' && e.target.closest('.dle-wd-body') && onFeedClick(e, win.querySelector('.dle-wd-body'), worldHere(), section)) return;
+    if (section !== 'msgs' && e.target.closest('.dle-wd-body') && onFeedClick(e, win.querySelector('.dle-wd-body'), worldHere())) return;
     if (e.target.closest('[data-wpause]')) {
         const w = worldHere();
         if (w && setWorldPaused(!w.paused)) { K.notify({ title: 'World', text: w.paused ? 'The world is awake again.' : 'The world is paused: nothing new comes in until you wake it.' }); notifyTrackersView(); }
@@ -358,7 +360,8 @@ function afterReply() {
         for (let k = 0; k < 40 && (queueRunning() || !(await waitForIdle(3000))); k++) await new Promise(r => setTimeout(r, 3000));
         if (chatNow() !== cid) return;
         const w = worldHere(); if (!w) return;
-        try { await continueThreads(w); await pulse(w); await fireAsks(w); } catch (err) { console.warn('[DLE] world: after the reply', err?.message || err); }
+        // one after the other, each only while the same chat is open (hunt 2: a chat opened during the first got the rest)
+        try { await continueThreads(w); if (chatNow() === cid) await pulse(w); if (chatNow() === cid) await fireAsks(w); } catch (err) { console.warn('[DLE] world: after the reply', err?.message || err); }
     }, 4000);
 }
 
@@ -378,7 +381,7 @@ export function initWorld() {
     try {
         eventSource.on(event_types.CHAT_CHANGED, () => { prune(); resetMessagesView(); resetFeedView(); setTimeout(() => { const w = worldHere(); deliverLetters(w); firePlans(w); refresh(); }, 300); });
         // the story moved on (a new reply; maybe a new story day): letters arrive and get answered
-        eventSource.on(event_types.MESSAGE_RECEIVED, () => setTimeout(() => { const w = worldHere(); if (w) { deliverLetters(w); firePlans(w); tick(w, 'reply'); refresh(); afterReply(); } }, 1500));
+        eventSource.on(event_types.MESSAGE_RECEIVED, () => { const cid = chatNow(); setTimeout(() => { if (chatNow() !== cid) return; const w = worldHere(); if (w) { deliverLetters(w); firePlans(w); tick(w, 'reply'); refresh(); afterReply(); } }, 1500); });
         eventSource.on(event_types.MESSAGE_DELETED, prune);
     } catch { /* noop */ }
 }

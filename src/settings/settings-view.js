@@ -112,7 +112,7 @@ const fx = {
 /** Text rows: today's rules for empty / tidy values. → the value to store, or undefined to refuse. */
 function tidyText(row, raw) {
     const v = String(raw ?? '');
-    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', guideTag: 'lorebook-guide', fieldDefinitionsPath: 'DeepLore/field-definitions.yaml', scribeFolder: 'Sessions' };
+    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', guideTag: 'lorebook-guide', fieldDefinitionsPath: 'DeepLore/field-definitions.yaml', scribeFolder: 'Sessions', runTrashFolder: 'zz Deleted runs' };
     if (row.key in fallback) return v.trim() || fallback[row.key];
     if (row.key === 'autoSuggestFolder') return v.trim();
     if (row.key === 'promptsFolderPath') {

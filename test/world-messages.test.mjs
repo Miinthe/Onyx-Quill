@@ -160,7 +160,7 @@ test('meet-ups: a plan of theirs, newest kept, no duplicates; the answer carries
     assertEqual(parseExtract('garbage'), { learned: [], plan: null });
     const s = addRecord(emptyStore(), { kind: 'mplan', text: 'beach with Miinthe on Wednesday' }, 3);
     assertEqual(mainPlans(s).length, 1);
-    assert(mainPlanLine(s, 'Toaster').includes('not before'), 'the writer waits for it');
+    assert(mainPlanLine(s).includes('not before'), 'the writer waits for it');
 });
 
 test('leaks: one overheard fact per message', () => {

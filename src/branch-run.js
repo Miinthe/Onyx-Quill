@@ -56,6 +56,9 @@ export async function offerBranchRun({ fromCommand }) {
         }
         const chat = getContext()?.chat || [];
         if (!chat.length) return 'Empty chat.';
+        // the files are read before the dialog: she may be in another chat by the time it closes (bug hunt 2026-11-03)
+        const chatId = getContext()?.getCurrentChatId?.() ?? null;
+        const sameChat = () => (getContext()?.getCurrentChatId?.() ?? null) === chatId;
         const atMessage = chat.length - 1;
         const branchTime = Date.parse(chat[atMessage]?.send_date);
         if (!Number.isFinite(branchTime)) {
@@ -81,6 +84,7 @@ export async function offerBranchRun({ fromCommand }) {
             return content == null ? null : { path: e.filename, title: e.title, content, date: frontmatterDate(content) };
         }))).filter(Boolean);
         const plan = planCarry(await load(sessions), await load(lore), branchTime);
+        if (!sameChat()) return 'Another chat is open now.';
 
         const swapFolder = folder => swapInstanceFolders([folder], current, next).folders[0];
         const filterNow = chat_metadata.deeplore_folder_filter || [];
@@ -139,6 +143,7 @@ export async function offerBranchRun({ fromCommand }) {
             },
         });
 
+        if (!sameChat()) { toastr.warning('Another chat is open now — nothing was copied. Open the branch again to start it as a run.', 'DeepLore'); return 'Another chat is open now.'; }
         if (!ok) {
             if (never) { chat_metadata[STATE_KEY] = { status: 'never' }; saveMetadataDebounced(); }
             return 'Not now.';
@@ -156,7 +161,11 @@ export async function offerBranchRun({ fromCommand }) {
             if (r?.ok) written.push(target); else skipped.push(`${target} (${r?.error || 'write failed'})`);
         }
 
-        // ── switch this chat to the new run ──
+        // ── switch this chat to the new run ── (only the branch's own chat: never one opened while the files were copied)
+        if (!sameChat()) {
+            toastr.warning(`${written.length} file${written.length === 1 ? '' : 's'} copied, but another chat is open now, so no chat was switched to run ${L}. Open the branch and use /dle-branch-run (copies already there are kept).`, 'DeepLore', { timeOut: 12000 });
+            return 'Another chat is open now.';
+        }
         chat_metadata.deeplore_context = { ...ctx, instance: [next] };
         if (nextFolders.length) chat_metadata.deeplore_folder_filter = nextFolders;
         // Scribe continues from the branch point, not from the parent's end: its counter

@@ -40,6 +40,9 @@ function rememberLib() { const s = getSettings(); if (s.notesLibOpen !== libOpen
 // ── the file ────────────────────────────────────────────────────────────────
 
 async function readFile() {
+    // a save still on its way (closed and opened again quickly) lands first — else the old file was read back and her
+    // last change lost with the next save (bug hunt 2026-11-03)
+    await saving;
     try {
         const r = await fetch(`/user/files/${FILE}`, { cache: 'no-store' });
         if (r.status === 404) { data = normNotes(null); readOk = true; return; }

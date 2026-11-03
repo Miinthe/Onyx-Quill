@@ -90,7 +90,17 @@ export function runMigrations(settings, fromVersion, _toVersion) {
     }
     if (fromVersion < 7) {
         // 6 → 7 (2026-11-02, Miinthe: "finally remove emma from my code"): the writing-guide tag drops the Librarian's name.
-        if (typeof settings.librarianGuideTag === 'string' && settings.guideTag == null) settings.guideTag = settings.librarianGuideTag;
+        // getSettings() fills the defaults BEFORE migrating, so a guideTag still on the default 'lorebook-guide' counts as unset —
+        // otherwise a custom old tag was silently thrown away.
+        const unset = settings.guideTag == null || settings.guideTag === 'lorebook-guide';
+        if (typeof settings.librarianGuideTag === 'string' && settings.librarianGuideTag.trim() && unset) settings.guideTag = settings.librarianGuideTag;
         delete settings.librarianGuideTag;
+    }
+    if (fromVersion < 8) {
+        // 7 → 8 (2026-11-03, Miinthe: "if deeplore uses the same entries, it should display that, not just hide those entries"):
+        // "Skip what was just sent" goes off. Last turn's lore is not in this turn's prompt (DeepLore rebuilds it every
+        // turn), so skipping it left the writer without it — hunt 2 found turns with almost no lore. The 📖 Why window
+        // shows them as "Same as last turn" instead.
+        settings.stripDuplicateInjections = false;
     }
 }

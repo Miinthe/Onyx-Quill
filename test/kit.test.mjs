@@ -111,4 +111,17 @@ test('Settings › Look: forced light or dark still gives readable text on every
     }
 });
 
+test('an Undo that belongs to one chat does nothing once another chat is open (hunt 2, 2026-11-03)', async () => {
+    const { chatOnly } = await import('../src/kit/kit.js');
+    let open = 'chat A', ran = 0, other = 0;
+    const undo = chatOnly(() => { ran++; return 'done'; }, () => open, () => { other++; });
+    assertEqual(undo(), 'done', 'same chat: the undo runs');
+    open = 'chat B';
+    assertEqual(undo(), undefined, 'another chat: nothing runs');
+    assertEqual([ran, other], [1, 1], 'it says so instead');
+    open = 'chat A';
+    undo();
+    assertEqual(ran, 2, 'back in its chat: it works again');
+});
+
 summary();

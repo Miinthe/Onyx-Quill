@@ -19,7 +19,7 @@ import { replaying } from './cast-queue.js';   // a regenerate replaying the rou
 import { live, saveLiveState, liveWriterLines } from './board-live.js';
 import { autoTrackEnabled, undoCollection } from './autotrack.js';
 import { placeOf, trackerOf } from './board-model-pure.js';
-import { presentPeople, directorUser, DIRECTOR_SYSTEM, DIRECTOR_SCHEMA, parseDirectorAll, validateDirector, validateComes, applyCastChanges, describeCastChange, appearAtPlaces, awayCandidates, personOf, OFFSCREEN_SYSTEM, OFFSCREEN_SCHEMA, offscreenUser, parseOffscreen, offscreenChanges, leftAt, backFrom, EXIT_SYSTEM, EXIT_SCHEMA, exitUser, exitFrom, RETURN_SYSTEM, RETURN_SCHEMA, returnUser } from './cast-pure.js';
+import { presentPeople, directedPeople, directorUser, DIRECTOR_SYSTEM, DIRECTOR_SCHEMA, parseDirectorAll, validateDirector, validateComes, applyCastChanges, describeCastChange, appearAtPlaces, awayCandidates, personOf, OFFSCREEN_SYSTEM, OFFSCREEN_SCHEMA, offscreenUser, parseOffscreen, offscreenChanges, leftAt, backFrom, EXIT_SYSTEM, EXIT_SCHEMA, exitUser, exitFrom, RETURN_SYSTEM, RETURN_SCHEMA, returnUser } from './cast-pure.js';
 
 const SKIP_TYPES = new Set(['quiet', 'swipe', 'regenerate', 'continue', 'impersonate']);
 /** How many recent messages the director reads (newest last). */
@@ -46,6 +46,8 @@ export const WISHES_KEY = 'deeplore_cast_wishes';
 /** Who wants to walk out of the scene (the round gives them a last turn to say so — cast-queue.js). */
 export const LEAVES_KEY = 'deeplore_cast_leaves';
 /** Who wants to speak after the reply being written (the queue reads it once the reply is there — cast-queue.js). */
+/** The open chat: an answer that comes back after a chat switch belongs to the chat it was asked for (bug hunt 2026-11-03). */
+const openChatId = () => getContext()?.getCurrentChatId?.() ?? null;
 function setWishes(list) { chat_metadata[WISHES_KEY] = { at: turnIndex(getContext()?.chat), list }; saveMetadataDebounced(); }
 
 export async function runDirector(chatMessages, type, signal) {
@@ -53,6 +55,7 @@ export async function runDirector(chatMessages, type, signal) {
     if (chat_metadata) { delete chat_metadata[WISHES_KEY]; delete chat_metadata[LEAVES_KEY]; }   // a new turn: last turn's wishes are gone
     let L0 = live();
     if (!L0) return [];
+    const chat0 = openChatId();
     const at = turnIndex(getContext()?.chat);
     const applied = [], arrived = [];
     // 1. turning up at their places (step 2): a roll, once per visit — no AI call (not while a regenerate replays the round)
@@ -69,7 +72,7 @@ export async function runDirector(chatMessages, type, signal) {
     }
     L0 = live();
     // 3. the director: the people in the scene, and the people away who might come looking
-    const here = presentPeople(L0.board, L0.state).filter(x => x.cast.director !== false && !x.now.muted);   // 🔇 muted: not thought for
+    const here = directedPeople(L0.board, L0.state);   // 🔇 muted: not thought for
     const away = awayCandidates(L0.board, L0.state);
     if (!here.length && !away.length) { if (arrived.length) setWishes(arrived); return applied; }
     const conn = resolveConnectionConfig('storyTracker');
@@ -96,9 +99,10 @@ export async function runDirector(chatMessages, type, signal) {
         if (!answer.people.length && !answer.away.length && !/^\s*\{\s*\}\s*$/.test(String(result?.text ?? '')) && String(result?.text ?? '').trim()) console.warn('[DLE] cast director: answer unreadable (cut off?) —', String(result.text).slice(0, 200));
     } catch (err) {
         if (err?.name !== 'AbortError') console.warn('[DLE] cast director failed:', err?.message || err);
-        if (arrived.length) setWishes(arrived);
+        if (arrived.length && openChatId() === chat0) setWishes(arrived);
         return applied;
     }
+    if (openChatId() !== chat0) return applied;
     // re-read: the story helper or Miinthe may have changed someone meanwhile
     const L = live();
     if (!L) return applied;
@@ -129,7 +133,7 @@ async function writeOffscreen(castId, personId, { from = null, to = null, who = 
     if (!p) return null;
     const conn = resolveConnectionConfig('storyTracker');
     if (conn.mode !== 'profile' || !conn.profileId) return null;
-    const chat = getContext()?.chat || [];
+    const chat = getContext()?.chat || [], chat0 = openChatId();
     const messages = chat.filter(m => m && !m.is_system && typeof m.mes === 'string' && m.mes.trim()).slice(-DIRECTOR_WINDOW).map(m => ({ name: m.name, mes: m.mes }));
     const boardLines = (() => { try { return liveWriterLines().filter(l => !/^IN THE SCENE:|^JUST ARRIVED:|while away:|\(acts on this, never says it outright\)| knows: |'s own messages — never write them/.test(l)); } catch { return []; } })();
     let ans = null;
@@ -138,7 +142,7 @@ async function writeOffscreen(castId, personId, { from = null, to = null, who = 
         ans = parseOffscreen(r?.text);
         if (!ans) console.warn('[DLE] cast off-screen: answer unreadable —', String(r?.text ?? '').slice(0, 300));
     } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast off-screen failed:', err?.message || err); }
-    if (!ans) return null;
+    if (!ans || openChatId() !== chat0) return null;
     const L2 = live(), c2 = L2?.board?.trackers?.find(t => t.id === castId), p2 = personOf(c2, personId);
     if (!p2) return null;
     const changes = offscreenChanges(L2.state, c2, p2, ans, from, to, who);
@@ -170,11 +174,12 @@ export async function checkExit(castId, personId, text) {
     const conn = resolveConnectionConfig('storyTracker');
     if (conn.mode !== 'profile' || !conn.profileId) return false;
     let quote = null;
+    const chat0 = openChatId();
     try {
         const r = await callAI(EXIT_SYSTEM, exitUser(p.name, text), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: EXIT_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
         quote = exitFrom(r?.text, text);
     } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast exit check failed:', err?.message || err); }
-    if (!quote) return false;
+    if (!quote || openChatId() !== chat0) return false;
     const L2 = live();
     if (!L2?.state?.cast?.[castId]?.[personId]?.here) return false;
     const ch = { kind: 'cast', col: castId, person: personId, field: 'here', from: true, to: false, who: 'npc', quote, reason: 'walks out in their own message' };
@@ -206,7 +211,9 @@ export async function checkReturns(index, speaker, text) {
     if (!due.length) return;
     const conn = resolveConnectionConfig('storyTracker');
     if (conn.mode !== 'profile' || !conn.profileId) return;
+    const chat0 = openChatId();
     for (const x of due) {
+        if (openChatId() !== chat0) return;
         const L = live();
         const cast = L?.board?.trackers?.find(t => t.id === x.cast), p = personOf(cast, x.person);
         if (!p || L.state.cast?.[x.cast]?.[x.person]?.here) continue;   // already back
@@ -215,7 +222,7 @@ export async function checkReturns(index, speaker, text) {
             const r = await callAI(RETURN_SYSTEM, returnUser(p.name, speaker, text), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: RETURN_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
             quote = exitFrom(r?.text, text, 'back');
         } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast return check failed:', err?.message || err); }
-        if (!quote) continue;
+        if (!quote || openChatId() !== chat0) continue;
         const L2 = live();
         if (!L2 || L2.state.cast?.[x.cast]?.[x.person]?.here) continue;
         const ch = { kind: 'cast', col: x.cast, person: x.person, field: 'here', from: false, to: true, who: 'auto', quote, reason: 'held back — stays in the scene' };

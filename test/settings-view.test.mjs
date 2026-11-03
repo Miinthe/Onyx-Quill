@@ -13,6 +13,7 @@ import {
     SECTIONS, allRows, findRow, rowValue, writeRow, isChanged, resetRow, showValue, cardSummary, changedCount, searchRows, searchAll,
     clampNumber, sectionForNav, JOBS, JOB_KEYS, jobRuns, connChoice, writeConnChoice, followers, PROMPTS, NOT_DRAWN, SPACING, spacingOf, roughTokens,
 } from '../src/settings/settings-pure.js';
+import { resetToDefaults, RESET_WARNING } from '../src/settings/settings-pure.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const settingsSrc = readFileSync(join(ROOT, 'settings.js'), 'utf8');
@@ -88,13 +89,7 @@ test('merged rows: "every N · 0 = off" keeps both old keys as the old controls 
     const n = findRow('n-on').row;
     writeRow(n, s, 1);
     assertEqual([s.autoSuggestEnabled, s.autoSuggestInterval], [true, 3], 'clamped to New lore’s minimum (3)');
-    const sk = findRow('b-skip').row;
-    assertEqual(rowValue(sk, fresh()), DEFAULTS.stripLookbackDepth, 'skip shows the lookback when on (the default)');
-    writeRow(sk, s, 0);
-    assertEqual([s.stripDuplicateInjections, s.stripLookbackDepth], [false, DEFAULTS.stripLookbackDepth], 'skip 0 = off, lookback kept');
-    assert(isChanged(sk, s, DEFAULTS), 'changed');
-    resetRow(sk, s, DEFAULTS);
-    assertEqual([s.stripDuplicateInjections, s.stripLookbackDepth], [true, DEFAULTS.stripLookbackDepth], 'reset puts both back');
+    assert(!findRow('b-skip'), 'Skip what was just sent is gone (Miinthe, 2026-11-03)');
     const ch = findRow('s-chain').row;
     writeRow(ch, s, 4);
     assertEqual([s.recursiveScan, s.maxRecursionSteps], [true, 4], 'chain steps');
@@ -165,7 +160,7 @@ test('numbers: the settings.js range, and seconds for time limits', () => {
     assertEqual(clampNumber(r, 'abc', CONSTRAINTS), null, 'not a number keeps');
     assertEqual(clampNumber({ key: 'meroTimeout', scale: 1000 }, '90', CONSTRAINTS), 90000, 'seconds → ms');
     assertEqual(clampNumber({ key: 'meroTimeout', scale: 1000 }, '1', CONSTRAINTS), 5000, 'clamped in ms');
-    assertEqual(clampNumber(findRow('b-skip').row, '0', CONSTRAINTS), 0, '0 allowed on merged rows');
+    assertEqual(clampNumber(findRow('sc-on').row, '0', CONSTRAINTS), 0, '0 allowed on merged rows');
 });
 
 test('old deep links land on the new sections', () => {
@@ -205,6 +200,23 @@ test('2026-10-17 rows: story block keeps today’s place; new entries; budgets p
     assert(SECTIONS.find(x => x.id === 'budget').cards[0].custom === 'budgetScopes', 'the Budget card shows this chat / a character');
     assert(!allRows().some(x => /^(t-ask|c-dir|c-max)$/.test(x.row.id)), 'board / Cast settings stay on the board (Miinthe, 2026-10-17)');
     assertEqual(searchAll('own prompt').extras.map(x => x.id), ['x-own'], 'search finds your own prompts');
+});
+
+test('Reset all: settings go back to default, nothing of hers is erased (Miinthe, 2026-11-03)', () => {
+    const s = fresh();
+    Object.assign(s, {
+        enabled: true, maxEntries: 99, reinjectionCooldown: 7, dkTheme: 'dark',
+        vaults: [{ name: 'Lore', port: 27123 }], obsidianApiKey: 'k', meroProfileId: 'p1', worldModel: 'm', scribeWriteVaultId: 'v',
+        ownPrompts: [{ id: 'a', text: 'mine' }], scribePrompt: 'her prompt', spellWords: ['Ashvale'], barHot: [{ set: 'x', label: 'y' }],
+        barDraft: 'half a reply', characterBudgets: { Kettle: 500 }, graphSavedLayout: { positions: {} }, analyticsData: { a: 1 },
+    });
+    resetToDefaults(s, DEFAULTS);
+    assertEqual([s.maxEntries, s.reinjectionCooldown, s.dkTheme], [DEFAULTS.maxEntries, DEFAULTS.reinjectionCooldown, DEFAULTS.dkTheme], 'settings back to default');
+    assertEqual(s.enabled, true, 'DeepLore stays on');
+    assertEqual([s.vaults.length, s.obsidianApiKey, s.meroProfileId, s.worldModel, s.scribeWriteVaultId], [1, 'k', 'p1', 'm', 'v'], 'connections stay');
+    assertEqual([s.ownPrompts.length, s.scribePrompt, s.spellWords, s.barHot.length, s.barDraft], [1, 'her prompt', ['Ashvale'], 1, 'half a reply'], 'her writing and lists stay');
+    assertEqual([s.characterBudgets.Kettle, !!s.graphSavedLayout, s.analyticsData.a], [500, true, 1], 'budgets, layout, stats stay');
+    assert(/can’t be undone/.test(RESET_WARNING) && /Nothing of yours is erased/.test(RESET_WARNING), 'the warning says both');
 });
 
 await summary('settings view');

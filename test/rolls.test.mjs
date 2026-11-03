@@ -9,10 +9,9 @@
  * Run: npm run test:rolls
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { normalizeBoard, freshState, normalizeState, toEngineList, lineKey, checkBoard, unmetNeeds } from '../src/board-model-pure.js';
+import { normalizeBoard, freshState, normalizeState, toEngineList, lineKey, checkBoard, unmetNeeds, lines } from '../src/board-model-pure.js';
 import { oddsLines, lineHolds, rollTurn, fireTriggers, denyTrigger, describeRoll, describeTrigger, justHappenedLines, hasRollsOrTriggers, findables, toFindLines, findKey } from '../src/rolls-pure.js';
 import { rewindCollections, helperSection, validateCollectionChanges, filterByItems, applyCollectionChanges } from '../src/collections-pure.js';
-import { lines } from '../src/board-model-pure.js';
 
 // Relationship: Strangers → Friends → Sweethearts. The Fuse: Sparks → Repair / Fail (end).
 // The Fuse starts when Relationship reaches Friends, 1 in 3 (retry as given);

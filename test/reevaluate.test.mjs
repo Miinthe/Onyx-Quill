@@ -43,6 +43,12 @@ test('what would be undone: moves and starts of this turn, board changes by kind
     assertEqual(turnChanges(trackers, log, 9).count, 0, 'a later start: nothing');
 });
 
+test('meters and the Cast are named too — they are rolled back as well (bug hunt 2026-11-03)', () => {
+    const log = [{ i: 3, kind: 'meter' }, { i: 3, kind: 'cast', field: 'thoughts' }, { i: 3, kind: 'cast', field: 'plans' }, { i: 3, kind: 'cast', field: 'rolled' }];
+    assertEqual(turnChanges([], log, 3).lines, ['1 meter change', '2 Cast changes']);
+    assertEqual(turnChanges([], [{ i: 3, kind: 'cast', field: 'rolled' }], 3).count, 0, 'a roll note alone: nothing to name');
+});
+
 test('Undo memory of this turn is forgotten; an older one is kept', () => {
     const t = { name: 'R', lastAuto: { message: 3 }, lastTrigger: { message: 1 } };
     const f = forgetTurnUndo(t, 3);

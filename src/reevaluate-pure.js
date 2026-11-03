@@ -46,9 +46,11 @@ export function turnChanges(trackers, boardLog, start) {
         if (moved.length) lines.push(`${t.name}: ${moved.length === 1 ? 'a move' : moved.length + ' moves'}`);
         if (t.startedAt && t.startedAt.i >= start) lines.push(`${t.name}: started`);
     }
-    const kinds = { item: 'item', money: 'money', place: 'place', state: 'time / weather', date: 'date', roll: 'roll', trigger: 'trigger' };
+    // meters and the Cast are rolled back too (collections-pure revert) — the list said "nothing changed" over them (bug
+    // hunt 2026-11-03); a Cast roll note ("not this time") is housekeeping, not a change to name
+    const kinds = { item: 'item', money: 'money', place: 'place', state: 'time / weather', date: 'date', roll: 'roll', trigger: 'trigger', meter: 'meter', cast: 'Cast' };
     const counts = {};
-    for (const e of Array.isArray(boardLog) ? boardLog : []) if (e && e.i >= start && kinds[e.kind]) counts[e.kind] = (counts[e.kind] || 0) + 1;
+    for (const e of Array.isArray(boardLog) ? boardLog : []) if (e && e.i >= start && kinds[e.kind] && !(e.kind === 'cast' && e.field === 'rolled')) counts[e.kind] = (counts[e.kind] || 0) + 1;
     for (const [k, n] of Object.entries(counts)) lines.push(`${n} ${kinds[k]} change${n > 1 ? 's' : ''}`.replace('roll changes', 'rolls').replace('roll change', 'roll').replace('trigger changes', 'triggers fired').replace('trigger change', 'trigger fired'));
     return { lines, count: lines.length };
 }

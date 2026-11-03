@@ -6,7 +6,7 @@
  * Run: npm run test:world
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { normHabits, normVoice, normVoices, voiceKey, posters, postsOf, newPost, updatePost, toggleLike, addComment, likesLine, feedView, normStory, runningStories, feedPrompt, parseFeed, reactPrompt, parseReact, mixPrompt, parseMix, storyPrompt, parseStory, newsPrompt, parseNews, photosIn, mentionsIn, richText, tagQuery, tagMatches, commentCount, addPostVersion, showPostVersion, editPost, removePost, editComment, removeComment, storyToTell, tellsStory, relevantOld, pulsePrompt, parsePulse, mergeTaught } from '../src/world/feed-pure.js';
+import { normHabits, normVoice, normVoices, voiceKey, posters, postsOf, newPost, updatePost, toggleLike, addComment, likesLine, feedView, normStory, runningStories, feedPrompt, parseFeed, reactPrompt, parseReact, storyPrompt, parseStory, newsPrompt, parseNews, photosIn, mentionsIn, richText, tagQuery, tagMatches, commentCount, addPostVersion, showPostVersion, editPost, removePost, editComment, removeComment, storyToTell, tellsStory, relevantOld, pulsePrompt, parsePulse, mergeTaught } from '../src/world/feed-pure.js';
 import { emptyStore, addRecord, normWorld } from '../src/world/world-pure.js';
 import { normalizeBoard, BOARD_VERSION } from '../src/board-model-pure.js';
 
@@ -69,15 +69,10 @@ test('the feed\'s prompt and answer: dials, quirks, stories; muted and made-up n
     assertEqual(parseFeed('nope', PEOPLE), { posts: [], comments: [], told: [], newStory: null });
 });
 
-test('reactions to {{user}}\'s post; a starting mix', () => {
+test('reactions to {{user}}\'s post', () => {
     const r = reactPrompt({ authorName: 'Miinthe', post: { byName: 'Miinthe', text: 'who stole the sugar?', comments: [] }, people: PEOPLE });
     assert(r.user.includes('who stole the sugar') && r.system.includes('crowd'), 'react prompt');
     assertEqual(parseReact('{"comments":[{"by":"Kettle","text":"not me dear"},{"by":"Spoon","text":"x"}],"likes":["CrumbWatcher"],"crowd":4}', PEOPLE).comments.map(c => c.who.key), ['c1:k']);
-    const m = mixPrompt({ storyName: 'Toaster & Kettle', people: [{ name: 'Kettle', about: 'fussy' }], existing: ['The Pantry Gazette'] });
-    assert(m.user.includes("don't repeat") && m.system.includes('era'), 'mix prompt');
-    const mx = parseMix('{"voices":[{"name":"Breadbox Bakery","kind":"voice","bio":"sells bread","p":3},{"name":"Auntie Colander","kind":"regular","g":3}],"people":[{"name":"Kettle","g":1,"p":3,"interests":["memes"]},{"name":"Nobody","g":3}]}', [{ name: 'Kettle', key: 'c1:k' }]);
-    assertEqual(mx.voices.map(v => [v.name, v.kind]), [['Breadbox Bakery', 'voice'], ['Auntie Colander', 'regular']]);
-    assertEqual(mx.people, [{ key: 'c1:k', g: 1, m: 2, p: 3, interests: ['memes'] }]);
 });
 
 test('a world story she starts: planned into phases', () => {

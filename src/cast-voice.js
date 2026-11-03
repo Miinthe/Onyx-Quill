@@ -19,6 +19,9 @@ import { checkExit, checkReturns } from './cast.js';
 import { npcPrompt, storyLinesFor, stripName, writerSeesNpcs, npcMessagesOf, npcOfMessage, NPC_WINDOW } from './cast-voice-pure.js';
 import { turnIndex } from './turn-index.js';
 import { vaultIndex } from './state.js';
+import { writerSinkLines } from './mero.js';
+
+const sinkLines = type => { try { return writerSinkLines(type); } catch { return []; } };
 
 let npcTurn = null;          // { cast, person, name, avatar, swipe, patched, exit? }
 let wired = false;
@@ -115,7 +118,7 @@ function wire() {
         let story = [];
         try { story = storyLinesFor(liveWriterLines()); } catch { /* no board */ }
         const prompt = npcPrompt({ npc: { name: w.p.name, description: card.description || card.data?.description || '', personality: card.personality || card.data?.personality || '', mes_example: card.mes_example || card.data?.mes_example || '' },
-            userName: ctx?.name1 || 'User', mainName: ctx?.name2 || 'Character', now: personNow(w.L.state, w.cast, w.p), storyLines: story, lore, messages: msgs.slice(-NPC_WINDOW).map(m => ({ name: m.name, mes: m.mes })), exit: npcTurn.exit || null });
+            userName: ctx?.name1 || 'User', mainName: ctx?.name2 || 'Character', now: personNow(w.L.state, w.cast, w.p), storyLines: story, lore, messages: msgs.slice(-NPC_WINDOW).map(m => ({ name: m.name, mes: m.mes })), exit: npcTurn.exit || null, notes: sinkLines(npcTurn.swipe ? 'swipe' : 'normal') });
         data.chat.splice(0, data.chat.length, ...prompt);
     });
     // streaming: the message exists from the first token on — make it hers at once
@@ -167,7 +170,8 @@ export function holdBox() {
     const kept = box?.value ?? '';
     if (!box || !kept) return () => {};
     box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true }));
-    return () => { box.value = kept + box.value; box.dispatchEvent(new Event('input', { bubbles: true })); };
+    // what was typed meanwhile goes behind it — with a space, so two words never run together
+    return () => { const typed = box.value; box.value = kept + (typed && !/\s$/.test(kept) && !/^\s/.test(typed) ? ' ' : '') + typed; box.dispatchEvent(new Event('input', { bubbles: true })); };
 }
 
 /**
@@ -184,12 +188,15 @@ export async function speakAs(castId, personId, { exit = null } = {}) {
     bringIn(w);
     const ctx = getContext();
     const giveBack = holdBox();
-    npcTurn = { cast: w.cast.id, person: w.p.id, name: w.p.name, avatar: w.p.card || null, swipe: false, ...(exit ? { exit } : {}) };
+    const turn = npcTurn = { cast: w.cast.id, person: w.p.id, name: w.p.name, avatar: w.p.card || null, swipe: false, ...(exit ? { exit } : {}) };
     const before = ctx.chat.length;
     const done = generationDone();
     try { await ctx.generate('normal'); } catch (err) { console.warn('[DLE] cast: speaking failed:', err?.message || err); }
     await Promise.race([done, new Promise(r => setTimeout(r, 1500))]);
     if (npcTurn) await Promise.race([done, new Promise(r => setTimeout(r, 120000))]);
+    // a generation that never got going (no connection, the server unreachable) ends without GENERATION_ENDED: her turn
+    // is over all the same — left set, the next reply of the main character would be written and marked as hers
+    if (npcTurn === turn) npcTurn = null;
     // she said goodbye in her message: now she is gone
     if (exit && getContext().chat.length > before && npcOfMessage(getContext().chat.at(-1))?.person === w.p.id) {
         const L = live();

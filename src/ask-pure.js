@@ -67,3 +67,14 @@ export function answerAsks(asks, answers = [], { skipped = false } = {}) {
         return normAsk({ ...a, picked: x.picked, own: x.own, done: 'answered' });
     });
 }
+
+/**
+ * A Mero message as the AI sees it again: her question cards are cut out of the text, so they go back in as one line
+ * (bug hunt 2026-11-03: a question Miinthe ignored was invisible to the next answer and to 💡 Pitch's rule "a question
+ * you asked that she didn't answer is open").
+ */
+export function withAsked(m) {
+    const t = typeof m?.t === 'string' ? m.t : '';
+    const q = (Array.isArray(m?.asks) ? m.asks : []).map(a => (typeof a?.q === 'string' ? a.q.trim() : '')).filter(Boolean);
+    return q.length ? `${t}\n[asked: ${q.join(' · ')}]`.trim() : t;
+}

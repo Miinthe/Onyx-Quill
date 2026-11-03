@@ -72,6 +72,18 @@ test('never more than MAX_TIES; pinned ones are kept first', () => {
     assertEqual(to.length, MAX_TIES); assert(to.some(t => t.pin && t.to === 'Miinthe') && to.some(t => t.to === 'Corvin'));
 });
 
+test('bug hunt 2026-11-03: a tie updated this turn is not the one trimmed away', () => {
+    const b = board();
+    const full = [{ to: 'Mara', w: 'old friends', pin: false }, ...Array.from({ length: MAX_TIES - 1 }, (_, k) => ({ to: 'Person' + k, w: 'x', pin: false }))];
+    const st = here(b, { jun: { ties: full } });
+    const r = validateDirector(dir([{ to: 'Mara', feel: 'furious with her', quote: 'He didn\'t look at Mara' }, { to: 'Corvin', feel: 'owes him', quote: 'And I\'m not your bodyguard.' }]), b, st, msgs, names);
+    const c = r.changes.find(x => x.field === 'ties');
+    assertEqual(c.to.length, MAX_TIES);
+    assert(c.to.some(t => t.to === 'Mara' && t.w === 'furious with her'), 'the update stays');
+    assert(!c.to.some(t => t.to === 'Person0'), 'the oldest other one goes');
+    assertEqual(c.said.length, 2);
+});
+
 test('ties survive the chat state being saved and read back', () => {
     const b = board(), st = here(b, { jun: { ties: [{ to: 'Miinthe', w: 'distrusts', tr: 'up', q: 'x', i: 3, pin: true }, { to: '', w: 'junk' }] } });
     const back = normalizeState(JSON.parse(JSON.stringify(st)), b);

@@ -8,14 +8,13 @@
  */
 import { stepTurn } from '../src/turn-pure.js';   // engine on v2, step 7
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { normalizeBoard, freshState, holds, toEngineList, fromEngineList, condText } from '../src/board-model-pure.js';
+import { normalizeBoard, freshState, holds, toEngineList, fromEngineList, condText, normalizeState } from '../src/board-model-pure.js';
 import { setExternalConditions, unmetNeeds, conditionText } from '../src/conditions-pure.js';
 import {
     helperSection, validateCollectionChanges, applyCollectionChanges, undoCollectionChange, rewindCollections,
     describeCollectionChange, collectionLines, filterByItems, writerLabelOf,
     addPending, dropPending, growItem, keptChange, findDraft, growFolderOf, describeFind, cleanFindName,
 } from '../src/collections-pure.js';
-import { normalizeState } from '../src/board-model-pure.js';
 import { toWindowChat, fromWindowChat } from '../src/board-window-pure.js';
 
 const board = () => normalizeBoard({ v: 2, name: 'T', trackers: [

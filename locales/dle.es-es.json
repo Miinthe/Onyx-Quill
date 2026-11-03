@@ -303,6 +303,7 @@
   "dle_carto_click_to_expand": "haz clic para expandir",
   "dle_carto_diff_added": "+${0} nuevas:",
   "dle_carto_diff_removed": "-${0} eliminadas:",
+  "dle_carto_diff_same": "${0} igual que el turno anterior:",
   "dle_carto_entry_count_one": "${0} entrada",
   "dle_carto_entry_count_other": "${0} entradas",
   "dle_carto_footer_named": "Haz clic en el nombre de una entrada para abrirla en Obsidian. Haz clic en las entradas para expandir la vista previa del contenido.",

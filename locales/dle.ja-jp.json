@@ -303,6 +303,7 @@
   "dle_carto_click_to_expand": "クリックで展開",
   "dle_carto_diff_added": "+${0}件追加:",
   "dle_carto_diff_removed": "-${0}件削除:",
+  "dle_carto_diff_same": "前のターンと同じ ${0} 件：",
   "dle_carto_entry_count_one": "${0}件のエントリー",
   "dle_carto_entry_count_other": "${0}件のエントリー",
   "dle_carto_footer_named": "エントリー名をクリックでObsidianで開きます。エントリーをクリックで内容プレビューを展開します。",

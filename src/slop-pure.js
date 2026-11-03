@@ -162,6 +162,9 @@ export function cleanRewrite(text, passage = '') {
     let t = str(text).trim().replace(/^(?:here(?:'s| is)[^:\n]*:|rewritten(?: passage)?:)\s*/i, '').trim();
     const wrapped = /^["“].*["”]$/s.test(t) && !/^["“]/.test(str(passage).trim());
     if (wrapped) t = t.slice(1, -1).trim();
+    // wrapped as an *action* when the passage was plain narration (bug hunt 2026-11-03: Keep would have turned it into one)
+    const P = str(passage).trim();
+    if (/^\*[^*]+\*$/s.test(t) && !/^\*/.test(P) && !/\*$/.test(P)) t = t.slice(1, -1).trim();
     return t.length > Math.max(4000, str(passage).length * 4) ? '' : t;
 }
 

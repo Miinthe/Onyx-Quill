@@ -7,11 +7,10 @@
  * Run: npm run test:places
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { placeFromUserMessage } from '../src/places-pure.js';
 import { normalizeBoard, freshState, holds } from '../src/board-model-pure.js';
 import {
     placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange, locationValue,
-    pinnedHere, filterByPlace, placeLines, placeLabel,
+    pinnedHere, filterByPlace, placeLines, placeLabel, placeFromUserMessage,
 } from '../src/places-pure.js';
 import { undoCollectionChange, rewindCollections } from '../src/collections-pure.js';
 

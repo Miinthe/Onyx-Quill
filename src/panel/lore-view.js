@@ -287,7 +287,7 @@ export function mountLoreView(panel) {
         apply(next);
         const what = targets.length > 1 ? `${targets.length} entries` : `“${targets[0].title}”`;
         const verb = kind === 'pin' ? (on ? 'Pinned' : 'Unpinned') : (on ? 'Blocked' : 'Unblocked');
-        K.notify({ text: `${verb} ${what} in this chat.`, undo: () => apply(before) });
+        K.notify({ text: `${verb} ${what} in this chat.`, undo: K.chatOnly(() => apply(before), () => getCurrentChatId() ?? null) });
     }
     const pinState = (title, vaultSource) => ({
         pinned: P.isIn(chat_metadata?.deeplore_pins, title, vaultSource),

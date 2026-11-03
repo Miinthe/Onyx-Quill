@@ -9,12 +9,9 @@
  *   extension_settings.deeplore_storyboards_v2.boards[name] = { board: v2 }   — every board (board-store.js); the old
  *   extension_settings.deeplore_storyboards is no longer written (kept as a backup)
  *   chat_metadata.deeplore_board_state                       = v2 chat state        — collections, places, forks…
- *   chat_metadata.deeplore_trackers                          = v1 list              — positions the engine reads/moves
- * `sig` notices board edits made by /dle-tracker commands after the window last saved
- * (board-window-pure.js → reconcile). Shapes and conversions: board-window-pure.js.
- *
- * NOT YET (stage 3, one function at a time): the engine acting on collections, places,
- * state, forks, odds, triggers; real entries created from the board; the timeline's history.
+ *   chat_metadata.deeplore_trackers                          = v1 list              — the engine's older list (since
+ *                                                                                      step 7 the v2 state is the truth)
+ * Shapes and conversions: board-window-pure.js.
  */
 import { setupPrompt, parseSetup, SETUP_SCHEMA } from './world/setup-pure.js';   // the world layer's ☆ Set up with Mero (stage 6)
 import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
@@ -128,16 +125,17 @@ function folderTree() {
 
 let frame = null;
 let pendingSelect = null;   // a row to open the window at (Story tab → a collection)
-let pendingAdd = false;
+let pendingAdd = false;   // open straight into the Add window (Story tab → New tracker, overhaul 2026-10-16)
 let pendingEntry = null;   // "Write a new entry…" (bar 📖, Mero's lore gaps): { title?, ask?, gapId? } — the window opens on it alone
-let pendingView = null;   // open on a view: 'time' (Story → Timeline, Miinthe 2026-10-16)     // open straight into the Add window (Story tab → New tracker, overhaul 2026-10-16)
+let pendingView = null;   // open on a view: 'time' (Story → Timeline, Miinthe 2026-10-16)
 
 /** What the window asks for when it opens. */
 function load() {
     const { boards, changed } = allBoards();
     const chat = chatLabel(), ch = charLabel();
-    let current = currentBoardName();
+    let current = currentBoardName(), unsaved = false;
     if (!current || !boards[current]) {
+        unsaved = true;
         // no board here yet: a new, empty one named after the chat (saved only when Miinthe saves)
         current = ch ? ch.replace(/ \(character\)$/, '') : chat;
         while (boards[current]) current += ' (new)';
@@ -152,7 +150,7 @@ function load() {
     const board = boards[current];
     const out = {
         boards: Object.fromEntries(Object.entries(boards).map(([n, b]) => [n, toWindowBoard(b)])),
-        current, chat,
+        current, chat, unsaved,   // the window marks a made-up board "not saved yet" (Open…, Delete board…)
         bag: toWindowChat(board, chatState(board)),
         // this chat's real history for the Timeline (round "timeline + lanes", 2026-10-04)
         timeline: currentBoardName() === current ? timelineEvents(board, getTrackers(), chatState(board)) : [],
@@ -243,11 +241,6 @@ async function meroAsk(task, input) {
     } finally { meroAsking = false; }
 }
 
-/**
- * The world layer's "Suggest a mix" (stage 4, 2026-10-19): voices + regulars for this story, and dials + interests for its
- * people, from their cards — the World connection (stage 6 hands this to Mero). The window shows them to approve.
- * input: { storyName, setting, cast: [{ key, name, card }], existing: [names] }
- */
 let worldSettingUp = false;
 /**
  * ☆ Set up with Mero (world layer stage 6, Miinthe 2026-10-18: "describe it to Mero; she suggests voices and style; Miinthe approves"):
@@ -293,8 +286,14 @@ function save(name, doc, bag) {
     putBoard(name, board);
     const usesIt = currentBoardName() === name || board.applied.includes(chatLabel());
     if (usesIt && bag) {
+        // a chat moving onto this board from another: its stored engine list is the old board's (or from before the chat
+        // was converted), and the v2 log would be rebuilt from it — positions from that list came back (hunt 2, 2026-11-03)
+        const was = currentBoardName();
+        if (was !== name) chat_metadata[TRACKERS_KEY] = toEngineList(board, freshState(board), []);
         chat_metadata[BOARD_KEY] = name;
-        const old = chat_metadata?.[STATE_KEY] && currentBoardName() === name ? chat_metadata[STATE_KEY] : null;
+        // the chat's stored state only if it was this board's (read before the name above was set, it always looked so:
+        // another board's log, rolls and positions came along — hunt 2, 2026-11-03)
+        const old = chat_metadata?.[STATE_KEY] && was === name ? chat_metadata[STATE_KEY] : null;
         const st = fromWindowChat(board, bag, old);
         // engine on v2: the step trackers' new places reach the v2 state through the list (saveTrackers), so a move made
         // here is logged like a move by hand and a delete rolls it back; everything else the window sets is stored now
@@ -317,8 +316,12 @@ function applyTargets(name, picked) {
     const chat = chatLabel(), ch = charLabel();
     if (!boardStore().boards[name]) return;               // not saved yet: applied on save
     if (picked.includes(chat) && currentBoardName() !== name) {
+        const board = getBoard(name) || fromWindowBoard({ trackers: [] }, name);
         chat_metadata[BOARD_KEY] = name;
-        chat_metadata[STATE_KEY] = freshState(getBoard(name) || fromWindowBoard({ trackers: [] }, name));
+        chat_metadata[STATE_KEY] = freshState(board);
+        // a fresh list too, as New Run does: the stored one is the old board's (or from before the chat was converted),
+        // and the v2 log is rebuilt from it — its positions came back on the newly applied board (hunt 2, 2026-11-03)
+        chat_metadata[TRACKERS_KEY] = toEngineList(board, chat_metadata[STATE_KEY], []);
         saveMetadataDebounced();
     } else if (!picked.includes(chat) && currentBoardName() === name) detachBoard();
     if (ch) {

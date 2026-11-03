@@ -179,13 +179,15 @@ export function buildPerEntry(trace, injectedSources) {
  */
 export function diffVerdicts(current, previous) {
     const cur = current?.injectedSources || [];
-    if (!previous) return { added: [], removed: [] };
+    if (!previous) return { added: [], removed: [], same: [] };
     const prev = previous.injectedSources || [];
     const prevMap = new Map(prev.map(s => [`${s.vaultSource || ''}:${s.title}`, s]));
     const curMap = new Map(cur.map(s => [`${s.vaultSource || ''}:${s.title}`, s]));
     const added = cur.filter(s => !prevMap.has(`${s.vaultSource || ''}:${s.title}`));
     const removed = prev.filter(s => !curMap.has(`${s.vaultSource || ''}:${s.title}`));
-    return { added, removed };
+    // sent again (Miinthe, 2026-11-03: "if deeplore uses the same entries, it should display that")
+    const same = cur.filter(s => prevMap.has(`${s.vaultSource || ''}:${s.title}`));
+    return { added, removed, same };
 }
 
 /**

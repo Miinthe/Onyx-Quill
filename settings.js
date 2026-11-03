@@ -140,7 +140,7 @@ export const defaultSettings = {
     autoSuggestPrompt: '',
     // Vault name to write auto-suggest entries to. '' = use primary vault.
     autoSuggestWriteVaultId: '',
-    stripDuplicateInjections: true,
+    stripDuplicateInjections: false,       // off since v8 (Miinthe, 2026-11-03): skipping last turn's entries left the writer without them
     stripLookbackDepth: 2,
     // BUG-AUDIT-H20: must match HTML <option value="keyword">, NOT "keyword-only".
     optimizeKeysMode: 'keyword',
@@ -186,15 +186,17 @@ export const defaultSettings = {
     drawerPinned: false,
     drawerSide: 'right',                   // overhaul 2a (Miinthe, 2026-10-15): the side panel on the 'left' or 'right', remembered
     notesEnabled: true,                    // My notes (Miinthe, 2026-10-18): the notes button on the bar; off = no button, the notes stay in their file
-    notesSide: 'right',
-    notesLocked: false,
-    notesLibOpen: false,                   // My notes: the Everywhere folder open or folded, as she left it (2026-10-19)                    // My notes: locked = stays open whatever you do (and after a reload) until the bar button or ✕ closes it
+    notesSide: 'right',                    // My notes (Miinthe, 2026-10-18): its window on the 'left' or 'right' (PC), remembered
+    notesLocked: false,                    // My notes: locked = stays open whatever you do (and after a reload) until the bar button or ✕ closes it
+    notesLibOpen: false,                   // My notes: the Everywhere folder open or folded, as she left it (2026-10-19)
     notesLastOpen: '',                     // My notes: the note open when the window closed — reopening comes back to it (2026-10-19)
-    notesKeepOpen: false,                  // My notes: was open while locked → opens again after a reload                    // My notes (Miinthe, 2026-10-18): its window on the 'left' or 'right' (PC), remembered
-    kitNoAsk: {},
+    notesKeepOpen: false,                  // My notes: was open while locked → opens again after a reload
+    kitNoAsk: {},                          // overhaul: the shared parts' "Don't ask me again" answers (per kind of removal)
     dkTheme: 'follow',                     // overhaul: DeepLore's look — 'follow' SillyTavern's theme, or always 'light' / 'dark'
     barShow: true,                         // overhaul: the DeepLore bar above the message box
-    barHideStQr: true,                     // overhaul: SillyTavern's own Quick Reply row steps aside while the bar holds starred ones                          // overhaul: the shared parts' "Don't ask me again" answers (per kind of removal)
+    barReev: true, barGuide: true, barSpell: true, barSsend: true, barDraftBtn: true,   // the bar's action buttons, each on or off (Miinthe, 2026-11-03)
+    spellWords: [],                        // ✓ Fix spelling: her own words — never "fixed", and what a near miss gets fixed to (Miinthe, 2026-11-03)
+    barHideStQr: true,                     // overhaul: SillyTavern's own Quick Reply row steps aside while the bar holds starred ones
     iconDrawer: 'off',                     // floating icon drawer (Miinthe, 2026-11-02): 'off' | 'phone' | 'always'
     iconDrawerOff: [],                     // the icons switched off in it (their keys: '#id', '.class' or 't:title')
     barHot: [],                            // overhaul 2a: the bar's starred quick replies, [{ set, label }] (SillyTavern's own Quick Replies)
@@ -223,10 +225,10 @@ export const defaultSettings = {
     // overhaul (built 2026-10-17): where Auto Lorebook's new entries go — 'about': about the run → the run's folder,
     // otherwise the character's base folder (none: the Target folder) · 'target': always the Target folder (autoSuggestFolder)
     newEntryPlacement: 'about',
-    newEntryMark: true,
+    newEntryMark: true,                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
     // cleaning up a run (Miinthe, 2026-10-27): its files go to the trash folder (never read) or are deleted for good
     runCleanupMode: 'trash',
-    runTrashFolder: 'zz Deleted runs',                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
+    runTrashFolder: 'zz Deleted runs',
     ownPrompts: [],                        // her own prompt pieces: [{ id, name, text, position, depth, role }] (src/own-prompts-pure.js)
     // where the story / tracker block goes (was fixed: in the chat, depth 4, as system)
     storyBlockPosition: 1,
@@ -288,7 +290,7 @@ export const defaultSettings = {
     analyticsData: {},
     _wizardCompleted: false,
     // Increment to trigger migrations in runMigrations().
-    settingsVersion: 7,
+    settingsVersion: 8,
 };
 
 /** Per-tool settings-key map for resolveConnectionConfig(). */
@@ -422,10 +424,10 @@ export const settingsConstraints = {
     storyTrackerConnectionMode: { enum: ['profile'] },   // LOCAL PATCH (Miinthe, 2026-10-03)
     noticeStyle: { enum: ['summary', 'each'] },   // LOCAL PATCH (Miinthe, 2026-10-13)
     newEntryPlacement: { enum: ['about', 'target'] },   // overhaul (2026-10-17)
-    runCleanupMode: { enum: ['trash', 'delete'] },
-    iconDrawer: { enum: ['off', 'phone', 'always'] },   // floating icon drawer (2026-11-02)       // run cleanup (2026-10-27)
-    meroConnectionMode: { enum: ['profile'] },
-    worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
+    runCleanupMode: { enum: ['trash', 'delete'] },       // run cleanup (2026-10-27)
+    iconDrawer: { enum: ['off', 'phone', 'always'] },   // floating icon drawer (2026-11-02)
+    meroConnectionMode: { enum: ['profile'] },           // LOCAL PATCH (Miinthe, 2026-10-05): Mero
+    worldConnectionMode: { enum: ['profile'] },          // world layer (2026-10-19)
     // BUG-AUDIT (Fix 12): missing whitelist would let invalid imports/migrations land an
     // unrecognized value, which deduplicateMultiVault then silently treated like 'first'
     // (drop duplicates instead of preserving). Safe default 'all' restored on mismatch.

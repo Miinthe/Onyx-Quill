@@ -3,7 +3,7 @@
  * 📖 Why? and 💡 Pitch buttons (Miinthe's decision; mock-up v13, spot 2). It holds:
  *   Pitch from here · Why these entries · What this changed · Branch here as a new run · Re-evaluate and swipe
  * Each item is today's function: the Why? pop-up (cartographer.js), Mero's pitches (pitches.js), the What changed
- * list (changes-tab.js), SillyTavern's own branch (the new branch then offers to become a run, branch-run.js), and
+ * fold (the Story tab, src/panel/story-view.js), SillyTavern's own branch (the new branch then offers to become a run, branch-run.js), and
  * Re-evaluate (reevaluate.js, which works on the newest reply only).
  */
 import { chat, eventSource, event_types } from '../../../../../script.js';
@@ -30,9 +30,8 @@ function addButtons() {
 /** The newest reply after a message of Miinthe's (what Re-evaluate works on). */
 function isNewestReply(n) {
     const c = chat || [];
-    let last = c.length - 1;
-    while (last >= 0 && c[last]?.is_system) last--;
-    return n === last && !c[n]?.is_user;
+    // the very last message, as SillyTavern swipes it — skipping a hidden one offered a swipe that couldn't run (bug hunt 2026-11-03)
+    return n === c.length - 1 && !c[n]?.is_user && !c[n]?.is_system;
 }
 
 function items(n) {

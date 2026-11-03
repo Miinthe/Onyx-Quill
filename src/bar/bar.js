@@ -1,7 +1,10 @@
 /**
  * Overhaul round 2a (2026-10-15) — the DeepLore bar above the message box. Rules: bar-pure.js. Looks: frame.css.
  *
- * PC:    📖 · side panel (dot / envelope) · starred Quick Replies · all Quick Replies · My notes │ Re-evaluate · Guided swipe · Simple send · Draft
+ * PC:    📖 · side panel (dot / envelope) · My notes · World · all Quick Replies · starred Quick Replies │ Re-evaluate · Guided swipe · Fix spelling · Simple send · Draft
+ *        (Miinthe, 2026-11-03: the "open something" buttons together in a fixed order, the Quick Reply drawer leading its stars;
+ *        each action button can be switched off in Settings › Interface › The bar; ⚡ opens all Quick Replies as an
+ *        extra row on top of the bar — extra-row.js, shared with the floating icons)
  * Phone: 📖 · side panel · Quick Replies · My notes · ⋯ (the special buttons); the last two take over the row (‹ back), and a
  *        handle on top pulls the row taller for more rows (Miinthe: "I hate being unnecessarily limited").
  * While DeepLore works on a reply its status line (index.js, the old toast) sits in the bar, with Cancel.
@@ -20,6 +23,7 @@ import * as K from '../kit/kit.js';
 import { toggleNotes, notesOpen, close as closeNotes } from '../notes.js';
 import { worldHere, worldOpen, toggleWorld, closeWorld, worldDots } from '../world/world.js';
 import { asGuide, guideActive, GUIDE_KEY } from '../guided-swipe-pure.js';
+import { openExtraRow, closeExtraRow, extraRowOpen, extraRowEl, placeExtraRow } from './extra-row.js';
 
 const I = K.icon;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -108,15 +112,17 @@ async function simpleSend() {
  * draft back after it was put back (found 2026-10-18 with two windows open). The old settings value moves over once.
  */
 const DRAFT_FILE = 'deeplore-reply-draft.json';
+// only ever text — for a day the Draft button's on/off switch was stored under this same key (bug hunt 2026-11-03)
+const oldDraft = () => { const v = getSettings().barDraft; return typeof v === 'string' ? v : ''; };
 let draftText = null;   // what the dot shows (null: not read yet)
 async function readDraft() {
     try {
         const r = await fetch(`/user/files/${DRAFT_FILE}`, { cache: 'no-store' });
         if (r.ok) { const j = await r.json(); draftText = typeof j?.text === 'string' ? j.text : ''; return draftText; }
         if (r.status !== 404) throw new Error(`the server said ${r.status}`);
-    } catch (err) { console.warn('[DLE] draft: could not read it:', err?.message || err); return draftText ?? (getSettings().barDraft || ''); }
+    } catch (err) { console.warn('[DLE] draft: could not read it:', err?.message || err); return draftText ?? oldDraft(); }
     // no file yet: the draft kept in the settings before (once)
-    const old = getSettings().barDraft || '';
+    const old = oldDraft();
     if (await writeDraft(old)) { getSettings().barDraft = ''; saveSettingsDebounced(); }
     return draftText;
 }
@@ -231,21 +237,31 @@ function draw() {
     // 🧭 Guided swipe (Miinthe, 2026-11-02: in the bar after Re-evaluate; the button holds the direction — lit while one is in force)
     const gd = asGuide(chat_metadata?.[GUIDE_KEY]), gOn = guideActive(gd, (getContext()?.chat || []).length - 1);
     const guideB = db('guide', 'wand', gOn ? `Guided swipe — direction: “${gd.text}” (click: swipe again, change, keep or drop it)` : 'Guided swipe: swipe the newest reply with a direction (“less flowery”, “he’s colder here”)', gOn ? '<span class="dle-dot"></span>' : '', gOn ? ' on' : '');
-    const specials = db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') + guideB +
-        db('ssend', 'ssend', 'Simple send: post as your message, no reply') +
-        db('draft', 'draft', draftText ? 'Put the draft back' : 'Keep as a draft (follows you to other devices)', draftDot);
+    // each action button can be switched off (Miinthe, 2026-11-03 — Settings › Interface › The bar › Buttons on the bar)
+    const showB = k => s[k] !== false;
+    const specials = (showB('barReev') ? db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') : '') + (showB('barGuide') ? guideB : '') +
+        // ✓ Fix spelling (Miinthe, 2026-11-03): her message box corrected by Mero's AI, with what changed and Undo (spell.js)
+        (showB('barSpell') ? db('spell', 'check', 'Fix spelling: typos, capitals and punctuation in your message — your words stay. You see what changed, with Undo. Right-click (hold on the phone): your words') : '') +
+        (showB('barSsend') ? db('ssend', 'ssend', 'Simple send: post as your message, no reply') : '') +
+        (showB('barDraftBtn') ? db('draft', 'draft', draftText ? 'Put the draft back' : 'Keep as a draft (follows you to other devices)', draftDot) : '');
+    if (mode === 'sp' && !specials) mode = 'home';   // the last action button switched off while ⋯ was open: no empty screen
     const allQr = sets.map(x => x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
     let row;
     if (phone() && mode !== 'home') {
         const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
         row = `<div class="dle-grab" data-b="grab" title="Pull up for more room"></div>${db('back', 'back', 'Back')}<div class="dle-take${takeH > 46 ? ' wrapped' : ''}" style="height:${takeH}px">${inner}</div>`;
     } else if (phone()) {
-        row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + db('sp', 'more', gOn ? `More — a swipe direction is set: “${gd.text}”` : 'More: re-evaluate, guided swipe, simple send, draft', draftDot + (gOn ? '<span class="dle-dot" style="right:12px"></span>' : ''));
+        row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + (specials ? db('sp', 'more', gOn ? `More — a swipe direction is set: “${gd.text}”` : 'More: re-evaluate, guided swipe, fix spelling, simple send, draft', (showB('barDraftBtn') ? draftDot : '') + (gOn && showB('barGuide') ? '<span class="dle-dot" style="right:12px"></span>' : '')) : '');
     } else {
-        row = book + panelB + `<div class="dle-hot">${hot.map(qrBtn).join('')}</div>` + db('qrs', 'qr', 'All quick replies', '', '') + notesB + worldB + '<span class="dle-vsep"></span>' + specials;
+        // the "open something" buttons together, the Quick Reply drawer leading its starred ones (Miinthe, 2026-11-03)
+        const qrsB = db('qrs', 'qr', 'All quick replies', '', extraRowOpen('qrs') ? ' on' : '').replace('data-b="qrs"', 'data-b="qrs" data-xrow="qrs"');
+        row = book + panelB + notesB + worldB + qrsB + `<div class="dle-hot">${hot.map(qrBtn).join('')}</div>` + (specials ? '<span class="dle-vsep"></span>' + specials : '');
     }
     const main = bar.querySelector('.dle-bar-main');
     if (main.innerHTML !== row) main.innerHTML = row;   // unchanged → keep focus and hover where they are
+    // the Quick Reply row follows the bar (sets switched on or off, a phone-sized window has its own takeover row)
+    const xr = extraRowEl('qrs');
+    if (xr) { if (phone()) closeExtraRow('qrs'); else { fillQrRow(xr); placeExtraRow(); } }
     bar.classList.toggle('phone', phone());
     const bub = bar.querySelector('.dle-bar-bubble');
     bub.hidden = !st.hold;
@@ -313,8 +329,49 @@ function openQrDrawer(anchor) {
     popClose = () => { pop.remove(); anchor.classList.remove('on'); document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', key, true); };
 }
 
+/**
+ * ⚡ on a PC: every Quick Reply as an extra row on top of the bar. 📌 at its end turns the row into the chooser — which
+ * ones sit on the bar (☆) and their order — and Done turns it back (Miinthe, 2026-11-03: the old pop-up sat under the chat
+ * and was hard to see; one row for both keeps it in one place, in the bar's look).
+ */
+let qrChoose = false;
+function fillQrRow(el) {
+    if (qrChoose) {
+        if (el.dataset.mode === 'choose') return;   // the chooser updates itself (stars, order)
+        el.dataset.mode = 'choose'; el.onclick = null; el.innerHTML = '';
+        const head = document.createElement('div'); head.className = 'dle-xhead';
+        head.innerHTML = '<b>Quick replies on the bar</b><span class="dk-hint">☆ puts one on the bar · ‹ › its place</span>';
+        head.append(K.button({ label: 'Done', kind: 'primary', onClick: () => { qrChoose = false; fillQrRow(el); placeExtraRow(); } }));
+        el.append(head, qrDrawerBody());
+        return;
+    }
+    const sets = qrSets();
+    const html = !qrApi() ? '<span class="dk-hint">SillyTavern’s Quick Reply extension is not loaded.</span>'
+        : !sets.length ? '<span class="dk-hint">No Quick Replies here — switch a set on in SillyTavern’s Quick Reply settings (everywhere, this chat or this character).</span>'
+            : sets.map(x => (sets.length > 1 ? `<span class="dle-xset">${esc(x.name)}</span>` : '') + x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
+    const full = html + '<span class="dle-xsp"></span>' + db('stars', 'pinI', 'Choose which ones sit on the bar, and their order');
+    if (el.dataset.mode === 'run' && el.innerHTML === full) return;
+    el.dataset.mode = 'run';
+    el.innerHTML = full;
+    el.onclick = e => {
+        const q = e.target.closest('[data-qr]');
+        if (q) { closeExtraRow('qrs'); runQr(q.dataset.qrSet, q.dataset.qr); return; }
+        if (e.target.closest('[data-b="stars"]')) { qrChoose = true; fillQrRow(el); placeExtraRow(); }
+    };
+}
+function toggleQrRow() {
+    if (extraRowOpen('qrs')) { closeExtraRow('qrs'); return; }
+    closePop();
+    qrChoose = false;
+    openExtraRow('qrs', fillQrRow, { onClose: () => { qrChoose = false; soon(); } });
+    soon();
+}
+
 // ── wiring ──────────────────────────────────────────────────────────────────
 
+let spellHold = null;   // a hold on ✓ opened the word list — the click that ends it doesn't also run the check
+const spellWordsOpen = () => !!document.querySelector('.dle-spellwords');
+function openSpellWords() { if (!spellWordsOpen()) import('../spell.js').then(m => m.openMyWords()); }
 function onClick(e) {
     const q = e.target.closest('[data-qr]');
     if (q) { runQr(q.dataset.qrSet, q.dataset.qr); return; }
@@ -323,12 +380,13 @@ function onClick(e) {
     switch (b.dataset.b) {
         case 'book': K.openMenu(b, bookItems()); break;
         case 'panel': pressPanel(); break;
-        case 'qrs': if (phone()) { mode = 'qr'; draw(); } else openQrDrawer(b); break;
+        case 'qrs': if (phone()) { mode = 'qr'; draw(); } else toggleQrRow(); break;
         case 'stars': openQrDrawer(b); break;
         case 'sp': mode = 'sp'; draw(); break;
         case 'back': mode = 'home'; draw(); break;
         case 'reev': reevaluate(); break;
         case 'guide': import('../guided-swipe.js').then(m => m.guideClick(b)); break;
+        case 'spell': if (spellHold === 'held') { spellHold = null; break; } import('../spell.js').then(m => m.fixSpelling(on => { b.classList.toggle('on', on); b.disabled = on; })); break;
         case 'ssend': simpleSend(); break;
         case 'draft': draft(); break;
         case 'notes': toggleNotes(); break;
@@ -360,6 +418,16 @@ function mount() {
         bar.addEventListener('click', onClick);
         bar.addEventListener('pointerdown', onGrab);
         bar.addEventListener('pointerdown', pressStart, true);
+        // ✓ Fix spelling: right-click, or hold it on the phone → her word list (Miinthe, 2026-11-03)
+        bar.addEventListener('contextmenu', e => { if (e.target.closest('[data-b="spell"]')) { e.preventDefault(); openSpellWords(); } });
+        bar.addEventListener('pointerdown', e => {
+            const b = e.target.closest('[data-b="spell"]');
+            if (!b || e.pointerType === 'mouse') return;
+            clearTimeout(spellHold);
+            spellHold = setTimeout(() => { spellHold = 'held'; openSpellWords(); }, 550);
+            const stop = () => { if (spellHold !== 'held') clearTimeout(spellHold); for (const t of ['pointerup', 'pointercancel', 'pointerleave']) b.removeEventListener(t, stop); };
+            for (const t of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(t, stop);
+        });
         for (const t of ['pointerup', 'pointercancel']) document.addEventListener(t, pressEnd, true);
         bar.querySelector('.dle-bar-bubble:not(.mero)').addEventListener('click', () => window.__dleOpenRequests?.());
         bar.querySelector('.dle-bar-bubble.mero').addEventListener('click', e => { e.currentTarget.hidden = true; window.__dleOpenMeroTalks?.(); });

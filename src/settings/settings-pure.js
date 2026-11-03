@@ -137,10 +137,7 @@ export const SECTIONS = [
         { t: 'Variety', rows: [
             { id: 'b-rep', label: 'Give others a turn', tip: 'An entry sent many times in a row steps back; one skipped a long time gets a boost', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
             { id: 'b-cool', label: 'Rest after sending', hint: 'replies', tip: 'An entry waits this many replies before it can be sent again', type: 'num', key: 'reinjectionCooldown', old: 'Repeat cooldown / reinjection cooldown' },
-            { id: 'b-skip', label: 'Skip what was just sent', hint: 'messages back · 0 = off', tip: 'Leave out entries already sent in this many recent messages', type: 'num', old: 'Skip recently injected / strip duplicate injections / lookback depth',
-                read: s => (s.stripDuplicateInjections ? Number(s.stripLookbackDepth) : 0),
-                write: (s, v) => { const n = Number(v); if (!Number.isFinite(n) || n <= 0) { s.stripDuplicateInjections = false; return; } s.stripDuplicateInjections = true; s.stripLookbackDepth = Math.max(1, Math.min(10, Math.round(n))); },
-                min: 0, max: 10 },
+            // 'Skip what was just sent' removed (Miinthe, 2026-11-03): entries sent again are shown in 📖 Why as "Same as last turn"
             { id: 'b-boost', label: 'Bring one back after', hint: 'replies skipped', type: 'num', key: 'decayBoostThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Boost after N skips' },
             { id: 'b-pen', label: 'Hold one back after', hint: 'times in a row', type: 'num', key: 'decayPenaltyThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Penalize after N in a row' },
         ] },
@@ -229,6 +226,12 @@ export const SECTIONS = [
         { t: 'The bar', rows: [
             { id: 'ui-bar', label: 'Show the DeepLore bar', tip: 'Above the message box', type: 'switch', key: 'barShow' },
             { id: 'ui-notes', label: 'My notes', tip: 'A notes button on the bar: your own notes, never sent to the AI', type: 'switch', key: 'notesEnabled' },
+            // each action button on or off (Miinthe, 2026-11-03: "toggle those action buttons on and off in the general setting menu")
+            { id: 'ui-b-reev', label: 'Button: Re-evaluate and swipe', tip: 'On the bar, after the divider (on a phone in ⋯)', type: 'switch', key: 'barReev' },
+            { id: 'ui-b-guide', label: 'Button: Guided swipe', tip: 'Swipe the newest reply with a direction', type: 'switch', key: 'barGuide' },
+            { id: 'ui-b-spell', label: 'Button: Fix spelling', tip: 'Corrects typos in your message box, with Undo', type: 'switch', key: 'barSpell' },
+            { id: 'ui-b-ssend', label: 'Button: Simple send', tip: 'Post as your message, no reply', type: 'switch', key: 'barSsend' },
+            { id: 'ui-b-draft', label: 'Button: Keep as a draft', tip: 'Put what you typed aside, and back', type: 'switch', key: 'barDraftBtn' },
             { id: 'ui-barqr', label: 'Hide SillyTavern’s Quick Reply row', tip: 'While you have Quick Replies starred on the bar', type: 'switch', key: 'barHideStQr' },
             { id: 'ui-drawer', label: 'Floating icon drawer', tip: 'Other extensions’ floating icons wait in a small tab on the bar instead of over your chat', type: 'seg', key: 'iconDrawer', opts: [['off', 'off'], ['phone', 'phone only'], ['always', 'always']], fx: 'drawer', old: 'Floating icons / floating buttons' },
             { id: 'ui-drawerpick', label: 'Icons in the drawer', tip: 'Each floating icon on this screen, with a switch', type: 'btn', btn: 'Choose…', act: 'iconDrawer', dis: s => (s.iconDrawer || 'off') === 'off', disWhy: 'The drawer is off' },
@@ -473,6 +476,8 @@ export const roughTokens = text => Math.ceil(String(text || '').length / 4);
  */
 export const NOT_DRAWN = {
     showLoreSources: 'Why? on / off — let go (Step 4 checklist s-whybtn); Why these entries lives in the reply’s ⋯',
+    stripDuplicateInjections: 'Skip what was just sent — let go (Miinthe, 2026-11-03): entries sent again show in 📖 Why as "Same as last turn"',
+    stripLookbackDepth: 'goes with Skip what was just sent (let go)',
     aiSearchClaudeCodePrefix: 'proxy-only and already hidden in the old window (proxy mode retired in v2.5)',
     aiSearchSystemPrompt: 'edited in Prompts', scribePrompt: 'edited in Prompts', autoSuggestPrompt: 'edited in Prompts',
     optimizeKeysPrompt: 'edited in Prompts', aiNotepadPrompt: 'edited in Prompts', aiNotepadExtractPrompt: 'edited in Prompts',
@@ -480,3 +485,36 @@ export const NOT_DRAWN = {
     aiForceUserRole: 'AI & connections › Fine print',
     ownPrompts: 'Prompts › + Your own prompt (its own editor)', characterBudgets: 'a character’s page (Budget rows)',
 };
+
+// ── Reset all (Miinthe, 2026-11-03: "reset should not erase anything … just put everything back to default, it should also
+// warn you") — every setting goes back to its default; what she made or connected stays. ──
+
+/** Kept by Reset all: her connections, her writing, her lists and what DeepLore learned. */
+export const RESET_KEEPS = [
+    'enabled', 'settingsVersion', '_wizardCompleted', '_vaultsMigrated',          // on/off stays as it is; no setup again
+    'vaults', 'obsidianPort', 'obsidianApiKey',                                   // vault connections
+    'ownPrompts', 'promptPresets', 'aiSearchSystemPrompt', 'scribePrompt', 'autoSuggestPrompt', 'optimizeKeysPrompt',
+    'aiNotepadPrompt', 'aiNotepadExtractPrompt', 'summarySystemPrompt', 'responsePrefillSeed',   // her writing
+    'spellWords', 'barHot', 'barDraft', 'characterBudgets', 'graphSavedLayout', 'notesLastOpen', // her lists and choices
+    'analyticsData',                                                              // what DeepLore learned
+];
+/** AI connections of every job (mode, profile, model, proxy, where it writes). */
+const isConnection = k => /(ConnectionMode|ProfileId|ProxyUrl|Model|WriteVaultId)$/.test(k);
+
+/** Reset all, in place: defaults for everything except RESET_KEEPS and the AI connections. → the keys that were kept. */
+export function resetToDefaults(settings, defaults) {
+    const keep = new Set(RESET_KEEPS);
+    const kept = [];
+    for (const [key, value] of Object.entries(defaults)) {
+        if (keep.has(key) || isConnection(key)) { if (settings[key] !== undefined) kept.push(key); else settings[key] = clone(value); continue; }
+        settings[key] = clone(value);
+    }
+    return kept;
+}
+const clone = v => (typeof v === 'object' && v !== null ? JSON.parse(JSON.stringify(v)) : v);
+
+/** The warning before Reset all (plain HTML for SillyTavern's confirm window). */
+export const RESET_WARNING = '<div style="text-align:left;max-width:460px"><p><strong>Put every DeepLore setting back to its default?</strong></p>'
+    + '<p>Every switch, number and choice in these settings goes back to how DeepLore comes. This can’t be undone.</p>'
+    + '<p><b>Nothing of yours is erased.</b> These stay: your vault and AI connections, your own prompts and edited prompts, your words for Fix spelling, starred Quick Replies, your saved draft, character budgets, the graph layout and usage stats. DeepLore stays on or off as it is now.</p>'
+    + '<p>Your boards, runs, lore, notes and Mero’s talks are not part of the settings and are never touched.</p></div>';

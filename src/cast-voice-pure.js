@@ -39,7 +39,7 @@ export const NPC_WINDOW = 14;
  *  - lore: her own entries' text
  *  - messages: [{ name, mes }] oldest first (the message being swiped already left out)
  */
-export function npcPrompt({ npc, userName = 'User', mainName = 'Character', now = null, storyLines = [], lore = '', messages = [], exit = null }) {
+export function npcPrompt({ npc, userName = 'User', mainName = 'Character', now = null, storyLines = [], lore = '', messages = [], exit = null, notes = [] }) {
     const name = npc.name;
     const fill = s => String(s || '').replaceAll('{{char}}', name).replaceAll('{{user}}', userName);
     const parts = [`You are ${name}, a character in an ongoing roleplay between ${userName} and ${mainName}. ${name} speaks now — in their own message.`];
@@ -53,6 +53,10 @@ export function npcPrompt({ npc, userName = 'User', mainName = 'Character', now 
     if (lore) parts.push(`About ${name} (lore):\n${clip(lore, 2000)}`);
     // leaving of their own accord: they say so and go, in this message (Miinthe: "they should say so in their reply and not just magically disappear")
     if (exit) parts.push(`In this message ${name} leaves the scene${exit.why ? ` (${exit.why})` : ''}: let them say so, in their own way, and go. By the end of it they are gone.`);
+    // the writer's own lines that fit any voice: a guided swipe's direction, the slop guard's banned phrases (bug hunt
+    // 2026-11-03: a guided swipe on an NPC's message was tagged with the direction but never got it)
+    const nl = arr(notes).map(x => String(x?.text || '').trim()).filter(Boolean);
+    if (nl.length) parts.push(`For this message:\n${nl.map(t => `- ${t}`).join('\n')}`);
     parts.push(`Write only ${name}'s next message: their words and actions. Never write for ${userName} or ${mainName}. As long as it needs to be — usually one or two paragraphs. Don't start with "${name}:".`);
     const lines = arr(messages).map(m => `${m.name}: ${norm(m.mes)}`);
     return [

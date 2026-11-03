@@ -28,7 +28,7 @@
  */
 import { findQuoteMatch } from './quote-match-pure.js';
 import { named, nameRule } from './mero-names-pure.js';
-import { normAsks, MAX_ASKS } from './ask-pure.js';
+import { normAsks, MAX_ASKS, withAsked } from './ask-pure.js';
 
 export const PITCHES_KEY = 'deeplore_mero_pitches';   // chat_metadata: { list, next, menu, dropped }
 
@@ -400,7 +400,7 @@ export const MAX_TALK_PITCHES = 3;
  */
 export function talkPitchPrompt(talk, ctx = {}, { ask = true } = {}) {
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${h}\n${String(body).trim()}` : '');
-    const msgs = arr(talk?.msgs).filter(m => m && (m.who === 'miinthe' || m.who === 'mero') && str(m.t).trim()).slice(-40);
+    const msgs = arr(talk?.msgs).filter(m => m && (m.who === 'miinthe' || m.who === 'mero') && (str(m.t).trim() || arr(m.asks).length)).slice(-40);
     const system = [
         `You are Mero ☆, Miinthe's co-writer for her roleplay${ctx.character ? ` with ${ctx.character}` : ''}. ${ctx.persona || ''}`.trim(),
         'Miinthe and you planned something in the talk below. Write up what you WORKED OUT TOGETHER as pitch cards she can send into her story.',
@@ -416,11 +416,11 @@ export function talkPitchPrompt(talk, ctx = {}, { ask = true } = {}) {
         'Miinthe plays her own character: a card never decides what her character does, says or feels — write it from the world\'s and the other characters\' side.',
         'Kinds: "twist" — something happens · "acts" — a character does something on their own (name them in "who") · "callback" — something from earlier comes back. Strength: "nudge" small · "turn" changes where the scene goes · "bomb" changes the story.',
         'Cards already made from this talk are listed: never write one of them again. Only when the talk CHANGED one since, write the changed version. If nothing new was settled since, answer with no items.',
-        ask ? 'Answer with JSON only: {"open": [question, …], "items": [card, …]} — a card is described below.' : '',
-        `Answer with JSON only: {"items": [{"type": "pitch"|"plan", "kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "from": "what in the talk it comes from, a few words", "text": "what happens (type pitch)", "goal": "where the plan leads (type plan)", "beats": ["…", "…"] (type plan), "open": "what is still open, a few words, or \"\""}]}. If the talk settled nothing concrete yet: {"items": [], "why": "one short line on what is still missing"}.`,
+        // ONE answer line (bug hunt 2026-11-03: two "JSON only" lines, the last without "open" — a weak model never asked)
+        `Answer with JSON only: {${ask ? '"open": [question, …], ' : ''}"items": [{"type": "pitch"|"plan", "kind": "twist"|"acts"|"callback", "strength": "nudge"|"turn"|"bomb", "who": "a CAST name" or null, "from": "what in the talk it comes from, a few words", "text": "what happens (type pitch)", "goal": "where the plan leads (type plan)", "beats": ["…", "…"] (type plan), "open": "what is still open, a few words, or \"\""}]}. If the talk settled nothing concrete yet: {${ask ? '"open": [], ' : ''}"items": [], "why": "one short line on what is still missing"}.`,
     ].filter(Boolean).join('\n\n');
     const user = [
-        sec(`The talk${talk?.title ? ` — “${talk.title}”` : ''}`, msgs.map(m => `${m.who === 'miinthe' ? named('Miinthe', ctx.names) : 'Mero'}: ${clip(m.t, 1500)}`).join('\n\n')),
+        sec(`The talk${talk?.title ? ` — “${talk.title}”` : ''}`, msgs.map(m => `${m.who === 'miinthe' ? named('Miinthe', ctx.names) : 'Mero'}: ${clip(m.who === 'mero' ? withAsked(m) : m.t, 1500)}`).join('\n\n')),
         sec('Already made from this talk — don\'t repeat', arr(ctx.already).map(t => `- ${clip(t, 400)}`).join('\n')),
         sec('DON\'T — never against these', arr(ctx.donts).map(t => `- ${t}`).join('\n')),
         sec('The board — where the story stands', arr(ctx.board).join('\n')),

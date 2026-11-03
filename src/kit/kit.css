@@ -257,7 +257,7 @@ input.dk-tile.dk-tin { width: 140px; font-size: var(--dk-fs); font-weight: 700; 
 
 /* ── notices (small, with Undo) ──────────────────────────────────────────── */
 /* placed from the top: on a phone SillyTavern's page is 0px tall, so "bottom: …" put the notices above the screen (bug hunt 2026-10-17) */
-.dk-notices { position: fixed; z-index: calc(var(--dk-z) + 20); left: 50%; top: calc(100dvh - var(--bottomFormBlockSize, 0px) - 24px); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
+.dk-notices { position: fixed; z-index: calc(var(--dk-z) + 20); left: 50%; top: var(--dk-notice-top, calc(100dvh - var(--bottomFormBlockSize, 0px) - 24px)); transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: max-content; max-width: calc(100vw - 24px); pointer-events: none; }
 /* while a window is open, notices go to the top: at the bottom they covered its buttons (bug hunt 2026-10-16:
    "Settings back to default." lay over Cancel / Replace it in Mero's narrow side panel, where windows are bottom sheets) */
 body:has(.dk-scrim) .dk-notices { top: 12px; transform: translateX(-50%); }

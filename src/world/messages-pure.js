@@ -258,9 +258,9 @@ export function parseExtract(text) {
 
 /**
  * The prompt for `name` answering a message (or a letter).
- * o: { name, card, now (personNow), fromName, userName, look, thread: [{ who, text, stamp }], story: [{ name, mes }], storyLines, stampNow }
+ * o: { name, card, now (personNow), fromName, look, thread: [{ who, text, stamp }], story: [{ name, mes }], storyLines, when, mayPass, quirks, feed, discretion }
  */
-export function replyPrompt({ name, card = '', now = null, fromName, userName = 'User', look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [], discretion = '' }) {
+export function replyPrompt({ name, card = '', now = null, fromName, look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [], discretion = '' }) {
     const letters = look === 'letters';
     const parts = [
         `You are ${name}, a character in an ongoing roleplay. You are not in the scene with ${fromName} right now; ${fromName} has just ${letters ? 'sent you a letter' : 'texted you'}, and you answer ${letters ? 'with a letter of your own' : 'by text'}.`,
@@ -341,7 +341,7 @@ export function meetupChange(cast, p, now, text, newIdFn) {
 }
 /** The main character has no plan list: a world record the main writer is told about. */
 export const mainPlans = store => arr(store?.records).filter(r => r.kind === 'mplan');
-export function mainPlanLine(store, mainName) {
+export function mainPlanLine(store) {
     const p = mainPlans(store).slice(-3).map(r => r.text);
     return p.length ? `PLANNED (agreed in messages; let it happen when the story gets there, not before): ${p.join('; ')}` : '';
 }

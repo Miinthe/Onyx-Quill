@@ -8,6 +8,7 @@
  * 🥕 listens to pointerdown / pointerup and captures the pointer), then mouse events and a click for the rest. A hold
  * (or right-click) passes on a right-click, for the extension's own options menu.
  */
+import { openExtraRow, closeExtraRow } from './extra-row.js';
 import { eventSource, event_types, saveSettingsDebounced } from '../../../../../../script.js';
 import { getSettings } from '../../settings.js';
 import { drawerActive, looksFloating, iconKey, iconName, badgeOf, tabBadge, docked } from './icon-drawer-pure.js';
@@ -18,11 +19,12 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const OURS = '#top-bar, #top-settings-holder, #sheld, #form_sheld, #movingDivs, #toast-container, .popup, dialog, #bg1, #bg_custom, #dle-bar, #deeplore-panel, .dk, [id^="dle-"], [class*="dle-"], [id^="deeplore"]';
 
 let found = new Map();     // key → element (every floating icon on the page, docked or not)
-let box = null, fanEl = null, open = false, observer = null, timer = null;
+let box = null, open = false, observer = null, timer = null;
 
 const bar = () => document.getElementById('dle-bar');
 const isPhone = () => !!bar()?.classList.contains('phone') || matchMedia('(max-width: 1000px)').matches;
-const active = () => drawerActive(getSettings().iconDrawer, isPhone());
+// no bar (switched off, or not drawn yet): the icons stay where they are — docked with no tab they were unreachable (bug hunt 2026-11-03)
+const active = () => getSettings().barShow !== false && !!bar() && drawerActive(getSettings().iconDrawer, isPhone());
 const offList = () => (Array.isArray(getSettings().iconDrawerOff) ? getSettings().iconDrawerOff : []);
 
 function infoOf(el) {
@@ -68,7 +70,7 @@ function draw(els) {
     const b = bar();
     if (!b) return;
     b.classList.toggle('dle-has-drawer', !!els.length);
-    if (!els.length) { box?.remove(); box = null; fanEl?.remove(); fanEl = null; open = false; return; }
+    if (!els.length) { box?.remove(); box = null; if (open) closeExtraRow('fid'); open = false; b.classList.remove('dle-fid-open'); return; }
     if (!box || box.parentElement !== b) {
         box?.remove();
         box = document.createElement('div');
@@ -76,25 +78,22 @@ function draw(els) {
         b.appendChild(box);
     }
     const num = tabBadge(els.map(badge));
+    // the bar's own button size (Miinthe, 2026-11-03: "the floating icons in the FID are too large"); the name is the tooltip
     const icons = els.map((el, i) => {
         const n = badge(el), clone = el.cloneNode(true);
         clone.removeAttribute('id'); clone.removeAttribute('style'); clone.className = '';
         const inner = clone.innerHTML.trim() ? clone.innerHTML : '🧩';
-        // icons only, like when they float (Miinthe, 2026-11-02); the name is the tooltip
-        return `<button type="button" class="dle-idr-it" data-i="${i}" title="${esc(nameOf(el))} · hold for its options" aria-label="${esc(nameOf(el))}"><span class="dle-idr-ic">${inner}${n ? `<span class="dle-idr-badge">${esc(n)}</span>` : ''}</span></button>`;
+        return `<button type="button" class="dle-db dle-idr-it" data-i="${i}" title="${esc(nameOf(el))} · hold for its options" aria-label="${esc(nameOf(el))}"><span class="dle-idr-ic">${inner}</span>${n ? `<span class="dle-idr-badge">${esc(n)}</span>` : ''}</button>`;
     }).join('');
-    const html = `<button type="button" class="dle-idr-tab" aria-expanded="${open}" aria-label="Floating icons: ${els.length}" title="Floating icons (${els.length})"><span class="dle-idr-chev">${open ? '▼' : '▲'}</span>${num ? `<span class="dle-idr-badge">${esc(num)}</span>` : ''}</button>`;
+    const html = `<button type="button" class="dle-idr-tab" data-xrow="fid" aria-expanded="${open}" aria-label="Floating icons: ${els.length}" title="Floating icons (${els.length})"><span class="dle-idr-chev">${open ? '▼' : '▲'}</span>${num ? `<span class="dle-idr-badge">${esc(num)}</span>` : ''}</button>`;
     if (box.innerHTML !== html) { box.innerHTML = html; box.querySelector('.dle-idr-tab').onclick = () => { open = !open; apply(); }; }
-    // the row is its own layer on <body>: inside the message box's area it would sit under the chat
-    if (!open) { fanEl?.remove(); fanEl = null; return; }
-    if (!fanEl) { fanEl = document.createElement('div'); fanEl.className = 'dk dle-idr-fan'; document.body.appendChild(fanEl); }
-    if (fanEl.innerHTML !== icons) { fanEl.innerHTML = icons; wire(fanEl, els); }
-    // placed by measuring: on a phone the theme can make <body> the frame "fixed" is measured from, not the screen
-    const r = box.getBoundingClientRect();
-    fanEl.style.left = '0px'; fanEl.style.top = '0px';
-    const o = fanEl.getBoundingClientRect();
-    fanEl.style.left = (Math.max(4, r.left - 4) - o.left) + 'px';
-    fanEl.style.top = (r.top - 6 - o.height - o.top) + 'px';
+    b.classList.toggle('dle-fid-open', open);
+    // open: an extra bar on top of the bar, above the tab (Miinthe, 2026-11-03: "for the FID it should be an extra bar")
+    if (!open) { closeExtraRow('fid'); return; }
+    // right on the bar, in the same place as the Quick Reply row (Miinthe, 2026-11-03: "there is still a gap in the FID"); the
+    // tab steps aside while it is open, and ▼ at the row's end closes it (a tap elsewhere or Esc too)
+    const full = icons + '<span class="dle-xsp"></span><button type="button" class="dle-db small dle-idr-close" title="Close" aria-label="Close the floating icons">▼</button>';
+    openExtraRow('fid', row => { if (row.innerHTML !== full) { row.innerHTML = full; wire(row, els); row.querySelector('.dle-idr-close').onclick = () => close(); } }, { onClose: () => { if (open) { open = false; apply(); } } });
 }
 
 function wire(root, els) {
@@ -104,6 +103,9 @@ function wire(root, els) {
         const at = e => ({ bubbles: true, cancelable: true, composed: true, clientX: e.clientX, clientY: e.clientY, button: e.button, buttons: e.buttons, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary });
         const menu = e => {
             held = true; clearTimeout(hold);
+            // the original holds the pointer: take it back, or letting go would also count as a tap (bug hunt 2026-11-03:
+            // a hold opened TunnelVision's panel as well as its menu)
+            if (captured) { try { el.releasePointerCapture(e.pointerId); } catch { /* not held */ } el.dispatchEvent(new PointerEvent('pointercancel', at(e))); }
             el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY, button: 2 }));
             close();
         };
@@ -134,7 +136,7 @@ function wire(root, els) {
     });
 }
 
-function close() { if (!open) return; open = false; apply(); }
+function close() { if (!open) return; open = false; closeExtraRow('fid'); apply(); }
 
 /** Settings › Interface › The bar › "Choose icons…": every floating icon found, each with a switch. */
 export function openDrawerPicker() {
@@ -159,8 +161,7 @@ export function openDrawerPicker() {
 export const refreshDrawer = () => apply();
 
 export function initIconDrawer() {
-    // close the row on a tap anywhere else
-    document.addEventListener('pointerdown', e => { if (open && !box?.contains(e.target) && !fanEl?.contains(e.target)) { open = false; apply(); } }, true);
+    // a tap anywhere else closes the row: extra-row.js
     // new icons are added to <body>; a docked icon's number changes on the icon itself
     observer = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(apply, 250); });
     observer.observe(document.body, { childList: true });

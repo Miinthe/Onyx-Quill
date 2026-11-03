@@ -30,13 +30,14 @@ export const LASTS = ['flash', 'sticky', 'pinned'];
 export const SCOPES = ['chat', 'run', 'char', 'board'];
 
 import { normSteps } from './mero-tools-pure.js';
-import { ASK_FORMAT, takeAsks, normAsks } from './ask-pure.js';
+import { ASK_FORMAT, takeAsks, normAsks, withAsked } from './ask-pure.js';
 import { meroNames, named, nameRule } from './mero-names-pure.js';
 import { normGame } from './games/wordle-pure.js';
 
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const str = (v, d = '') => (typeof v === 'string' ? v : d);
+
 const newId = p => `${p}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 export const MAX_TALK_MSGS = 400;   // a talk keeps its newest messages (settings stay a sane size)
 
@@ -331,7 +332,7 @@ export function buildMeroPrompt({ settings = {}, talk, character = '', persona =
     ].filter(Boolean).join('\n');
     // context Miinthe added to a message (the 📎 picker: a post, a rumor, a conversation, a lore entry) goes with it
     const withCtx = m => (arr(m.ctx).length ? `${m.t}\n\n[Context Miinthe added]\n${m.ctx.map(c => `### ${c.label}\n${String(c.text || '').slice(0, 2000)}`).join('\n\n')}` : m.t);
-    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'miinthe' ? 'user' : 'assistant', content: m.who === 'miinthe' ? withCtx(m) : m.t }));
+    const messages = arr(talk?.msgs).map(m => ({ role: m.who === 'miinthe' ? 'user' : 'assistant', content: m.who === 'miinthe' ? withCtx(m) : withAsked(m) }));
     return { system, messages };
 }
 

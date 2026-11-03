@@ -233,7 +233,7 @@ export function onMessagesClick(e, body, w) {
     if (q('[data-clearconv]')) { clearConv(q('[data-clearconv]').dataset.clearconv); return true; }
     if (q('[data-askmero]')) { const it = window.__dleWorldItem?.('c:' + q('[data-askmero]').dataset.askmero); if (it) window.__dleAskMero?.(it); return true; }
     if (q('[data-meet]')) { meetOpen = !meetOpen; H.render(); return true; }
-    if (q('[data-meet-add]')) { const v = body.querySelector('[data-meet-in]')?.value.trim(); if (v) { meetup(openWith, v, nameOf(me)); meetOpen = false; H.render(); } return true; }
+    if (q('[data-meet-add]')) { const v = body.querySelector('[data-meet-in]')?.value.trim(); if (v) { meetup(openWith, v); meetOpen = false; H.render(); } return true; }
     if (q('[data-leak]')) { if (leaking) stopLeak(); else leaking = true; H.render(); return true; }
     if (q('[data-leak-cancel]')) { stopLeak(); H.render(); return true; }
     if (q('[data-leak-to]')) { const k = q('[data-leak-to]').dataset.leakTo; if (leakTo.has(k)) leakTo.delete(k); else leakTo.add(k); H.render(); return true; }
@@ -371,13 +371,14 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
     const cid = H.chat(), stay = () => H.chat() === cid;   // another chat opened meanwhile → write nothing
     // pacing: Delivered → Read → typing → the answer (texting only; a letter arrives in story time anyway; a swipe types at once)
     const t0 = Date.now(), paced = look !== 'letters' && !alt && !slow, guess = pacing('x'.repeat(120));
-    let readAt = t0;
+    let readAt = t0, seen = Number(m.n) || 0;   // the newest message the answer's prompt saw (the follow-up below)
     if (paced) setTimeout(() => { if (!busy.has(conv) || !stay()) return; H.save(updateMessage(H.store(), m.id, { read: new Date().toISOString() })); typing.add(conv); H.render(); }, guess.readMs), readAt = t0 + guess.readMs;
     else if (!slow) { typing.add(conv); }
     H.render();
     try {
         const clock = clockNow(), li = lastI();
         const th = threadOf(H.store(), m.to, m.from, clock, li).filter(x => !x.onWay || x.id === m.id);
+        seen = Math.max(seen, ...th.map(x => Number(x.n) || 0));
         const thread = (alt ? th.slice(0, -1) : th).map(x => ({ who: nameOf(x.from), text: textOf(x), stamp: stampText(x.stamp) }));
         // the main story only for someone in the scene: away, they know what their knowledge list says, nothing more
         // the main character is in the main scene with {{user}}; their knowledge from messages is the world's own list
@@ -386,7 +387,7 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
             : who.main ? { here: true, knows: H.store().records.filter(r => r.kind === 'mknow').map(r => ({ fact: r.fact })) } : personNow(L.state, who.cast, who.p);
         const chat = now.here ? (ctx()?.chat || []).filter(x => x && !x.is_system && typeof x.mes === 'string').slice(-STORY_WINDOW).map(x => ({ name: x.name, mes: x.mes })) : [];
         let lines = []; try { lines = storyLinesFor(liveWriterLines()); } catch { /* none */ }
-        const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), userName: userName(), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed() });
+        const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed() });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         if (window.__dleWorldDebug) console.log('[DLE] world answer', who.p.name, JSON.stringify({ system: p.system, user: p.user, raw: r?.text }));
         if (!stay()) return;
@@ -437,8 +438,9 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
     } finally {
         busy.delete(conv); typing.delete(conv); H.changed(); H.render();
         // she sent another text while this one was being answered: answer the newest one now (bug hunt: it was dropped)
+        // — only one the prompt didn't see yet (hunt 2: two held texts let go together were answered twice)
         if (!alt && !slow && stay() && look !== 'letters') {
-            const next = H.store().records.filter(r => r.kind === 'msg' && r.conv === m.conv && r.from === m.from && r.to === m.to && r.mine && !r.answered && r.n > m.n).at(-1);
+            const next = H.store().records.filter(r => r.kind === 'msg' && r.conv === m.conv && r.from === m.from && r.to === m.to && r.mine && !r.answered && r.n > seen).at(-1);
             if (next) answer(next, w);
         }
     }
@@ -479,7 +481,7 @@ async function extract(who, m, reply, conn) {
         if (H.chat() !== cid) return;
         const x = parseExtract(r?.text);
         // each on its own: a failing knowledge step must not swallow the meet-up (Miinthe's beach test found no plan)
-        if (x.plan) { try { meetup(m.to, x.plan, nameOf(m.from)); } catch (err) { console.warn('[DLE] world: the meet-up failed', err?.message || err); } }
+        if (x.plan) { try { meetup(m.to, x.plan); } catch (err) { console.warn('[DLE] world: the meet-up failed', err?.message || err); } }
         try { learn(who, x.learned, m); } catch (err) { console.warn('[DLE] world: what they learned failed', err?.message || err); }
     } catch (err) { console.warn('[DLE] world: reading the exchange failed', err?.message || err); }
 }
@@ -556,7 +558,7 @@ function swipe(id, dir, w) {
  * so the director brings them when the time or an opening comes (Cast step 2, "coming looking"); the main character has
  * no plan list — the main writer is told instead (mainWriterLines). Notice with Undo.
  */
-function meetup(key, text, withName) {
+function meetup(key, text) {
     const at = Math.max(0, lastI());
     if (key === MAIN) {
         const rec = { kind: 'mplan', id: newId('mp'), text: clipT(text) };
@@ -622,6 +624,9 @@ export function deliverLetters(w) {
     deliverGroups(w);
     for (const m of repliesDue(H.store(), clockNow(), lastI())) {
         if (w.people?.[m.to]?.muted) continue;   // muted: it waits for them
+        // an answer is being written in this conversation: its end picks up her newer text (hunt 2: a text she sent meanwhile
+        // was marked "never answered" below and dropped)
+        if (busy.has(m.to + '|' + m.from)) continue;
         if (m.letter) answer(m, { ...w, look: 'letters' });
         else if (m.held) {   // unmuted, or a slow / busy / sleeping reply whose time has come: answered now
             if (m.wait && !waitOver(m.wait, { lastI: lastI(), ...nowFor(w, m.to) })) continue;
@@ -713,7 +718,8 @@ function whoIs(L, key) {
 export async function firePlans(w) {
     if (!H || !w || firing || w.paused) return;
     const L = live(); if (!L) return;
-    const due = duePlans(L.board, L.state, w.planned, H.store(), Math.random, k => w.people?.[k]?.muted === true);
+    // a muted voice (its own switch on the board) posts nothing either (hunt 2: its planned posts still went out)
+    const due = duePlans(L.board, L.state, w.planned, H.store(), Math.random, k => w.people?.[k]?.muted === true || w.voices.some(v => 'v:' + v.id === k && v.muted === true));
     if (!due.length) return;
     firing = true;
     const cid = H.chat();
@@ -845,5 +851,5 @@ export function mainWriterLines() {
     if (!H) return [];
     const main = mainInfo();
     if (!main) return [];
-    return [mainKnowsLine(H.store(), main.name, userName()), mainPlanLine(H.store(), main.name)].filter(Boolean);
+    return [mainKnowsLine(H.store(), main.name, userName()), mainPlanLine(H.store())].filter(Boolean);
 }

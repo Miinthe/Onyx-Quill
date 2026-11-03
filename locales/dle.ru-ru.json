@@ -303,6 +303,7 @@
   "dle_carto_click_to_expand": "нажмите, чтобы развернуть",
   "dle_carto_diff_added": "+${0} добавлено:",
   "dle_carto_diff_removed": "-${0} удалено:",
+  "dle_carto_diff_same": "${0} как в прошлый ход:",
   "dle_carto_entry_count_one": "${0} запись",
   "dle_carto_entry_count_other": "${0} записей",
   "dle_carto_footer_named": "Нажмите на имена записей, чтобы открыть в Obsidian. Нажмите на записи, чтобы развернуть предпросмотр содержимого.",

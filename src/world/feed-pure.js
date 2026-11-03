@@ -356,37 +356,6 @@ export function parseReact(text, people) {
     return { comments: [], likes: [], crowd: 0 };
 }
 
-// ── a mix to start with (Miinthe: "premade a mix of characters … plus some throw aways. I still think I should be able to edit them") ──
-
-export const MIX_SCHEMA = {
-    name: 'world_mix', strict: false,
-    value: { type: 'object', properties: {
-        voices: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, kind: { type: 'string', enum: ['voice', 'regular'] }, bio: { type: 'string' }, quirks: { type: 'string' }, g: { type: 'integer' }, m: { type: 'integer' }, p: { type: 'integer' }, interests: { type: 'array', items: { type: 'string' } } }, required: ['name', 'kind'] } },
-        people: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, g: { type: 'integer' }, m: { type: 'integer' }, p: { type: 'integer' }, interests: { type: 'array', items: { type: 'string' } } }, required: ['name'] } },
-    }, required: ['voices'] },
-};
-/** The prompt for a starting mix: 1–2 voices and 3–4 regulars for this story, and dials + interests for its people. */
-export function mixPrompt({ storyName, setting = '', people = [], existing = [] }) {
-    return {
-        system: `You set up the social world around a roleplay: who posts in its feed and news besides the main people. Suggest 1–2 VOICES (institutions or publications that fit the setting: a local paper, a shop, an office, a guild board) and 3–4 REGULARS (recurring locals with a strong personality — a gossip, a conspiracy theorist, a cheerful neighbor, a grump). Give each a short bio (one or two sentences), quirks (how they write, e.g. "all caps when excited", "signs every post with a proverb"), dials 1–3 (g = gossips, m = sends messages, p = posts) and 1–2 interests. Then give dials and 1–2 interests for each of the story's people from what their description says (e.g. a sulky gossip: g 3, m 2, p 1). Fit the setting's era: no phones in a world without them. Don't repeat names that exist.
-Answer with JSON only: {"voices": [{"name": "...", "kind": "voice" or "regular", "bio": "...", "quirks": "...", "g": 2, "m": 1, "p": 3, "interests": ["..."]}], "people": [{"name": "exact name", "g": 2, "m": 2, "p": 2, "interests": ["..."]}]}`,
-        user: `THE STORY: ${storyName}${setting ? `\nTHE SETTING: ${clip(setting, 1200)}` : ''}\n\nITS PEOPLE\n${arr(people).map(p => `- ${p.name}: ${clip(p.about, 500)}`).join('\n')}${arr(existing).length ? `\n\nALREADY THERE (don't repeat): ${existing.join(', ')}` : ''}`,
-    };
-}
-export function parseMix(text, people = []) {
-    const raw = String(text ?? '').trim(), a = raw.indexOf('{'), b = raw.lastIndexOf('}');
-    for (const t of [raw, a !== -1 && b > a ? raw.slice(a, b + 1) : '']) {
-        let v; try { v = JSON.parse(t); } catch { continue; }
-        if (!isObj(v)) continue;
-        const keyOf = new Map(arr(people).map(p => [String(p.name).trim().toLowerCase(), p.key]));
-        return {
-            voices: arr(v.voices).filter(x => isObj(x) && typeof x.name === 'string' && x.name.trim()).slice(0, 6).map(x => ({ name: clip(x.name, 60), kind: x.kind === 'regular' ? 'regular' : 'voice', bio: clip(x.bio, 400), quirks: clip(x.quirks, 400), ...normHabits(x) })),
-            people: arr(v.people).filter(x => isObj(x) && keyOf.has(String(x.name || '').trim().toLowerCase())).map(x => ({ key: keyOf.get(String(x.name).trim().toLowerCase()), ...normHabits(x) })),
-        };
-    }
-    return { voices: [], people: [] };
-}
-
 // ── a world story she starts herself (News › Start a world story) ───────────
 
 export const STORY_SCHEMA = { name: 'world_story', strict: false, value: { type: 'object', properties: { title: { type: 'string' }, kind: { type: 'string' }, phases: { type: 'array', items: { type: 'string' } } }, required: ['title', 'phases'] } };
@@ -412,7 +381,7 @@ export function parseStory(text, seed = '') {
 
 export const NEWS_SCHEMA = { name: 'world_news', strict: false, value: { type: 'object', properties: { where: { type: 'string', enum: ['here', 'elsewhere'] }, by: { type: 'string' }, title: { type: 'string' }, text: { type: 'string' }, quoted: { type: 'array', items: { type: 'string' } }, askUser: { type: 'boolean' } }, required: ['by', 'title', 'text'] } };
 /** Write one news item now — from her idea, or (no idea) something fitting and new that the world would report. */
-export function newsPrompt({ idea = '', people, recent = [], stories = [], look = 'phone', when = '', userName = 'the player', mainName = '' }) {
+export function newsPrompt({ idea = '', people, recent = [], stories = [], look = 'phone', when = '', userName = 'the player' }) {
     const letters = look === 'letters';
     const voices = arr(people).filter(p => p.kind === 'voice');
     return {

@@ -395,6 +395,35 @@ test('the board window: a move saved there is undone when its message is deleted
     settled('window move deleted');
 });
 
+test('the board window: a chat moved onto another board starts it fresh — no positions or log from the old board or an old stored list (hunt 2)', async () => {
+    resetChat();
+    st.chat.push({ name: 'test bot 1', is_user: false, is_system: false, mes: 'Hello.', send_date: '0', extra: {} });
+    useBoard(BOARD2);
+    const copy = { ...structuredClone(st.extension_settings.deeplore_storyboards_v2.boards['Engine test 2'].board), name: 'Copy', applied: [] };
+    st.extension_settings.deeplore_storyboards_v2.boards.Copy = { board: copy };
+    say('user', 'We walk to the gate.');
+    T.moveTracker('Quest', { delta: 2 });
+    assertEqual(pos()[0], 'Quest: Home');
+    // an old chat's stored list (from before it was converted) still says the gate
+    st.chat_metadata.deeplore_trackers.find(t => t.id === 'quest').index = 1;
+    // Apply… in the window: the copy starts fresh here
+    window.__dleBoardHost.apply('Copy', ['Claude test']);
+    assertEqual(pos()[0], 'Quest: Rumour heard', 'applied fresh');
+    // back on the first board by its Save (this chat ticked): the window's place, and the first board's log stays behind
+    useBoard(BOARD2);
+    say('ai', 'They arrive.');
+    T.moveTracker('Quest', { delta: 2 });
+    say('user', 'Inside.');
+    const wb = W.toWindowBoard(M.normalizeBoard(copy, 'Copy'));
+    wb.applied = ['Claude test'];
+    BW._host.save('Copy', wb, { quest: 1 });
+    assertEqual(pos()[0], 'Quest: At the gate', 'saved place');
+    assert(!(st.chat_metadata.deeplore_board_state.log || []).some(e => e.kind === 'step' && e.to?.at === 'q3'), 'the first board\'s move is not in the copy\'s log');
+    st.chat.splice(2);
+    await T.reconcileTrackers({ prune: true });
+    assertEqual(pos()[0], 'Quest: Rumour heard', 'the window\'s move goes back with its message');
+});
+
 test('pausing a place tracker can be undone (its Undo memory survives the save)', () => {
     resetChat();
     st.chat.push({ name: 'test bot 1', is_user: false, is_system: false, mes: 'Hello.', send_date: '0', extra: {} });

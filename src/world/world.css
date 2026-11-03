@@ -88,9 +88,11 @@
 .dle-wd-thread .bw.out.mid .bub, .dle-wd-thread .bw.out.last .bub { border-top-right-radius: 6px; }
 .dle-wd-thread .brow { display: flex; align-items: center; gap: 4px; max-width: 84%; }
 .dle-wd-thread .bw.out .brow { flex-direction: row-reverse; }
-.dle-wd-thread .brow .acts { flex: none; display: inline-flex; gap: 0; opacity: 0; transition: opacity .12s; }
-.dle-wd-thread .bw:hover .brow .acts, .dle-wd-thread .bw:focus-within .brow .acts { opacity: 1; }
-.dle-wd-thread .bw.tapped .brow .acts { opacity: 1; }   /* a phone: tap the bubble */
+/* hidden icons take no taps (bug hunt 2026-11-03: a tap just right of a bubble on a phone deleted it) */
+.dle-wd-thread .brow .acts { flex: none; display: inline-flex; gap: 0; opacity: 0; pointer-events: none; transition: opacity .12s; }
+.dle-wd-thread .bw:focus-within .brow .acts, .dle-wd-thread .bw.tapped .brow .acts { opacity: 1; pointer-events: auto; }   /* a phone: tap the bubble */
+/* hover only where there is a real hover — on a phone it stuck to the bubble under the finger */
+@media (hover: hover) { .dle-wd-thread .bw:hover .brow .acts { opacity: 1; pointer-events: auto; } }
 .dle-wd-thread .brow .acts button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--dk-muted); padding: 0; cursor: pointer; font: 600 var(--dk-fs-xs)/1 var(--dk-f-body); }
 .dle-wd-thread .brow .acts button[data-done] { width: auto; padding: 0 6px; color: var(--dk-ink); }
 .dle-wd-thread .brow .acts button:hover { background: var(--dk-menu); color: var(--dk-ink); }

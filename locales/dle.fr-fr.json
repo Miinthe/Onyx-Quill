@@ -303,6 +303,7 @@
   "dle_carto_click_to_expand": "clique pour développer",
   "dle_carto_diff_added": "+${0} nouvelles :",
   "dle_carto_diff_removed": "-${0} retirées :",
+  "dle_carto_diff_same": "${0} comme au tour précédent :",
   "dle_carto_entry_count_one": "${0} entrée",
   "dle_carto_entry_count_other": "${0} entrées",
   "dle_carto_footer_named": "Clique sur les noms d'entrée pour les ouvrir dans Obsidian. Clique sur les entrées pour développer l'aperçu du contenu.",

@@ -23,7 +23,8 @@ async function newSwipe(i) {
 
 /** 📖 → Guided swipe…: what should change, then a new swipe with it. */
 export function openGuide(i = last()) {
-    if (i !== last() || chat?.[i]?.is_user) { K.notify({ text: 'Guided swipe works on the newest reply.', tone: 'wait' }); return; }
+    // SillyTavern swipes only the last message — a hidden one at the end can't be guided (bug hunt 2026-11-03)
+    if (i !== last() || chat?.[i]?.is_user || chat?.[i]?.is_system) { K.notify({ text: chat?.[last()]?.is_system ? 'The newest message is a hidden one — Guided swipe works on the newest reply.' : 'Guided swipe works on the newest reply.', tone: 'wait' }); return; }
     const g = guide();
     const body = document.createElement('div');
     body.innerHTML = '<textarea class="dk-field" rows="3" placeholder="What should change? e.g. less flowery, he’s colder here, fewer words"></textarea><p class="dk-hint">It stays for every swipe of this reply, and clears itself when you send your next message.</p>';

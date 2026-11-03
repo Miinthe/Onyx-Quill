@@ -123,7 +123,7 @@ function notify() {
 function openDBOnce() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (event) => {
+        request.onupgradeneeded = () => {
             const db = request.result;
             // BUG-379 lineage: keep vaultCache store on schema bump.
             if (!db.objectStoreNames.contains(VAULT_STORE)) {

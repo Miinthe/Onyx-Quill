@@ -1777,6 +1777,10 @@ if (HD) {
 
 // ── state ──────────────────────────────────────────────────────────────────
 let cur = HD ? HD.current : 'Untitled board';
+// boards made in this window and not saved yet → { name: the board open before } (bug hunt 2026-11-03: after Discard a
+// new board looked saved, and Open… listed it like one — it was gone on Close)
+const neverSaved = new Map();
+if (HD?.unsaved) neverSaved.set(cur, null);   // a chat without a board opens on a new one, not saved yet (hunt 2, 2026-11-03)
 let doc = clone(boards[cur]);
 let dirty = false;
 let chat = HD ? HD.chat : 'Example chat';
@@ -2526,7 +2530,7 @@ function renameRef(r, o, n) {
 }
 function renameBoard(n) {
   if (n === cur) return; if (boards[n]) { toast('A board with that name already exists.'); return; }
-  boards[n] = boards[cur]; delete boards[cur]; HOST?.rename(cur, n); cur = n; touch(); toast(`Renamed to “${n}”.`);
+  boards[n] = boards[cur]; delete boards[cur]; if (neverSaved.has(cur)) { neverSaved.set(n, neverSaved.get(cur)); neverSaved.delete(cur); } else HOST?.rename(cur, n); cur = n; touch(); toast(`Renamed to “${n}”.`);
 }
 function removeDetour(t, st, d) {
   const i = t.steps.indexOf(st), k = st.detours.indexOf(d); if (k < 0) return;
@@ -3315,6 +3319,7 @@ async function hostSave(name) {
   delete boards[name].newEntries; delete doc.newEntries;
   try { HOST.save(name, clone(boards[name]), clone(chats[HD.chat] || {})); }
   catch (e) { toast(`Could not save to DeepLore: ${e?.message || e}`); return false; }
+  neverSaved.delete(name);
   return true;
 }
 function act(a) {
@@ -3348,7 +3353,6 @@ function act(a) {
   if (a === 'look-global') { appearanceDialog('global'); return; }
   if (a === 'look-board') { appearanceDialog('board'); return; }
   if (a.startsWith('help-')) { helpDialog(a.slice(5)); return; }
-  if (a === 'addtracker-old') { const id = 't' + Date.now(); doc.trackers.push({ id, name: 'New tracker', direction: 'both', skip: false, settle: 0, folder: doc.folders[0] || '', starts: [], onFall: 'keep', steps: [{ name: 'Step 1', entry: null }, { name: 'Step 2', entry: null }] }); sel = { kind: 'tracker', t: id }; touch(); }
   if (a === 'folders') foldersDialog(doc.folders, f => { doc.folders = f; touch(); });
   if (a === 'vboard') { tab = 'board'; render(); }
   if (a === 'vtime') { tab = 'time'; render(); }
@@ -4105,7 +4109,7 @@ function applyDialog(name, ok) {
   });
 }
 function openDialog() {
-  dialog(`<h2>Open a storyboard</h2><div class="choices">${Object.keys(boards).map(n => `<button class="choice" data-open="${esc(n)}"><span><b>${esc(n)}</b><small>${boards[n].trackers.length} trackers · applied to ${boards[n].applied.length || 'nothing'}</small></span></button>`).join('')}</div>
+  dialog(`<h2>Open a storyboard</h2><div class="choices">${Object.keys(boards).map(n => `<button class="choice" data-open="${esc(n)}"><span><b>${esc(n)}</b><small>${neverSaved.has(n) ? 'not saved yet · ' : ''}${boards[n].trackers.length} trackers · applied to ${boards[n].applied.length || 'nothing'}</small></span></button>`).join('')}</div>
     <div class="btns"><button class="btn" id="dlg-x">Cancel</button></div>`, s => {
     s.querySelector('#dlg-x').onclick = closeDialog;
     s.querySelectorAll('[data-open]').forEach(b => b.onclick = () => {
@@ -4208,25 +4212,15 @@ function setupDialog() {
     };
   });
 }
-function oldFoldersDialog(cur, ok) {
-  const on = new Set(cur);
-  dialog(`<h2>Folders this board reads</h2><p class="note">The board only looks at these folders, never the whole vault. New step and detour entries are saved into the tracker's own folder.</p>
-    <div class="choices">${FOLDERS.map((f, i) => `<label class="choice${on.has(f) ? ' on' : ''}"><input type="checkbox" id="fd${i}" value="${f}"${on.has(f) ? ' checked' : ''}> <span>${f}</span></label>`).join('')}</div>
-    <div class="btns"><button class="btn primary" id="dlg-ok">Done</button><button class="btn" id="dlg-x">Cancel</button></div>`, s => {
-    s.querySelectorAll('.choice input').forEach(i => i.onchange = () => i.closest('.choice').classList.toggle('on', i.checked));
-    s.querySelector('#dlg-x').onclick = closeDialog;
-    s.querySelector('#dlg-ok').onclick = () => { const p = [...s.querySelectorAll('.choice input:checked')].map(i => i.value); closeDialog(); ok(p); };
-  });
-}
 // Board ▸ Delete board… (Miinthe, 2026-10-17): asks first, naming who uses it; those chats end up with no board
 function deleteBoardAsk() {
   const others = Object.keys(boards).filter(n => n !== cur);
   if (!others.length) { toast('This is your only board — make another one first (Board ▸ New…), then delete this one.'); return; }
   const users = boards[cur]?.applied || doc.applied || [];
   confirmDialog(`Delete “${cur}”?`, `${users.length ? `Used by: ${users.join(', ')}. Those chats will have no board — their trackers and their place on the board go with it.` : 'No chat is set to use it.'} This can't be undone.`, 'Delete board', () => {
-    const name = cur, r = HOST?.remove ? HOST.remove(name) : { ok: true };
+    const name = cur, r = HOST?.remove && !neverSaved.has(name) ? HOST.remove(name) : { ok: true };   // never saved: nothing in DeepLore to delete (hunt 2, 2026-11-03)
     if (!r?.ok) { toast(`Not deleted: ${r?.error || 'DeepLore did not answer.'}`); return; }
-    delete boards[name]; dropRescue();
+    delete boards[name]; neverSaved.delete(name); dropRescue();
     cur = others[0]; doc = clone(boards[cur]); dirty = false; resetHistory(); sel = { kind: 'tracker', t: doc.trackers[0]?.id }; render();
     toast(`Deleted “${name}”. Showing “${cur}”.`);
   });
@@ -4258,6 +4252,7 @@ function newDialog() {
       const base = pick === '(blank)' ? 'Untitled board' : 'New ' + pick.toLowerCase();
       let name = base; for (let k = 2; boards[name]; k++) name = `${base} ${k}`;   // never over an existing board
       doc = { folders, applied: [], trackers: tpl?.full ? tpl.trackers.map(t => Object.assign(clone(t), (t.steps ? { folder: folders[0] || '' } : {}))) : (tpl?.trackers || []).map((t, i) => ({ id: 'n' + i, name: t.name, direction: t.direction, skip: t.skip, settle: 0, folder: folders[0] || '', starts: [], onFall: 'keep', steps: t.steps.map(s => ({ name: s, entry: null })) })) };
+      neverSaved.set(name, neverSaved.get(cur) ?? cur);
       cur = name; boards[name] = clone(doc); resetHistory(); dirty = true; sel = { kind: 'tracker', t: doc.trackers[0]?.id };   // a draft until Save (it was shown as saved and lost on Close — bug hunt 2026-10-17)
       render(); toast(pick === '(blank)' ? `"${name}" created as a draft — start with its folders, then Save.` : `"${name}" created as a draft. Fill the steps, then Save.`);
     };
@@ -5663,7 +5658,7 @@ function castPanel(el, t) {
       + line('Pin their entries while they are here', 'their linked entries always reach the writer while they are in the scene', swH('cp-pin', t.pinHere !== false), t.pinHere !== false) + '<div class="sub"></div>'
       + line('Sets DeepLore\'s Characters Present', 'who is here becomes “Characters Present” in Filters (with the main character) — off: you set it by hand', swH('cp-present', !!t.setsPresent), !!t.setsPresent))}
     ${entryCard(t.keep ||= { entries: [], kinds: {} }, t, 'what counts as being in the scene').replace(/<h4>[^<]*<\/h4>/, '<h4>When is someone in the scene</h4>')}
-    ${card('Waiting on this', dependents(t).length ? `<div class="deps">${dependents(t).map(d => `<span class="chipc" style="--c:${d.col || lineColor(d.c, d.lk)}">${esc(d.text)}</span>`).join('')}</div>` : '<span class="mini">Nothing yet.<span class="tip"> With Link: click a person, then a step or a tracker — “starts when Kettle is in the scene”.</span></span>')}
+    ${card('Waiting on this', dependents(t).length ? `<div class="deps">${dependents(t).map(d => `<span class="chipc" style="--c:${d.col || lineColor(d.c, d.lk)}">${esc(d.text)}</span>`).join('')}</div>` : '<span class="mini">Nothing yet.<span class="tip"> With Link: click a person, then a step or a tracker — “starts when the stranger is in the scene”.</span></span>')}
     ${noteCard(t)}`;
   el.querySelector('#cp-tab').onclick = () => { if (HOST?.openCast) toCastTab(null); else toast('In SillyTavern this closes the board and opens the Cast tab in DeepLore\'s side panel.'); };
   el.querySelectorAll('[data-pp]').forEach(b => b.onclick = ev => { if (ev.target.closest('[data-px]')) return; sel = { kind: 'person', t: t.id, i: +b.dataset.pp }; render(); });
@@ -7354,7 +7349,7 @@ function phoneSheet(side) {
     // the picked tile stays in sight above the sheet
     if (sheetOpen) requestAnimationFrame(() => { const t = document.querySelector('#page .sel'); if (!t) return; const r = t.getBoundingClientRect(); if (r.top < 8 || r.bottom > innerHeight * .54) scrollBy({ top: r.top - 12 }); });
   }
-  const name = tab === 'time' ? 'Log' : KN[sel.kind] || selName() || 'Board details';
+  const name = tab === 'time' ? 'Log' : tab === 'world' ? 'World' : KN[sel.kind] || selName() || 'Board details';   // the World tab's sheet was titled after the selected tile (hunt 2)
   side.classList.add('sheet'); side.classList.toggle('folded', !sheetOpen); document.body.classList.toggle('sheet-open', sheetOpen);
   const bar = document.createElement('div'); bar.className = 'sheetbar';
   bar.innerHTML = `<button aria-expanded="${sheetOpen}" title="${sheetOpen ? 'Fold the panel' : 'Open the panel'}"><span class="sbn">${esc(name)}</span><span class="sbc" aria-hidden="true">${sheetOpen ? '✕' : '▴'}</span></button>`;
@@ -7390,7 +7385,10 @@ function render() {
   renderMenu();
   document.querySelector('#t-save') && (document.querySelector('#t-save').onclick = () => act('save'));
   document.querySelector('#t-close') && (document.querySelector('#t-close').onclick = () => (dirty ? confirmDialog('Close without saving?', 'The draft is thrown away — chats keep the saved board.', 'Close', () => { dropRescue(); HOST.close(); }) : HOST.close()));
-  document.querySelector('#t-discard') && (document.querySelector('#t-discard').onclick = () => confirmDialog('Discard the draft?', 'Every change since the last save is thrown away.', 'Discard', () => { doc = clone(boards[cur]); dirty = false; resetHistory(); render(); toast('Draft discarded.'); }));
+  document.querySelector('#t-discard') && (document.querySelector('#t-discard').onclick = () => confirmDialog('Discard the draft?', 'Every change since the last save is thrown away.', 'Discard', () => {
+    // a board never saved: discarding it means it never was — back to the board open before
+    if (neverSaved.get(cur) != null) { const gone = cur, back = neverSaved.get(gone); neverSaved.delete(gone); delete boards[gone]; cur = boards[back] ? back : (Object.keys(boards)[0] || 'Untitled board'); boards[cur] ||= { folders: [], applied: [], trackers: [] }; doc = clone(boards[cur]); dirty = false; resetHistory(); sel = { kind: 'tracker', t: doc.trackers[0]?.id }; render(); toast(`“${gone}” was never saved — it's gone.`); return; }
+    doc = clone(boards[cur]); dirty = false; resetHistory(); render(); toast('Draft discarded.'); }));
   document.getElementById('tab-board').setAttribute('aria-selected', tab === 'board');
   document.getElementById('tab-time').setAttribute('aria-selected', tab === 'time');
   document.getElementById('tab-outline').setAttribute('aria-selected', tab === 'outline');

@@ -5534,6 +5534,16 @@ test('CM-8-3: BUG-AUDIT-H09 orphan prune drops hidden/dismissed ids whose gap wa
 
 section('PRX-MIG — v2.5 Custom Proxy deprecation migration');
 
+test('MIG-8: from v7, Skip what was just sent goes off (Miinthe, 2026-11-03)', async () => {
+    const { runMigrations } = await import('../src/settings-migrations-pure.js');
+    const s = { stripDuplicateInjections: true, stripLookbackDepth: 2 };
+    runMigrations(s, 7, 8);
+    assertEqual(s.stripDuplicateInjections, false, 'off');
+    const t = { stripDuplicateInjections: true };
+    runMigrations(t, 8, 8);
+    assertEqual(t.stripDuplicateInjections, true, 'already on v8: left alone');
+});
+
 test('PRX-MIG-1: from v3 with aiSearchConnectionMode=proxy flips to profile and sets sentinel', async () => {
     const { runMigrations, PROXY_DEPRECATION_MODE_KEYS } = await import('../src/settings-migrations-pure.js');
     const settings = {
@@ -5606,10 +5616,10 @@ test('PRX-MIG-4: idempotent — running v4 migration twice on already-migrated s
     assertEqual(sentinelCopy.length, 2, 'PRX-MIG-4: first-run sentinel captured both keys');
 });
 
-test('PRX-MIG-5: defaultSettings.settingsVersion is 6 (boot triggers migration for v5 users)', async () => {
+test('PRX-MIG-5: defaultSettings.settingsVersion is 8 (boot triggers migration for v7 users)', async () => {
     const src = await import('node:fs').then(fs =>
         fs.promises.readFile('settings.js', 'utf8'));
-    assertMatch(src, /settingsVersion:\s*7\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 7 (6: the Librarian removed; 7: its guide-tag key renamed)');
+    assertMatch(src, /settingsVersion:\s*8\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 8 (6: the Librarian removed; 7: its guide-tag key renamed; 8: Skip what was just sent off)');
 });
 
 test('LIB-GONE-1: v5 → v6 drops the old Librarian settings quietly, keeps the writing-guide tag', async () => {
@@ -5629,6 +5639,21 @@ test('LIB-GONE-1: v5 → v6 drops the old Librarian settings quietly, keeps the 
     assertEqual(settings.meroProfileId, 'm1', 'Mero settings untouched');
     assert(settings.analyticsData['v:Alice'] && !settings.analyticsData._librarian, 'entry analytics kept, Librarian stats dropped');
     assertEqual(settings._proxyMigrationV2_5_notice, ['aiSearchConnectionMode'], 'a pending proxy notice no longer names the Librarian');
+});
+
+test('LIB-GONE-3: v6 → v7 keeps a custom old guide tag even when getSettings already filled the default guideTag', async () => {
+    const { runMigrations } = await import('../src/settings-migrations-pure.js');
+    // getSettings() fills missing defaults before it migrates, so guideTag is already 'lorebook-guide' here.
+    const s1 = { librarianGuideTag: 'my-guide', guideTag: 'lorebook-guide' };
+    runMigrations(s1, 6, 7);
+    assertEqual(s1.guideTag, 'my-guide', 'the custom old tag wins over the filled-in default');
+    assert(s1.librarianGuideTag === undefined, 'old key dropped');
+    const s2 = { librarianGuideTag: 'old', guideTag: 'already-new' };
+    runMigrations(s2, 6, 7);
+    assertEqual(s2.guideTag, 'already-new', 'a guideTag already set by her is never overwritten');
+    const s3 = { librarianGuideTag: '  ', guideTag: 'lorebook-guide' };
+    runMigrations(s3, 6, 7);
+    assertEqual(s3.guideTag, 'lorebook-guide', 'a blank old tag does not wipe the default');
 });
 
 test('LIB-GONE-2: v6 → v6 is a no-op; a notice that only named the Librarian goes away', async () => {

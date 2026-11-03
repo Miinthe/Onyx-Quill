@@ -12,8 +12,8 @@ import { assert, assertEqual, test, summary } from './helpers.mjs';
 import {
     parseStepsText, parseTrackerSpec, asList, findIndex, newTracker, moveTo, withSteps,
     currentStep, describe, resetForNewRun, stateLines, writerBlock, record, entryAt, pruneAfter,
+    storyStepAllows, filterByStoryStep,
 } from '../src/trackers-pure.js';
-import { storyStepAllows, filterByStoryStep } from '../src/trackers-pure.js';
 
 const STEPS = ['Strangers', 'Neighbours', 'Friends', 'Sweethearts', 'Married'];
 

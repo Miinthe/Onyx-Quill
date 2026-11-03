@@ -32,13 +32,17 @@ const trashName = () => String(getSettings().runTrashFolder || '').trim().replac
 const forGood = () => getSettings().runCleanupMode === 'delete';
 const vaults = () => (getSettings().vaults || []).filter(v => v.enabled);
 
-/** A character's chats with their metadata (SillyTavern's chat list call). [] when it fails. */
+/**
+ * A character's chats with their metadata (SillyTavern's chat list call). null when the call fails — never read as "no
+ * chats left" (bug hunt 2026-11-03: a dropped connection right after a delete asked to clean up a run still in use).
+ */
 async function chatsOf(avatar) {
     try {
         const r = await fetch('/api/characters/chats', { method: 'POST', headers: getRequestHeaders(), body: JSON.stringify({ avatar_url: avatar, metadata: true }) });
-        const list = r.ok ? await r.json() : [];
+        if (!r.ok) return null;
+        const list = await r.json();
         return Array.isArray(list) ? list : Object.values(list || {}).filter(x => x && typeof x === 'object' && x.file_name);
-    } catch { return []; }
+    } catch { return null; }
 }
 
 function remember(charKey, cardName, name, meta) {
@@ -55,7 +59,7 @@ function onChatChanged() {
     remember(c.avatar, c.name, name, chat_metadata);
     if (fetched.has(c.avatar)) return;
     fetched.add(c.avatar);
-    setTimeout(async () => { for (const x of await chatsOf(c.avatar)) remember(c.avatar, c.name, String(x.file_name || '').replace(/\.jsonl$/, ''), x.chat_metadata); }, 5000);
+    setTimeout(async () => { for (const x of (await chatsOf(c.avatar)) || []) remember(c.avatar, c.name, String(x.file_name || '').replace(/\.jsonl$/, ''), x.chat_metadata); }, 5000);
 }
 
 // deletes come one by one (deleting a character sends one per chat): gather them for a moment
@@ -72,8 +76,9 @@ async function afterDeletes() {
     const runs = [];
     for (const r of list) if (!runs.some(x => x.charKey === r.charKey && sameRun(x, r))) runs.push(r);
     for (const r of runs) {
-        const left = chatsLeft((await chatsOf(r.charKey)).map(x => x.chat_metadata), r);
-        if (!left) await askAfterDelete(r);
+        const chats = await chatsOf(r.charKey);
+        if (!chats) continue;   // couldn't check: ask nothing ("Clean up a run…" in Settings › Vault does it by hand)
+        if (!chatsLeft(chats.map(x => x.chat_metadata), r)) await askAfterDelete(r);
     }
 }
 

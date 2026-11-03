@@ -966,6 +966,20 @@ eventSource.on(event_types.GENERATION_STARTED, (type, _o, dryRun) => {
     try { const c = SillyTavern.getContext()?.chat; _regenWithoutReply = type === 'regenerate' && !!c?.at(-1)?.is_user; } catch { _regenWithoutReply = false; }
 });
 
+// Hunt 2 (2026-11-03): DeepLore off (everywhere, or for this chat) = nothing of DeepLore's in the prompt. Switching it
+// off everywhere used to clear only the prefill: last turn's lore, trackers, her own prompts and Mero's notes stayed in
+// every reply until a chat switch; off-for-this-chat left the Prompt-List entries filled.
+function _clearAllDlePrompts(settings) {
+    clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
+    setExtensionPrompt(PREFILL_ID, '', extension_prompt_types.NONE, 0);
+    if (settings.injectionMode === 'prompt_list' && promptManager) {
+        for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
+            const pmEntry = promptManager.getPromptById(id);
+            if (pmEntry) pmEntry.content = '';
+        }
+    }
+}
+
 async function onGenerate(chatMessages, contextSize, abort, type) {
     if (chatMessages && typeof chatMessages === 'object') {
         if (_dleSeenGenerations.has(chatMessages)) return;
@@ -980,11 +994,8 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     const settings = getSettings();
 
     if (type === 'quiet' || !settings.enabled) {
-        // Quiet/disabled paths should also drop any stale prefill so it
-        // doesn't survive a settings toggle mid-session.
-        if (!settings.enabled) {
-            setExtensionPrompt(PREFILL_ID, '', extension_prompt_types.NONE, 0);
-        }
+        // Disabled: drop everything DeepLore put in (not only the prefill) so nothing survives the switch-off.
+        if (!settings.enabled) _clearAllDlePrompts(settings);
         return;
     }
 
@@ -995,8 +1006,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     try {
         const _cs = chatStatus();
         if (!_cs.on) {
-            clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
-            setExtensionPrompt(PREFILL_ID, '', extension_prompt_types.NONE, 0);
+            _clearAllDlePrompts(settings);
             if (settings.debugMode) console.debug('[DLE] off for this chat:', _cs.why);
             return;
         }
@@ -1096,7 +1106,9 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     // off-by-one on swipe → per-swipe keys orphaned, injection counts drifted,
     // source attach (msgIdx===messageId) skipped, and the swipe snapshot key
     // never matched the MESSAGE_SWIPED rebuild.
-    const verdictMsgIdx = Array.isArray(chat) ? (type === 'swipe' ? chat.length - 1 : chat.length) : -1;
+    // Hunt 2 (2026-11-03): a CONTINUE also writes into the trailing message (ST appends to it), so it shares the
+    // swipe's slot — keyed on chat.length it looked like a brand-new turn (see the swipe check below).
+    const verdictMsgIdx = Array.isArray(chat) ? ((type === 'swipe' || type === 'continue') ? chat.length - 1 : chat.length) : -1;
 
     // Generation correlation ID — threads through trace, flight recorder, and log lines
     const genId = Math.random().toString(36).slice(2, 8);
@@ -1147,8 +1159,9 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         } catch (timeoutErr) {
             console.warn(`[DLE] ${timeoutErr.message} — proceeding with stale data`);
             if (vaultIndex.length === 0) {
+                // Hunt 2 (2026-11-03): no lore this turn, but the run goes on (no `return`) — the writer blocks, the
+                // story helper and the Cast don't need the vault; an empty run clears last turn's lore (see below).
                 dedupWarning('Couldn\'t reach your vault and no cache to fall back on.', 'obsidian_no_cache_fallback', { hint: 'Obsidian connection timed out; check the Local REST API plugin.' });
-                return;
             }
         }
         const _indexFreshMs = Math.round(performance.now() - _indexFreshStart);
@@ -1204,10 +1217,13 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     'obsidian_empty_vault', { timeOut: 10000 },
                 );
             }
+            // Hunt 2 (2026-11-03): this used to `return` here — before the story helper, the Cast director, the
+            // board's turn and the writer blocks (trackers, her own prompts, Mero's author notes incl. guided swipe /
+            // slop guard, notebook) — and left last turn's prompts in place. A vault with no entries (yet) still has
+            // all of those; the run goes on and ends at "No entries matched" (_commitEmptyAndReturn).
             if (settings.debugMode) {
-                console.debug('[DLE] No entries indexed, skipping');
+                console.debug('[DLE] No entries indexed — no lore this turn');
             }
-            return;
         }
 
         // From here on, generation tracking must run even when no entries match.
@@ -1228,8 +1244,11 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // gives a NEW swipe its new swipe_id before this runs, so the `${idx}|${swipe_id}` key never matched on a swipe —
             // every swipe counted as a new turn (cooldowns, decay and history moved on, entries dropped out one by one).
             // A swipe or regenerate of the same reply slot is the same turn: it starts again from the state before it.
+            // Hunt 2 (2026-11-03): so is a Continue. Counted as a new turn, its AI pick came from the cache (same chat
+            // minus the reply) and "skip what was just sent" then stripped every entry the reply was written with — the
+            // continuation went out with no lore; cooldowns and decay also moved on a turn.
             _snapMatch = !!(lastGenerationTrackerSnapshot && (lastGenerationTrackerSnapshot.swipeKey === earlySwipeKey
-                || ((type === 'swipe' || type === 'regenerate') && lastGenerationTrackerSnapshot.idx === earlyIdx)));
+                || ((type === 'swipe' || type === 'regenerate' || type === 'continue') && lastGenerationTrackerSnapshot.idx === earlyIdx)));
             if (settings.debugMode) {
                 console.debug('[DLE][DIAG] swipe-check', {
                     earlyIdx, earlySwipeId, earlySwipeKey,
@@ -1293,6 +1312,12 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // ⚡ flash note — before the [Author's notes] block below is built)
         try { await pitchTurn(chatMessages, _turnType, pipelineAbort.signal); }
         catch (err) { console.warn('[DLE] hidden pitches skipped:', err?.message || err); }
+        // Hunt 2 (2026-11-03): the three steps above wait on AI calls. A chat switch (or Stop) meanwhile aborts them, but
+        // the run went on — the board's turn below then ran on the NEW chat's board, with no message of its own.
+        if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch || pipelineAbort.signal.aborted) {
+            try { generationBuffer.push({ t: Date.now(), discarded: true, reason: 'chat_changed_during_helpers' }); } catch { /* noop */ }
+            return;
+        }
         // LOCAL PATCH (Miinthe, 2026-10-04): the board's own turn (triggers + odds) on every reply —
         // a failed roll may roll again after N messages even when nothing moved.
         try { boardTick(); } catch (err) { console.warn('[DLE] board turn skipped:', err?.message || err); }
@@ -1387,6 +1412,81 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // successor's prompts (gotcha #1 / #2). Returns true when it handled the exit so
         // the caller can `return`; returns false when the guard blocked it (caller still
         // returns without committing, per the prior stale-pipeline behavior).
+        // LOCAL PATCH (bug hunt 2026-11-03): DeepLore's writer blocks — story trackers, her own prompts, Mero's
+        // [Author's notes] (guided swipe, slop guard, plans), notebook, AI notepad — go out on EVERY turn. The early
+        // empty exits (nothing matched / cooldown / gating) used to clear them all and return before this ran.
+        const _injectWriterBlocks = () => {
+            // BUG-147: shared PM-or-extension_prompts ladder for aux prompts (notebook, notepad —
+            // the lore/constants pair is handled above). Each call site previously duplicated this
+            // ladder and drifted (different fallback args, missing allowWIScan, etc.).
+            const _injectAuxPrompt = (id, content, position, depth, role, allowWIScan = false) => {
+                const usePromptList = settings.injectionMode === 'prompt_list';
+                if (usePromptList && promptManager) {
+                    const pmEntry = promptManager.getPromptById(id);
+                    if (pmEntry) {
+                        pmEntry.content = content;
+                        return;
+                    }
+                    // PM entry not registered for this id — fall through to extension_prompts.
+                }
+                setExtensionPrompt(id, content, position, depth, allowWIScan, role);
+            };
+
+            // LOCAL PATCH (Miinthe, 2026-10-02): story trackers tell the writer where the
+            // story stands — current step only, never the next. Always called, so an
+            // empty string clears the block once the last tracker is removed.
+            let _boardLines = [];
+            try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[DLE] board lines skipped:', err?.message || err); }
+            _boardLines = [..._boardLines, ...worldWriterLines()];   // the world layer: what the main character knows from messages (2026-10-19)
+            _injectAuxPrompt('deeplore_story_trackers', writerBlock(readActiveTrackers(), _boardLines),   // engine on v2, step 2: read from v2
+                settings.storyBlockPosition ?? extension_prompt_types.IN_CHAT, settings.storyBlockDepth ?? 4, settings.storyBlockRole ?? extension_prompt_roles.SYSTEM);   // overhaul (2026-10-17): its place is a setting (was fixed: in chat, depth 4, system)
+            // overhaul (2026-10-17): her own prompt pieces (Settings › Prompts › + Your own prompt), each where it says
+            try { for (const o of ownInjections(settings.ownPrompts)) setExtensionPrompt(o.slot, o.text, o.position, o.depth, false, o.role); }
+            catch (err) { console.warn('[DLE] own prompts skipped:', err?.message || err); }
+            // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes Miinthe kept — one [Author's notes] block close to the reply
+            // (models follow instructions best there). Always called, so an empty string clears it.
+            _injectAuxPrompt('deeplore_author_notes', authorNotesForGeneration(type),
+                extension_prompt_types.IN_CHAT, 1, extension_prompt_roles.SYSTEM);
+
+            // Author's Notebook — independent of entry pipeline.
+            if (settings.notebookEnabled && chat_metadata?.deeplore_notebook?.trim()) {
+                const notebookContent = chat_metadata.deeplore_notebook.trim();
+                _injectAuxPrompt(
+                    'deeplore_notebook',
+                    notebookContent,
+                    settings.notebookPosition,
+                    settings.notebookDepth,
+                    settings.notebookRole,
+                );
+            }
+
+            // AI Notepad injection.
+            // Tag mode: previous notes + instruction prompt (AI writes <dle-notes> tags).
+            // Extract mode: previous notes only — extraction runs post-generation, no instruction needed.
+            if (settings.aiNotepadEnabled) {
+                const notepadMode = settings.aiNotepadMode || 'tag';
+                const parts = [];
+                const storedNotes = chat_metadata?.deeplore_ai_notepad?.trim();
+                if (storedNotes) {
+                    parts.push(`[Your previous session notes]\n${storedNotes}\n[End of session notes]`);
+                }
+                if (notepadMode === 'tag') {
+                    parts.push(resolvePromptOrOverride('AI_NOTEPAD_PROMPT', settings.aiNotepadPrompt));
+                }
+                // Skip injection in extract mode with no prior notes — nothing useful to send.
+                if (parts.length > 0) {
+                    const notepadContent = parts.join('\n\n');
+                    _injectAuxPrompt(
+                        'deeplore_ai_notepad',
+                        notepadContent,
+                        settings.aiNotepadPosition,
+                        settings.aiNotepadDepth,
+                        settings.aiNotepadRole,
+                    );
+                }
+            }
+        };
+
         const _commitEmptyAndReturn = (reason) => {
             if (settings.debugMode) console.debug(`[DLE] ${reason}`);
             if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
@@ -1405,6 +1505,14 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 })).catch(err => console.warn('[DLE] Verdict write failed:', err?.message));
             } catch (err) { console.warn('[DLE] Verdict build failed:', err?.message); }
             notifyInjectionSourcesReady();
+            // the same as the no-groups commit below: Prompt-List entries emptied too, not left with last turn's lore
+            if (settings.injectionMode === 'prompt_list' && promptManager) {
+                for (const id of [`${PROMPT_TAG_PREFIX}constants`, `${PROMPT_TAG_PREFIX}lore`, 'deeplore_notebook', 'deeplore_ai_notepad', 'deeplore_story_trackers', 'deeplore_author_notes']) {
+                    const pmEntry = promptManager.getPromptById(id);
+                    if (pmEntry) pmEntry.content = '';
+                }
+            }
+            _injectWriterBlocks();
             return true;
         };
 
@@ -1675,75 +1783,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             notifyInjectionSourcesReady();
         }
 
-        // BUG-147: shared PM-or-extension_prompts ladder for aux prompts (notebook, notepad —
-        // the lore/constants pair is handled above). Each call site previously duplicated this
-        // ladder and drifted (different fallback args, missing allowWIScan, etc.).
-        const _injectAuxPrompt = (id, content, position, depth, role, allowWIScan = false) => {
-            const usePromptList = settings.injectionMode === 'prompt_list';
-            if (usePromptList && promptManager) {
-                const pmEntry = promptManager.getPromptById(id);
-                if (pmEntry) {
-                    pmEntry.content = content;
-                    return;
-                }
-                // PM entry not registered for this id — fall through to extension_prompts.
-            }
-            setExtensionPrompt(id, content, position, depth, allowWIScan, role);
-        };
-
-        // LOCAL PATCH (Miinthe, 2026-10-02): story trackers tell the writer where the
-        // story stands — current step only, never the next. Always called, so an
-        // empty string clears the block once the last tracker is removed.
-        let _boardLines = [];
-        try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[DLE] board lines skipped:', err?.message || err); }
-        _boardLines = [..._boardLines, ...worldWriterLines()];   // the world layer: what the main character knows from messages (2026-10-19)
-        _injectAuxPrompt('deeplore_story_trackers', writerBlock(readActiveTrackers(), _boardLines),   // engine on v2, step 2: read from v2
-            settings.storyBlockPosition ?? extension_prompt_types.IN_CHAT, settings.storyBlockDepth ?? 4, settings.storyBlockRole ?? extension_prompt_roles.SYSTEM);   // overhaul (2026-10-17): its place is a setting (was fixed: in chat, depth 4, system)
-        // overhaul (2026-10-17): her own prompt pieces (Settings › Prompts › + Your own prompt), each where it says
-        try { for (const o of ownInjections(settings.ownPrompts)) setExtensionPrompt(o.slot, o.text, o.position, o.depth, false, o.role); }
-        catch (err) { console.warn('[DLE] own prompts skipped:', err?.message || err); }
-        // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes Miinthe kept — one [Author's notes] block close to the reply
-        // (models follow instructions best there). Always called, so an empty string clears it.
-        _injectAuxPrompt('deeplore_author_notes', authorNotesForGeneration(type),
-            extension_prompt_types.IN_CHAT, 1, extension_prompt_roles.SYSTEM);
-
-        // Author's Notebook — independent of entry pipeline.
-        if (settings.notebookEnabled && chat_metadata?.deeplore_notebook?.trim()) {
-            const notebookContent = chat_metadata.deeplore_notebook.trim();
-            _injectAuxPrompt(
-                'deeplore_notebook',
-                notebookContent,
-                settings.notebookPosition,
-                settings.notebookDepth,
-                settings.notebookRole,
-            );
-        }
-
-        // AI Notepad injection.
-        // Tag mode: previous notes + instruction prompt (AI writes <dle-notes> tags).
-        // Extract mode: previous notes only — extraction runs post-generation, no instruction needed.
-        if (settings.aiNotepadEnabled) {
-            const notepadMode = settings.aiNotepadMode || 'tag';
-            const parts = [];
-            const storedNotes = chat_metadata?.deeplore_ai_notepad?.trim();
-            if (storedNotes) {
-                parts.push(`[Your previous session notes]\n${storedNotes}\n[End of session notes]`);
-            }
-            if (notepadMode === 'tag') {
-                parts.push(resolvePromptOrOverride('AI_NOTEPAD_PROMPT', settings.aiNotepadPrompt));
-            }
-            // Skip injection in extract mode with no prior notes — nothing useful to send.
-            if (parts.length > 0) {
-                const notepadContent = parts.join('\n\n');
-                _injectAuxPrompt(
-                    'deeplore_ai_notepad',
-                    notepadContent,
-                    settings.aiNotepadPosition,
-                    settings.aiNotepadDepth,
-                    settings.aiNotepadRole,
-                );
-            }
-        }
+        _injectWriterBlocks();
 
         // Stage 7: track cooldowns + injection history. Both epoch+lockEpoch guards required —
         // a force-released stale pipeline must not corrupt these Maps concurrently with its successor.

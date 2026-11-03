@@ -341,9 +341,9 @@ export async function removeWithCare({ name, big = false, askKey, text, remove, 
 
 /**
  * A small notice at the bottom. tone: '' | 'good' | 'wait' | 'bad' | 'mero'. With `undo`, an Undo button
- * (it stays a little longer). Returns close().
+ * (it stays a little longer). `actions`: more buttons, [{ label, onClick(button, close) }]. Returns close().
  */
-export function notify({ text, title, tone = '', undo, timeout, doc = document } = {}) {
+export function notify({ text, title, tone = '', undo, actions, timeout, doc = document } = {}) {
     let stack = doc.querySelector('.dk-notices');
     if (!stack) { stack = el(doc, 'div', 'dk-notices'); stack.setAttribute('role', 'status'); stack.setAttribute('aria-live', 'polite'); doc.body.append(stack); }
     const n = el(doc, 'div', 'dk-notice' + (tone ? ' dk-' + tone : ''));
@@ -352,9 +352,17 @@ export function notify({ text, title, tone = '', undo, timeout, doc = document }
     let timer;
     const close = () => { clearTimeout(timer); n.remove(); if (!stack.children.length) stack.remove(); };
     if (undo) n.append(button({ label: 'Undo', kind: 'quiet', doc, onClick: async () => { close(); await undo(); } }));
+    // more buttons beside Undo: [{ label, onClick(btn, close) }] — the notice stays open; onClick closes it if it wants
+    for (const a of actions || []) { const b = button({ label: a.label, kind: 'quiet', doc, onClick: () => a.onClick(b, close) }); n.append(b); }
     n.append(iconButton({ icon: 'close', title: 'Dismiss', doc, onClick: close }));
     stack.append(n);
     while (stack.children.length > 3) stack.firstChild.remove();
+    // above SillyTavern's message box, however tall it has grown (found 2026-11-03: a three-line message pushed the box
+    // up and the notice sat over the text it was talking about) — the CSS rule only knows the box's usual height
+    const form = doc.getElementById('send_form');
+    // — as a variable only the base rule reads: with a window open the notices go to the top (kit.css), and an inline
+    // top put them back over the window's text box (bug hunt 2026-11-03)
+    if (form) { const top = form.getBoundingClientRect().top; if (top > 80) stack.style.setProperty('--dk-notice-top', `${Math.round(top - 8)}px`); else stack.style.removeProperty('--dk-notice-top'); }
     const wait = timeout ?? (undo ? 8000 : 4500);
     const arm = () => { clearTimeout(timer); timer = setTimeout(close, wait); };
     n.addEventListener('pointerenter', () => clearTimeout(timer));
@@ -362,6 +370,20 @@ export function notify({ text, title, tone = '', undo, timeout, doc = document }
     n.addEventListener('focusin', () => clearTimeout(timer));
     arm();
     return close;
+}
+
+/**
+ * An Undo that belongs to one chat: `fn` runs only while that chat is still open. `chatNow()` says which chat is open
+ * (it is read now, and again on the click). Another chat open → nothing is changed and `onOther()` runs (by default a
+ * notice that says so). Hunt 2 (2026-11-03): a pin / block, a tracker's pause, a Cast "left the scene" or a removed
+ * tracker undone from the next chat wrote the first chat's state into the other one.
+ */
+export function chatOnly(fn, chatNow, onOther = () => notify({ text: 'That happened in another chat: open that chat to undo it.', tone: 'wait' })) {
+    const cid = chatNow();
+    return (...a) => {
+        if (chatNow() !== cid) { onOther(); return undefined; }
+        return fn(...a);
+    };
 }
 
 // ── mini tiles ──────────────────────────────────────────────────────────────

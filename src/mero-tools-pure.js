@@ -137,7 +137,7 @@ export function runTool(name, a = {}, data = {}) {
         if (!hits.length) return { text: `Nothing in the lore matches “${str(a.query)}”.`, got: 'nothing found' };
         return {
             text: hits.map(e => `- ${e.title}${arr(e.keys).length ? ` (keys: ${arr(e.keys).slice(0, 6).join(', ')})` : ''}: ${clip(e.summary || e.content, 200)}`).join('\n'),
-            got: `${hits.length} found: ${hits.slice(0, 4).map(e => e.title).join(' · ')}${hits.length > 4 ? ' …' : ''}`,
+            got: (n => `${hits.length} found: ${n.slice(0, 4).join(' · ')}${n.length > 4 ? ' …' : ''}`)([...new Set(hits.map(e => e.title))]),
         };
     }
     if (name === 'read_lore') {
@@ -181,6 +181,16 @@ export function runTool(name, a = {}, data = {}) {
         return { text: t, got: clip(t.split('\n')[0], 60) };
     }
     return { text: `There is no tool called ${str(name)}.`, got: 'unknown tool' };
+}
+
+/**
+ * Was a failed lookups call only a passing hiccup (timeout, rate limit, server or network trouble)? Then lookups stay on
+ * for the next answer. Anything else (a 400, a template that can't take tools or tool results) means this connection
+ * can't do lookups — remembered for the session (bug hunt 2026-11-03: one DeepSeek timeout switched them off for good).
+ */
+export function passingError(err) {
+    const m = String(err?.message || err || '') + ' ' + String(err?.status ?? err?.cause?.status ?? '');
+    return /timed? ?out|timeout|\b429\b|rate.?limit|too many requests|\b5\d\d\b|bad gateway|unavailable|overloaded|network|failed to fetch|fetch failed|ECONN|socket|aborted/i.test(m);
 }
 
 /** What a reply keeps of its lookups (shown when Miinthe opens the header): the line and the few words of what came back. */

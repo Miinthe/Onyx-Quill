@@ -40,6 +40,7 @@ let root = null, scheduled = false;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
 const say = (r, ok) => { if (r?.error) K.notify({ text: r.error, tone: 'bad' }); else if (ok) K.notify({ text: ok }); };
+const chatNow = () => getContext()?.chatId ?? null;   // which chat is open (an Undo checks it: K.chatOnly)
 
 async function openBoard(select = null, { add = false, view = null } = {}) {
     try { (await import('../board-window.js')).openBoardWindow({ ...(select ? { select } : {}), ...(add ? { add: true } : {}), ...(view ? { view } : {}) }); } catch (err) { K.notify({ text: `The board did not open: ${err?.message || err}`, tone: 'bad' }); }
@@ -116,7 +117,7 @@ async function runAct(name, act) {
     }
     const r = setTrackerRun(name, act);
     if (r.error) { K.notify({ text: r.error, tone: 'bad' }); return; }
-    K.notify({ text: r.text, undo: () => say(undoTrackerRun(name), 'Put back as it was.') });
+    K.notify({ text: r.text, undo: K.chatOnly(() => say(undoTrackerRun(name), 'Put back as it was.'), chatNow) });
 }
 
 function editSteps(t) {
@@ -181,13 +182,13 @@ async function remove(t) {
         name: t.name, big: true, askKey: 'tracker',
         text: bname ? `It is taken off the board “${bname}”, with its steps, so every chat that uses this board loses it. Undo puts it back.` : 'It is taken out of this chat, with its steps. Undo puts it back.',
         remove: () => { removeTracker(t.name); if (S.sel === (t.id || t.name)) S.sel = null; },
-        undo: () => {
+        undo: K.chatOnly(() => {
             if (bname && keep.board) putBoard(bname, keep.board);
             if (keep.state) chat_metadata[STATE_KEY] = keep.state;
             if (keep.list) chat_metadata[TRACKERS_KEY] = keep.list;
             saveMetadataDebounced();
             notifyTrackersView();
-        },
+        }, chatNow),
     });
 }
 
@@ -241,7 +242,7 @@ function setPlace(t, to) {
     if (from === to) return;
     const ch = { kind: 'place', key: `place:${t.id}`, col: t.id, from, to, quote: '', reason: 'set by you', confidence: 'high' };
     saveLiveState(applyPlaceChanges(L.board, L.state, [ch], turnIndex(getContext()?.chat), { who: 'you' }));
-    K.notify({ text: `${t.name}: the scene is now at ${placeLabel(t, to)}.`, undo: () => undoCollection(ch.logId) });
+    K.notify({ text: `${t.name}: the scene is now at ${placeLabel(t, to)}.`, undo: K.chatOnly(() => undoCollection(ch.logId), chatNow) });
 }
 
 function heldRows(L) {

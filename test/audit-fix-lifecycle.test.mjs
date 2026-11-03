@@ -452,4 +452,64 @@ test('P2-5g: SOURCE — pipeline.js builds Map<title, Entry[]> and dedupes by tr
         'P2-5: the bare-title matchedTitles Set must be gone');
 });
 
+// ============================================================================
+// Hunt 2 (2026-11-03) — onGenerate's other exits.
+// ============================================================================
+
+section('Hunt 2 — Continue is the same turn; empty vault still sends the writer blocks; off clears everything');
+
+test('H2-1: SOURCE — a Continue shares the reply slot and counts as a redo (swipe check)', () => {
+    assert(/\(type === 'swipe' \|\| type === 'continue'\) \? chat\.length - 1 : chat\.length/.test(indexSrc),
+        'H2-1: verdictMsgIdx for continue must be chat.length - 1 (the message it appends to)');
+    assert(/\(type === 'swipe' \|\| type === 'regenerate' \|\| type === 'continue'\) && lastGenerationTrackerSnapshot\.idx === earlyIdx/.test(indexSrc),
+        'H2-1: continue must match the swipe snapshot by slot (restore + injection-log clear)');
+});
+
+test('H2-1b: a Continue keys the trailing assistant, the same key its first generation wrote', () => {
+    // first generation: chat = [user], the reply lands at 1
+    const before = [{ is_user: true }];
+    const first = swipeTargetFor(before, before.length);
+    // continue: chat = [user, assistant(swipe 0)], idx = chat.length - 1
+    const after = [{ is_user: true }, { is_user: false, swipe_id: 0 }];
+    const cont = swipeTargetFor(after, after.length - 1);
+    assertEqual(cont.key, first.key, 'H2-1: continue reuses the first generation\'s key');
+});
+
+test('H2-2: SOURCE — no early return when the vault has no entries (writer blocks still go out)', () => {
+    const i = indexSrc.indexOf('if (vaultSnapshot.length === 0) {');
+    assert(i >= 0, 'H2-2: empty-snapshot branch present');
+    const body = indexSrc.slice(i, indexSrc.indexOf('pipelineRan = true;', i));
+    assert(!/\breturn;/.test(body), 'H2-2: the empty-snapshot branch must not return');
+    const j = indexSrc.indexOf("'obsidian_no_cache_fallback'");
+    const body2 = indexSrc.slice(j, indexSrc.indexOf('const _indexFreshMs', j));
+    assert(!/\breturn;/.test(body2), 'H2-2: the no-cache branch must not return');
+});
+
+test('H2-3: SOURCE — DeepLore off (everywhere / this chat) clears all of its prompts', () => {
+    assert(/if \(!settings\.enabled\) _clearAllDlePrompts\(settings\);/.test(indexSrc),
+        'H2-3: off everywhere clears everything, not only the prefill');
+    const i = indexSrc.indexOf('if (!_cs.on) {');
+    assert(i >= 0 && /_clearAllDlePrompts\(settings\)/.test(indexSrc.slice(i, i + 200)),
+        'H2-3: off for this chat clears everything incl. Prompt-List entries');
+    const f = indexSrc.indexOf('function _clearAllDlePrompts');
+    const fb = indexSrc.slice(f, f + 700);
+    assert(/clearPrompts\(/.test(fb) && /PREFILL_ID/.test(fb) && /pmEntry\.content = ''/.test(fb),
+        'H2-3: helper clears extension prompts, prefill and Prompt-List entries');
+});
+
+test('H2-4: SOURCE — a chat switch / Stop during the helper steps ends the run before the board turn', () => {
+    const i = indexSrc.indexOf("reason: 'chat_changed_during_helpers'");
+    const j = indexSrc.indexOf('try { boardTick(); }');
+    assert(i > 0 && j > i, 'H2-4: epoch/abort guard sits between the helper awaits and boardTick');
+    assert(/epoch !== chatEpoch \|\| lockEpoch !== generationLockEpoch \|\| pipelineAbort\.signal\.aborted/.test(indexSrc.slice(i - 300, i)),
+        'H2-4: guard checks chat epoch, lock epoch and the abort signal');
+});
+
+test('H2-5: SOURCE — routeOoc marks the STORED message (in-place on the shared extra), not the copy', async () => {
+    const meroSrc = await readFile(new URL('../src/mero.js', import.meta.url), 'utf8');
+    assert(!/m\.extra = \{ \.\.\.\(m\.extra \|\| \{\}\), deeplore_ooc_sent: true \}/.test(meroSrc),
+        'H2-5: replacing extra on the interceptor copy loses the mark (swipes re-sent the OOC to Mero)');
+    assert(/m\.extra\.deeplore_ooc_sent = true/.test(meroSrc), 'H2-5: mark set in place');
+});
+
 await summary('Audit-fix Lifecycle (P2-1..P2-5)');

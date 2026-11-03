@@ -81,4 +81,9 @@ test('a rewrite comes back clean; the prompt never asks for the whole message', 
     assert(p.user.includes('Don\'t use "her breath hitched"') && p.user.includes('"a mix of"'));
 });
 
+test('bug hunt 2026-11-03: a rewrite of plain narration doesn\'t come back as an *action*', () => {
+    assertEqual(cleanRewrite('*She slides onto the counter.*', 'She slid onto the counter.'), 'She slides onto the counter.');
+    assertEqual(cleanRewrite('*She grins.*', '*She grinned.*'), '*She grins.*');
+});
+
 summary('slop');

@@ -364,7 +364,7 @@ export async function callAI(systemPrompt, userMessage, connectionConfig) {
         }
     }
 
-    const { mode, profileId, proxyUrl, model, maxTokens, timeout, cacheHints, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature, history } = connectionConfig;
+    const { mode, profileId, model, maxTokens, timeout, signal, jsonSchema, disableThinkingOnClaude, noReasoning, temperature, history } = connectionConfig;
 
     if (signal?.aborted) {
         const preReason = signal.reason?.message || 'pre_call_abort';
