@@ -22,7 +22,7 @@ import { meroKnows, meroNotes, addNote, removeNote, updateNote, setPitchSink, me
 import {
     PITCHES_KEY, asPitches, normMenu, addBatch, dropPicking, bringBack, setPitch, removePitch, trimPitches, pitchPrompt, parsePitches,
     parseHidden, directionText, surpriseText, LAND_SYSTEM, LAND_SCHEMA, landUser, MOMENT_SYSTEM, MOMENT_SCHEMA, momentUser, checkFrom,
-    fallbackDue, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, pitchLine, KINDS,
+    fallbackDue, ownPitch, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, pitchLine, KINDS,
     parsePlans, startPlan, planLines, repliesSince, BEAT_SYSTEM, BEAT_SCHEMA, beatUser, beatDue, tickBeat, rewindPlan, timerDue,
     lingerPatch, rewritePrompt, parseRewrite, applyReview, talkPitchPrompt, parseTalkPitches, editedPitch,
     usedDraft,
@@ -187,6 +187,15 @@ export async function pitchFromTalk(talkId, { ask = true } = {}) {
     } finally { busy = null; changed(); }
 }
 
+/** ✏ Write my own: her own pitch, straight into the list — no AI, works while Mero is busy or has no connection. */
+export function addOwn(fields = {}) {
+    const p = ownPitch(fields, lastIndex());
+    if (p.error) return { ok: false, error: p.error };
+    const s = store(), no = s.next;
+    save(addBatch(s, [p], { made: lastIndex(), replace: false }));
+    return { ok: true, no, waits: p.st === 'hidden', plan: !!p.plan };
+}
+
 /** ✏ Edit a pitch that isn't out in the story yet: new words (a plan: goal + beats). */
 export function editPitch(id, fields = {}) {
     const p = get(id);
@@ -202,6 +211,7 @@ export function editPitch(id, fields = {}) {
 
 const get = id => store().list.find(p => p.id === id) || null;
 function taste(p, up, why = '') {
+    if (p?.own) return;   // her own pitch says nothing about Mero's — no taste line
     addNote({ kind: 'fact', text: tasteText(p, up, why), story: false, last: 'pinned', scope: 'char', taste: up ? 'up' : 'down' }, { from: null });
     for (const id of tasteOverflow(meroNotes())) removeNote(id);
 }

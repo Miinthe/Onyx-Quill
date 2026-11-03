@@ -12,7 +12,7 @@ import {
     asPitches, normMenu, addBatch, dropPicking, bringBack, setPitch, trimPitches, pitchPrompt, parsePitches, parseHidden, checkFrom,
     fallbackDue, boardEntryTitles, quietLore, castForPitches, tasteText, tasteOverflow, takePitchCards, directionText, MAX_KEPT_LIST, MAX_TASTE,
     parsePlans, startPlan, planLines, repliesSince, beatDue, tickBeat, rewindPlan, timerDue, lingerPatch, rewritePrompt, parseRewrite, applyReview, normPitch,
-    usedDraft,
+    usedDraft, ownPitch,
 } from '../src/pitches-pure.js';
 import { normNote, buildMeroPrompt, normTalk } from '../src/mero-pure.js';
 
@@ -234,6 +234,32 @@ test('a 📝 draft counts as played only when the sent message used it (Miinthe,
     assert(usedDraft(d, '*She puts the cup down, leaning closer.* "Kettle, tell me about that fuse."'), 'changed a little');
     assert(!usedDraft(d, 'I go to bed.'), 'something else entirely');
     assert(usedDraft('', 'anything'), 'no draft text: as before');
+});
+
+test('✏ My own: her pitch without Mero — kept, a plan, or waiting for her moment (Miinthe, 2026-11-03)', () => {
+    const one = ownPitch({ text: '  A letter arrives for Kettle, unsigned. ' }, 12);
+    assertEqual(one.st, 'kept'); assertEqual(one.text, 'A letter arrives for Kettle, unsigned.'); assert(one.own && one.src === 'own');
+    assert(ownPitch({ text: '   ' }).error, 'empty is refused');
+    const w = ownPitch({ text: 'Kettle confesses', moment: 'when they are alone in the garden', fb: 8 }, 12);
+    assertEqual(w.st, 'hidden'); assertEqual(w.moment, 'when they are alone in the garden'); assertEqual(w.armed, 12); assertEqual(w.fb, 8);
+    assert(w.mine && w.peek, 'her own moment, shown to her (not blurred)');
+    const pl = ownPitch({ plan: true, goal: 'Kettle forgives Toaster', text: '1. They argue\n- Toaster apologizes\n\n• They make tea together' });
+    assertEqual(pl.st, 'kept'); assertEqual(pl.plan.beats.map(b => b.text), ['They argue', 'Toaster apologizes', 'They make tea together']);
+    assert(ownPitch({ plan: true, goal: 'x', text: 'only one step' }).error, 'a plan needs two steps');
+    assert(ownPitch({ plan: true, text: 'a\nb' }).error, 'a plan needs a goal');
+    assert(ownPitch({ plan: true, goal: 'x', text: 'a\nb\nc\nd\ne\nf\ng\nh' }).error, 'at most 7 steps');
+    // through the store: numbered like Mero's, kept through a new batch, the own mark survives
+    let s = addBatch(asPitches({}), [P('mero one')]);
+    s = addBatch(s, [one], { made: 12, replace: false });
+    const mine = s.list.find(p => p.own);
+    assert(mine && mine.st === 'kept' && mine.no === 2);
+    s = addBatch(s, [P('fresh batch')]);
+    assert(s.list.some(p => p.own && p.st === 'kept'), 'a new batch never sweeps her own pitch away');
+    const ws = addBatch(asPitches({}), [w], { made: 12, replace: false });
+    assert(!fallbackDue(ws.list[0], 19) && fallbackDue(ws.list[0], 20), 'the fallback counts from when she wrote it');
+    const ps = addBatch(asPitches({}), [pl], { replace: false });
+    assertEqual(ps.list[0].plan.goal, 'Kettle forgives Toaster');
+    assertEqual(startPlan(ps.list[0], { i: 3 }).st, 'running');
 });
 
 summary('Pitches');

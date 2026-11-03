@@ -204,7 +204,7 @@ window.__dleMeroHost = {
     momentsAside: keys => setMomentsAside(keys),
     talkMoments: async keys => { const r = await talkAboutMoments(keys); return r?.talk ? { ok: true, talk: clone(r.talk) } : r; },
     // 💡 pitches
-    pitch: opts => P.pitch(opts), pitchFromTalk: id => P.pitchFromTalk(id), pitchEdit: (id, f) => P.editPitch(id, f), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(), pitchForgetDropped: () => P.forgetDropped(),
+    pitch: opts => P.pitch(opts), pitchOwn: f => P.addOwn(f), pitchFromTalk: id => P.pitchFromTalk(id), pitchEdit: (id, f) => P.editPitch(id, f), pitchMenu: patch => P.setMenu(patch), pitchBack: () => P.back(), pitchBringBack: () => P.bringBackDropped(), pitchForgetDropped: () => P.forgetDropped(),
     pitchUse: id => P.useNextReply(id), pitchDraft: id => P.draftLine(id), pitchGive: (id, c, p) => P.giveTo(id, c, p), pitchTakeBack: id => P.takeBack(id), pitchPutBack: id => P.putDraftBack(id),
     pitchKeep: ids => P.keep(ids), pitchLetGo: id => P.letGo(id), pitchNo: (ids, why) => P.notMine(ids, why), pitchPeek: (id, on) => P.peek(id, on),
     pitchTalk: ids => P.talkOpener(ids), tasteEdit: (id, text) => P.editTaste(id, text),

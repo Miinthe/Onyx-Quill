@@ -211,4 +211,36 @@ test('quirks: in the prompt; several messages in a row split into bubbles', () =
     assertEqual(splitParts(''), []);
 });
 
+// 🎨 real pictures for 📷 photos (Miinthe, 2026-11-03)
+import { picPrompt, picsDue, replyPrompt as rp2 } from '../src/world/messages-pure.js';
+import { normWorld, normStore } from '../src/world/world-pure.js';
+import { richText, photosIn } from '../src/world/feed-pure.js';
+test('🎨 pictures: the switches, the mark, the prompt, what is drawn by itself, how a card shows', () => {
+    assertEqual(normWorld(null).pics, { on: true, theirs: true });
+    assertEqual(normWorld({ pics: { theirs: false } }).pics, { on: true, theirs: false });
+    assertEqual(normStore({ records: [], picsFrom: 7 }).picsFrom, 7, 'the mark survives a save');
+    assertEqual(normStore({ records: [] }).picsFrom, undefined);
+    assertEqual(picPrompt('  the view from my window at sunset ', { from: 'Kettle' }), 'the view from my window at sunset, a casual phone photo sent by Kettle');
+    assertEqual(picPrompt('a pressed flower', { letters: true }), 'a pressed flower, an old photograph');
+    assertEqual(picPrompt('   '), '');
+    const th = [
+        { id: 'a', n: 3, from: 'u', text: 'old [photo: the beach]' },
+        { id: 'b', n: 5, from: 'u', text: 'mine [photo: my cat]' },
+        { id: 'c', n: 6, from: 'k', text: 'theirs [photo: a teapot]', alts: ['theirs [photo: a teapot]'], s: 0 },
+        { id: 'd', n: 7, from: 'k', text: '[photo: done]', pics: { done: 'user/images/x.png' } },
+    ];
+    const ds = x => x.map(y => y.m.id + ':' + y.desc);
+    assertEqual(ds(picsDue(th, { me: 'u', picsFrom: 5, photosIn })), ['b:my cat', 'c:a teapot'], 'old ones and drawn ones are left alone');
+    assertEqual(ds(picsDue(th, { me: 'u', picsFrom: 5, theirs: false, photosIn })), ['b:my cat'], 'theirs off: only hers');
+    assertEqual(ds(picsDue(th, { me: 'u', picsFrom: 5, tried: new Set(['b|my cat']), photosIn })), ['c:a teapot'], 'tried once this session: not again by itself');
+    const drawn = richText('look [photo: my cat]!', [], () => ({ url: 'user/images/a b.png' }));
+    assert(drawn.includes('<img src="user/images/a b.png" alt="my cat"') && drawn.includes('class="photo pic"'));
+    assert(richText('[photo: x]', [], () => 'busy').includes('drawing…'));
+    assert(richText('[photo: x]', [], () => 'make').includes('data-pic="x"'));
+    assertEqual(richText('[photo: x]', []), richText('[photo: x]', [], () => null), 'no pictures: as before');
+    const base = { name: 'Kettle', fromName: 'Miinthe', thread: [] };
+    assert(rp2(base).system.includes('[photo: what it shows]'));
+    assert(!rp2({ ...base, photos: false }).system.includes('[photo:'), 'theirs off: they are not told to send photos');
+});
+
 summary();

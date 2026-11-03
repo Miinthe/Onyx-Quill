@@ -177,6 +177,7 @@ export const SECTIONS = [
         { t: 'Her job', rows: [
             { id: 'm-job', label: 'How much she does', tip: 'Her lore upkeep: how often she checks the entries', type: 'seg', src: 'mero', key: 'job', opts: [['off', 'Off duty'], ['freelance', 'Freelancer'], ['part', 'Part-timer'], ['full', 'Full-timer']], old: 'Mero’s job' },
             { id: 'm-sign', label: 'Needs my sign-off', tip: 'On: nothing is written without your yes. Off: she writes changes herself, each with an Undo.', type: 'switch', src: 'mero', key: 'signoff', old: 'Sign-off / approval' },
+            { id: 'm-web', label: 'Searches the web', tip: 'When she needs a real-world fact. Uses the search service set up in SillyTavern’s Web Search extension. Your lore always wins over the web.', type: 'switch', src: 'mero', key: 'web', old: 'Web search / browser' },
         ] },
         { t: 'How she talks', rows: [
             { id: 'm-chat', label: 'Chattiness', type: 'seg', src: 'mero', key: 'chatty', opts: [['quiet', 'Quiet'], ['chatty', 'Chatty'], ['very', 'Very chatty'], ['custom', 'Custom']], old: 'Chatty / yapper' },
@@ -185,7 +186,7 @@ export const SECTIONS = [
             { id: 'm-talks', label: 'How much she talks', type: 'seg', src: 'mero', key: 'talk', opts: [['little', 'a little'], ['some', 'some'], ['lots', 'a lot']], more: true, old: 'Custom: talks' },
             { id: 'm-brings', label: 'Brings things up herself', type: 'switch', src: 'mero', key: 'bringUp', more: true, old: 'Custom: brings up' },
             { id: 'm-glow', label: 'The glow', tip: 'A soft light while she has something; costs nothing until you click it', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], more: true, old: 'Custom: the glow' },
-            { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job and sign-off back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', more: true, old: 'Reset her settings' },
+            { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job, sign-off and web search back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', more: true, old: 'Reset her settings' },
         ] },
     ] },
     { id: 'story', name: 'Story & memory', icon: 'story', grp: 'Story', lead: 'What DeepLore writes down, and the story tools.', cards: [

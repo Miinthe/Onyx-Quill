@@ -21,7 +21,7 @@ import * as K from '../kit/kit.js';
 import { addRecord, normWorld, neverTalk, togglePin } from './world-pure.js';
 import { lastTick, tickReason, tickPrompt, parseTick, TICK_SCHEMA } from './alive-pure.js';
 import { duePlans, plannedPrompt } from './planned-pure.js';
-import { newPost, richText, updatePost } from './feed-pure.js';
+import { newPost, richText, updatePost, photosIn } from './feed-pure.js';
 import { RUMOR, rumorName, accountCard, worldDigest, NEWS, newsName, newsAccount, reporterCard, commentAsk, withComment } from './rumor-pure.js';
 import { spreadTip, openAsk } from './rumors.js';
 import { hookGroups, groupOpen, groupRows, renderGroup, onGroupClick, onGroupKey, resetGroups, deliverGroups } from './groups.js';
@@ -29,7 +29,7 @@ import { groupUnread, groupsOf } from './groups-pure.js';
 import {
     USER, MAIN, othersConversations, convThread, mainLearned, mainKnowsLine, peopleOf, personByKey, storyClock, stampText, threadOf, unreadFor, conversationsFor, newMessage, updateMessage,
     pacing, removeMessage, markRead, isPass, nextThread, splitParts, swipeTo, repliesDue, replyPrompt, parseReply, extractPrompt, parseExtract, EXTRACT_SCHEMA, learnedChanges, personNow, textOf, arrivalText, replyWait, waitOver, replyStatus,
-    meetupChange, mainPlanLine, leakFacts, leakChanges, withHeaders,
+    meetupChange, mainPlanLine, leakFacts, leakChanges, withHeaders, picPrompt, picsDue, nextN,
 } from './messages-pure.js';
 import { discretionOf, discretionMap } from './feed.js';   // who people never gossip about (Miinthe 2026-10-26)
 
@@ -146,6 +146,7 @@ export function threadHtmlFor(th, { me: self, letters = false, typing: dots = fa
     return dots ? h.replace(/<\/div>$/, '<div class="typing" aria-label="writing"><i></i><i></i><i></i></div></div>') : h;
 }
 function threadHtml(th, { me: self, other, letters, peek, group = false }) {
+    if (!peek || group) autoPics(th, self, letters);
     const lastMine = th.map(m => m.from).lastIndexOf(self), lastTheirs = th.map(m => m.from).lastIndexOf(other);
     let h = `<div class="dle-wd-thread${letters ? ' letters' : ''}${leaking ? ' leaking' : ''}">`;
     // text-message look (Miinthe, 2026-11-02: DMs looked "weird and bland, not much like text messages"): messages sent in a
@@ -158,7 +159,7 @@ function threadHtml(th, { me: self, other, letters, peek, group = false }) {
         const joinUp = !header && prev && prev.m.from === m.from, joinDown = next && !next.header && next.m.from === m.from;
         const grp = joinUp ? (joinDown ? 'mid' : 'last') : (joinDown ? 'first' : 'solo');
         const out = m.from === self, side = out ? 'out' : 'in', ed = editing === m.id, picked = leakSel.has(m.id);
-        let txt = richText(textOf(m), tagNames());
+        let txt = richText(textOf(m), tagNames(), d => picState(m, d));
         if (letters) txt = `<span class="sal">Dear ${esc(nameOf(m.to))},</span>${txt}<span class="sig">${esc(nameOf(m.from))}</span>`;
         else if (peek && !(group && out) && !joinUp) txt = `<b class="from">${esc(nameOf(m.from))}</b>${txt}`;
         let meta = '';
@@ -176,6 +177,55 @@ function threadHtml(th, { me: self, other, letters, peek, group = false }) {
     if (!peek && typing.has(other + '|' + self)) h += '<div class="typing" aria-label="writing"><i></i><i></i><i></i></div>';
     if (!th.length) h += `<div class="dle-wd-empty"><b>${letters ? 'No letters yet.' : 'No messages yet.'}</b><span>${letters ? 'A letter takes story time: it arrives on the next story day.' : 'Write the first one below.'}</span></div>`;
     return h + '</div>';
+}
+
+// ── 🎨 real pictures for 📷 photos (Miinthe, 2026-11-03: "image generation for the DMs"; her pick: both hers and theirs,
+// with a switch for theirs) — SillyTavern's own Image Generation (/imagine, quiet) makes them with whatever she set up
+// there (source, model, her style words). The board's World tab › Pictures has the switches. ──
+
+const picBusy = new Set(), picTried = new Set();   // "id|description" — being drawn · tried this session (memory only)
+let picsDead = false, picQueue = Promise.resolve();   // a failure stops the drawing by itself until one works by hand
+const findMsg = id => H?.store().records.find(r => r.kind === 'msg' && r.id === id);
+function picState(m, d) {
+    if (m.pics?.[d]) return { url: m.pics[d] };
+    if (picBusy.has(m.id + '|' + d)) return 'busy';
+    return worldNow().pics.on ? 'make' : null;
+}
+/** The photos of a thread being drawn by themselves: only messages from the first look on (an old thread never starts). */
+function autoPics(th, self, letters) {
+    const w = worldNow();
+    if (!H || !w.pics.on || picsDead) return;
+    const st = H.store();
+    if (!Number.isInteger(st.picsFrom)) { if (st.records.length) setTimeout(() => { const s2 = H.store(); if (!Number.isInteger(s2.picsFrom)) H.save({ ...s2, picsFrom: nextN(s2) }); }, 0); return; }
+    for (const { m, desc } of picsDue(th, { me: self, picsFrom: st.picsFrom, theirs: w.pics.theirs, tried: picTried, photosIn }).slice(0, 3)) {
+        picTried.add(m.id + '|' + desc);
+        makePic(m.id, desc, letters);
+    }
+}
+/** Draw one photo (one at a time, in order). By hand (🎨 on the card) it is tried again even after a failure. */
+function makePic(id, desc, letters, byHand = false) {
+    const key = id + '|' + desc;
+    if (picBusy.has(key)) return;
+    const cmd = getContext()?.SlashCommandParser?.commands?.imagine;
+    if (!cmd?.callback) { if (byHand) K.notify({ title: 'Pictures', text: 'SillyTavern’s Image Generation isn’t switched on (Extensions › Image Generation).' }); picsDead = true; return; }
+    picBusy.add(key); picTried.add(key); setTimeout(() => H?.render(), 0);
+    picQueue = picQueue.then(async () => {
+        const m0 = findMsg(id);
+        let url = '';
+        if (m0) {
+            try { url = await cmd.callback({ quiet: 'true' }, picPrompt(desc, { from: nameOf(m0.from), letters })); }
+            catch (err) { console.warn('[DLE] world: picture failed:', err?.message || err); }
+        }
+        picBusy.delete(key);
+        if (typeof url === 'string' && url.trim() && findMsg(id)) {
+            picsDead = false;
+            H.save(updateMessage(H.store(), id, r => ({ pics: { ...(r.pics || {}), [desc]: url.trim() } })));
+        } else if (m0) {
+            picsDead = true;
+            K.notify({ title: 'Pictures', text: 'No picture came back — check Image Generation in SillyTavern’s extensions. Tap 🎨 on the photo to try again.' });
+        }
+        H?.render();
+    });
 }
 
 /** Leaking: who hears the ticked messages (anyone in the Cast and the main character). */
@@ -217,6 +267,7 @@ export function onMessagesClick(e, body, w) {
     // on a phone, a tap on a bubble shows its Edit / Delete (no hover there); a tap on another hides them again
     const tb = !leaking && !editing && q('.dle-wd-thread .bub') && !q('button, a, textarea, input');
     if (tb) { const bw = q('.bw'); const was = bw.classList.contains('tapped'); body.querySelectorAll('.bw.tapped').forEach(x => x.classList.remove('tapped')); bw.classList.toggle('tapped', !was); }
+    if (q('[data-pic]')) { const b = q('[data-pic]'), id = b.closest('[data-mid]')?.dataset.mid; if (id) makePic(id, b.dataset.pic, w.look === 'letters', true); return true; }
     if (handleAsClick(e)) return true;
     if (onGroupClick(e, body, w)) return true;
     if (q('[data-pin]')) { H.save(togglePin(H.store(), q('[data-pin]').dataset.pin)); H.render(); return true; }
@@ -305,7 +356,7 @@ function talkFormHtml(w) {
     return `<div class="dle-wd-cvh"><button type="button" class="dk-ib" data-talk-x title="Cancel" aria-label="Cancel">${I('back')}</button><span class="who"><b>Start a talk between others</b><small>you can spy on it under Between others</small></span></div>
       <div class="dle-wd-gform"><label>Who writes first<select class="dk-field" data-talk-from>${ks.map(k => opt(k, talkForm.from)).join('')}</select></label>
       <label>To<select class="dk-field" data-talk-to>${ks.map(k => opt(k, talkForm.to)).join('')}</select></label>
-      <label>About <small>(optional — the AI picks a reason of theirs when it's empty)</small><textarea class="dk-field" rows="2" data-talk-about placeholder="e.g. the tape Spoon saw">${esc(talkForm.about)}</textarea></label>
+      <label>About <small>(optional — the AI picks a reason of theirs when it's empty)</small><textarea class="dk-field" rows="2" data-talk-about placeholder="e.g. something they both saw">${esc(talkForm.about)}</textarea></label>
       ${blocked ? `<div class="warn">${esc(nameOf(talkForm.from))} and ${esc(nameOf(talkForm.to))} never talk to each other (the board says so).</div>` : ''}
       <div class="btns"><button type="button" class="dk-btn dk-primary" data-talk-go ${blocked || talkForm.from === talkForm.to ? 'disabled' : ''}>Start</button><button type="button" class="dk-btn" data-talk-x>Cancel</button></div>
       <div class="hint">${w.look === 'letters' ? 'The letter goes out now; the answer comes when it has arrived.' : 'The first one writes now and the other answers right away; after that it goes on by itself now and then.'}</div></div>`;
@@ -387,7 +438,7 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
             : who.main ? { here: true, knows: H.store().records.filter(r => r.kind === 'mknow').map(r => ({ fact: r.fact })) } : personNow(L.state, who.cast, who.p);
         const chat = now.here ? (ctx()?.chat || []).filter(x => x && !x.is_system && typeof x.mes === 'string').slice(-STORY_WINDOW).map(x => ({ name: x.name, mes: x.mes })) : [];
         let lines = []; try { lines = storyLinesFor(liveWriterLines()); } catch { /* none */ }
-        const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed() });
+        const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed(), photos: w.pics?.theirs !== false });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
         if (window.__dleWorldDebug) console.log('[DLE] world answer', who.p.name, JSON.stringify({ system: p.system, user: p.user, raw: r?.text }));
         if (!stay()) return;

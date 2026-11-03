@@ -33,6 +33,8 @@ export function normWorld(raw) {
         look: LOOKS.includes(w.look) ? w.look : 'phone',
         sections: Object.fromEntries(OPTIONAL_SECTIONS.map(k => [k, sec[k] !== false])),
         alive: normAlive(w.alive), paused: w.paused === true, first: normFirst(w.first),   // stage 2 (2026-10-19)
+        // 🎨 real pictures for 📷 photos in messages (Miinthe, 2026-11-03): on · and whether people send photos on their own
+        pics: { on: w.pics?.on !== false, theirs: w.pics?.theirs !== false },
         // stage 3: planned messages — kept as stored here; planned-pure.js repairs each one where it is used
         // (normalizing conditions here would import board-model-pure, which imports this file)
         planned: (Array.isArray(w.planned) ? w.planned : []).filter(p => isObj(p) && typeof p.id === 'string' && p.id),
@@ -113,7 +115,9 @@ export function normStore(raw) {
     const seen = isObj(s.seen) ? { news: Number(s.seen.news) || 0, feed: Number(s.seen.feed) || 0 } : null;
     // pinned conversations (Miinthe, 2026-10-19: "favoritize chats to stick to the top"): person keys and 'g:<group id>'
     const pins = Array.isArray(s.pins) ? [...new Set(s.pins.filter(k => typeof k === 'string' && k))].slice(0, 50) : [];
-    return { v: STORE_VERSION, records, ...(seen ? { seen } : {}), ...(pins.length ? { pins } : {}) };
+    // 🎨 pictures are made by themselves only for messages from here on (an old thread never starts drawing — each picture costs a call)
+    const picsFrom = Number.isInteger(s.picsFrom) && s.picsFrom > 0 ? { picsFrom: s.picsFrom } : {};
+    return { v: STORE_VERSION, records, ...(seen ? { seen } : {}), ...(pins.length ? { pins } : {}), ...picsFrom };
 }
 
 /**

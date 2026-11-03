@@ -1675,7 +1675,7 @@ function showBreak(msg) {
       box = document.createElement('div'); box.id = 'dle-break';
       box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;background:#fde8e8;color:#8a1111;border:1px solid #e3a0a0;border-radius:10px;padding:10px 14px;font:13px/1.45 system-ui,sans-serif;white-space:pre-wrap;max-height:40vh;overflow:auto;user-select:text;-webkit-user-select:text';
       try { window.__sbFlushRescue?.(); } catch { /* noop */ }
-      box.innerHTML = '<b>Something broke in the board window.</b> Unsaved changes are kept — the board offers them back when you open it again. Please send Claude this text:<br><span></span><br><button data-x="copy" style="margin-top:6px">Copy</button> <button data-x="close" style="margin-top:6px">Close the window</button>';
+      box.innerHTML = '<b>Something broke in the board window.</b> Unsaved changes are kept — the board offers them back when you open it again. Please report this text:<br><span></span><br><button data-x="copy" style="margin-top:6px">Copy</button> <button data-x="close" style="margin-top:6px">Close the window</button>';
       box.querySelector('[data-x="close"]').onclick = () => HOST?.close();
       box.querySelector('[data-x="copy"]').onclick = async ev => {
         const text = box.querySelector('span').textContent, btn = ev.currentTarget;
@@ -6008,7 +6008,7 @@ function renderNotepad(el) {
 const WLOOKS = [['phone', '📱 Phone'], ['letters', '✉️ Letters']];
 const WLOOK_HINT = { phone: 'Instant messages, read receipts.', letters: 'Letters take story time, have no read receipts and go astray more easily. Who writes to whom, and how often, gets noticed.' };
 // a stale world-pure.js (the page not reloaded since an update) may lack newer fields: fill them so the tab never breaks
-const WDEF = { rumorName: '', newsName: '', on: false, look: 'phone', sections: { feed: true, news: true, msgs: true }, alive: { open: true, big: true, time: true, every: false, everyN: 10, quiet: false, pulse: true, pace: 'normal', movesMin: 0, movesMax: 4, realReplies: true }, paused: false, first: { cast: true, main: true }, planned: [], people: {}, voices: [] };
+const WDEF = { rumorName: '', newsName: '', on: false, look: 'phone', sections: { feed: true, news: true, msgs: true }, alive: { open: true, big: true, time: true, every: false, everyN: 10, quiet: false, pulse: true, pace: 'normal', movesMin: 0, movesMax: 4, realReplies: true }, paused: false, first: { cast: true, main: true }, pics: { on: true, theirs: true }, planned: [], people: {}, voices: [] };
 function worldDoc() { const w = WORLD ? WORLD.normWorld(doc.world) : null; return w ? { ...WDEF, ...w, planned: Array.isArray(w.planned) ? w.planned : (doc.world?.planned || []) } : WDEF; }
 function setWorld(patch) { doc.world = { ...worldDoc(), ...patch }; touch(); }
 function renderWorldSide(el) {
@@ -6030,6 +6030,8 @@ function renderWorldSide(el) {
       + (w.sections.feed || w.sections.news ? card('News and rumors', `<div class="ln stack"><span>The news account<small>reports the news when this story has no newspaper voice of its own (Voices and regulars)${w.look === 'letters' ? '' : ''}</small></span><input class="s" id="w-news" value="${esc(w.newsName || '')}" placeholder="${w.look === 'letters' ? 'The Gazette' : 'Local News'}" aria-label="The news account's name"></div>`
         + `<div class="ln stack"><span>The rumor account<small>anyone can post or send it a tip without a name${w.look === 'letters' ? ' — with Letters it shows as an unsigned note' : ''}</small></span><input class="s" id="w-rumor" value="${esc(w.rumorName || '')}" placeholder="Whispers" aria-label="The rumor account's name"></div>`
         + `<div class="ln"><span class="mini">Rumors also start from the story and spread by word of mouth. To let them move a story tracker, switch it on in that tracker's settings ("News and rumors can move this").</span></div>`) : '')
+      + card('Pictures', line('Photos become real pictures', 'a 📷 photo in a message is drawn by SillyTavern\'s Image Generation (whatever you set up there, with its style words). Each picture is one image call. Older photos keep their 🎨 button to draw them by hand.', swH('w-p-on', (w.pics || WDEF.pics).on), (w.pics || WDEF.pics).on)
+        + line('People send photos too', 'now and then, when it fits. Off: only the photos you send.', swH('w-p-theirs', (w.pics || WDEF.pics).theirs), (w.pics || WDEF.pics).theirs))
       + card('Who can write to you first', line('The Cast', 'when a plan calls for it, or now and then just to chat', swH('w-f-cast', w.first.cast), w.first.cast)
         + line(esc(HD?.mainName || 'The main character'), '', swH('w-f-main', w.first.main), w.first.main)) : ''}`;
   el.querySelectorAll('.seg2').forEach(x => x.classList.add('strong'));
@@ -6042,6 +6044,8 @@ function renderWorldSide(el) {
   const nIn = el.querySelector('#w-a-n'); if (nIn) nIn.onchange = () => setWorld({ alive: { ...worldDoc().alive, everyN: Math.max(1, Math.round(Number(nIn.value)) || 10) } });
   wireSw(el, 'w-pause', on => { setWorld({ paused: on }); toast(on ? 'The world is paused: nothing new comes in.' : 'The world goes on again.'); });
   wireSw(el, 'w-f-cast', on => setWorld({ first: { ...worldDoc().first, cast: on } }));
+  wireSw(el, 'w-p-on', on => setWorld({ pics: { ...(worldDoc().pics || WDEF.pics), on } }));
+  wireSw(el, 'w-p-theirs', on => setWorld({ pics: { ...(worldDoc().pics || WDEF.pics), theirs: on } }));
   const nn = el.querySelector('#w-news'); if (nn) { nn.oninput = () => { doc.world ||= {}; doc.world.newsName = nn.value.trim(); dirty = true; }; nn.onchange = () => setWorld({ newsName: nn.value.trim() }); }
   const rn = el.querySelector('#w-rumor'); if (rn) { rn.oninput = () => { doc.world ||= {}; doc.world.rumorName = rn.value.trim(); dirty = true; }; rn.onchange = () => setWorld({ rumorName: rn.value.trim() }); }
   wireSw(el, 'w-f-main', on => setWorld({ first: { ...worldDoc().first, main: on } }));

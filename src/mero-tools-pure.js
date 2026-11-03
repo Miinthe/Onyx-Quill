@@ -43,6 +43,55 @@ export const TOOL_DEFS = [
         { name: { type: 'string', description: 'The person\'s name' } }, ['name']),
 ];
 
+/**
+ * 🌐 The web (Miinthe, 2026-11-03: "adding a browser function to mero chat"; her pick: Mero searches when she needs to, with
+ * a switch). Offered only when the switch is on and a search is set up in SillyTavern (mero-web.js: the Web Search
+ * extension, whatever service it uses — or a saved Tavily key); pages come through SillyTavern's /api/search/visit.
+ */
+export const WEB_DEFS = [
+    fn('search_web', 'Search the internet for real-world facts you don\'t know or need to check — e.g. the official lore of a book, film or game the story is based on, a real place, a word or a custom. NOT for Miinthe\'s own story: her lore, board and chat always win over the web when they disagree. Returns what the search found (with links when the search gives them).',
+        { query: { type: 'string', description: 'What to search for, like you would type it into a search engine' } }, ['query']),
+    fn('read_page', 'Read one web page as plain text, by its link (from search_web, or one you know).',
+        { url: { type: 'string', description: 'The full link, starting with https://' } }, ['url']),
+];
+export const WEB_TOOLS = new Set(WEB_DEFS.map(d => d.function.name));
+
+const hostOf = u => { try { return new URL(str(u)).hostname.replace(/^www\./, ''); } catch { return clip(u, 50); } };
+
+/** A Tavily answer → { text (for Mero), got (for Miinthe) }. */
+export function webResults(json, query = '', n = 6) {
+    const list = arr(json?.results).filter(r => r && (r.url || r.title)).slice(0, n);
+    const answer = str(json?.answer).trim();
+    if (!list.length && !answer) return { text: `The web search for “${str(query)}” found nothing.`, got: 'nothing found' };
+    const text = [answer ? `Short answer (from the search engine, may be wrong): ${clip(answer, 600)}` : '',
+        ...list.map((r, k) => `${k + 1}. ${clip(r.title, 120)} — ${str(r.url)}\n   ${clip(r.content, 400)}`)].filter(Boolean).join('\n');
+    return { text, got: list.length ? `${list.length} results: ${[...new Set(list.map(r => hostOf(r.url)))].slice(0, 3).join(' · ')}` : 'a short answer' };
+}
+
+/** What the Web Search extension's /websearch gave back (plain text, any service) → { text, got }. */
+export function webSnippets(out, query = '') {
+    const t = str(out).trim();
+    if (!t) return { text: `The web search for “${str(query)}” found nothing (or no search service is set up).`, got: 'nothing found' };
+    const lines = t.split(/\n+/).filter(l => l.trim());
+    return { text: t.length > 6000 ? t.slice(0, 6000).replace(/\s\S*$/, '') + '\n[… cut]' : t, got: `${lines.length} snippet${lines.length > 1 ? 's' : ''}` };
+}
+
+const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“' };
+const decode = t => str(t).replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, e) => (e[0] === '#' ? (c => (Number.isFinite(c) && c > 0 && c < 0x110000 ? String.fromCodePoint(c) : ' '))(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : ENT[e.toLowerCase()] ?? m));
+/** A web page's HTML → its readable text (the main part when the page marks one), at most `max` characters. */
+export function pageText(html, max = 6000) {
+    let h = str(html);
+    const title = clip(decode((h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || ''), 160);
+    h = h.replace(/<(script|style|noscript|svg|template|iframe)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+    const main = h.match(/<main\b[\s\S]*?<\/main>/i) || h.match(/<article\b[\s\S]*?<\/article>/i);
+    if (main) h = main[0];
+    else h = h.replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, ' ');
+    let t = decode(h.replace(/<\/(p|div|li|tr|h[1-6]|section|blockquote|dd|dt)>|<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ' '));
+    t = t.split('\n').map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
+    if (t.length > max) t = t.slice(0, max).replace(/\s\S*$/, '') + '\n[… the rest of the page is cut]';
+    return { title, text: t };
+}
+
 /** The arguments as the model sent them (a JSON string, usually) — {} when they are not readable. */
 export function argsOf(raw) {
     if (raw && typeof raw === 'object') return raw;
@@ -58,6 +107,8 @@ export function toolLabel(name, a = {}) {
         case 'search_chat': return `📜 Searched the chat: “${clip(a.query, 60)}”`;
         case 'read_messages': { const f = Math.round(Number(a.from)), t = Math.round(Number(a.to ?? a.from)); return `📜 Read message${t > f ? `s #${f}–#${t}` : ` #${f}`}`; }
         case 'check_cast': return `🎭 Checked: ${clip(a.name, 60)}`;
+        case 'search_web': return `🌐 Searched the web: “${clip(a.query, 60)}”`;
+        case 'read_page': return `🌐 Read a page: ${hostOf(a.url)}`;
         default: return `🔧 ${clip(name, 40)}`;
     }
 }

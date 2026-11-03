@@ -34,7 +34,7 @@ export const PITCHES_KEY = 'deeplore_mero_pitches';   // chat_metadata: { list, 
 
 export const KINDS = { twist: '🌀 twist', acts: '🎭 a character acts', callback: '🔁 callback', ask: '❓ a question to you' };
 export const STRENGTHS = { nudge: '🌱 nudge', turn: '🔀 turn', bomb: '💥 bombshell' };
-export const SOURCES = { cast: '🎭', board: '🗺', lore: '📚', loose: '🔁', talk: '💬' };
+export const SOURCES = { cast: '🎭', board: '🗺', lore: '📚', loose: '🔁', talk: '💬', own: '✏' };   // own: written by Miinthe herself, no Mero
 export const STATES = ['fresh', 'kept', 'dir', 'landed', 'skipped', 'draft', 'played', 'given', 'hidden', 'fired', 'running', 'done', 'abandoned'];
 /** Taken back out of the pick view by ← Back (or replaced by a new batch). */
 export const PICKING = ['fresh'];
@@ -108,6 +108,7 @@ export function normPitch(p) {
     for (const k of ['msg', 'at', 'armed', 'firedAt', 'fb']) if (Number.isFinite(Number(p[k]))) out[k] = int(p[k], 0);
     for (const k of ['quote', 'noteId', 'moment', 'firedQ', 'draft', 'open']) if (str(p[k]).trim()) out[k] = clip(p[k], k === 'draft' ? 1200 : 300);   // open: what the talk left open (shown, never sent to the writer)
     if (p.mine) out.mine = true;
+    if (p.own) out.own = true;   // ✏ Write my own — no Mero, no taste line
     if (p.peek) out.peek = true;
     const plan = normPlan(p.plan);
     if (plan) out.plan = plan;
@@ -143,6 +144,28 @@ export function addBatch(store, fresh, { made = 0, msg = null, tone = 'sfw', rep
     const list = replace ? s.list.filter(p => !PICKING.includes(p.st)) : s.list.slice();
     const add = arr(fresh).map(p => normPitch({ ...p, id: newId('p'), no: next++, st: p.st || 'fresh', made, ...(msg != null ? { msg } : {}), tone })).filter(Boolean);
     return trimPitches({ ...s, list: [...add, ...list], next, dropped: replace ? [] : s.dropped });
+}
+
+/**
+ * ✏ Write my own (Miinthe, 2026-11-03: "add manual pitches without going over Mero"): her own idea as a pitch, no AI call.
+ * One-shot → a kept idea (send it out like any other) · `plan` → one step per line plus a goal, kept until she starts it ·
+ * `moment` → waits for that moment like a 🙈 hidden pitch (not blurred — she wrote it), with the "anyway after N" fallback.
+ * Returns pitch fields for addBatch, or { error }.
+ */
+export function ownPitch({ text = '', plan = false, goal = '', moment = '', fb = 0 } = {}, last = 0) {
+    const t = String(text ?? '').trim();
+    if (plan) {
+        const beats = t.split(/\n+/).map(x => x.replace(/^\s*(?:[-*•→]|\d+[.)])\s*/, '').trim()).filter(Boolean);
+        if (beats.length < 2) return { error: 'A plan needs at least two steps — one per line.' };
+        if (beats.length > MAX_BEATS) return { error: `A plan has at most ${MAX_BEATS} steps.` };
+        const g = String(goal ?? '').trim();
+        if (!g) return { error: 'Say in a few words where the plan is heading.' };
+        return { own: true, src: 'own', text: g, st: 'kept', plan: { goal: g, beats: beats.map(b => ({ text: b })) } };
+    }
+    if (!t) return { error: 'Write your idea first.' };
+    const m = String(moment ?? '').trim();
+    if (m) return { own: true, src: 'own', text: t, st: 'hidden', mine: true, moment: m, armed: int(last, 0), fb: Math.max(0, Math.min(60, int(fb, 0))), peek: true };
+    return { own: true, src: 'own', text: t, st: 'kept' };
 }
 
 /** ← Back: the pitches nobody used or kept leave; they can come back once ("↩ Bring back"). Not a 👎. */

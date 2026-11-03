@@ -250,6 +250,13 @@
 /* fake photos, @-tags, the tag list (Miinthe, 2026-10-19) */
 .dle-world .photo { display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 14px 12px; border: 1px dashed var(--dk-line-strong); border-radius: 8px; background: repeating-linear-gradient(45deg, var(--dk-menu), var(--dk-menu) 8px, var(--dk-desk) 8px, var(--dk-desk) 16px); font-style: italic; color: var(--dk-ink); }
 .dle-world .photo .ph-i { font-style: normal; font-size: 18px; }
+/* 🎨 a drawn photo (2026-11-03): the picture itself; one being drawn / one to draw by hand */
+.dle-world .photo.pic { display: block; padding: 0; border: 0; background: none; max-width: 240px; }
+.dle-world .photo.pic img { display: block; width: 100%; height: auto; max-height: 320px; object-fit: cover; border-radius: 10px; }
+.dle-world .photo .ph-c { flex: 1; }
+.dle-world .photo:has(span.ph-b) { flex-wrap: wrap; }
+.dle-world .photo span.ph-b { flex: 1 0 100%; font-style: normal; font-size: 12px; opacity: .8; }
+.dle-world .photo button.ph-b { padding: 2px 6px; border: 1px solid var(--dk-line-strong); border-radius: 6px; background: var(--dk-menu); color: inherit; font-size: 15px; cursor: pointer; opacity: 1; }
 .dle-wd-body.letters .photo, .dle-wd-thread.letters .photo { background: var(--dle-paper-2); border-color: var(--dle-paper-line); color: var(--dle-paper-ink); }
 .dle-world .wd-at { display: inline; color: var(--w); font: inherit; font-weight: 600; letter-spacing: normal; padding: 0; margin: 0; border: 0; background: none; }   /* same size as the text around it — not "tag": SillyTavern styles that class (Miinthe, 2026-10-19), her color kept */
 .dle-wd-tagmenu { position: absolute; z-index: 8; min-width: 160px; padding: 4px; background: var(--dk-menu); border: 1px solid var(--dk-line); border-radius: 9px; box-shadow: var(--dk-shadow); display: flex; flex-direction: column; }

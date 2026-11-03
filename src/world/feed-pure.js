@@ -434,13 +434,16 @@ export function mentionsIn(text, people) {
  * A post's or message's text as HTML: escaped, line breaks kept, every [photo: …] as a photo card, every @Name of someone
  * known highlighted.
  */
-export function richText(text, people = []) {
+export function richText(text, people = [], pics = null) {
     const names = arr(people).map(p => String(p.name || '')).filter(Boolean).sort((a, b) => b.length - a.length);
     let html = '', last = 0;
     const src = String(text ?? '');
     for (const m of src.matchAll(PHOTO_RE)) {
         html += italics(tagged(escH(src.slice(last, m.index)), names));
-        html += `<span class="photo" role="img" aria-label="Photo: ${escH(m[1].trim())}"><span class="ph-i">📷</span><span class="ph-c">${escH(m[1].trim())}</span></span>`;
+        const d = m[1].trim(), pic = pics ? pics(d) : null;
+        // 🎨 (2026-11-03) pics(d): { url } drawn · 'busy' being drawn · 'make' can be drawn by hand · null as before
+        if (pic?.url) html += `<a class="photo pic" href="${escH(pic.url)}" target="_blank" rel="noopener" title="${escH(d)}"><img src="${escH(pic.url)}" alt="${escH(d)}" loading="lazy"></a>`;
+        else html += `<span class="photo" role="img" aria-label="Photo: ${escH(d)}"><span class="ph-i">📷</span><span class="ph-c">${escH(d)}</span>${pic === 'busy' ? '<span class="ph-b">🎨 drawing…</span>' : pic === 'make' ? `<button type="button" class="ph-b" data-pic="${escH(d)}" title="Make it a real picture (SillyTavern's Image Generation)">🎨</button>` : ''}</span>`;
         last = m.index + m[0].length;
     }
     html += italics(tagged(escH(src.slice(last)), names));

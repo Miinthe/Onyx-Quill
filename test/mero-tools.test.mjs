@@ -7,8 +7,8 @@
  * Run: npm run test:mero-tools
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { TOOL_DEFS, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS, passingError } from '../src/mero-tools-pure.js';
-import { normTalk, versionsOf, showVersion, addVersion, dropSwipes, parseMeroAnswer, askedForPitch } from '../src/mero-pure.js';
+import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, webResults, webSnippets, pageText, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS, passingError } from '../src/mero-tools-pure.js';
+import { groundRules, asStore, normTalk, versionsOf, showVersion, addVersion, dropSwipes, parseMeroAnswer, askedForPitch } from '../src/mero-pure.js';
 import { talkPitchPrompt, parseTalkPitches, editedPitch, normPitch } from '../src/pitches-pure.js';
 import { normAsk, normAsks, takeAsks, askAnswerText, answerAsks, ASK_FORMAT, withAsked } from '../src/ask-pure.js';
 import { parseBoardMero, buildBoardMeroPrompt } from '../src/board-mero-pure.js';
@@ -274,6 +274,32 @@ test('Mero\'s question cards stay visible to her later answers and to Pitch', ()
     assert(first.system.includes('{"open": [question, …], "items": ['));
     const later = talkPitchPrompt(talk, {}, { ask: false });
     assert(!later.system.includes('"open": [question'));
+});
+
+test('🌐 the web: results, pages, labels, and only with the switch and lookups (Miinthe, 2026-11-03)', () => {
+    assertEqual([...WEB_TOOLS].sort(), ['read_page', 'search_web']);
+    assert(!TOOL_DEFS.some(d => WEB_TOOLS.has(d.function.name)), 'the web is never in the lore tools on its own');
+    assert(WEB_DEFS[0].function.description.includes('always win'), 'her story wins over the web');
+    const r = webResults({ answer: 'Corvin is the Earth Sovereign.', results: [{ title: 'Corvin | Starfall Saga Wiki', url: 'https://starfall-saga.fandom.com/wiki/Corvin', content: 'Corvin is a playable Earth character.' }, { title: 'x', url: 'https://www.fanlab.example/a', content: 'y' }] }, 'Corvin');
+    assert(r.text.includes('may be wrong') && r.text.includes('https://starfall-saga.fandom.com/wiki/Corvin'));
+    assertEqual(r.got, '2 results: starfall-saga.fandom.com · fanlab.example');
+    assertEqual(webResults({ results: [] }, 'nothing').got, 'nothing found');
+    assertEqual(webResults(null, 'q').got, 'nothing found');
+    const html = '<html><head><title>Corvin &amp; Ostmark</title><style>.a{}</style></head><body><nav>Menu Home</nav><main><h1>Corvin</h1><p>He is &quot;Stone Lord&quot;&nbsp;in disguise.</p><script>alert(1)</script><ul><li>Earth</li><li>Spear &#8212; 5&#x2605;</li></ul></main><footer>© fandom</footer></body></html>';
+    const pg = pageText(html);
+    assertEqual(pg.title, 'Corvin & Ostmark');
+    assertEqual(pg.text, 'Corvin\nHe is "Stone Lord" in disguise.\nEarth\nSpear — 5★');
+    const noMain = pageText('<body><nav>Menu</nav><div>Real text</div><footer>foot</footer></body>');
+    assertEqual(noMain.text, 'Real text');
+    assert(pageText('<p>' + 'word '.repeat(3000) + '</p>', 200).text.endsWith('[… the rest of the page is cut]'));
+    assertEqual(webSnippets('Corvin is the Earth Sovereign.\n\nHis birthday is December 31.', 'q').got, '2 snippets', 'any search service, through the Web Search extension');
+    assert(webSnippets('', 'q').text.includes('no search service is set up'));
+    assert(!WEB_DEFS.some(d => /tavily/i.test(d.function.description)), 'no service named');
+    assertEqual(toolLabel('search_web', { query: 'Corvin birthday' }), '🌐 Searched the web: “Corvin birthday”');
+    assertEqual(toolLabel('read_page', { url: 'https://www.example.com/a/b' }), '🌐 Read a page: example.com');
+    assert(groundRules(true, true).includes('search_web') && !groundRules(true, false).includes('search_web') && !groundRules(false, true).includes('search_web'));
+    assertEqual(asStore(null).settings.web, true, 'on unless she switches it off');
+    assertEqual(asStore({ settings: { web: false } }).settings.web, false);
 });
 
 summary('mero-tools');

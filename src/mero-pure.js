@@ -143,6 +143,7 @@ export function asStore(raw) {
             // "entry changes" setting — off became Off duty, "apply on their own" became no sign-off.
             job: JOBS.includes(st.job) ? st.job : st.entryChanges === 'off' ? 'off' : 'part',
             signoff: typeof st.signoff === 'boolean' ? st.signoff : st.entryChanges !== 'auto',
+            web: st.web !== false,   // 🌐 she may search the web when she needs to (2026-11-03; needs a search set up in SillyTavern — mero-web.js)
         },
     };
 }
@@ -288,13 +289,15 @@ const GROUND_LOOKUPS = `- You can look things up: search_lore and read_lore (her
 const GROUND_TAIL = `- When Miinthe corrects you or points at something, first say in one line what you understood, and check it against what you were given. Don't jump to a new idea or a note in the same answer.
 - Keep it conversational unless Miinthe asks for more.`;
 /** Said last, after the story replies (Miinthe, 2026-10-20: Mero acted as the writer, made up story details, and wrote Miinthe's lines). */
-export const groundRules = lookups => [GROUND_HEAD, lookups ? GROUND_LOOKUPS : GROUND_NAMES_ONLY, GROUND_TAIL].join('\n');
+// 🌐 the web (2026-11-03): only for the real world — her story is never "corrected" from it
+const GROUND_WEB = `- You can also search the web (search_web, then read_page for a result worth reading) — for real-world facts and official game or book lore you don't know or need to check. Search only when it helps; say where a fact came from. Her own lore, board and chat ALWAYS win: when the web disagrees with her story, her story is right and the difference is her choice.`;
+export const groundRules = (lookups, web = false) => [GROUND_HEAD, lookups ? GROUND_LOOKUPS : GROUND_NAMES_ONLY, ...(lookups && web ? [GROUND_WEB] : []), GROUND_TAIL].join('\n');
 export const GROUND_RULES = groundRules(false);
 
 /** A vault review talk: the whole vault is in front of her (what /dle-review used to post into the story chat). */
 const VAULT_REVIEW = 'Miinthe asked you to review her lore vault (all of it is below). Be concrete and name the entries: contradictions between entries, gaps, connections she may not have made, entries that say too little to be useful. Never rewrite her entries — say what you would change and why, and let her decide.';
 
-export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, firstAnswer = false, boardMap = [], lookups = false, pitchAsked = false } = {}) {
+export function buildMeroPrompt({ settings = {}, talk, character = '', persona = '', cards = '', board = [], replies = [], entries = [], talkNotes = [], storyNotes = [], moments = [], world = '', vault = null, firstAnswer = false, boardMap = [], lookups = false, web = false, pitchAsked = false } = {}) {
     const st = { persona: DEFAULT_PERSONA, talk: 'some', bringUp: false, ...settings };
     const names = meroNames(st), N = t => named(t, names);   // the chosen names, in her instructions only
     const sec = (h, body) => (body && String(body).trim() ? `\n## ${N(h)}\n${String(body).trim()}` : '');
@@ -328,7 +331,7 @@ export function buildMeroPrompt({ settings = {}, talk, character = '', persona =
         vault ? '' : sec('Lore the writer was given for the last reply', entries.map(e => `### ${e.title}\n${String(e.content || '').slice(0, 1200)}`).join('\n\n')),
         sec('Character and persona', [cards, persona].filter(Boolean).join('\n\n')),
         sec('The latest replies of the roleplay', replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')),
-        N(groundRules(lookups)),
+        N(groundRules(lookups, web)),
     ].filter(Boolean).join('\n');
     // context Miinthe added to a message (the 📎 picker: a post, a rumor, a conversation, a lore entry) goes with it
     const withCtx = m => (arr(m.ctx).length ? `${m.t}\n\n[Context Miinthe added]\n${m.ctx.map(c => `### ${c.label}\n${String(c.text || '').slice(0, 2000)}`).join('\n\n')}` : m.t);

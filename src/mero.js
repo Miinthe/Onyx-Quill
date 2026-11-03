@@ -29,7 +29,8 @@ import {
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
     askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
-import { TOOL_DEFS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep, passingError } from './mero-tools-pure.js';
+import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep, passingError } from './mero-tools-pure.js';
+import { webReady, runWebTool } from './mero-web.js';   // 🌐 (2026-11-03)
 import { callWithTools, toolsPossible } from './ai/tool-call.js';
 import { askAnswerText, answerAsks } from './ask-pure.js';
 import { boardSummary, namedTrackers, trackerDetails, nowLine } from './mero-board-pure.js';
@@ -359,12 +360,13 @@ function lookupData() {
  * The rounds: Mero may look things up (TOOL_DEFS) before she answers; every lookup shows at once in `steps` (the live
  * list). The last round offers no lookups, so she has to answer. Returns { text, steps }.
  */
-async function answerWithLookups(system, messages, conn, steps, onStep) {
+async function answerWithLookups(system, messages, conn, steps, onStep, { web = false } = {}) {
+    const tools = web ? [...TOOL_DEFS, ...WEB_DEFS] : TOOL_DEFS;
     const msgs = [{ role: 'system', content: system }, ...messages.map(m => ({ role: m.role, content: m.content }))];
     let data = null, used = 0;
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
         const last = round === MAX_TOOL_ROUNDS || used >= MAX_LOOKUPS;
-        const r = await callWithTools(msgs, TOOL_DEFS, conn, { choice: last ? 'none' : 'auto' });
+        const r = await callWithTools(msgs, tools, conn, { choice: last ? 'none' : 'auto' });
         if (!r.calls.length || last) return { text: r.text };
         msgs.push({ role: 'assistant', content: r.text || '', tool_calls: r.calls.map(c => ({ id: c.id, type: 'function', function: { name: c.name, arguments: typeof c.args === 'string' ? c.args : JSON.stringify(c.args || {}) } })), ...(r.reasoning ? { reasoning_content: r.reasoning } : {}) });
         for (const c of r.calls) {
@@ -374,7 +376,8 @@ async function answerWithLookups(system, messages, conn, steps, onStep) {
             else {
                 used++;
                 const step = { label: toolLabel(c.name, a) }; steps.push(step); onStep();
-                try { data ||= lookupData(); res = runTool(c.name, a, data); } catch (err) { res = { text: `The lookup failed: ${err?.message || err}`, got: 'failed' }; }
+                if (web && WEB_TOOLS.has(c.name)) res = await runWebTool(c.name, a);
+                else try { data ||= lookupData(); res = runTool(c.name, a, data); } catch (err) { res = { text: `The lookup failed: ${err?.message || err}`, got: 'failed' }; }
                 step.got = res.got; onStep();
             }
             msgs.push({ role: 'tool', tool_call_id: c.id, content: res.text });
@@ -403,9 +406,10 @@ async function answerInner(t, history, said, { opener }, conn) {
     const w = meroWhere(), pkg = contextPackage();
     const vault = t.review ? reviewEntries() : null;
     const lookups = !vault && conn.mode === 'profile' && !getSettings().aiForceUserRole && !noTools.has(conn.profileId) && toolsPossible(conn.profileId);
+    const web = lookups && store().settings.web !== false && webReady();   // 🌐 her switch, and a search set up in SillyTavern
     const first = !history.some(m => m.who === 'mero');
     const pitchAsked = !opener && askedForPitch(said);
-    const built = buildMeroPrompt({ settings: store().settings, talk: { ...t, msgs: history }, character: w.character, ...pkg, vault, firstAnswer: first && !t.mine, lookups, pitchAsked });
+    const built = buildMeroPrompt({ settings: store().settings, talk: { ...t, msgs: history }, character: w.character, ...pkg, vault, firstAnswer: first && !t.mine, lookups, web, pitchAsked });
     const { system } = built, messages = opener ? [...built.messages, { role: 'user', content: said }] : built.messages;
     if (!messages.length || messages[messages.length - 1].role !== 'user') throw new Error('Nothing for Mero to answer here.');
     // looked up on the board (Miinthe 2026-10-26): the trackers her message names, their details for THIS message only —
@@ -426,12 +430,12 @@ async function answerInner(t, history, said, { opener }, conn) {
         ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
         ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries DeepLore sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
-        ['🔎 Her lookups', lookups ? 'She can look things up (lore, board, chat, Cast) — what she looked up shows above her answer.' : 'Not with this connection — she sees only what is listed here.'],
+        ['🔎 Her lookups', lookups ? `She can look things up (lore, board, chat, Cast${web ? ', the web' : ''}) — what she looked up shows above her answer.` : 'Not with this connection — she sees only what is listed here.'],
     ] });
     try {
         let raw = '', nolook = false, lookSkip = false;
         if (lookups) {
-            try { raw = (await answerWithLookups(system, messages, conn, steps, changed)).text; }
+            try { raw = (await answerWithLookups(system, messages, conn, steps, changed, { web })).text; }
             catch (err) {
                 // a profile that can't do tools: remember it for this session, answer the old way
                 console.warn('[DLE] Mero: lookups failed, answering without them:', err?.message || err);

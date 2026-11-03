@@ -260,7 +260,7 @@ export function parseExtract(text) {
  * The prompt for `name` answering a message (or a letter).
  * o: { name, card, now (personNow), fromName, look, thread: [{ who, text, stamp }], story: [{ name, mes }], storyLines, when, mayPass, quirks, feed, discretion }
  */
-export function replyPrompt({ name, card = '', now = null, fromName, look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [], discretion = '' }) {
+export function replyPrompt({ name, card = '', now = null, fromName, look = 'phone', thread = [], story = [], storyLines = [], when = '', mayPass = false, quirks = '', feed = [], discretion = '', photos = true }) {
     const letters = look === 'letters';
     const parts = [
         `You are ${name}, a character in an ongoing roleplay. You are not in the scene with ${fromName} right now; ${fromName} has just ${letters ? 'sent you a letter' : 'texted you'}, and you answer ${letters ? 'with a letter of your own' : 'by text'}.`,
@@ -276,7 +276,7 @@ export function replyPrompt({ name, card = '', now = null, fromName, look = 'pho
     if (when) parts.push(`In the story it is now ${when}.`);
     parts.push(letters
         ? `Write ${name}'s letter: in their own voice, shaped by who they are and the time they live in. A few short paragraphs at most. No "Dear …" line and no signature — those are added.`
-        : `Write ${name}'s text message(s): in their own voice — the way this person would text (some use emoji and shorthand, some write properly). Short, like real texting: usually one to three lines. Rarely, when it fits, they send a photo: describe it as [photo: what it shows].`);
+        : `Write ${name}'s text message(s): in their own voice — the way this person would text (some use emoji and shorthand, some write properly). Short, like real texting: usually one to three lines.${photos ? ' Rarely, when it fits, they send a photo: describe it as [photo: what it shows].' : ''}`);
     if (quirks) parts.push(quirkRule(name, quirks, letters));
     if (discretion) parts.push(discretion);
     parts.push(GOSSIP_RULE);
@@ -303,6 +303,27 @@ export function splitParts(text) {
     const parts = [[]];
     for (const line of String(text ?? '').split('\n')) { if (/^\s*-{3,}\s*$/.test(line)) parts.push([]); else parts.at(-1).push(line); }
     return parts.map(p => p.join('\n').trim()).filter(Boolean).slice(0, 5);
+}
+
+/**
+ * 🎨 What the picture maker is asked for one 📷 photo (Miinthe, 2026-11-03: "image generation for the DMs"). SillyTavern's
+ * Image Generation adds her own style words in front (its prompt prefix), so this is only what the photo shows.
+ */
+export function picPrompt(desc, { from = '', letters = false } = {}) {
+    const d = clip(String(desc ?? '').replace(/\s+/g, ' ').trim(), 300);
+    return d ? `${d}${letters ? ', an old photograph' : ', a casual phone photo'}${from ? ` sent by ${clip(from, 60)}` : ''}` : '';
+}
+/**
+ * The photos of a thread to draw by themselves: messages from `picsFrom` on, theirs only when `theirs`, one not drawn
+ * and not tried yet (`tried`: a Set of "id|description"). → [{ m, desc }]
+ */
+export function picsDue(th, { me, picsFrom = 0, theirs = true, tried = new Set(), photosIn = () => [] } = {}) {
+    const out = [];
+    for (const m of arr(th)) {
+        if (!(Number(m?.n) >= picsFrom) || (!theirs && m.from !== me)) continue;
+        for (const d of photosIn(textOf(m))) if (!m.pics?.[d] && !tried.has(`${m.id}|${d}`)) out.push({ m, desc: d });
+    }
+    return out;
 }
 
 /** "(no reply)": they chose not to answer (AI-to-AI threads may pass). */

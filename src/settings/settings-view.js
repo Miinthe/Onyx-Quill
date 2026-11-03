@@ -956,7 +956,7 @@ async function act(name, btn) {
             if (await K.ask({ title: 'Reset who Mero is?', text: 'Her description goes back to the first draft.', yes: 'Reset' })) { meroSettings(null, { reset: 'persona' }); redraw(); }
             return;
         case 'meroResetSettings':
-            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'Chattiness, initiative, how many replies she reads, her job and sign-off go back to how they shipped. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
+            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'Chattiness, initiative, how many replies she reads, her job, sign-off and web search go back to how they shipped. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
             return;
         default: return undefined;
     }

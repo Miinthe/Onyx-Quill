@@ -309,6 +309,12 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
 .pmenu select, .pmenu input[type=text] { width: 100%; height: 28px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 0 8px; background: var(--dk-page); color: var(--dk-ink); }
 .pmenu .go { display: flex; gap: 8px; align-items: center; }
 .pmenu .go .mini { flex: 1; }
+/* ✏ her own pitch (2026-11-03) */
+.pown .poh { display: flex; gap: 8px; align-items: baseline; }
+.pown .poh .mini { flex: 1; }
+.pown .po-wait { display: grid; gap: 6px; }
+.pown label.inline { display: block; line-height: 1.7; }
+.pown label.inline input { vertical-align: middle; margin: 0 4px 0 0; }
 .inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: var(--dk-fs); }
 .inline input[type=number] { width: 54px; border: 1px solid var(--dk-line); border-radius: 8px; padding: 2px 6px; background: var(--dk-page); }
 .fromchip { display: inline-flex; gap: 6px; align-items: center; font-size: var(--dk-fs-s); font-weight: 700; background: var(--dk-mero-soft); color: var(--dk-mero); border-radius: 999px; padding: 1px 4px 1px 10px; }
@@ -473,7 +479,19 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
                 </div></div>
             </div>
             <textarea id="p-com" rows="1" class="grow" placeholder="Anything in mind?" aria-label="Your wish for the pitches"></textarea>
-            <div class="go"><span class="mini" id="p-hint"></span><button class="btn m2" id="p-go">Pitch</button></div>
+            <div class="go"><span class="mini" id="p-hint"></span><button class="btn ghost" id="p-own-b" title="Write a pitch yourself — no Mero, no AI" aria-expanded="false" aria-controls="p-own"></button><button class="btn m2" id="p-go">Pitch</button></div>
+          </div>
+          <div class="pmenu pown" id="p-own" hidden role="group" aria-label="Your own pitch">
+            <div class="poh"><b>Your own pitch</b><span class="mini">no Mero, no AI</span></div>
+            <div class="seg" id="po-shape"><button data-v="one" aria-pressed="true">⚡ one-shot</button><button data-v="multi" aria-pressed="false">🪜 plan</button></div>
+            <input type="text" id="po-goal" maxlength="300" placeholder="Where the plan is heading" aria-label="Where the plan is heading" hidden>
+            <textarea id="po-text" rows="2" class="grow" maxlength="600" placeholder="Your idea" aria-label="Your idea"></textarea>
+            <label class="inline" id="po-wait-l"><input type="checkbox" id="po-wait"> wait for a moment before it reaches the writer</label>
+            <div class="po-wait" id="po-wait-box" hidden>
+              <input type="text" id="po-moment" maxlength="160" placeholder="when someone goes to the garden" aria-label="The moment">
+              <label class="inline"><input type="checkbox" id="po-fb" checked> use it anyway after <input type="number" id="po-fbn" min="2" max="60" value="10" aria-label="Messages"> messages</label>
+            </div>
+            <div class="go"><span class="mini" id="po-hint"></span><button class="btn ghost" id="po-cancel">Cancel</button><button class="btn m2" id="po-add">Add</button></div>
           </div>
           <label class="pline waiting" id="p-conn" hidden><span>Mero needs an AI to pitch with:</span><select id="p-conn-sel" aria-label="Mero's connection profile"></select></label>
           <div class="pline waiting" id="p-waiting" hidden></div>
@@ -532,7 +550,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   $$('.ri[data-ic]').forEach(b => b.insertAdjacentHTML('afterbegin', I(b.dataset.ic)));
   $$('[data-close], #told-x').forEach(b => { b.innerHTML = I('close'); });
   $('#s-told').innerHTML = I('info'); $('#s-more').innerHTML = I('more');
-  lbl($('#c-pitch'), 'pitch', 'Pitch'); lbl($('#new-sess'), 'plus', 'New'); lbl($('#new-note'), 'plus', 'Note');
+  lbl($('#c-pitch'), 'pitch', 'Pitch'); lbl($('#p-own-b'), 'edit', 'My own'); lbl($('#new-sess'), 'plus', 'New'); lbl($('#new-note'), 'plus', 'Note');
   lbl($('[data-tool="notebook"]'), 'book', 'Notebook'); lbl($('[data-tool="ai-notebook"]'), 'notes', 'AI notepad'); lbl($('[data-tool="scribe-history"]'), 'scribe', 'Scribe');
   lbl($('#pick-again'), 'refresh', 'New batch'); $('[data-b="clear"]').innerHTML = I('close'); $('[data-b="no"]').innerHTML = I('thumb');
   lbl($('[data-b="draft"]'), 'line', 'My line'); lbl($('[data-b="givemenu"]'), 'give', 'Give to…'); lbl($('[data-b="keep"]'), 'keep', 'Keep');
@@ -1275,13 +1293,13 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const pick = PICKABLE.includes(p.st), on = pickSel.has(p.id);
     if (p.plan) {
       const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Plan #${p.no}` : '';
-      return `<div class="pc${p.hide ? ' hid' : ''}${p.peek ? ' peek' : ''}${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>🪜 ${p.hide ? 'a hidden plan' : 'plan'} · ${p.plan.beats.length} beats</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.hide ? `<button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button>` : ''}</div>
-        <div class="${p.hide && !p.peek ? 'blur' : ''}"><div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div><div><b>${esc(p.plan.goal || p.text)}</b></div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}</div>${planBody(p)}</div>`;
+      return `<div class="pc${p.hide ? ' hid' : ''}${p.peek ? ' peek' : ''}${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>🪜 ${p.hide ? 'a hidden plan' : p.own ? 'your plan' : 'plan'} · ${p.plan.beats.length} beats</span>${p.own ? '' : `<span class="str">${PS[p.strength] || ''}</span>`}<span class="sp"></span>${p.hide ? `<button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button>` : ''}</div>
+        <div class="${p.hide && !p.peek ? 'blur' : ''}">${p.own ? '' : `<div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div>`}<div><b>${esc(p.plan.goal || p.text)}</b></div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}</div>${planBody(p)}</div>`;
     }
-    const from = `<div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div>`;
+    const from = p.own ? '' : `<div class="from">${PSRC[p.src] || '🔁'} from: ${esc(p.from || '—')}</div>`;
     if (p.st === 'hidden' || p.st === 'fired') {
       const fired = p.st === 'fired';
-      return `<div class="pc hid${p.peek ? ' peek' : ''}" data-pid="${p.id}"><div class="ch"><span>🙈 A hidden pitch</span><span class="no">#${p.no}</span><span class="sp"></span><button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button></div>
+      return `<div class="pc hid${p.peek ? ' peek' : ''}" data-pid="${p.id}"><div class="ch"><span>${p.own ? '✏ Your pitch' : '🙈 A hidden pitch'}</span><span class="no">#${p.no}</span><span class="sp"></span><button class="btn ghost" data-pa="peek">${I('eye')}${p.peek ? 'Hide again' : 'Peek'}</button></div>
         <div class="blur">${from}<div>${esc(p.text)}</div></div>
         <div class="pstate ${fired ? 'good' : 'wait'}">${fired ? `✓ Used at #${p.firedAt} — <span class="q">“${esc(p.firedQ || '')}”</span>`
           : `⏳ Waits for: ${p.mine ? `<b>${esc(p.moment)}</b>` : `<span class="blur">${esc(p.moment || '')}</span> (Mero picked it)`}${p.fb ? ` · or after ${p.fb} messages anyway` : ''}`}</div>
@@ -1298,7 +1316,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       kept: '',
     }[p.st] || '';
     const attrs = pick ? ` pick${on ? ' sel' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" aria-label="Pitch #${p.no}` : '';
-    return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${PK[p.kind] || ''}</span><span class="str">${PS[p.strength] || ''}</span><span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}${st}</div>`;
+    return `<div class="pc${attrs}" data-pid="${p.id}"><div class="ch">${pick ? '<span class="tick" aria-hidden="true">✓</span>' : ''}<span class="no">#${p.no}</span><span>${p.own ? '✏ yours' : PK[p.kind] || ''}</span>${p.own ? '' : `<span class="str">${PS[p.strength] || ''}</span>`}<span class="sp"></span>${p.msg != null ? `<span class="mini">from #${p.msg}</span>` : ''}</div>${from}<div>${esc(p.text)}</div>${p.open ? `<div class="popen">Still open: ${esc(p.open)}</div>` : ''}${st}</div>`;
   }
   const pSec = (key, title, items) => (items.length ? fold(key, title, items.map(pCard)) : '');
   let focusOpen = false;   // the Focus row's add list (drawPitches)
@@ -1457,6 +1475,35 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     if (hid) toast(PV().menu?.shape === 'multi' ? '🎲 A hidden plan has started — the writer is led through it.' : '🎲 One hidden pitch is waiting for its moment.');
   }
   $('#p-go').onclick = goPitch;
+  // ✏ My own (Miinthe, 2026-11-03: "manual pitches without going over Mero"): her idea straight into the list, no AI
+  let poShape = 'one';
+  function drawOwn() {
+    const plan = poShape === 'multi', wait = !plan && $('#po-wait').checked;
+    $$('#po-shape button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === poShape)));
+    $('#po-goal').hidden = !plan; $('#po-wait-l').hidden = plan; $('#po-wait-box').hidden = !wait;
+    $('#po-text').placeholder = plan ? 'One step per line, in order' : 'Your idea';
+    $('#po-hint').textContent = plan ? 'Kept until you start it.' : wait ? 'Waits for that moment, then goes to the writer.' : 'Goes to your kept ideas.';
+    $('#po-fbn').disabled = !$('#po-fb').checked;
+    autogrow($('#po-text'));
+  }
+  function ownOpen(on) {
+    $('#p-own').hidden = !on; $('#p-own-b').setAttribute('aria-expanded', String(on));
+    if (on) { drawOwn(); setTimeout(() => (poShape === 'multi' ? $('#po-goal') : $('#po-text')).focus(), 30); }
+  }
+  $('#p-own-b').onclick = () => ownOpen($('#p-own').hidden);
+  $('#po-cancel').onclick = () => ownOpen(false);
+  $('#po-shape').onclick = e => { const b = e.target.closest('button'); if (!b) return; poShape = b.dataset.v; drawOwn(); };
+  $('#po-wait').onchange = drawOwn; $('#po-fb').onchange = drawOwn;
+  $('#po-add').onclick = () => {
+    const plan = poShape === 'multi', wait = !plan && $('#po-wait').checked;
+    if (wait && !$('#po-moment').value.trim()) { toast('Name the moment it waits for — or untick "wait for a moment".'); $('#po-moment').focus(); return; }
+    const r = HOST.pitchOwn({ text: $('#po-text').value, plan, goal: $('#po-goal').value, moment: wait ? $('#po-moment').value : '', fb: wait && $('#po-fb').checked ? +$('#po-fbn').value || 10 : 0 });
+    if (!r.ok) { toast(r.error); return; }
+    $('#po-text').value = ''; $('#po-goal').value = ''; $('#po-moment').value = ''; $('#po-wait').checked = false;
+    ownOpen(false);
+    toast(r.waits ? `⏳ #${r.no} waits for its moment.` : r.plan ? `🪜 #${r.no} is with your kept ideas — pick it to start the plan.` : `✏ #${r.no} is with your kept ideas — pick it to send it out.`);
+  };
+  $('#p-own').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); ownOpen(false); } });
   $('#pick-again').onclick = goPitch;
   $('#pick-back').onclick = () => { HOST.pitchBack(); pickSel.clear(); pView = 'home'; drawPitches(); };
   $('#pick-aside').onclick = () => { HOST.pitchBack(); pickSel.clear(); pView = 'home'; drawPitches(); toast('Set aside. ↩ Bring back returns them once.'); };
