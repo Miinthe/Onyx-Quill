@@ -29,7 +29,7 @@ const fn = (name, description, properties, required) => ({ type: 'function', fun
 
 /** The tools, in the OpenAI function format (SillyTavern passes them on to the provider). */
 export const TOOL_DEFS = [
-    fn('search_lore', 'Search the author\'s lore vault (the entries about characters, places, history, plot). Returns matching entry titles with a short look at each. Use it before saying anything about lore you were not given.',
+    fn('search_lore', 'Search the lore of this story (the entries about characters, places, history, plot — only the folders this story reads; the open board\'s own entries come first). Returns matching entry titles with a short look at each. Use it before saying anything about lore you were not given.',
         { query: { type: 'string', description: 'A name or a few words to look for' } }, ['query']),
     fn('read_lore', 'Read one lore entry in full, by its title (from search_lore or from what you were given).',
         { title: { type: 'string', description: 'The entry title' } }, ['title']),
@@ -115,8 +115,19 @@ export function toolLabel(name, a = {}) {
 
 // ── the lore ─────────────────────────────────────────────────────────────────
 
-/** Entries ranked for a query: title words count most, then keys, then the text. */
-export function searchLore(entries, query, n = 8) {
+/** The board's own entries and folders, for ranking (Miinthe, 2026-11-04: "the board does have priority"). */
+const onBoard = (e, prefer) => {
+    if (!prefer) return 0;
+    if (arr(prefer.titles).some(t => low(t) === low(e.title))) return 2;
+    const f = str(e.folderPath);
+    return f && arr(prefer.folders).some(x => { const d = str(x).replace(/\/+$/, ''); return d && (f === d || f.startsWith(d + '/')); }) ? 1 : 0;
+};
+
+/**
+ * Entries ranked for a query: title words count most, then keys, then the text. `prefer` = { titles, folders } of the
+ * open board: its linked entries rank first, then entries in its folders (only among real hits — it never adds one).
+ */
+export function searchLore(entries, query, n = 8, prefer = null) {
     const ws = wordsOf(query), q = low(query).trim();
     if (!ws.length) return [];
     const out = [];
@@ -132,17 +143,39 @@ export function searchLore(entries, query, n = 8) {
         }
         // every word somewhere: a real hit, not one common word
         const all = ws.every(w => hasWord(t, w) || keys.some(k => hasWord(k, w)) || hasWord(body, w));
-        if (s > 0 && (all || s >= 12)) out.push({ e, s: s + (all ? 5 : 0) });
+        if (s > 0 && (all || s >= 12)) out.push({ e, s: s + (all ? 5 : 0) + [0, 10, 25][onBoard(e, prefer)] });
     }
     return out.sort((a, b) => b.s - a.s).slice(0, n).map(x => x.e);
 }
 
+/**
+ * The entries her message names, as Mero is handed them — no AI call (Miinthe, 2026-11-04: cheap models rarely choose a
+ * lookup on their own; "looking it up would work similar like just vanilla deeplore"). `hits` = the entries whose keys
+ * DeepLore's own matcher found in her words. The open board's first; the first `full` in full (each at most 2000
+ * characters), the next few as their summary; all of it at most `max` characters. Returns { text, titles }.
+ */
+export function handedLore(hits, prefer = null, { full = 3, more = 5, max = 6000 } = {}) {
+    const list = arr(hits).filter(e => e && !e.guide && str(e.title)).map((e, i) => ({ e, i, b: onBoard(e, prefer) })).sort((a, b) => b.b - a.b || a.i - b.i).map(x => x.e);
+    const out = [], titles = [];
+    let size = 0;
+    for (const [k, e] of list.slice(0, full + more).entries()) {
+        const body = k < full ? str(e.content || e.summary).trim().slice(0, 2000) : clip(e.summary || e.content, 240);
+        if (!body) continue;
+        const line = k < full ? `### ${e.title}\n${body}` : `- ${e.title}: ${body}`;
+        if (size + line.length > max) break;
+        out.push(line); titles.push(e.title); size += line.length;
+    }
+    if (list.length > titles.length) out.push(`(${list.length - titles.length} more named — read_lore if you need them)`);
+    return { text: out.join('\n\n'), titles };
+}
+
 /** The entry with this title (exact first, then the closest one). */
-export function findLore(entries, title) {
+export function findLore(entries, title, prefer = null) {
     const q = low(title).trim();
     if (!q) return null;
-    const list = arr(entries).filter(e => e && !e.guide && str(e.title));
-    return list.find(e => low(e.title) === q) || list.find(e => low(e.title).includes(q)) || list.find(e => q.includes(low(e.title))) || searchLore(list, title, 1)[0] || null;
+    // the board's own entries first, so a title two stories share opens this board's one
+    const list = arr(entries).filter(e => e && !e.guide && str(e.title)).map((e, i) => ({ e, i, b: onBoard(e, prefer) })).sort((a, b) => b.b - a.b || a.i - b.i).map(x => x.e);
+    return list.find(e => low(e.title) === q) || list.find(e => low(e.title).includes(q)) || list.find(e => q.includes(low(e.title))) || searchLore(list, title, 1, prefer)[0] || null;
 }
 
 // ── the chat ─────────────────────────────────────────────────────────────────
@@ -178,13 +211,13 @@ export function readReply(json) {
 // ── running one ──────────────────────────────────────────────────────────────
 
 /**
- * Run one tool. data: { entries, chat: [{ i, name, text }] (the whole chat), board, state, entryText(title),
+ * Run one tool. data: { entries (already only what this story may read), prefer ({ titles, folders } of the open board), chat: [{ i, name, text }] (the whole chat), board, state, entryText(title),
  * castText(name) → text or '', castNames: [names] }. Returns { text (for Mero), got (a few words for Miinthe) }.
  */
 export function runTool(name, a = {}, data = {}) {
     const entries = arr(data.entries), chat = arr(data.chat);
     if (name === 'search_lore') {
-        const hits = searchLore(entries, a.query);
+        const hits = searchLore(entries, a.query, 8, data.prefer);
         if (!hits.length) return { text: `Nothing in the lore matches “${str(a.query)}”.`, got: 'nothing found' };
         return {
             text: hits.map(e => `- ${e.title}${arr(e.keys).length ? ` (keys: ${arr(e.keys).slice(0, 6).join(', ')})` : ''}: ${clip(e.summary || e.content, 200)}`).join('\n'),
@@ -192,7 +225,7 @@ export function runTool(name, a = {}, data = {}) {
         };
     }
     if (name === 'read_lore') {
-        const e = findLore(entries, a.title);
+        const e = findLore(entries, a.title, data.prefer);
         if (!e) return { text: `No entry called “${str(a.title)}”. Try search_lore.`, got: 'not found' };
         const body = str(e.content || e.summary).trim();
         return { text: `### ${e.title}\n${body.slice(0, 6000)}${body.length > 6000 ? '\n[… cut]' : ''}`, got: e.title === str(a.title) ? 'read' : `found “${e.title}”` };
@@ -260,4 +293,4 @@ export function passingError(err) {
 
 /** What a reply keeps of its lookups (shown when Miinthe opens the header): the line and the few words of what came back. */
 export const keptStep = (label, got) => ({ label: clip(label, 120), ...(got ? { got: clip(got, 160) } : {}) });
-export const normSteps = v => arr(v).filter(s => s && str(s.label).trim()).slice(0, MAX_LOOKUPS).map(s => keptStep(s.label, s.got));
+export const normSteps = v => arr(v).filter(s => s && str(s.label).trim()).slice(0, MAX_LOOKUPS + 1).map(s => keptStep(s.label, s.got));   // + 1: "📖 Handed to her" (2026-11-04)

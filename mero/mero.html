@@ -322,6 +322,14 @@ input[type=range] { accent-color: var(--dk-mero); width: 100%; }
 .pown .poh { display: flex; gap: 8px; align-items: baseline; }
 .pown .poh .mini { flex: 1; }
 .pown .po-wait { display: grid; gap: 6px; }
+/* 🪜 a plan's steps, one field each + "Add a step" (Miinthe, 2026-11-04: "steps should have their own fields and a button to add more steps") */
+.steps-ed { display: grid; gap: 6px; }
+.steps-ed .stp { display: flex; gap: 6px; align-items: flex-start; }
+.steps-ed .stp .n { min-width: 18px; text-align: right; font-weight: 700; font-size: var(--dk-fs-s); color: var(--dk-muted); padding-top: 6px; }
+.steps-ed .stp textarea { flex: 1; min-width: 0; min-height: 28px; resize: none; overflow: hidden; border: 1px solid var(--dk-line); border-radius: 8px; padding: 4px 8px; line-height: 1.4; font: inherit; background: var(--dk-page); color: var(--dk-ink); }
+.steps-ed .stp button { border: 0; background: none; color: var(--dk-muted); cursor: pointer; padding: 5px 4px 0; }
+.steps-ed .stp button:hover { color: var(--dk-ink); }
+.steps-ed .add { justify-self: start; }
 .pown label.inline { display: block; line-height: 1.7; }
 .pown label.inline input { vertical-align: middle; margin: 0 4px 0 0; }
 .inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: var(--dk-fs); }
@@ -533,13 +541,14 @@ body.pleft .msgs > * { direction: ltr; }
             <div class="poh"><b>Your own pitch</b><span class="mini">no Mero, no AI</span></div>
             <div class="seg" id="po-shape"><button data-v="one" aria-pressed="true">⚡ one-shot</button><button data-v="multi" aria-pressed="false">🪜 plan</button></div>
             <input type="text" id="po-goal" maxlength="300" placeholder="Where the plan is heading" aria-label="Where the plan is heading" hidden>
+            <div id="po-steps" hidden></div>
             <textarea id="po-text" rows="2" class="grow" maxlength="600" placeholder="Your idea" aria-label="Your idea"></textarea>
             <label class="inline" id="po-wait-l"><input type="checkbox" id="po-wait"> wait for a moment before it reaches the writer</label>
             <div class="po-wait" id="po-wait-box" hidden>
               <input type="text" id="po-moment" maxlength="160" placeholder="when someone goes to the garden" aria-label="The moment">
               <label class="inline"><input type="checkbox" id="po-fb" checked> use it anyway after <input type="number" id="po-fbn" min="2" max="60" value="10" aria-label="Messages"> messages</label>
             </div>
-            <div class="go"><span class="mini" id="po-hint"></span><button class="btn ghost" id="po-cancel">Cancel</button><button class="btn m2" id="po-add">Add</button></div>
+            <div class="go"><span class="mini" id="po-hint"></span><button class="btn ghost" id="po-cancel">Cancel</button><button class="btn m2" id="po-add" title="Save it to your pitches">Save</button></div>
           </div>
           <label class="pline waiting" id="p-conn" hidden><span>Mero needs an AI to pitch with:</span><select id="p-conn-sel" aria-label="Mero's connection profile"></select></label>
           <div class="pline waiting" id="p-waiting" hidden></div>
@@ -716,7 +725,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const plan = !!p.plan, can = PICKABLE.includes(p.st);
     if (pEditing === p.id && can) {
       return `<div class="tpc pc" data-tp="${p.id}"><div class="ch"><span class="no">#${p.no}</span><span>✏ ${plan ? 'Edit the plan' : 'Edit the pitch'}</span></div>`
-        + (plan ? `<input data-tpgoal value="${esc(pDraft.goal ?? (p.plan.goal || p.text))}" aria-label="Where the plan leads"><div class="mini">The beats, one per line:</div><textarea data-tpbeats rows="${Math.max(3, p.plan.beats.length + 1)}" aria-label="The beats, one per line">${esc(pDraft.beats ?? p.plan.beats.map(b => b.text).join('\n'))}</textarea>`
+        + (plan ? `<input data-tpgoal value="${esc(pDraft.goal ?? (p.plan.goal || p.text))}" aria-label="Where the plan leads"><div class="mini">The steps:</div>${stepsHtml(pDraft.beats ?? p.plan.beats.map(b => b.text), 'data-tpbeats')}`
           : `<textarea data-tptext rows="3" aria-label="The pitch">${esc(pDraft.text ?? p.text)}</textarea>`)
         + `<div class="row"><button class="btn p" data-tpa="save">Save</button><button class="btn ghost" data-tpa="cancel">Cancel</button></div></div>`;
     }
@@ -757,7 +766,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   }
   /** A selector that finds the same field again after a redraw (question cards, ✏ edit, a pitch's edit fields). */
   function fieldSel(el) {
-    const own = ['data-aown', 'data-adet', 'data-meditin', 'data-tpgoal', 'data-tpbeats', 'data-tptext'].find(a => el.hasAttribute(a));
+    const own = ['data-aown', 'data-adet', 'data-meditin', 'data-tpgoal', 'data-step', 'data-tptext'].find(a => el.hasAttribute(a));
     if (!own) return null;
     const v = el.getAttribute(own), me = v ? `[${own}="${v}"]` : `[${own}]`;
     const ask = el.closest('[data-ask]'), tp = el.closest('[data-tp]');
@@ -839,9 +848,10 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       const tk = card.querySelector('[data-atalk]'); if (tk) tk.onclick = () => go(false, true);
     });
     // 💡 cards in the talk
-    $$('#msgs .tpc [data-tpgoal], #msgs .tpc [data-tpbeats], #msgs .tpc [data-tptext]').forEach(f => f.addEventListener('input', () => {
-      pDraft[f.hasAttribute('data-tpgoal') ? 'goal' : f.hasAttribute('data-tpbeats') ? 'beats' : 'text'] = f.value;
+    $$('#msgs .tpc [data-tpgoal], #msgs .tpc [data-tptext]').forEach(f => f.addEventListener('input', () => {
+      pDraft[f.hasAttribute('data-tpgoal') ? 'goal' : 'text'] = f.value;
     }));
+    $$('#msgs .tpc [data-tpbeats]').forEach(box => wireSteps(box, () => { pDraft.beats = stepVals(box); }));
     $$('#msgs .tpc [data-tpa]').forEach(b => b.onclick = async () => {
       const id = b.closest('[data-tp]').dataset.tp, p = pById(id), a = b.dataset.tpa;
       if (!p) return;
@@ -849,7 +859,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       if (a === 'cancel') { pEditing = null; pDraft = {}; drawTalk(); return; }
       if (a === 'save') {
         const card = b.closest('[data-tp]');
-        const f = p.plan ? { goal: card.querySelector('[data-tpgoal]').value, beats: card.querySelector('[data-tpbeats]').value.split('\n').map(x => x.trim()).filter(Boolean) } : { text: card.querySelector('[data-tptext]').value };
+        const f = p.plan ? { goal: card.querySelector('[data-tpgoal]').value, beats: stepsOf(card.querySelector('[data-tpbeats]')) } : { text: card.querySelector('[data-tptext]').value };
         // closed BEFORE saving: the save redraws the talk, and the box must not stay open after it (bug hunt 2026-11-03)
         const was = { ...pDraft }; pEditing = null; pDraft = {};
         const r = HOST.pitchEdit(id, f); if (!r.ok) { pEditing = id; pDraft = was; drawTalk(); toast(r.error); return; }
@@ -1609,13 +1619,48 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     if (hid) toast(PV().menu?.shape === 'multi' ? '🎲 A hidden plan has started — the writer is led through it.' : '🎲 One hidden pitch is waiting for its moment.');
   }
   $('#p-go').onclick = goPitch;
+  // 🪜 a plan's steps, one field each, "+ Add a step", ✕ to remove (Miinthe, 2026-11-04) — used by ✏ My own and ✏ Edit the plan.
+  // Enter in a step adds the next one below it. At least two steps (a plan needs two), at most seven (MAX_BEATS).
+  /** A step field as tall as its text (the whole step shows); hidden fields are measured when they show. */
+  function fitStep(t) { if (!t.offsetParent) { t.style.height = ''; return; } t.style.height = 'auto'; t.style.height = `${t.scrollHeight + 2}px`; }
+  function stepRow(t, k) { return `<div class="stp"><span class="n">${k + 1}.</span><textarea rows="1" data-step="${k}" maxlength="200" placeholder="${k ? 'Then…' : 'What happens first'}" aria-label="Step ${k + 1}">${esc(t)}</textarea><button type="button" data-stdel title="Remove this step" aria-label="Remove step ${k + 1}">✕</button></div>`; }
+  function stepsHtml(list, attr = '') {
+    const v = (list || []).length >= 2 ? list : [...(list || []), '', ''].slice(0, 2);
+    return `<div class="steps-ed" ${attr}>${v.map((t, k) => stepRow(t, k)).join('')}<button type="button" class="btn ghost add" data-stadd>+ Add a step</button></div>`;
+  }
+  function stepVals(box) { return [...box.querySelectorAll('[data-step]')].map(i => i.value); }   // with empty ones, for a draft
+  function stepsOf(box) { return stepVals(box).map(x => x.trim()).filter(Boolean); }
+  function wireSteps(box, onChange = () => {}) {
+    const fit = fitStep;
+    const rows = () => [...box.querySelectorAll('.stp')];
+    const renum = () => {
+      rows().forEach((r, k) => { r.querySelector('.n').textContent = `${k + 1}.`; const i = r.querySelector('textarea'); i.dataset.step = k; fit(i); i.placeholder = k ? 'Then…' : 'What happens first'; i.setAttribute('aria-label', `Step ${k + 1}`); r.querySelector('[data-stdel]').hidden = rows().length <= 2; });
+      box.querySelector('[data-stadd]').disabled = rows().length >= 7;
+    };
+    const add = after => {
+      if (rows().length >= 7) return;
+      const tmp = document.createElement('div'); tmp.innerHTML = stepRow('', 1); const row = tmp.firstElementChild;
+      if (after) after.after(row); else box.querySelector('[data-stadd]').before(row);
+      renum(); row.querySelector('textarea').focus(); onChange();
+    };
+    box.onclick = e => {
+      if (e.target.closest('[data-stadd]')) { add(null); return; }
+      const del = e.target.closest('[data-stdel]');
+      if (del && rows().length > 2) { const r = del.closest('.stp'), next = r.nextElementSibling?.querySelector?.('textarea') || r.previousElementSibling?.querySelector?.('textarea'); r.remove(); renum(); next?.focus(); onChange(); }
+    };
+    box.onkeydown = e => { if (e.key === 'Enter' && e.target.matches('[data-step]')) { e.preventDefault(); add(e.target.closest('.stp')); } };
+    box.oninput = e => { if (e.target.matches('[data-step]')) fit(e.target); onChange(); };
+    renum();
+  }
+  function resetOwnSteps() { const box = $('#po-steps'); box.innerHTML = stepsHtml([]); wireSteps(box.firstElementChild); }
+  resetOwnSteps();
   // ✏ My own (Miinthe, 2026-11-03: "manual pitches without going over Mero"): her idea straight into the list, no AI
   let poShape = 'one';
   function drawOwn() {
     const plan = poShape === 'multi', wait = !plan && $('#po-wait').checked;
     $$('#po-shape button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === poShape)));
-    $('#po-goal').hidden = !plan; $('#po-wait-l').hidden = plan; $('#po-wait-box').hidden = !wait;
-    $('#po-text').placeholder = plan ? 'One step per line, in order' : 'Your idea';
+    $('#po-goal').hidden = !plan; $('#po-steps').hidden = !plan; $('#po-text').hidden = plan; $('#po-wait-l').hidden = plan; $('#po-wait-box').hidden = !wait;
+    $$('#po-steps [data-step]').forEach(fitStep);
     $('#po-hint').textContent = plan ? 'Kept until you start it.' : wait ? 'Waits for that moment, then goes to the writer.' : 'Goes to your kept ideas.';
     $('#po-fbn').disabled = !$('#po-fb').checked;
     autogrow($('#po-text'));
@@ -1631,9 +1676,9 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   $('#po-add').onclick = () => {
     const plan = poShape === 'multi', wait = !plan && $('#po-wait').checked;
     if (wait && !$('#po-moment').value.trim()) { toast('Name the moment it waits for — or untick "wait for a moment".'); $('#po-moment').focus(); return; }
-    const r = HOST.pitchOwn({ text: $('#po-text').value, plan, goal: $('#po-goal').value, moment: wait ? $('#po-moment').value : '', fb: wait && $('#po-fb').checked ? +$('#po-fbn').value || 10 : 0 });
+    const r = HOST.pitchOwn({ text: plan ? stepsOf($('#po-steps')).join('\n') : $('#po-text').value, plan, goal: $('#po-goal').value, moment: wait ? $('#po-moment').value : '', fb: wait && $('#po-fb').checked ? +$('#po-fbn').value || 10 : 0 });
     if (!r.ok) { toast(r.error); return; }
-    $('#po-text').value = ''; $('#po-goal').value = ''; $('#po-moment').value = ''; $('#po-wait').checked = false;
+    $('#po-text').value = ''; $('#po-goal').value = ''; $('#po-moment').value = ''; $('#po-wait').checked = false; resetOwnSteps();
     ownOpen(false);
     toast(r.waits ? `⏳ #${r.no} waits for its moment.` : r.plan ? `🪜 #${r.no} is with your kept ideas — pick it to start the plan.` : `✏ #${r.no} is with your kept ideas — pick it to send it out.`);
   };

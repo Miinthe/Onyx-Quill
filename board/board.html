@@ -1321,6 +1321,9 @@ svg.fcs { display: block; width: 100%; min-width: 680px; height: auto; }
 .side .mb { max-width: 92%; padding: 7px 10px; border-radius: 10px; font-size: 13px; line-height: 1.45; }
 .side .mb.me { align-self: flex-start; background: var(--menu); border: 1px solid var(--line); }
 .side .mb.me::before { content: "Mero ☆"; display: block; font: 700 11px/1.3 var(--f-display); color: var(--mero); }
+.side .mb .mlook { margin: 1px 0 5px; font-size: 12px; color: var(--ink); }
+.side .mb .mlook summary { cursor: pointer; color: var(--mero); font-weight: 600; }
+.side .mb .mlook div { padding-left: 6px; border-left: 2px solid var(--mero); margin-top: 2px; }
 .side .mb.you { align-self: flex-end; background: var(--accent-soft); }
 .side .mstarts { display: flex; flex-wrap: wrap; gap: 6px; }
 .side .mstarts button { border: 1px solid var(--line); background: var(--page); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; }
@@ -7162,7 +7165,9 @@ function boardBrief() {
   return { name: cur, folders: doc.folders || [], wiring,
     trackers: doc.trackers.map(t => ({ id: t.id, name: t.name, kind: isCast(t) ? 'cast' : isPlace(t) ? 'places' : isState(t) ? 'state' : isCounter(t) ? (t.meter ? 'meter' : 'counter') : isCol(t) ? 'collection' : 'steps',
       ...(noSteps(t) ? {} : { steps: (t.steps || []).map(s0 => ({ name: s0.name, entries: ents(s0) })) }),
-      items: (t.items || []).map(x => x.name), places: (t.places || []).map(x => x.name), people: (t.people || []).map(x => x.name) })) };
+      items: (t.items || []).map(x => x.name), places: (t.places || []).map(x => x.name), people: (t.people || []).map(x => x.name),
+      // places, people and items with their linked entries — Mero can suggest linking an existing entry to one (2026-11-04)
+      tiles: [...(t.items || []), ...(t.places || []), ...(t.people || [])].map(x => ({ name: x.name, entries: ents(x) })) })) };
 }
 /** Ask her in the open talk (`quick`: a quick start; `label` is what the talk shows as your line). */
 async function meroTalk(message, quick = null, label = message) {
@@ -7176,6 +7181,7 @@ async function meroTalk(message, quick = null, label = message) {
   const fresh = r.suggestions.filter(x => !MB.sugg.some(y => y.text === x.text));
   fresh.forEach(x => { x.id = 'mg' + (++mbN); MB.sugg.push(x); });
   meroSay(r.text + (fresh.length ? ` (${fresh.length} marked ✨ on the board, listed below.)` : ''), 'me', k);
+  if (r.steps?.length) k.msgs[k.msgs.length - 1].steps = r.steps;   // 🔎 what she looked up (Miinthe, 2026-11-04)
   if (r.asks?.length) k.msgs[k.msgs.length - 1].asks = r.asks.map(a => ({ ...a, sel: [], own: '' }));
   render();
 }
@@ -7221,14 +7227,27 @@ function meroAccept(id) {
     render(); EW.open({ o: st, t, label: st.name, tab: 'write', prefill: { title: x.title, ask: x.why } });
     return;
   }
+  if (x.kind === 'link') {   // an entry that already exists, onto the step or the place / person / item (Miinthe, 2026-11-04: "she should be able to link them too")
+    const st = x.tile != null ? [...(t.items || []), ...(t.places || []), ...(t.people || [])].find(o => o.name === x.tile) : t.steps?.[x.i];
+    if (!st) { render(); return; }
+    if (!ents(st).includes(x.title)) { st.entries = [...ents(st), x.title]; delete st.entry; }
+    said(`link ${x.title}`);
+  }
   if (x.kind === 'step') { t.steps.push({ name: x.name, entries: [] }); said(`add the step ${x.name}`); }
   if (x.kind === 'tracker') { const nid = 'mt' + Date.now().toString(36); doc.trackers.push({ id: nid, name: x.name, icon: x.icon, color: '#7232e0', direction: 'both', skip: false, settle: 0, folder: doc.folders[0] || '', onFall: 'keep', starts: [], steps: x.steps.map(n => ({ name: n, entries: [] })) }); said(`add Mero’s tracker ${x.name}`); }
   meroSay('Done. Undo takes it back.');
   touch();
 }
 function meroNo(id) { MB.sugg = MB.sugg.filter(z => z.id !== id); render(); }
+/** The tile a suggestion is about: a step, or (a link) a place / person / item by its name. */
+function meroTileKey(x) {
+  if (x.tile == null) return `st:${x.t}:${x.i}`;
+  const t = T(x.t); if (!t) return '';
+  for (const [pre, list] of [['pl', t.places], ['ps', t.people], ['it', t.items]]) { const k = (list || []).findIndex(o => o.name === x.tile); if (k >= 0) return `${pre}:${t.id}:${k}`; }
+  return '';
+}
 function meroShow(x) {
-  const q = x.kind === 'tracker' ? '.mghostrow' : x.kind === 'step' ? `[data-mg="${x.id}"]` : `[data-st="${x.t}:${x.i}"]`;
+  const q = x.kind === 'tracker' ? '.mghostrow' : x.kind === 'step' ? `[data-mg="${x.id}"]` : x.tile != null ? `[data-dr="${meroTileKey(x)}"]` : `[data-st="${x.t}:${x.i}"]`;
   const el = document.querySelector(q); if (!el) return;
   el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1300);
 }
@@ -7253,8 +7272,8 @@ function renderMeroBoard(el) {
   if (MB.view === 'settings') { renderMeroSettings(el); return; }
   const off = meroBlock();
   const k = curTalk(), empty = !k.msgs.length, starts = `<div class="mstarts"><button data-mq="gaps"${off || MB.busy ? ' disabled' : ''}>Find gaps</button><button data-mq="build">Build from my words</button><button data-mq="explain"${off || MB.busy ? ' disabled' : ''}>Explain the board</button><button data-mq="folders">Read my folders</button></div>`;
-  el.innerHTML = `${off ? `<p class="mini" style="margin:8px 0 6px">${esc(off)}</p>` : ''}${empty ? `<p class="mini" style="margin:8px 0 6px">Ask about this board, or start with:</p>${starts}` : ''}<div class="mtalk">${k.msgs.slice(-6).map((m, n, list) => `<div class="mb ${m.who}"${m.err ? ' style="color:var(--bad)"' : ''}>${esc(m.t)}</div>` + meroAskHtml(m, n === list.length - 1)).join('')}${MB.busy ? '<div class="mb me"><span class="mini">thinking…</span></div>' : ''}</div>
-    ${sg.length ? `<div class="card" style="border-color:var(--mero)"><h4 style="color:var(--mero)">Her suggestions (${sg.length})</h4><div style="display:grid;gap:8px;padding:4px 0 10px">${sg.map(x => `<div class="msug${MB.hot === x.id ? ' hot' : ''}"><span class="mk2">${{ entry: 'Entry', step: 'Step', tracker: 'Tracker' }[x.kind]}</span><b>${esc(x.text)}</b><span class="why">${esc(x.why)}</span><div class="btns"><button class="btn mero" data-mok="${x.id}"${x.kind === 'entry' ? ' title="Opens the entries window for that step, ready for her draft"' : ''}>Accept</button><button class="btn" data-mno="${x.id}">No</button><button class="btn" data-mshow="${x.id}" style="margin-left:auto">Show me</button></div></div>`).join('')}</div></div>` : ''}
+  el.innerHTML = `${off ? `<p class="mini" style="margin:8px 0 6px">${esc(off)}</p>` : ''}${empty ? `<p class="mini" style="margin:8px 0 6px">Ask about this board, or start with:</p>${starts}` : ''}<div class="mtalk">${k.msgs.slice(-6).map((m, n, list) => `<div class="mb ${m.who}"${m.err ? ' style="color:var(--bad)"' : ''}>${m.steps?.length ? `<details class="mlook"><summary title="What she looked up for this answer">🔎 ${m.steps.length} lookup${m.steps.length > 1 ? 's' : ''}</summary>${m.steps.map(x => `<div>${esc(x.label)}${x.got ? ` <span class="mini">— ${esc(x.got)}</span>` : ''}</div>`).join('')}</details>` : ''}${esc(m.t)}</div>` + meroAskHtml(m, n === list.length - 1)).join('')}${MB.busy ? '<div class="mb me"><span class="mini">thinking…</span></div>' : ''}</div>
+    ${sg.length ? `<div class="card" style="border-color:var(--mero)"><h4 style="color:var(--mero)">Her suggestions (${sg.length})</h4><div style="display:grid;gap:8px;padding:4px 0 10px">${sg.map(x => `<div class="msug${MB.hot === x.id ? ' hot' : ''}"><span class="mk2">${{ entry: 'Entry', link: 'Link', step: 'Step', tracker: 'Tracker' }[x.kind]}</span><b>${esc(x.text)}</b><span class="why">${esc(x.why)}</span><div class="btns"><button class="btn mero" data-mok="${x.id}"${x.kind === 'entry' ? ' title="Opens the entries window for that step, ready for her draft"' : x.kind === 'link' ? ' title="Links that entry to the step — Undo takes it back"' : ''}>Accept</button><button class="btn" data-mno="${x.id}">No</button><button class="btn" data-mshow="${x.id}" style="margin-left:auto">Show me</button></div></div>`).join('')}</div></div>` : ''}
     ${!empty && MB.chips ? starts : ''}
     <div class="mcomp" style="margin-top:8px">${empty ? '' : `<button class="mqbtn${MB.chips ? ' on' : ''}" id="mb-chips" title="Quick starts: find gaps, explain, read folders" aria-label="Quick starts" aria-pressed="${!!MB.chips}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l1.8 4.9L17.7 9.7l-4.9 1.8L11 16.4l-1.8-4.9L4.3 9.7l4.9-1.8z"/><path d="M18 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></button>`}<textarea id="mb-in" rows="1" placeholder="Ask Mero…"${off ? ' disabled' : ''}></textarea><button class="btn mero" id="mb-send"${off || MB.busy ? ' disabled' : ''}>${MB.busy ? '…' : 'Send'}</button></div>
 `;
@@ -7342,8 +7361,8 @@ function markMero(p) {
   const board = p.querySelector('#board'); if (!board) return;
   const open = id => { MB.hot = id; MB.open = true; render(); };
   for (const x of MB.sugg) {
-    if (x.kind === 'entry') {
-      const bar = board.querySelector(`[data-dr="st:${x.t}:${x.i}"] > .v2bar`); if (!bar) continue;
+    if (x.kind === 'entry' || x.kind === 'link') {
+      const bar = board.querySelector(`[data-dr="${meroTileKey(x)}"] > .v2bar`); if (!bar) continue;
       const c = document.createElement('span'); c.className = 'mchip'; c.textContent = '✨'; c.title = `Mero suggests: ${x.text}`; c.onclick = e => { e.stopPropagation(); open(x.id); };
       bar.querySelector('.car')?.before(c);
     }

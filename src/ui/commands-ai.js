@@ -129,7 +129,8 @@ export function registerAiCommands() {
             // never reach the writing AI. /oq-review previously dumped raw vaultIndex,
             // leaking guide content as a persistent user message. Mirrors writer-visible
             // contract from getWriterVisibleEntries() / matchTextForExternal.
-            const reviewEntries = vaultIndex.filter(e => !e.guide);
+            // Miinthe 2026-11-04: only what this story reads (the chat's folders + DeepLore's run/field filters), not the whole vault
+            const reviewEntries = (await import('../mero.js')).reviewEntries();
 
             if (reviewEntries.length === 0) {
                 toastr.info(NO_ENTRIES_MSG, 'Onyx Quill');
@@ -141,8 +142,8 @@ export function registerAiCommands() {
             // Miinthe 2026-10-18: the review used to go into the story chat as her message and stay there (sent with every
             // later reply). It is a talk with Mero now — the story chat stays as it was.
             const confirmed = await callGenericPopup(
-                `<p>Mero reads all <b>${reviewEntries.length}</b> entries (~${totalTokens} tokens) in a new talk, on her own connection. Your story chat stays as it is.</p>
-                <p class="dle-text-xs dle-muted">The whole vault goes along with every answer in that talk, so each one may take a while.</p>
+                `<p>Mero reads the <b>${reviewEntries.length}</b> entries this story reads (~${totalTokens} tokens) in a new talk, on her own connection. Your story chat stays as it is.</p>
+                <p class="dle-text-xs dle-muted">All of them go along with every answer in that talk, so each one may take a while.</p>
                 <p>Start the review?</p>`,
                 POPUP_TYPE.CONFIRM, '', {},
             );

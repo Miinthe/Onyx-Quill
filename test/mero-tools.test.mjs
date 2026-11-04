@@ -7,11 +7,11 @@
  * Run: npm run test:mero-tools
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, webResults, webSnippets, pageText, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS, passingError } from '../src/mero-tools-pure.js';
+import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, webResults, webSnippets, pageText, argsOf, toolLabel, searchLore, findLore, searchChat, runTool, readReply, normSteps, MAX_LOOKUPS, passingError, handedLore } from '../src/mero-tools-pure.js';
 import { groundRules, asStore, normTalk, versionsOf, showVersion, addVersion, dropSwipes, parseMeroAnswer, askedForPitch } from '../src/mero-pure.js';
 import { talkPitchPrompt, parseTalkPitches, editedPitch, normPitch } from '../src/pitches-pure.js';
 import { normAsk, normAsks, takeAsks, askAnswerText, answerAsks, ASK_FORMAT, withAsked } from '../src/ask-pure.js';
-import { parseBoardMero, buildBoardMeroPrompt } from '../src/board-mero-pure.js';
+import { parseBoardMero, buildBoardMeroPrompt, boardHandover, cutAnswer } from '../src/board-mero-pure.js';
 
 const LORE = [
     { title: 'Interlude — Aging and Eternity', keys: ['eternity', 'aging'], content: 'The last interlude: Corvin watches a mortal age while he does not.' },
@@ -33,6 +33,101 @@ const DATA = { entries: LORE, chat: CHAT, board: BOARD, state: STATE, entryText:
 test('six look-only tools, in the format SillyTavern passes on', () => {
     assertEqual(TOOL_DEFS.map(t => t.function.name), ['search_lore', 'read_lore', 'open_tracker', 'search_chat', 'read_messages', 'check_cast']);
     assert(TOOL_DEFS.every(t => t.type === 'function' && t.function.parameters.type === 'object'));
+});
+
+test('lore search: the open board ranks first, and never adds an entry that does not match (Miinthe, 2026-11-04)', () => {
+    const lore = [
+        { title: 'Fox — The Poisoned Heat Inducer', folderPath: '03 Fox/3 Instance C', keys: ['poison'], content: 'A stolen life: the heat inducers were laced with poison.' },
+        { title: 'Story — The Stolen Bond', folderPath: "04 Dragon/base/The Story/A Stolen Eternity", keys: ['stolen bond'], content: 'The Abyss took the bond. Nobody did it.' },
+        { title: 'Culture — Stolen Goods', folderPath: '04 Dragon/base/Culture', keys: ['stolen'], content: 'What happens to stolen goods in Ostmark.' },
+    ];
+    const prefer = { titles: ['Story — The Stolen Bond'], folders: ['04 Dragon/base/The Story/'] };
+    assertEqual(searchLore(lore, 'stolen', 8, prefer)[0].title, 'Story — The Stolen Bond', 'the board\'s own entry first');
+    assertEqual(searchLore(lore, 'stolen', 8, { titles: [], folders: ['04 Dragon/base/Culture/'] })[0].title, 'Culture — Stolen Goods', 'then the board\'s folders (a trailing / is fine)');
+    assert(!searchLore(lore, 'Ostmark', 8, prefer).some(e => e.title === 'Story — The Stolen Bond'), 'a board entry that does not match is not added');
+    const twin = [{ title: 'The Hall', folderPath: '03 Fox', content: 'fox hall' }, { title: 'The Hall', folderPath: '04 Dragon/base/The Story', content: 'dragon hall' }];
+    assertEqual(findLore(twin, 'The Hall', { titles: [], folders: ['04 Dragon/base/The Story'] }).content, 'dragon hall', 'a shared title opens the board\'s one');
+    assertEqual(findLore(twin, 'The Hall').content, 'fox hall', 'no board: as before');
+    const r = runTool('search_lore', { query: 'stolen' }, { entries: lore, prefer });
+    assert(r.text.indexOf('The Stolen Bond') < r.text.indexOf('Stolen Goods'), 'runTool passes the board on');
+});
+
+test('the board\'s Mero never invents story facts, with or without lookups (Miinthe, 2026-11-04)', () => {
+    const me = { persona: 'warm', character: 'Corvin' };
+    const withLook = buildBoardMeroPrompt('talk', { brief: BOARD, quick: 'gaps', lookups: true }, me).system;
+    const without = buildBoardMeroPrompt('talk', { brief: BOARD, quick: 'gaps' }, me).system;
+    assert(/read_lore/.test(withLook) && /Never make up what happens/.test(withLook), 'with lookups: read first, never invent');
+    assert(/search the lore \(search_lore\) for this story's entries that no tile links yet/.test(buildBoardMeroPrompt('talk', { brief: BOARD, quick: 'gaps', lookups: true }, me).user), 'Find gaps with lookups: search for entries not on the board');
+    assert(!/search_lore/.test(buildBoardMeroPrompt('talk', { brief: BOARD, quick: 'gaps' }, me).user), 'without lookups: no tool names');
+    assert(!/read_lore/.test(without) && /Never make up what happens/.test(without) && /can't look them up/.test(without), 'names only: says so, never invents');
+});
+
+test('the board talk hands Mero what she is pointed at — no AI call (Miinthe, 2026-11-04)', () => {
+    const brief = { trackers: [
+        { id: 'se', name: 'A Stolen Eternity', steps: [{ name: 'The Stolen Bond', entries: ['Story — The Stolen Bond', 'Core Wound'] }, { name: 'The Return Offered', entries: ['Story — The Return Offered', 'Core Wound'] }] },
+        { id: 'rel', name: 'Relationship', steps: [{ name: 'Strangers', entries: ['Stage · Strangers'] }] },
+        { id: 'cast', name: 'Cast', steps: [] },
+    ] };
+    const E = { 'Story — The Stolen Bond': { summary: 'When the lost bond comes up.', content: 'He fell into the Abyss by accident, alone. No one did it.' }, 'Core Wound': { summary: 'The wound under it all.', content: 'The anger belongs to the theft itself.' }, 'Stage · Strangers': { summary: 'Before they know each other.', content: 'They have never spoken.' } };
+    const of = t => E[t] || null;
+    const g = boardHandover(brief, '', 'gaps', of);
+    assert(g.n === 3 && !g.full, 'Find gaps: every linked entry this story may read, once per tracker (a missing one is skipped)');
+    assert(/When the lost bond comes up/.test(g.text) && !/by accident/.test(g.text), 'Find gaps: summaries only');
+    const f = boardHandover(brief, 'what happens in a stolen eternity?', null, of);
+    assert(f.full && /by accident, alone/.test(f.text) && !/never spoken/.test(f.text), 'naming a tracker: its entries in full, nothing else');
+    assert(boardHandover(brief, 'tell me about the return offered', null, of).full, 'naming a step works too');
+    assertEqual(boardHandover(brief, 'hi there', null, of).n, 0, 'nothing named: nothing handed');
+    assert(/more entries/.test(boardHandover(brief, '', 'gaps', of, 60).text), 'capped, and says so');
+    const loose = boardHandover(brief, '', 'gaps', of, 9000, [{ title: 'Fuse 2 · Sparks', summary: 'When the fuse plot stands at Sparks.' }]);
+    assert(loose.loose === 1 && /no tile links yet\]\n- Fuse 2 · Sparks: When the fuse plot/.test(loose.text), 'Find gaps: the entries no tile links are handed too');
+    assertEqual(boardHandover(brief, 'what happens in a stolen eternity?', null, of, 9000, [{ title: 'X' }]).loose, 0, 'only for Find gaps');
+    const u = buildBoardMeroPrompt('talk', { brief, quick: 'gaps', lookups: true, handover: g.text }, {}).user;
+    assert(/What the entries say/.test(u) && /When the lost bond comes up/.test(u), 'the handover goes with her message');
+});
+
+test('her chat is handed the entries her words name — board first, the first ones in full, capped (Miinthe, 2026-11-04)', () => {
+    const hits = [
+        { title: 'Culture — Tea', folderPath: '04 Dragon/base/Culture', summary: 'Tea customs.', content: 'Tea is served first to the eldest.' },
+        { title: 'Story — The Stolen Bond', folderPath: '04 Dragon/base/The Story', summary: 'The lost bond.', content: 'He fell into the Abyss by accident, alone.' },
+        { title: 'Guide', guide: true, content: 'never' },
+    ];
+    const h = handedLore(hits, { titles: ['Story — The Stolen Bond'], folders: [] });
+    assertEqual(h.titles, ['Story — The Stolen Bond', 'Culture — Tea'], 'the board\'s entry first, guides never');
+    assert(/### Story — The Stolen Bond\nHe fell into the Abyss by accident, alone\./.test(h.text), 'in full');
+    const many = Array.from({ length: 12 }, (_, i) => ({ title: `E${i}`, summary: `s${i}`, content: 'x'.repeat(3000) }));
+    const m = handedLore(many);
+    assert(m.titles.length === 3 + 5 - 0 || m.titles.length <= 8, 'at most 3 in full and 5 as summaries');
+    assert(m.text.length <= 6100 && /more named — read_lore/.test(m.text), 'capped, and says how to get the rest');
+    assertEqual(handedLore([]).titles.length, 0);
+    assertEqual(normSteps(Array.from({ length: 12 }, (_, i) => ({ label: `L${i}` }))).length, MAX_LOOKUPS + 1, 'room for the handed line next to 8 lookups');
+});
+
+test('an answer cut off at the length limit reads as her words, not raw JSON (2026-11-04)', () => {
+    const cut = '{"text":"Okay, I looked \u2014 and honestly the biggest gap is that none of your five lore entries are';
+    assertEqual(parseBoardMero('talk', cut, {}).text, 'Okay, I looked — and honestly the biggest gap is that none of your five lore entries are … (her answer was cut off — ask again)');
+    assertEqual(cutAnswer('Just prose.'), 'Just prose.');
+    assertEqual(parseBoardMero('talk', '{"text":"Whole.","suggestions":[]}', {}).text, 'Whole.', 'a whole answer as before');
+});
+
+test('Mero can suggest linking an entry that already exists to a step (Miinthe, 2026-11-04)', () => {
+    const brief = { trackers: [{ id: 'fuse', name: 'The Broken Fuse', steps: [{ name: 'Calm', entries: [] }, { name: 'Sparks', entries: ['Fuse 2 · Sparks'] }] }] };
+    const known = ['Fuse 1 · Calm', 'Fuse 2 · Sparks'];
+    const ans = JSON.stringify({ text: 'ok', suggestions: [
+        { kind: 'link', tracker: 'fuse', step: 0, title: 'fuse 1 · calm', why: 'it exists' },
+        { kind: 'link', tracker: 'fuse', step: 0, title: 'Fuse 1 · Calm', why: 'twice' },
+        { kind: 'link', tracker: 'fuse', step: 1, title: 'Fuse 2 · Sparks', why: 'already there' },
+        { kind: 'link', tracker: 'fuse', step: 0, title: 'The Poisoned Heat Inducer', why: 'not in this story' },
+        { kind: 'link', tracker: 'nope', step: 0, title: 'Fuse 1 · Calm', why: 'no such tracker' },
+    ] });
+    const r = parseBoardMero('talk', ans, { brief, known });
+    assertEqual(r.suggestions.length, 1, 'only a real, new link survives');
+    assertEqual(r.suggestions[0], { kind: 'link', t: 'fuse', i: 0, title: 'Fuse 1 · Calm', why: 'it exists', text: 'Link “Fuse 1 · Calm” to Calm' }, 'the exact title as the vault spells it');
+    assertEqual(parseBoardMero('talk', ans, { brief }).suggestions.length, 0, 'no list of known entries: no links');
+    assert(/"kind":"link"/.test(buildBoardMeroPrompt('talk', { brief, message: 'hi' }, {}).system), 'she is told she can');
+    const b2 = { trackers: [{ id: 'where', name: 'Where', kind: 'places', places: ['Kitchen', 'Garden'], tiles: [{ name: 'Kitchen', entries: [] }, { name: 'Garden', entries: ['The Garden'] }] }] };
+    const r2 = parseBoardMero('talk', JSON.stringify({ text: 'ok', suggestions: [{ kind: 'link', tracker: 'where', tile: 'kitchen', title: 'The Kitchen', why: 'its place' }, { kind: 'link', tracker: 'where', tile: 'Garden', title: 'The Garden', why: 'already' }, { kind: 'link', tracker: 'where', tile: 'Attic', title: 'The Kitchen', why: 'no tile' }] }), { brief: b2, known: ['The Kitchen', 'The Garden'] });
+    assertEqual(r2.suggestions, [{ kind: 'link', t: 'where', tile: 'Kitchen', title: 'The Kitchen', why: 'its place', text: 'Link “The Kitchen” to Kitchen' }], 'a place tile by its name; already linked or unknown tiles are dropped');
+    assert(/Kitchen \[no entry\], Garden \[entries: The Garden\]/.test(buildBoardMeroPrompt('talk', { brief: b2, message: 'hi' }, {}).user), 'she sees which places have entries');
 });
 
 test('lore search: the obvious entry first, guides never', () => {
@@ -105,7 +200,7 @@ test('a tool reply is read in both shapes; a plain answer has no calls', () => {
 test('what a reply keeps of its lookups: label + a few words, never the whole entry', () => {
     const s = normSteps([{ label: '📖 Read: X', got: 'read', text: 'a whole entry' }, { label: '' }, null]);
     assertEqual(s, [{ label: '📖 Read: X', got: 'read' }]);
-    assertEqual(normSteps(Array.from({ length: 20 }, (_, k) => ({ label: `l${k}` }))).length, MAX_LOOKUPS);
+    assertEqual(normSteps(Array.from({ length: 20 }, (_, k) => ({ label: `l${k}` }))).length, MAX_LOOKUPS + 1);   // 8 lookups + "📖 Handed to her" (2026-11-04)
     const t = normTalk({ msgs: [{ who: 'mero', t: 'x', steps: [{ label: '🔎 Searched the lore: “a”', got: '2 found' }] }] });
     assertEqual(t.msgs[0].steps.length, 1, 'kept with the message');
     assertEqual(normTalk({ msgs: [{ who: 'mero', t: 'x', nolook: true }] }).msgs[0].nolook, true, 'her AI could not look things up: the header says so');
@@ -228,15 +323,18 @@ test('Mero in a talk is taught the cards; her answer carries them', () => {
     assertEqual([a.text, a.asks.length, a.kind], ['Hmm.', 1, 'plan']);
 });
 
-test('💡 Pitch asks first when something important is open — never with cards already written', () => {
+test('💡 Pitch builds first: her own unanswered questions are not open points; at most one question (Miinthe, 2026-11-04)', () => {
     const first = talkPitchPrompt(TALK, {}).system;
-    assert(first.includes('FIRST fill "open"') && first.includes('ALWAYS open') && first.includes('my guess'), 'the first press lists what is open — her own unanswered questions and guesses included');
-    assert(!talkPitchPrompt(TALK, {}, { ask: false }).system.includes('FIRST fill'), 'after her answers (or Skip) it writes');
+    assert(first.includes('FIRST check') && first.includes('"open" stays EMPTY') && first.includes('Your own questions and guesses they didn\'t answer are NOT open points'), 'build first; her own questions never block the cards');
+    assert(first.includes('ONE question at most') && !first.includes('ALWAYS open'), 'at most one question, only when truly unsettled');
+    assert(!talkPitchPrompt(TALK, {}, { ask: false }).system.includes('FIRST check'), 'after her answers (or Skip) it writes');
     const q = parseTalkPitches('{"open": [{"q": "Who knocks the cubes off?", "pick": "one", "options": ["Toaster", "Spoon"]}], "items": []}');
     assertEqual([q.list.length, q.asks.length, q.asks[0].opts[1]], [0, 1, 'Spoon']);
     assertEqual(parseTalkPitches('{"items": [{"type": "pitch", "text": "x happens"}], "open": [{"q": "Q?", "options": ["a", "b"]}]}').asks.length, 1, 'open points are kept even when cards came along — on a first press they win');
     const sys = talkPitchPrompt(TALK, {}).system;
-    assert(sys.includes('ONLY where they said yes') && sys.includes('never an instruction'), 'her unanswered ideas are open; the goal is a story sentence');
+    assert(sys.includes('ONLY where they said yes') && sys.includes('never an instruction'), 'her unconfirmed ideas stay out of the cards; the goal is a story sentence');
+    const g = groundRules(true);
+    assert(g.includes('build it with them right away') && g.includes('Planning ahead is not the current scene'), 'her talks: build first, plan forward (Miinthe, 2026-11-04)');
     assert(!talkPitchPrompt(TALK, {}, { ask: false }).system.includes('{"open": [question'), 'the write-up asks for cards only');
     assertEqual(parseTalkPitches('{"items": [{"type": "pitch", "text": "the cubes vanish."}]}').list[0].text, 'The cubes vanish.');
 });

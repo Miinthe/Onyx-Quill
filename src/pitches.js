@@ -160,8 +160,9 @@ export async function pitchFromTalk(talkId, { ask = true } = {}) {
     const { system, user } = talkPitchPrompt(t, { persona: c.persona, character: c.character, user: c.user, names: c.names, board: c.board, castNames: names, donts: c.donts, guides: c.guides, replies: c.replies, already }, { ask });
     busy = 'talk'; changed();
     try {
-        const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, maxTokens: Math.max(Number(conn.maxTokens) || 0, 1500) });
-        const { list, why, asks } = parseTalkPitches(r?.text, names, t.title);
+        const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, maxTokens: Math.max(Number(conn.maxTokens) || 0, 4000) });   // room for thinking + the cards (2026-11-04)
+        const { list, why, asks: allAsks } = parseTalkPitches(r?.text, names, t.title);
+        const asks = allAsks.slice(0, 1);   // one question at most (Miinthe, 2026-11-04: build first, don't interrogate)
         // something important still open: Mero asks first, as question cards (Miinthe 2026-11-02: "multi selection to wrap up the plan")
         if (asks.length && ask) {
             noteTalkPitches(talkId, { text: `Before I write it up — ${asks.length === 1 ? 'one thing is' : `${asks.length} things are`} still open:`, asks });

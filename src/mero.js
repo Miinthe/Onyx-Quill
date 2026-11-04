@@ -13,7 +13,9 @@ import { getContext, extension_settings, saveMetadataDebounced } from '../../../
 import { resolveConnectionConfig, getSettings } from '../settings.js';
 import { callAI } from './ai/ai.js';
 import { meroNames } from './mero-names-pure.js';
-import { vaultIndex } from './state.js';
+import { vaultIndex, fieldDefinitions } from './state.js';
+import { applyFolderFilter, applyContextualGating, buildExemptionPolicy } from './stages.js';
+import { DEFAULT_FIELD_DEFINITIONS } from './fields.js';
 import { currentCharacter, effectiveFolderFilter } from './characters.js';
 import { runOf } from './characters-pure.js';
 import { BOARD_KEY } from './storyboard-pure.js';
@@ -29,7 +31,8 @@ import {
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
     askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
-import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep, passingError } from './mero-tools-pure.js';
+import { TOOL_DEFS, WEB_DEFS, WEB_TOOLS, MAX_TOOL_ROUNDS, MAX_LOOKUPS, argsOf, toolLabel, runTool, keptStep, passingError, handedLore } from './mero-tools-pure.js';
+import { testPrimaryMatchOnly, clearScanTextCache } from '../core/matching.js';
 import { webReady, runWebTool } from './mero-web.js';   // 🌐 (2026-11-03)
 import { callWithTools, toolsPossible } from './ai/tool-call.js';
 import { askAnswerText, answerAsks } from './ask-pure.js';
@@ -269,7 +272,9 @@ function mentionables() {
         }
     } catch { /* no board */ }
     try { for (const w of worldSink?.items?.() || []) out.push({ tag: w.tag, group: w.tagGroup || 'World', label: w.label, text: () => w.text }); } catch { /* no world */ }
-    for (const e of (vaultIndex || []).filter(x => !x.guide && x.title).slice(0, 600)) out.push({ tag: `lore-${slug(e.title)}`, group: 'Lore', label: e.title, text: () => String(e.content || e.summary || '').slice(0, 2000) });
+    // only the lore this story reads (Miinthe, 2026-11-04: Mero is limited to the character's folders) — the board's first
+    let pick = []; try { const { entries, prefer } = meroLore(), b = new Set(prefer.titles); pick = [...entries.filter(x => b.has(x.title)), ...entries.filter(x => !b.has(x.title))]; } catch { /* no vault */ }
+    for (const e of pick.filter(x => x.title).slice(0, 600)) out.push({ tag: `lore-${slug(e.title)}`, group: 'Lore', label: e.title, text: () => String(e.content || e.summary || '').slice(0, 2000) });
     return out;
 }
 export const mentionList = () => mentionables().map(({ tag, label, group }) => ({ tag, label, group }));
@@ -301,7 +306,7 @@ export function pickContext() {
             const mes = el.closest?.('#chat .mes[mesid]');
             if (mes) { const n = Number(mes.getAttribute('mesid')), m = getContext()?.chat?.[n]; return m ? { label: `#${n} ${m.name}: ${String(m.mes).replace(/\s+/g, ' ').slice(0, 60)}`, text: `#${n} ${m.name}: ${splitOoc(m.mes).clean.slice(0, 2500)}` } : null; }
             const lore = el.closest?.('#deeplore-panel [data-title][role="listitem"]');
-            if (lore) { const e = (vaultIndex || []).find(x => x.title === lore.dataset.title); return e ? { label: `Lore: ${e.title}`, text: String(e.content || e.summary || '').slice(0, 2000) } : null; }
+            if (lore) { const e = meroLore().entries.find(x => x.title === lore.dataset.title); return e ? { label: `Lore: ${e.title}`, text: String(e.content || e.summary || '').slice(0, 2000) } : null; }
             try { return worldSink?.pick?.(el) || null; } catch { return null; }
         };
         const finish = v => {
@@ -342,6 +347,48 @@ export const meroWorking = () => Object.fromEntries([...working].map(([id, steps
 const noTools = new Set();   // profiles that refused tools this session: Mero answers the old way there
 const low = s => String(s ?? '').toLowerCase().trim();
 
+/** Every entry title linked anywhere on a board (steps, detours, items, places…). */
+function boardTitles(board) {
+    const out = new Set();
+    const walk = (v, depth) => {
+        if (depth > 6 || !v || typeof v !== 'object') return;
+        if (Array.isArray(v)) { v.forEach(x => walk(x, depth + 1)); return; }
+        for (const [k, x] of Object.entries(v)) {
+            if (k === 'entries' && Array.isArray(x)) x.forEach(t => { if (typeof t === 'string' && t.trim()) out.add(t); });
+            else walk(x, depth + 1);
+        }
+    };
+    walk(board?.trackers, 0);
+    return out;
+}
+
+/**
+ * The lore Mero may read (Miinthe, 2026-11-04: Mero is "limited to the folders attached to the character … however the board
+ * does have priority"; "looking it up would work similar like just vanilla deeplore"): the vault without the guides,
+ * through DeepLore's own filters — the chat's folders (character + run + chat) and the field gating (run letter, era…),
+ * exactly as the writer's lore is picked. The open board's linked entries are never gated away (she plans ahead: a later
+ * step's entry must stay readable) but must still be in those folders. `prefer` ranks the board first in her searches.
+ */
+export function meroLore() {
+    const all = (vaultIndex || []).filter(e => e && !e.guide);
+    let folders = null; try { folders = effectiveFolderFilter(); } catch { /* no character: the chat's own folders or none */ }
+    let L = null; try { L = live(); } catch { /* no board */ }
+    const titles = boardTitles(L?.board);
+    const prefer = { titles: [...titles], folders: Array.isArray(L?.board?.folders) ? L.board.folders : [] };
+    const settings = getSettings();
+    const policy = buildExemptionPolicy(all, chat_metadata?.deeplore_pins || [], chat_metadata?.deeplore_blocks || [], false);
+    const inFolders = folders && folders.length ? applyFolderFilter(all, folders, policy, false) : all;
+    let entries = inFolders;
+    const ctx = chat_metadata?.deeplore_context;
+    if (ctx && typeof ctx === 'object' && Object.keys(ctx).length) {
+        try {
+            const kept = new Set(applyContextualGating(inFolders, ctx, policy, false, settings, fieldDefinitions.length ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS));
+            entries = inFolders.filter(e => kept.has(e) || titles.has(e.title));
+        } catch (err) { console.warn('[DLE] Mero lore: gating skipped:', err?.message || err); }
+    }
+    return { entries, prefer };
+}
+
 /** Everything the lookups read — gathered once per answer, only when she looks something up. */
 function lookupData() {
     const chat = getContext()?.chat || [];
@@ -349,13 +396,14 @@ function lookupData() {
     let cast = [];
     try { cast = mentionables().filter(m => m.group === 'Cast'); } catch { /* none */ }
     const nameOf = m => m.label.replace(/\s*\((?:in the scene|the main character)\)$/, '');
+    const lore = meroLore();
     return {
-        entries: vaultIndex || [],
+        entries: lore.entries, prefer: lore.prefer,
         chat: chat.map((m, i) => ({ m, i })).filter(({ m }) => m && !m.is_system && typeof m.mes === 'string').map(({ m, i }) => ({ i, name: m.is_user ? (name1 || 'User') : m.name, text: splitOoc(m.mes).clean })),
         board: L?.board || null, state: L?.state || null,
         // every tracker as the writer sees it (meters, collections, places, state…), for open_tracker on those (2026-11-03)
         boardLines: (() => { try { return writerBlock(readActiveTrackers(), liveWriterLines()).split('\n').filter(Boolean); } catch { return []; } })(),
-        entryText: title => String((vaultIndex || []).find(e => e.title === title)?.content || ''),
+        entryText: title => String(lore.entries.find(e => e.title === title)?.content || ''),
         castNames: cast.map(nameOf),
         castText: name => { const q = low(name); const hit = cast.find(m => low(nameOf(m)) === q) || cast.find(m => low(nameOf(m)).includes(q) || q.includes(low(nameOf(m)).split(/\s+/)[0])); return hit ? hit.text() : ''; },
     };
@@ -391,6 +439,38 @@ async function answerWithLookups(system, messages, conn, steps, onStep, { web = 
     return { text: '' };
 }
 
+/** Whether Mero's connection can look things up (a profile that takes tools, and hasn't refused them this session). */
+export function meroCanLookUp() {
+    const conn = resolveConnectionConfig('mero');
+    return !!conn.profileId && conn.mode === 'profile' && !getSettings().aiForceUserRole && !noTools.has(conn.profileId) && toolsPossible(conn.profileId);
+}
+
+/**
+ * The board window's Mero (board-window.js, the talk job) looks things up like in her talks — the same lore (only what
+ * this story reads, the board first), the board, the chat, the Cast. Miinthe, 2026-11-04: Find gaps made up a poisoner for
+ * A Stolen Eternity, because she had only the board's names. `build(lookups)` → { system, user }: the prompt says what
+ * she can do. Falls back to one plain call when the connection can't look things up. Returns { text, steps }.
+ */
+export async function boardMeroAnswer(build) {
+    // room for thinking + lookups + the JSON answer (her 1500 cut the answer off mid-sentence, 2026-11-04); a model only
+    // bills what it writes, so a higher ceiling costs nothing extra
+    const base = resolveConnectionConfig('mero'), conn = { ...base, maxTokens: Math.max(Number(base.maxTokens) || 0, 4000) };
+    const steps = [];
+    if (meroCanLookUp()) {
+        const { system, user } = build(true);
+        try {
+            const r = await answerWithLookups(system, [{ role: 'user', content: user }], conn, steps, () => {}, { web: false });
+            if (String(r.text || '').trim()) return { text: r.text, steps: steps.map(x => keptStep(x.label, x.got)) };
+        } catch (err) {
+            console.warn('[DLE] Mero on the board: lookups failed, answering without them:', err?.message || err);
+            if (!passingError(err)) noTools.add(conn.profileId);   // can't take tools: the old way for this session
+        }
+    }
+    const { system, user } = build(false);
+    const r = await callAI(system, user, { ...conn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
+    return { text: r?.text ?? '', steps: [] };
+}
+
 /**
  * Mero answers the talk as it is in `history` (the messages before her answer). `said` = Miinthe's message she answers
  * (for the board lookups and "she asked for a pitch"). opener: Mero speaks first — `said` is only her cue.
@@ -404,7 +484,10 @@ async function answerFor(t, history, said, { opener = false } = {}) {
     busyOn(t.id); changed();
     try { return await answerInner(t, history, said, { opener }, conn); } finally { busyOff(t.id); changed(); }
 }
-async function answerInner(t, history, said, { opener }, conn) {
+async function answerInner(t, history, said, { opener }, conn0) {
+    // room for thinking + lookups + her answer: with DeepSeek her 1500 sometimes came back EMPTY ("…") — 2026-11-04. A ceiling, not
+    // a length: how long she talks is her chattiness setting; only what is written is billed. A vault review keeps its own length.
+    const conn = { ...conn0, maxTokens: Math.max(Number(conn0.maxTokens) || 0, 4000) };
     // her summary of the board, written now if the board changed since (quiet, one call; mero-map.js)
     // — at most 20 seconds: a slow call must not hold her answer up; it finishes in the background for the next one
     try { const n = live()?.board?.name; if (n) await Promise.race([refreshMeroMap(n).catch(() => null), new Promise(r => setTimeout(r, 20000))]); } catch { /* names only this time */ }
@@ -419,21 +502,31 @@ async function answerInner(t, history, said, { opener }, conn) {
     if (!messages.length || messages[messages.length - 1].role !== 'user') throw new Error('Nothing for Mero to answer here.');
     // looked up on the board (Miinthe 2026-10-26): the trackers her message names, their details for THIS message only —
     // never stored in the talk, so later messages don't carry them again
-    let lookedUp = [];
+    let lookedUp = [], handed = { text: '', titles: [] };
     if (!opener) {
         try {
             const L = live();
-            if (L) lookedUp = namedTrackers(said, L.board).map(id => trackerDetails(L.board, id, L.state, title => String((vaultIndex || []).find(e => e.title === title)?.content || ''))).filter(Boolean);
+            if (L) { const mine = meroLore().entries; lookedUp = namedTrackers(said, L.board).map(id => trackerDetails(L.board, id, L.state, title => String(mine.find(e => e.title === title)?.content || ''))).filter(Boolean); }
         } catch { /* no board */ }
+        // the entries her words name, by DeepLore's own key matching (Miinthe, 2026-11-04) — handed along, no AI call
+        if (!vault && said) {
+            try {
+                const { entries: mine, prefer } = meroLore(), sent = new Set(pkg.entries.map(e => e.title)), st = getSettings();
+                const hits = mine.filter(e => !e.constant && !sent.has(e.title) && Array.isArray(e.keys) && e.keys.length && testPrimaryMatchOnly(e, String(said), st));
+                handed = handedLore(hits, prefer);
+            } catch (err) { console.warn('[DLE] Mero: handing the named entries failed:', err?.message || err); }
+            finally { try { clearScanTextCache(); } catch { /* noop */ } }
+        }
         const last = messages[messages.length - 1];
-        if (lookedUp.length && last?.role === 'user') messages[messages.length - 1] = { ...last, content: `${last.content}\n\n[Looked up on the board]\n${lookedUp.join('\n\n')}` };
+        const extra = [lookedUp.length ? `[Looked up on the board]\n${lookedUp.join('\n\n')}` : '', handed.titles.length ? `[Entries your message names — handed to you]\n${handed.text}` : ''].filter(Boolean).join('\n\n');
+        if (extra && last?.role === 'user') messages[messages.length - 1] = { ...last, content: `${last.content}\n\n${extra}` };
     }
     const steps = [];
     working.set(t.id, steps);
     lastTold.set(t.id, { model: conn.profileId, sections: [
         ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
-        ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
-        ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 Your whole vault (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries Onyx Quill sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
+        ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ...(handed.titles.length ? [['📖 Entries your message names', handed.titles.join(' · ')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
+        ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 The lore this story reads (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries Onyx Quill sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
         ['🔎 Her lookups', lookups ? `She can look things up (lore, board, chat, Cast${web ? ', the web' : ''}) — what she looked up shows above her answer.` : 'Not with this connection — she sees only what is listed here.'],
     ] });
@@ -467,7 +560,7 @@ async function answerInner(t, history, said, { opener }, conn) {
         // her AI can't look things up: the reply's header says so instead of staying empty
         if (!vault && !lookSkip && (nolook || noTools.has(conn.profileId) || (conn.mode === 'profile' && !toolsPossible(conn.profileId)))) nolook = true;
         if (lookSkip) nolook = false;
-        const version = { t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(steps.length ? { steps: steps.map(x => keptStep(x.label, x.got)) } : {}), ...(nolook && !steps.length ? { nolook: true } : {}), ...(lookSkip && !steps.length ? { lookskip: true } : {}), ...(a.asks.length ? { asks: a.asks } : {}) };
+        const version = { t: a.text || '…', at: new Date().toISOString(), ...(a.cards.length ? { cards: a.cards } : {}), ...(steps.length || handed.titles.length ? { steps: [...(handed.titles.length ? [keptStep(`📖 Handed to her: ${handed.titles.length} entr${handed.titles.length > 1 ? 'ies' : 'y'} your message names`, handed.titles.slice(0, 4).join(' · '))] : []), ...steps.map(x => keptStep(x.label, x.got))].slice(0, MAX_LOOKUPS + 1) } : {}), ...(nolook && !steps.length ? { nolook: true } : {}), ...(lookSkip && !steps.length ? { lookskip: true } : {}), ...(a.asks.length ? { asks: a.asks } : {}) };
         return { version, kind: a.kind, title: a.title, pitchAsked };
     } finally { working.delete(t.id); changed(); }
 }
@@ -714,7 +807,8 @@ export async function talkAboutMoments(keys) {
 }
 
 /** What a vault review shows her: every entry the writer may see (guides never — they are not story lore). */
-export const reviewEntries = () => (vaultIndex || []).filter(e => !e.guide);
+/** A vault review reads what this story may read — not the whole vault (Miinthe, 2026-11-04). */
+export const reviewEntries = () => meroLore().entries;
 
 /**
  * 📚 Review the vault (/oq-review, ⋯ → Review the vault with Mero): a new talk where the whole vault is in front of

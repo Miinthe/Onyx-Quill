@@ -36,8 +36,8 @@ import { chatStatus } from './characters.js';
 import { foldersByType, entryMarks } from './new-entry-pure.js';
 import { ENTRY_TYPES } from './board-entry-pure.js';
 import { callAI } from './ai/ai.js';
-import { meroSettings, meroWhere, meroConnectionName } from './mero.js';
-import { BOARD_MERO_TASKS, buildBoardMeroPrompt, parseBoardMero, meroBoardBlock } from './board-mero-pure.js';
+import { meroSettings, meroWhere, meroConnectionName, boardMeroAnswer, meroLore } from './mero.js';
+import { BOARD_MERO_TASKS, buildBoardMeroPrompt, parseBoardMero, meroBoardBlock, boardHandover } from './board-mero-pure.js';
 import { STARTER_TEMPLATES } from './board-templates-pure.js';
 import { persistGaps } from './lore-gaps.js';
 import { meroNames } from './mero-names-pure.js';
@@ -230,9 +230,31 @@ async function meroAsk(task, input) {
         inp.entries = (Array.isArray(inp.linked) ? inp.linked : []).slice(0, 4).map(t => (vaultIndex || []).find(e => e.title === t)).filter(Boolean).map(e => ({ title: e.title, text: e.content || e.summary || '' }));
     }
     const st = meroSettings();
-    const { system, user } = buildBoardMeroPrompt(task, inp, { persona: st.persona, character: meroWhere().character, names: meroNames(st) });
+    const me = { persona: st.persona, character: meroWhere().character, names: meroNames(st) };
     meroAsking = true;
     try {
+        // her talk on the board looks things up like her talks do (Miinthe, 2026-11-04) — the lookups show above her answer
+        if (task === 'talk') {
+            // what she is pointed at comes along up front, no AI call (only entries this story may read)
+            const lore = meroLore(), mine = new Map(); for (const e of lore.entries) if (!mine.has(e.title)) mine.set(e.title, e);
+            const quickKey = typeof inp.quick === 'string' ? inp.quick : null;
+            // for Find gaps: this story's entries no tile links — the board's folders first (no AI call)
+            let unlinked = [];
+            if (quickKey === 'gaps') {
+                const linked = new Set((inp.brief?.trackers || []).flatMap(t => [...(t.steps || []), ...(t.tiles || [])].flatMap(s => s.entries || [])));
+                const dirs = (inp.brief?.folders || []).map(f => String(f).replace(/\/+$/, '')).filter(Boolean);
+                const inBoard = e => dirs.some(d => e.folderPath === d || String(e.folderPath || '').startsWith(d + '/'));
+                const loose = [...mine.values()].filter(e => !linked.has(e.title) && !e.constant);
+                unlinked = dirs.length ? loose.filter(inBoard) : loose;
+            }
+            const h = boardHandover(inp.brief, inp.message || '', quickKey, t => mine.get(t) || null, 9000, unlinked);
+            const a = await boardMeroAnswer(lookups => buildBoardMeroPrompt(task, { ...inp, lookups, handover: h.text }, me));
+            const out = parseBoardMero(task, a.text, { ...inp, known: [...mine.keys()] });   // a link names an entry that exists
+            const handed = [...(h.n ? [{ label: `📖 Handed to her: ${h.n} entr${h.n > 1 ? 'ies' : 'y'}${h.full ? '' : ' (their summaries)'}` }] : []), ...(h.loose ? [{ label: `📖 Handed to her: ${h.loose} entr${h.loose > 1 ? 'ies' : 'y'} no tile links yet` }] : [])];
+            const steps = [...handed, ...a.steps];
+            return out.ok && steps.length ? { ...out, steps } : out;
+        }
+        const { system, user } = buildBoardMeroPrompt(task, inp, me);
         const r = await callAI(system, user, { ...resolveConnectionConfig('mero'), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
         return parseBoardMero(task, r?.text ?? '', inp);
     } catch (err) {
