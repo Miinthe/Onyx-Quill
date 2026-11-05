@@ -30,7 +30,7 @@
 
     <!-- Token budget bar -->
     <div class="dle-token-bar-container" role="progressbar" aria-valuenow="0" aria-valuemax="1" aria-valuemin="0"
-         aria-label="Lore Budget — how many tokens Onyx Quill used for lore injection vs your configured budget limit">
+         aria-label="Lore tokens used / budget">
         <div class="dle-token-bar" style="width: 0%;"></div>
         <span class="dle-token-bar-label" data-i18n="dle_token_bar_waiting">Lore | waiting…</span>
     </div>
@@ -39,7 +39,7 @@
 
     <!-- Max entries bar -->
     <div class="dle-entries-bar-container" role="progressbar" aria-valuenow="0" aria-valuemax="1" aria-valuemin="0"
-         aria-label="Entry count — how many entries were injected vs your configured max entries limit">
+         aria-label="Entries sent / max">
         <div class="dle-entries-bar" style="width: 0%;"></div>
         <span class="dle-entries-bar-label" data-i18n="dle_entries_bar_waiting">Entries | waiting…</span>
     </div>
@@ -64,7 +64,7 @@
             <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
             <span class="dle-action-label" data-i18n="dle_common_refresh">Refresh</span>
         </button>
-        <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="scribe" title="Run Session Scribe — AI summarizes the conversation and saves notes to Obsidian" aria-label="Run Session Scribe" data-i18n="[title]dle_scribe_action_tooltip">
+        <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="scribe" title="Session Scribe: summarize the chat into Obsidian" aria-label="Run Session Scribe" data-i18n="[title]dle_scribe_action_tooltip">
             <i class="fa-solid fa-feather-pointed" aria-hidden="true"></i>
         </button>
         <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="newlore" title="Create new lore entry" aria-label="Create new lore entry" data-i18n="[title]dle_newlore_tooltip;[aria-label]dle_newlore_tooltip">
@@ -73,7 +73,7 @@
         <button type="button" class="menu_button menu_button_icon dle-action-btn" data-action="graph" title="Open relationship graph" aria-label="Open relationship graph" data-i18n="[title]dle_graph_tooltip;[aria-label]dle_graph_tooltip">
             <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
         </button>
-        <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="clear-picks" title="Reroll lore picks — clears AI search cache so next generation re-selects from scratch" aria-label="Reroll lore picks (clear AI search cache)" data-i18n="[title]dle_reroll_tooltip">
+        <button type="button" class="menu_button menu_button_icon dle-action-btn dle-action-btn-labeled" data-action="clear-picks" title="Pick lore fresh on the next reply" aria-label="Reroll lore picks (clear AI search cache)" data-i18n="[title]dle_reroll_tooltip">
             <i class="fa-solid fa-shuffle" aria-hidden="true"></i>
             <span class="dle-action-label" data-i18n="dle_reroll_button">Reroll Lore</span>
         </button>
@@ -102,7 +102,7 @@
     <!-- Tab bar -->
     <div class="dle-tab-bar" role="tablist" aria-label="Onyx Quill panels" aria-orientation="horizontal">
         <button type="button" class="dle-tab active" id="dle-tab-injection" data-tab="injection" role="tab"
-                aria-selected="true" aria-controls="dle-panel-injection" aria-label="Injection — see which lore was included in the last message and why" tabindex="0">
+                aria-selected="true" aria-controls="dle-panel-injection" aria-label="Which lore went into the last reply, and why" tabindex="0">
             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
             <span class="dle-tab-text" data-i18n="dle_tab_injection">Injection</span>
             <span class="dle-tab-badge" data-badge="injection" aria-hidden="true"></span>
@@ -197,7 +197,7 @@
                     <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="setup" title="Guided setup wizard" data-i18n="[title]dle_drawer_tool_setup_wizard_tooltip">
                         <i class="fa-solid fa-hat-wizard" aria-hidden="true"></i> <span data-i18n="dle_empty_cta_setup">Open Setup Wizard</span>
                     </button>
-                    <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="import-wi" title="Import World Info (lorebook) entries from SillyTavern to Obsidian" data-i18n="[title]dle_import_wi_tooltip">
+                    <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="import-wi" title="Import a SillyTavern lorebook into Obsidian" data-i18n="[title]dle_import_wi_tooltip">
                         <i class="fa-solid fa-file-import" aria-hidden="true"></i> <span data-i18n="dle_empty_cta_import">Import from World Info</span>
                     </button>
                 </div>
@@ -219,7 +219,7 @@
          role="tabpanel" aria-labelledby="dle-tab-browse">
         <div class="dle-panel-toolbar">
             <input type="text" class="text_pole dle-browse-input" placeholder="Search entries... (/)" aria-label="Search vault entries" data-i18n="[aria-label]dle_browse_search_aria">
-            <button type="button" class="menu_button menu_button_icon dle-browse-search-help" title="Search syntax: plain text matches title/keys/content. Prefixed: tag:wizard, folder:Locations, key:apple, summary:&quot;old gods&quot;, field:era=medieval. Combine multiple prefixes with spaces." aria-label="Browse search syntax help" data-i18n="[title]dle_browse_search_syntax_tooltip;[aria-label]dle_browse_search_syntax_aria">
+            <button type="button" class="menu_button menu_button_icon dle-browse-search-help" title="Text, or tag:wizard folder:Locations key:apple summary:&quot;old gods&quot; field:era=medieval" aria-label="Browse search syntax help" data-i18n="[title]dle_browse_search_syntax_tooltip;[aria-label]dle_browse_search_syntax_aria">
                 <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
             </button>
             <goo-spinner class="dle-browse-refresh-spinner" size="28" color="currentColor" aria-hidden="true" title="Refreshing vault index..." data-i18n="[title]dle_browse_refreshing_spinner_tooltip"></goo-spinner>
@@ -327,7 +327,7 @@
                     <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="setup" title="Guided setup wizard" data-i18n="[title]dle_drawer_tool_setup_wizard_tooltip">
                         <i class="fa-solid fa-hat-wizard" aria-hidden="true"></i> <span data-i18n="dle_empty_cta_setup">Open Setup Wizard</span>
                     </button>
-                    <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="import-wi" title="Import World Info (lorebook) entries from SillyTavern to Obsidian" data-i18n="[title]dle_import_wi_tooltip">
+                    <button type="button" class="menu_button dle-empty-cta-btn" data-empty-action="import-wi" title="Import a SillyTavern lorebook into Obsidian" data-i18n="[title]dle_import_wi_tooltip">
                         <i class="fa-solid fa-file-import" aria-hidden="true"></i> <span data-i18n="dle_empty_cta_import">Import from World Info</span>
                     </button>
                 </div>
@@ -398,8 +398,8 @@
          role="tabpanel" aria-labelledby="dle-tab-story">
         <div class="dle-panel-toolbar">
             <span class="dle-text-sm">Story</span>
-            <button type="button" class="menu_button dle-autotrack-toggle" title="When on, trackers move by themselves when the story plainly says so — with the quote and an Undo" aria-label="Trackers follow the story"></button>
-            <button type="button" class="menu_button menu_button_icon dle-reevaluate" title="Re-evaluate and swipe (WIP — its real home is the Onyx Quill bar): undo what the newest turn changed on the board, ask the helper and the judge again, write a new swipe" aria-label="Re-evaluate and swipe">
+            <button type="button" class="menu_button dle-autotrack-toggle" title="Trackers move when the story clearly says so, with Undo" aria-label="Trackers follow the story"></button>
+            <button type="button" class="menu_button menu_button_icon dle-reevaluate" title="Re-evaluate (WIP): undo the last turn’s board changes, ask again, new swipe" aria-label="Re-evaluate and swipe">
                 <i class="fa-solid fa-rotate-right" aria-hidden="true"></i><span class="dle-wip">WIP</span>
             </button>
             <button type="button" class="menu_button menu_button_icon dle-board-open" title="Open the storyboard" aria-label="Open the storyboard">
@@ -410,7 +410,7 @@
             </button>
         </div>
         <div class="dle-story-list" aria-label="Story trackers"></div>
-        <div class="dle-story-hint dle-text-xs dle-muted">Trackers follow where the story stands — a relationship, a plot. They move by themselves when the story plainly says so (with the line that did it, and Undo), or by hand with ◀ ▶. The current step is told to the writer and to the lore judge. They never hide or filter anything.</div>
+        <div class="dle-story-hint dle-text-xs dle-muted">Trackers follow where the story stands — a relationship, a plot. They move when the story says so (with Undo) or by hand with ◀ ▶.</div>
     </div>
 
     <!-- ─── Tab: Tools ─── -->
@@ -468,7 +468,7 @@
         <div class="dle-tools-group">
             <h3 class="dle-tools-group-label" data-i18n="dle_drawer_tools_vault_ops_heading">Vault Ops</h3>
             <div class="dle-tools-grid">
-                <button type="button" class="menu_button dle-tool-btn" data-action="import-wi" title="Import World Info (lorebook) entries from SillyTavern to Obsidian" data-i18n="[title]dle_import_wi_tooltip">
+                <button type="button" class="menu_button dle-tool-btn" data-action="import-wi" title="Import a SillyTavern lorebook into Obsidian" data-i18n="[title]dle_import_wi_tooltip">
                     <i class="fa-solid fa-file-import" aria-hidden="true"></i> <span data-i18n="dle_import_wi_button">Import World Info</span>
                 </button>
                 <button type="button" class="menu_button dle-tool-btn" data-action="graph" title="Visualize entry relationships" data-i18n="[title]dle_graph_tool_tooltip">
@@ -549,15 +549,15 @@
                 </button>
             </div>
         </div>
-        <div class="dle-ai-stats" aria-label="AI search session statistics — cumulative for this browser session, not per-chat" data-i18n="[aria-label]dle_drawer_ai_stats_aria">
+        <div class="dle-ai-stats" aria-label="AI search since the page loaded" data-i18n="[aria-label]dle_drawer_ai_stats_aria">
             <!-- D5 (v2.5 Wave 3): visible scope marker. These figures are session-cumulative
                  across ALL chats (reset on reload), NOT this chat — without the label they read
                  as "this chat" next to the per-chat health icons. Plain English literal (matches
                  the dynamically-rendered stat text, which is also non-i18n), so it adds no
                  all-locale parity churn. See docs/gotchas.md #75. -->
-            <span class="dle-ai-stats-scope" title="Session totals — cumulative across all chats this browser session (reset on reload), not the current chat">Session</span>
-            <span class="dle-ai-stat" data-ai-stat="calls" title="AI search calls made this browser session — resets when you reload" data-i18n="[title]dle_drawer_ai_stat_calls_tooltip">0 calls</span>
-            <span class="dle-ai-stat" data-ai-stat="cached" title="Times AI search reused previous results instead of calling the API" data-i18n="[title]dle_drawer_ai_stat_cached_tooltip">0 cached</span>
+            <span class="dle-ai-stats-scope" title="Totals since the page loaded, all chats">Session</span>
+            <span class="dle-ai-stat" data-ai-stat="calls" title="AI search calls since the page loaded" data-i18n="[title]dle_drawer_ai_stat_calls_tooltip">0 calls</span>
+            <span class="dle-ai-stat" data-ai-stat="cached" title="Times a cached result saved a call" data-i18n="[title]dle_drawer_ai_stat_cached_tooltip">0 cached</span>
             <span class="dle-ai-stat" data-ai-stat="tokens" title="Total tokens used by AI search this session" data-i18n="[title]dle_drawer_ai_stat_tokens_tooltip">0 tokens</span>
         </div>
     </div>

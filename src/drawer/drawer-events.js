@@ -1587,7 +1587,7 @@ export function wireGatingTab($drawer) {
         const T = await import('../trackers.js');
         if (act === 'abandon') {
             const { callGenericPopup: pop, POPUP_TYPE: PT } = await import('../../../../../popup.js');
-            const ok = await pop(`<h3>Abandon ${escapeHtml(name)}?</h3><p>In this chat only: it goes back to the start and is switched off — not watched, not told, its lore hidden. Lines waiting on it wait again. Reactivate starts it over; Undo puts it back as it is now.</p>`, PT.CONFIRM, '', { okButton: 'Abandon', cancelButton: 'Cancel' });
+            const ok = await pop(`<h3>Abandon ${escapeHtml(name)}?</h3><p>In this chat only: back to the start and switched off. Reactivate starts it over; Undo restores it.</p>`, PT.CONFIRM, '', { okButton: 'Abandon', cancelButton: 'Cancel' });
             if (!ok) return;
         }
         const r = T.setTrackerRun(name, act);

@@ -53,7 +53,7 @@ export function renderCastTab() {
     const L = live();
     const casts = L ? runningCasts(L.board, L.state).filter(c => (c.people || []).length) : [];
     if (!L || !casts.length) {
-        el.innerHTML = `<p class="dle-text-sm dle-cast-empty">No cast here yet. Open the board (Story tab → the board button), then <b>Add ▸ 🎭 Cast</b> and <b>+ person</b> — the people you add show up here.</p>`;
+        el.innerHTML = `<p class="dle-text-sm dle-cast-empty">No cast yet. On the board: <b>Add ▸ 🎭 Cast</b>, then <b>+ person</b>.</p>`;
         return;
     }
     const q = getQueue(), run = queueRunning(), speaking = npcSpeaking();

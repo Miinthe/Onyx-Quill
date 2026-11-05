@@ -72,7 +72,7 @@ export const SECTIONS = [
             { id: 'v-never', label: 'Never-send tag', type: 'text', key: 'neverInsertTag', more: true, fx: 'rebuild', old: 'Never insert tag' },
             { id: 'v-seed', label: 'Seed tag', tip: 'Sent quietly in the background while a chat is new', type: 'text', key: 'seedTag', more: true, fx: 'rebuild', old: 'Seed tag' },
             { id: 'v-boot', label: 'Starter tag', tip: 'Sent openly while a chat is new', type: 'text', key: 'bootstrapTag', more: true, fx: 'rebuild', old: 'Bootstrap tag' },
-            { id: 'v-guide', label: 'Notes-for-Mero tag', tip: 'Notes with this tag are for Mero ☆ only, not lore: she reads them in her talks and pitches (those in the chat’s folders); the writing AI never gets them. Not the board’s 🧭 guidance, which does go to the writer.', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
+            { id: 'v-guide', label: 'Notes-for-Mero tag', tip: 'Notes only Mero ☆ reads — the writer never gets them (unlike 🧭 guidance)', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
             { id: 'v-newchat', label: 'A chat counts as new for', unit: 'messages', type: 'num', key: 'newChatThreshold', more: true, old: 'New chat threshold' },
         ] },
         { t: 'Files', rows: [
@@ -81,9 +81,9 @@ export const SECTIONS = [
         ] },
         // Miinthe, 2026-10-27: deleting a run's last chat asks to clean the run up in Obsidian; this is where its files go
         { t: 'Cleaning up a run', rows: [
-            { id: 'v-rcmode', label: 'A cleaned-up run’s files', tip: 'When you delete the last chat of a run, Onyx Quill asks whether to clean the run up in Obsidian. Nothing goes without your yes.', type: 'seg', key: 'runCleanupMode', opts: [['trash', 'move to the trash folder'], ['delete', 'delete for good']], old: 'Delete instance / run files' },
-            { id: 'v-rctrash', label: 'Trash folder', hint: 'in your vault · Onyx Quill never reads it', tip: 'Each cleanup gets its own folder in here. Drag a file back out to undo; empty it in Obsidian.', type: 'text', key: 'runTrashFolder', fx: 'rebuild', old: 'Deleted runs folder' },
-            { id: 'v-rcnow', label: 'Clean up a run', tip: 'Any run your vault has stamps for — also ones whose chats were deleted earlier', type: 'btn', btn: 'Clean up a run…', act: 'cleanupRun', old: 'Delete an instance' },
+            { id: 'v-rcmode', label: 'A cleaned-up run’s files', tip: 'Deleting a run’s last chat offers to clean up its files. Always asks first.', type: 'seg', key: 'runCleanupMode', opts: [['trash', 'move to the trash folder'], ['delete', 'delete for good']], old: 'Delete instance / run files' },
+            { id: 'v-rctrash', label: 'Trash folder', hint: 'in your vault · Onyx Quill never reads it', tip: 'One folder per cleanup. Drag a file out to undo.', type: 'text', key: 'runTrashFolder', fx: 'rebuild', old: 'Deleted runs folder' },
+            { id: 'v-rcnow', label: 'Clean up a run', tip: 'Any run in your vault, even with its chats gone', type: 'btn', btn: 'Clean up a run…', act: 'cleanupRun', old: 'Delete an instance' },
         ] },
     ] },
     { id: 'filters', name: 'Filters', icon: 'filter', grp: 'Lore', custom: 'hub' },
@@ -96,8 +96,8 @@ export const SECTIONS = [
         { t: 'Keywords', rows: [
             { id: 's-depth', label: 'Messages to read', tip: 'How far back keywords are looked for', type: 'num', key: 'scanDepth', show: s => !aiOnly(s), old: 'Scan depth' },
             { id: 's-char', label: 'Match the active character', type: 'switch', key: 'characterContextScan', old: 'Auto-match active character / character context scan' },
-            { id: 's-fuzzy', label: 'Loose matching', tip: 'Also finds entries whose words are close to the chat, not only exact keywords', type: 'switch', key: 'fuzzySearchEnabled', fx: 'reindex', old: 'Fuzzy search / flexible matching' },
-            { id: 's-fuzzyn', label: 'How close', hint: 'low = more matches', tip: 'The lowest score that still counts (0.1 – 2). The preview shows sample entries, not your vault.', type: 'num', key: 'fuzzySearchMinScore', step: 0.1, show: s => !!s.fuzzySearchEnabled, preview: 'fuzzy', old: 'Match sensitivity / fuzzy min score' },
+            { id: 's-fuzzy', label: 'Loose matching', tip: 'Also matches near-misses, not just exact keywords', type: 'switch', key: 'fuzzySearchEnabled', fx: 'reindex', old: 'Fuzzy search / flexible matching' },
+            { id: 's-fuzzyn', label: 'How close', hint: 'low = more matches', tip: 'Lowest score that counts (0.1–2). The preview uses sample entries.', type: 'num', key: 'fuzzySearchMinScore', step: 0.1, show: s => !!s.fuzzySearchEnabled, preview: 'fuzzy', old: 'Match sensitivity / fuzzy min score' },
             { id: 's-case', label: 'Case sensitive', type: 'switch', key: 'caseSensitive', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Case sensitive' },
             { id: 's-whole', label: 'Whole words only', type: 'switch', key: 'matchWholeWords', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Match whole words' },
             { id: 's-chain', label: 'Entries can call other entries', hint: 'steps · 0 = off', tip: 'An entry’s text can match more entries, up to this many steps', type: 'num', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Recursive scan / chain matching / max recursion steps',
@@ -135,7 +135,7 @@ export const SECTIONS = [
             { id: 'b-toku', label: 'No limit on tokens', type: 'switch', key: 'unlimitedBudget', old: 'Unlimited token budget' },
         ] },
         { t: 'Variety', rows: [
-            { id: 'b-rep', label: 'Give others a turn', tip: 'An entry sent many times in a row steps back; one skipped a long time gets a boost', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
+            { id: 'b-rep', label: 'Give others a turn', tip: 'Overused entries step back; long-skipped ones get a boost', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
             { id: 'b-cool', label: 'Rest after sending', unit: 'replies', tip: 'An entry waits this many replies before it can be sent again', type: 'num', key: 'reinjectionCooldown', old: 'Repeat cooldown / reinjection cooldown' },
             // 'Skip what was just sent' removed (Miinthe, 2026-11-03): entries sent again are shown in 📖 Why as "Same as last turn"
             { id: 'b-boost', label: 'Bring one back after', unit: 'replies skipped', type: 'num', key: 'decayBoostThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Boost after N skips' },
@@ -144,7 +144,7 @@ export const SECTIONS = [
     ] },
     { id: 'inject', name: 'Where it goes', icon: 'ssend', grp: 'Lore', lead: 'Where Onyx Quill’s parts go in the prompt.', cards: [
         { t: 'How', rows: [
-            { id: 'i-mode', label: 'Place Onyx Quill’s parts', tip: '“In SillyTavern’s prompt list”: drag each part where you want it there; the positions below then step aside', type: 'seg', key: 'injectionMode', opts: [['extension', 'by these settings'], ['prompt_list', 'in the prompt list']], fx: 'injmode', old: 'Injection mode / prompt list / prompt manager' },
+            { id: 'i-mode', label: 'Place Onyx Quill’s parts', tip: 'In the prompt list, you drag each part into place; the positions below then don’t apply', type: 'seg', key: 'injectionMode', opts: [['extension', 'by these settings'], ['prompt_list', 'in the prompt list']], fx: 'injmode', old: 'Injection mode / prompt list / prompt manager' },
             { id: 'i-wi', label: 'Let World Info see Onyx Quill’s lore', type: 'switch', key: 'allowWIScan', old: 'Allow World Info scan' },
         ] },
         { t: 'Lore entries', rows: [
@@ -170,23 +170,23 @@ export const SECTIONS = [
     { id: 'mero', name: 'Mero', icon: 'mero', grp: 'AI', lead: 'Your co-writer: who she is and how she helps. Her AI is picked in AI & connections.', cards: [
         { t: 'Who she is', sum: 'who Mero is, in your words', rows: [
             { id: 'm-persona', label: 'In your words', type: 'btn', btn: 'Edit', act: 'meroPersona', old: 'Persona / who Mero is' },
-            { id: 'm-callme', label: 'She calls you', tip: 'The name Mero uses for you, also on your messages to her. Empty: no name — she just says you, and your messages say You', type: 'text', src: 'mero', key: 'callMe', old: 'Your name / what Mero calls me' },
+            { id: 'm-callme', label: 'She calls you', tip: 'What Mero calls you, also shown on your messages. Empty: no name', type: 'text', src: 'mero', key: 'callMe', old: 'Your name / what Mero calls me' },
         ] },
         { t: 'Her job', rows: [
             { id: 'm-job', label: 'How much she does', tip: 'Her lore upkeep: how often she checks the entries', type: 'seg', src: 'mero', key: 'job', opts: [['off', 'Off duty'], ['freelance', 'Freelancer'], ['part', 'Part-timer'], ['full', 'Full-timer']], old: 'Mero’s job' },
-            { id: 'm-sign', label: 'Needs my sign-off', tip: 'On: nothing is written without your yes. Off: she writes changes herself, each with an Undo.', type: 'switch', src: 'mero', key: 'signoff', old: 'Sign-off / approval' },
-            { id: 'm-web', label: 'Searches the web', tip: 'When she needs a real-world fact. Uses the search service set up in SillyTavern’s Web Search extension. Your lore always wins over the web.', type: 'switch', src: 'mero', key: 'web', old: 'Web search / browser' },
+            { id: 'm-sign', label: 'Needs my sign-off', tip: 'On: she asks first. Off: she writes, with Undo.', type: 'switch', src: 'mero', key: 'signoff', old: 'Sign-off / approval' },
+            { id: 'm-web', label: 'Searches the web', tip: 'For real-world facts, via SillyTavern’s Web Search extension. Your lore wins.', type: 'switch', src: 'mero', key: 'web', old: 'Web search / browser' },
         ] },
         { t: 'How she talks', rows: [
             { id: 'm-chat', label: 'Chattiness', type: 'seg', src: 'mero', key: 'chatty', opts: [['quiet', 'Quiet'], ['chatty', 'Chatty'], ['very', 'Very chatty'], ['custom', 'Custom']], old: 'Chatty / yapper' },
             { id: 'm-talks', label: 'Custom: how much she talks', type: 'seg', src: 'mero', key: 'talk', opts: [['little', 'a little'], ['some', 'some'], ['lots', 'a lot']], show: s => s.chatty === 'custom', old: 'Custom: talks' },
             { id: 'm-brings', label: 'Custom: brings things up herself', type: 'switch', src: 'mero', key: 'bringUp', show: s => s.chatty === 'custom', old: 'Custom: brings up' },
-            { id: 'm-glow', label: 'Custom: the glow', tip: 'Her 💬 lights up after a big moment on the board — an invitation to talk about it. Costs nothing until you click it.', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], show: s => s.chatty === 'custom', old: 'Custom: the glow' },
+            { id: 'm-glow', label: 'Custom: the glow', tip: 'Her 💬 lights up after a big board moment. Free until clicked.', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], show: s => s.chatty === 'custom', old: 'Custom: the glow' },
             { id: 'm-reads', label: 'She reads the latest', unit: 'replies', type: 'num', src: 'mero', key: 'replies', min: 2, max: 40, old: 'How many replies Mero reads' },
-            { id: 'm-resetall', label: 'Her settings', tip: 'Chattiness, initiative, replies, job, sign-off and web search back to how they shipped. Who she is stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', old: 'Reset her settings' },
+            { id: 'm-resetall', label: 'Her settings', tip: 'Everything above back to default; who she is stays', type: 'btn', btn: 'Reset', act: 'meroResetSettings', old: 'Reset her settings' },
         ] },
         { t: 'What the story writer is told', sum: 'Mero passes this to the AI that writes the story', rows: [
-            { id: 'm-init', label: 'Who drives the story', tip: 'Told to the AI that writes the story replies — not to Mero. From “follow my lead” to “takes the wheel”; balanced tells it nothing.', type: 'select', src: 'mero', key: 'initiative', num: true, opts: [[0, 'follow my lead'], [1, 'mostly follows'], [2, 'balanced'], [3, 'brings events'], [4, 'takes the wheel']], old: 'Initiative' },
+            { id: 'm-init', label: 'Who drives the story', tip: 'Told to the story writer, not Mero. Balanced adds nothing.', type: 'select', src: 'mero', key: 'initiative', num: true, opts: [[0, 'follow my lead'], [1, 'mostly follows'], [2, 'balanced'], [3, 'brings events'], [4, 'takes the wheel']], old: 'Initiative' },
         ] },
     ] },
     { id: 'story', name: 'Story & memory', icon: 'story', grp: 'Story', lead: 'What Onyx Quill writes down, and the story tools.', cards: [
@@ -196,7 +196,7 @@ export const SECTIONS = [
         ] },
         { t: 'New entries', rows: [
             { id: 'n-on', label: 'Notice lore worth writing', hint: 'every N messages · 0 = off', type: 'num', old: 'Auto Lorebook / auto suggest / new lore', ...everyN('autoSuggestEnabled', 'autoSuggestInterval', 3, 50) },
-            { id: 'n-file', label: 'Where they go', tip: 'By what they’re about: about the run → the run’s folder · about the character → the character’s base folder', type: 'select', key: 'newEntryPlacement', opts: [['about', 'by what they’re about'], ['target', 'always the Target folder']] },
+            { id: 'n-file', label: 'Where they go', tip: 'Run notes → run folder · character notes → character folder', type: 'select', key: 'newEntryPlacement', opts: [['about', 'by what they’re about'], ['target', 'always the Target folder']] },
             { id: 'n-target', label: 'Target folder', hint: 'when a chat has no folders yet', tip: 'Empty = the top of the vault', type: 'text', key: 'autoSuggestFolder', old: 'Auto Lorebook folder / target folder' },
             { id: 'n-mark', label: 'Mark them', tip: 'made_by, from (chat and message), the made-by-mero tag. The date is always written.', type: 'switch', key: 'newEntryMark' },
             { id: 'n-vault', label: 'Write into the vault', type: 'select', key: 'autoSuggestWriteVaultId', optsFrom: 'vaults', more: true, old: 'Auto Lorebook write to vault' },
@@ -222,9 +222,9 @@ export const SECTIONS = [
     ] },
     { id: 'iface', name: 'Interface', icon: 'iface', grp: 'Look', lead: 'Colors, the bar, notices, removing things, and the graph.', cards: [
         { t: 'Look', rows: [
-            { id: 'ui-theme', label: 'Colors', tip: 'Follow SillyTavern’s theme (your own colors too), or keep Onyx Quill always light or dark', type: 'seg', key: 'dkTheme', opts: [['follow', 'follow SillyTavern'], ['light', 'light'], ['dark', 'dark']] },
+            { id: 'ui-theme', label: 'Colors', tip: 'Follow SillyTavern’s theme, or stay light or dark', type: 'seg', key: 'dkTheme', opts: [['follow', 'follow SillyTavern'], ['light', 'light'], ['dark', 'dark']] },
             // one accent you pick (Miinthe, 2026-11-03): Mero, active tabs, main buttons, selected things; a few ready colors + your own
-            { id: 'ui-accent', label: 'Accent color', tip: 'Onyx Quill’s own color: Mero, the active tab, main buttons, what is selected. Made readable on your theme by itself', type: 'color', key: 'accentColor', fx: 'accent',
+            { id: 'ui-accent', label: 'Accent color', tip: 'For Mero, active tabs, main buttons and selections. Stays readable on any theme.', type: 'color', key: 'accentColor', fx: 'accent',
                 opts: [['', 'Mero pink (default)', '#ff4f98'], ['#ff6b6b', 'coral'], ['#f08a3c', 'orange'], ['#2bb3a6', 'teal'], ['#4c8dff', 'blue'], ['#8f95d8', 'lavender'], ['#a36bff', 'purple']] },
         ] },
         { t: 'The bar', rows: [
@@ -237,7 +237,7 @@ export const SECTIONS = [
             { id: 'ui-b-ssend', label: 'Button: Simple send', tip: 'Post as your message, no reply', type: 'switch', key: 'barSsend' },
             { id: 'ui-b-draft', label: 'Button: Keep as a draft', tip: 'Put what you typed aside, and back', type: 'switch', key: 'barDraftBtn' },
             { id: 'ui-barqr', label: 'Hide SillyTavern’s Quick Reply row', tip: 'While you have Quick Replies starred on the bar', type: 'switch', key: 'barHideStQr' },
-            { id: 'ui-drawer', label: 'Floating icon drawer', tip: 'Other extensions’ floating icons wait in a small tab on the bar instead of over your chat', type: 'seg', key: 'iconDrawer', opts: [['off', 'off'], ['phone', 'phone only'], ['always', 'always']], fx: 'drawer', old: 'Floating icons / floating buttons' },
+            { id: 'ui-drawer', label: 'Floating icon drawer', tip: 'Other extensions’ floating icons go in a bar tab, off your chat', type: 'seg', key: 'iconDrawer', opts: [['off', 'off'], ['phone', 'phone only'], ['always', 'always']], fx: 'drawer', old: 'Floating icons / floating buttons' },
             { id: 'ui-drawerpick', label: 'Icons in the drawer', tip: 'Each floating icon on this screen, with a switch', type: 'btn', btn: 'Choose…', act: 'iconDrawer', dis: s => (s.iconDrawer || 'off') === 'off', disWhy: 'The drawer is off' },
         ] },
         { t: 'Notices', rows: [
@@ -264,7 +264,7 @@ export const SECTIONS = [
             { id: 'a-diag', label: 'Diagnostics', tip: 'Health, recent activity, session stats', type: 'btn', btn: 'Open', act: 'diagnostics', old: 'Diagnostics / health' },
             { id: 'a-export', label: 'Export diagnostics', tip: 'A file to share, with names removed', type: 'btn', btn: 'Export', act: 'exportDiagnostics', old: 'Export diagnostics' },
             { id: 'a-breaker', label: 'The AI pause', tip: 'After repeated AI errors Onyx Quill pauses its AI; this clears it', type: 'btn', btn: 'Reset', act: 'resetBreaker', old: 'Reset AI breaker / circuit breaker' },
-            { id: 'a-try', label: 'Try matching', tip: 'Replays this chat and shows which entries each message calls up (the side panel’s Try matching)', type: 'btn', btn: 'Open', act: 'tryMatching', old: 'Test Match / Simulate' },
+            { id: 'a-try', label: 'Try matching', tip: 'Replays the chat: which entries each message calls up', type: 'btn', btn: 'Open', act: 'tryMatching', old: 'Test Match / Simulate' },
             { id: 'a-review', label: 'Answer length for a vault review', hint: 'tokens · 0 = Mero’s own', type: 'num', key: 'reviewResponseTokens', old: 'Review response tokens' },
         ] },
         { t: 'Reference', sum: 'slash commands · setup wizard · about', rows: [
@@ -273,7 +273,7 @@ export const SECTIONS = [
             { id: 'a-about', label: 'About', type: 'btn', btn: 'Show', act: 'about', old: 'About / version' },
         ] },
         { t: 'Start over', sum: 'everything back to the defaults', rows: [
-            { id: 'a-resetall', label: 'Reset all settings', tip: 'Every section back to the defaults. Your vaults, AI connections, prompt presets and your own prompts stay. Asks first.', type: 'btn', btn: 'Reset all', act: 'resetAll', old: 'Reset to defaults' },
+            { id: 'a-resetall', label: 'Reset all settings', tip: 'All settings to default. Keeps vaults, connections and prompts. Asks first.', type: 'btn', btn: 'Reset all', act: 'resetAll', old: 'Reset to defaults' },
         ] },
     ] },
 ];

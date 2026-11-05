@@ -68,7 +68,7 @@ export function renderChatter(body, w) {
     let h = asRowHtml() + `<div class="dle-wd-feed"><div class="dk-seg dle-wd-fseg" role="group" aria-label="Show">${[['all', 'All'], ['news', 'News'], ['rumor', '◌ Rumors'], ['cast', 'Posts']].map(([v, l]) => `<button type="button" data-ff="${v}" aria-pressed="${filter === v}">${l}</button>`).join('')}</div>`;
     h += `<div class="dle-wd-postbox"><button type="button" class="dk-ib" data-photo title="Attach a photo (described)" aria-label="Attach a photo">📷</button><textarea class="dk-field" rows="1" data-post-ta data-tagbox placeholder="${letters ? 'Pin a note to the board as' : 'Post as'} ${esc(nameOf(me))}…" aria-label="New post"></textarea><button type="button" class="dk-btn dk-primary" data-post>${letters ? 'Pin it' : 'Post'}</button></div>`;
     if (feedBusy) h += '<div class="dle-wd-hint">The world is posting…</div>';
-    if (!list.length) h += `<div class="dle-wd-empty"><b>${letters ? 'Nothing pinned to the board yet.' : 'No chatter yet.'}</b><span>Posts come as the story moves (your "how alive" mix on the board). Post something yourself, and someone may answer.</span></div>`;
+    if (!list.length) h += `<div class="dle-wd-empty"><b>${letters ? 'Nothing pinned to the board yet.' : 'No chatter yet.'}</b><span>Posts come as the story moves. Post something, and someone may answer.</span></div>`;
     for (const p of list) h += postHtml(p, w, letters, me);
     body.innerHTML = h + '</div>';
     body.classList.toggle('letters', letters);
@@ -130,7 +130,7 @@ export function renderNews(body, w) {
     if (writingNews) h += '<div class="dle-wd-hint">Writing the news…</div>';
     const running = runningStories(H.store());
     if (running.length) h += `<div class="dle-wd-hint">Running: ${running.map(s => esc(s.title)).join(' · ')}</div>`;
-    if (!news.length) h += `<div class="dle-wd-empty"><b>No news yet.</b><span>${letters ? 'The Gazette' : 'The news'} reports as the story moves: ordinary life, and world stories over several days. A story voice (a newspaper) on the board writes most of it.</span></div>`;
+    if (!news.length) h += `<div class="dle-wd-empty"><b>No news yet.</b><span>${letters ? 'The Gazette' : 'The news'} reports as the story moves.</span></div>`;
     for (const a of news) {
         const st = a.story ? normStory(storiesOf(H.store()).find(s => s.id === a.story)) : null;
         h += `<button type="button" class="dle-wd-art-row" data-art="${esc(a.id)}"><span class="hl">${esc(a.title || a.text.slice(0, 80))}</span><small>${esc(nameOf(a.by))}${a.stamp ? ' · ' + esc(stampText(a.stamp)) : ''}${st ? ` · <span class="stag">${esc(st.title)}</span>` : ''}</small><span class="pv">${esc(a.text.slice(0, 160))}</span></button>`;

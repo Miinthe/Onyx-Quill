@@ -260,7 +260,7 @@ function emptyState(k, w) {
         feed: [letters ? 'Nothing pinned to the board yet.' : 'No chatter yet.', 'Posts, comments and rumors from the people of this story will show up here once the world is running.'],
         news: ['No news yet.', `${letters ? 'The Gazette' : 'The news'} will report on the world here: ordinary life, and stories that run over several days.`],
         msgs: [letters ? 'No letters yet.' : 'No messages yet.', `${letters ? 'Letters' : 'Messages'} to and from the people of this story come next, in the first stage of the build.`],
-        people: ['The people of this story.', 'The Cast, the story\'s own voices and the regulars will be listed here, with how much each gossips, writes and posts.'],
+        people: ['The people of this story.', 'The Cast, story voices and regulars show up here.'],
     }[k];
     return `<div class="dle-wd-empty"><b>${text[0]}</b><span>${text[1]}</span></div>`;
 }

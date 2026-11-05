@@ -98,7 +98,7 @@ function formHtml(w) {
     return `<div class="dle-wd-cvh"><button type="button" class="dk-ib" data-g-back title="Cancel" aria-label="Cancel">${I('back')}</button><span class="who"><b>New group</b></span></div>
       <div class="dle-wd-gform"><label>Name<input class="dk-field" data-g-name value="${esc(form.name)}" placeholder="e.g. Kitchen crew"></label>
       <div><span class="lt">Members</span><div class="chips">${candidates().map(k => `<button type="button" class="dk-chip${form.members.has(k) ? ' on' : ''}" data-g-pick="${esc(k)}" aria-pressed="${form.members.has(k)}">${avatar(k, 'fa')}${esc(nameOf(k))}${k === USER ? ' <small>(you)</small>' : k === MAIN ? ' <small>(main)</small>' : ''}</button>`).join('')}</div></div>
-      ${pairs.length ? `<div class="warn">${esc(pairs.join('; '))} never talk to each other (the board says so): both can be in the group, but they never answer each other there.</div>` : ''}
+      ${pairs.length ? `<div class="warn">${esc(pairs.join('; '))} never talk to each other (board rule), not even here.</div>` : ''}
       <div class="hint">${form.members.has(currentMe()) ? 'You are in it: you write, and whoever has something to add answers.' : 'You are not in it: a group only for them. You read it under Between others.'}</div>
       <div class="btns"><button type="button" class="dk-btn dk-primary" data-g-create ${ok ? '' : 'disabled'}>Start the group</button><button type="button" class="dk-btn" data-g-back>Cancel</button></div>
       <div class="hint">At least three people (you count).</div></div>`;

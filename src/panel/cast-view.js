@@ -98,7 +98,7 @@ function roundFold(L, q, people, nameOf) {
     if (sceneAway().user) {
         const own = ownHere(), as = writingAs();
         const row = el('div', 'dle-cv-asrow');
-        if (!own.length) row.append(el('span', 'dle-cv-mini', `${esc(userName())} is out of the scene, and none of the people you write yourself is in it: Send has no one to write as.`));
+        if (!own.length) row.append(el('span', 'dle-cv-mini', `${esc(userName())} and everyone you write are out of the scene — Send has no one to write as.`));
         else if (own.length === 1) row.append(el('span', 'dle-cv-mini', `${esc(userName())} is out of the scene: Send writes as <b>${esc(as.name)}</b>.`));
         else {
             row.append(el('span', 'dle-cv-mini', 'Send writes as'));
@@ -134,7 +134,7 @@ function roundFold(L, q, people, nameOf) {
         b.classList.add('dle-cv-stop'); foot.append(b);
     } else {
         const r = K.button({ label: 'Reset', kind: 'quiet', title: 'Back to: You, then the main character', onClick: () => { writing = null; resetRound(); } });
-        const g = K.button({ label: 'Go', icon: 'castround', kind: 'primary', disabled: !q.length, title: 'Play this round in this order. Send in the chat box works too: your message, the main character, then the AI’s people above.', onClick: () => runQueue() });
+        const g = K.button({ label: 'Go', icon: 'castround', kind: 'primary', disabled: !q.length, title: 'Play this round in this order. Send in the chat box works too.', onClick: () => runQueue() });
         r.classList.add('dle-cv-reset'); g.classList.add('dle-cv-go');
         foot.append(r, g);
     }
@@ -248,9 +248,9 @@ function peopleFold(L, people, q, present) {
         const foot = el('div', 'dle-cv-tfoot');
         if (add) { const plus = K.iconButton({ icon: 'plus', title: addTitle, onClick: add }); plus.classList.add('dle-cv-tadd'); foot.append(plus); }
         // you and the main character: out of the scene / back (Miinthe, 2026-10-19)
-        if (leave) { const b = K.iconButton({ icon: leave.away ? 'back' : 'skip', on: leave.away, title: leave.away ? `${name} comes back into the scene` : `${name} leaves the scene: not in the rounds, and nobody talks to them`, onClick: leave.toggle }); b.classList.add('dle-cv-tleave'); b.setAttribute('aria-pressed', String(leave.away)); foot.append(b); }
+        if (leave) { const b = K.iconButton({ icon: leave.away ? 'back' : 'skip', on: leave.away, title: leave.away ? `${name} comes back into the scene` : `${name} leaves the scene`, onClick: leave.toggle }); b.classList.add('dle-cv-tleave'); b.setAttribute('aria-pressed', String(leave.away)); foot.append(b); }
         if (speak) { const sp = K.iconButton({ icon: 'castround', title: speakTitle, onClick: speak }); sp.disabled = queueRunning(); sp.classList.add('dle-cv-tspeak'); foot.append(sp); }
-        if (mute) { const m = K.iconButton({ icon: mute.on ? 'mute' : 'sound', on: mute.on, title: mute.on ? `Unmute ${name}: they may step in, offer to join and turn up again` : `Mute ${name} in this chat: they stay quiet until you add them or press Speak now`, onClick: mute.toggle }); m.classList.add('dle-cv-tmute'); m.setAttribute('aria-pressed', String(mute.on)); foot.append(m); }
+        if (mute) { const m = K.iconButton({ icon: mute.on ? 'mute' : 'sound', on: mute.on, title: mute.on ? `Unmute ${name}` : `Mute ${name} in this chat (until added or Speak now)`, onClick: mute.toggle }); m.classList.add('dle-cv-tmute'); m.setAttribute('aria-pressed', String(mute.on)); foot.append(m); }
         if (mute?.on) t.classList.add('muted');
         if (fav) {
             const st = el('button', 'dle-cv-fav' + (fav.on ? ' on' : ''), fav.on ? '★' : '☆'); st.type = 'button';
@@ -404,7 +404,7 @@ function tiesFold(L, people) {
                 r.append(who, i); tools.hidden = true; tools.before(r); i.focus();
             });
             const busy = seeding.has(k);
-            const seed = K.button({ label: busy ? 'Thinking…' : 'Suggest', icon: 'wand', kind: 'quiet', title: `✨ Suggest ties for ${p.name} from their card, their lore and the recent chat — one AI call, you keep or drop each`, onClick: async () => {
+            const seed = K.button({ label: busy ? 'Thinking…' : 'Suggest', icon: 'wand', kind: 'quiet', title: `✨ Suggest ties for ${p.name} (one AI call; keep or drop each)`, onClick: async () => {
                 if (seeding.has(k)) return;
                 seeding.add(k); draw();
                 let got = null;
@@ -423,7 +423,7 @@ function tiesFold(L, people) {
     body.push(el('div', 'dle-cv-tiew', `<b>The writer gets</b> ${told.length ? told.map(esc).join(' ') : 'nothing: nobody in the scene has ties yet.'}`));
     const f = K.fold({ title: 'Ties', summary: `${count} tie${count === 1 ? '' : 's'}${sugCount ? ` · ${sugCount} suggested` : ''}`, open: folds.ties, body, onToggle: v => { folds.ties = v; } });
     f.classList.add('dle-cv-tiesf');
-    f.title = 'How Cast people feel about each other, the main character and you. The director notices them in the scene (on the board: ask me / write them / off); ✨ Suggest asks once for starting ties.';
+    f.title = `How Cast people feel about each other, the main character and ${userName()}`;
     return f;
 }
 

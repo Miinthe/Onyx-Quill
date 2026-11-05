@@ -360,7 +360,7 @@ function vaultEditor(s, v, i) {
         }
         if (was && nn !== was) {
             // V-M5: renaming clears per-entry tracking tied to the old name — say so first
-            const ok = await K.ask({ title: `Rename “${was}” to “${nn}”?`, text: 'Renaming a vault clears its entries’ cooldowns, pins and blocks, chat counts and analytics (they are kept under the old name). The entries themselves are not touched.', yes: 'Rename', danger: true });
+            const ok = await K.ask({ title: `Rename “${was}” to “${nn}”?`, text: 'Its entries’ cooldowns, pins, blocks and stats start fresh (the old ones stay under the old name). The entries themselves don’t change.', yes: 'Rename', danger: true });
             if (!ok) { name.value = was; return; }
         }
         v.name = nn; save(); redraw();
@@ -448,7 +448,7 @@ function jobsPane() {
     banner.append(el('span', 'dle-claude-effort-banner-text'));
     box.append(banner);
     try { refreshClaudeEffortBanner($(box)); } catch { /* noop */ }
-    if (!profiles().length) box.append(el('div', 'dk-state dk-info', 'No connection profiles yet. Make one in SillyTavern’s API Connections (the plug icon) → Connection Profile, then come back here.'));
+    if (!profiles().length) box.append(el('div', 'dk-state dk-info', 'No connection profiles yet — make one in SillyTavern’s API Connections (plug icon).'));
     const realCalls = aiSearchStats.calls - aiSearchStats.cachedHits;
     if (realCalls > 0 && aiSearchStats.totalInputTokens + aiSearchStats.totalOutputTokens > 0) {
         const per = Math.round((aiSearchStats.totalInputTokens + aiSearchStats.totalOutputTokens) / realCalls);
@@ -960,7 +960,7 @@ async function act(name, btn) {
         case 'resetAll': if (await resetAllSettingsFlow()) redraw(); return;
         case 'meroPersona': return editPersona();
         case 'meroResetSettings':
-            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'Chattiness, initiative, how many replies she reads, her job, sign-off and web search go back to how they shipped. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
+            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'All her settings go back to default. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
             return;
         default: return undefined;
     }
@@ -972,7 +972,7 @@ function editPersona() {
     body.append(el('span', '', 'Who Mero is, in your words'), ta);
     const ok = K.button({ label: 'Save', kind: 'primary', onClick: () => { meroSettings({ persona: ta.value.trim() || meroDefaults().persona }); w.close(); redraw(); } });
     // her first description back in the box — saved only with Save (2026-11-03: was a separate "Reset" row, unclear on its own)
-    const first = K.button({ label: 'Back to the first draft', kind: 'quiet', title: 'Puts Mero’s first description back in the box. Nothing changes until you press Save.', onClick: () => { ta.value = meroDefaults().persona || ''; ta.focus(); } });
+    const first = K.button({ label: 'Back to the first draft', kind: 'quiet', title: 'Puts her original description back; Save keeps it', onClick: () => { ta.value = meroDefaults().persona || ''; ta.focus(); } });
     const w = K.openWindow({ title: 'Mero ☆', body, foot: [first, K.button({ label: 'Cancel', onClick: () => w.close() }), ok] });
     w.win.classList.add('dle-st-sub');
 }

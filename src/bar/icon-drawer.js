@@ -144,7 +144,7 @@ export function openDrawerPicker() {
     const body = document.createElement('div');
     body.className = 'dle-idr-pick';
     const s = getSettings();
-    if (!found.size) body.innerHTML = '<p>No floating icons on this screen right now. Icons from your other extensions show up here once they’re on the page.</p>';
+    if (!found.size) body.innerHTML = '<p>No floating icons here right now.</p>';
     for (const [k, el] of found) {
         const on = !offList().includes(k);
         const t = K.toggle({ checked: on, label: nameOf(el), onChange: v => {

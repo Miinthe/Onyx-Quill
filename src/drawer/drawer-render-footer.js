@@ -177,7 +177,7 @@ export function renderFooter() {
                 // the two so one word ("mode") stops meaning two things. (a.mode = legacy in-memory
                 // fallback; activityLog is never persisted so old-shape rows are transient.)
                 const outcome = a.outcome ?? a.mode ?? '';
-                feedHtml += `<span class="dle-activity-outcome" title="Outcome — how lore selection resolved this run (independent of the configured search mode in the header)">ran as ${outcome}</span>`;
+                feedHtml += `<span class="dle-activity-outcome" title="How lore selection actually went this time">ran as ${outcome}</span>`;
                 let detail = `${a.injected} entr${a.injected === 1 ? 'y' : 'ies'}, ${formatTokensCompact(a.tokens)} tok`;
                 if (a.folderFilter?.length) detail += ` [${a.folderFilter.length} folder${a.folderFilter.length !== 1 ? 's' : ''}]`;
                 feedHtml += `<span>${detail}</span>`;

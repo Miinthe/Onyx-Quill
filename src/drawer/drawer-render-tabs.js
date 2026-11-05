@@ -1233,7 +1233,7 @@ export function renderBrowseWindow() {
         if (e.tokenEstimate) _hoverParts.push(`Tokens: ${e.tokenEstimate}`);
         const _hoverTitle = _hoverParts.length ? ` title="${_hoverParts.join('&#10;&#10;')}"` : '';
         html += `<div class="dle-browse-info" role="button" tabindex="0" aria-expanded="false" aria-label="Expand ${escapeHtml(e.title)} (Enter or click)" aria-describedby="${previewId}"${_hoverTitle}>`;
-        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="A note for Mero ☆ — she reads it; never sent to the writing AI. The lorebook-guide tag makes one.">☆ for Mero</span>' : ''}</span>`;
+        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="For Mero ☆ only; never sent to the writer (lorebook-guide tag)">☆ for Mero</span>' : ''}</span>`;
         // LOCAL PATCH 2026-08-03: show the entry's origin on the COLLAPSED row.
         // `character` (and `instance`) previously appeared only in the expanded preview, so
         // triaging a folder of unsorted entries meant opening each one to find out where it
@@ -1449,7 +1449,7 @@ export function renderGatingTab() {
         }
         $container.find('.dle-gating-hint').remove();
         if (!anySet && enabledDefs.length > 0) {
-            $container.append('<div class="dle-gating-hint">Set gating fields to filter which lore entries are included. Set via slash command (<code>/oq-set-field</code>) or click the field below.</div>');
+            $container.append('<div class="dle-gating-hint">Fields filter which entries can be sent. Click one to set it.</div>');
         }
     }
 
@@ -1603,12 +1603,12 @@ export function renderStoryTab() {
     // LOCAL PATCH (Miinthe, 2026-10-04): the board switched off for this chat / character — say so, offer it back (WIP look)
     const offFor = boardOffHere();
     if (offFor) {
-        $list.html(`<div class="dle-tracker-aside-note dle-board-offbar"><b>The board is switched off for ${escapeHtml(offFor)}</b> — nothing of it runs here: no trackers watched or told, no helper calls. <button type="button" class="dle-board-on">Switch on</button></div>`);
+        $list.html(`<div class="dle-tracker-aside-note dle-board-offbar"><b>The board is switched off for ${escapeHtml(offFor)}</b> — nothing of it runs here. <button type="button" class="dle-board-on">Switch on</button></div>`);
         return;
     }
     const colsHtml = collectionsHtml();
     if (!list.length && !colsHtml) {
-        $list.html('<div class="dle-story-empty dle-muted">No trackers in this chat yet. Press + to make one — for example <b>Relationship</b> with its stages, one per line.</div>');
+        $list.html('<div class="dle-story-empty dle-muted">No trackers yet. Press + to make one.</div>');
         return;
     }
     $list.html(list.map(t => {
@@ -1620,7 +1620,7 @@ export function renderStoryTab() {
         const quiet = st !== 'running';
         // LOCAL PATCH (Miinthe, 2026-10-04): paused / abandoned by Miinthe in this chat — and lines waiting on an abandoned tracker
         const abandonedSrc = (t.starts || []).map(c => list.find(x => x.id === c.tracker || x.name === c.tracker)).filter(x => x?.run === 'abandoned');
-        const runNote = t.run === 'paused' ? `<div class="dle-tracker-aside-note"><b>Paused</b> in this chat — keeps its step; not watched, not told, its lore hidden. <button type="button" class="dle-run" data-name="${escapeHtml(t.name)}" data-act="continue">Continue</button>${t.lastRun?.action === 'pause' ? ` <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button>` : ''}</div>`
+        const runNote = t.run === 'paused' ? `<div class="dle-tracker-aside-note"><b>Paused</b> in this chat (keeps its step). <button type="button" class="dle-run" data-name="${escapeHtml(t.name)}" data-act="continue">Continue</button>${t.lastRun?.action === 'pause' ? ` <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button>` : ''}</div>`
             : t.run === 'abandoned' ? `<div class="dle-tracker-aside-note"><b>Abandoned</b> in this chat — back at the start, switched off. <button type="button" class="dle-run" data-name="${escapeHtml(t.name)}" data-act="reactivate">Reactivate</button>${t.lastRun?.action === 'abandon' ? ` <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button>` : ''}</div>`
                 : t.lastRun && ['continue', 'reactivate'].includes(t.lastRun.action) ? `<div class="dle-tracker-aside-note">${t.lastRun.action === 'continue' ? 'Running again' : 'Reactivated'} <button type="button" class="dle-run-undo" data-name="${escapeHtml(t.name)}">Undo</button></div>` : '';
         // engine on v2, step 7c: paused by a block or because another holds the floor — say which
@@ -1662,7 +1662,7 @@ export function renderStoryTab() {
             ${forkNote}
             <div class="dle-tracker-steps">${steps}</div>
         </div>`;
-    }).join('') + colsHtml + (live() ? '<div class="dle-tracker-aside-note dle-board-offrow"><button type="button" class="dle-board-offbtn" title="Nothing of the board runs in this chat until you switch it on again (WIP — also in the board window: Switched off for)">Switch the board off for this chat</button></div>' : ''));
+    }).join('') + colsHtml + (live() ? '<div class="dle-tracker-aside-note dle-board-offrow"><button type="button" class="dle-board-offbtn" title="Nothing of the board runs in this chat until switched on (WIP)">Switch the board off for this chat</button></div>' : ''));
 }
 
 // LOCAL PATCH (Miinthe, 2026-10-05): the board's collections (items, money) — read-only here; change them on

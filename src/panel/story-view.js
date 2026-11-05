@@ -129,7 +129,7 @@ function editSteps(t) {
     let skip = t.skip === true;
     const sw = K.toggle({ checked: skip, onChange: v => { skip = v; } });
     const body = [nameBox, stepsBox, K.setting({ title: 'May skip steps', help: 'For time jumps. Off: one step at a time.', control: sw }),
-        Object.assign(el('p', 'dk-hint', 'Tip: name steps as your stage entries’ summaries do.'), { title: 'That is how the lore judge finds the right entry. It stays on its current step if that step is still in the list.' })];
+        Object.assign(el('p', 'dk-hint', 'Tip: name steps as your stage entries’ summaries do.'), { title: 'That’s how the lore judge finds the right entry' })];
     const w = K.openWindow({
         title: `Edit ${t.name}`, body,
         foot: [K.button({ label: 'Cancel', onClick: () => w.close() }), K.button({ label: 'Save', kind: 'primary', onClick: () => {
@@ -180,7 +180,7 @@ async function remove(t) {
     };
     await K.removeWithCare({
         name: t.name, big: true, askKey: 'tracker',
-        text: bname ? `It is taken off the board “${bname}”, with its steps, so every chat that uses this board loses it. Undo puts it back.` : 'It is taken out of this chat, with its steps. Undo puts it back.',
+        text: bname ? `It and its steps leave the board “${bname}” — for every chat using it. Undo puts it back.` : 'It is taken out of this chat, with its steps. Undo puts it back.',
         remove: () => { removeTracker(t.name); if (S.sel === (t.id || t.name)) S.sel = null; },
         undo: K.chatOnly(() => {
             if (bname && keep.board) putBoard(bname, keep.board);
@@ -224,7 +224,7 @@ function selbar(t) {
     bar.append(what);
     if (t.run !== 'abandoned') bar.append(t.run === 'paused'
         ? K.button({ label: 'Continue', icon: 'skip', onClick: () => runAct(t.name, 'continue') })
-        : K.button({ label: 'Pause', icon: 'pause', title: 'Pause in this chat: keeps its step; not followed, not told to the AI, its lore hidden', onClick: () => runAct(t.name, 'pause') }));
+        : K.button({ label: 'Pause', icon: 'pause', title: 'Pause in this chat (keeps its step)', onClick: () => runAct(t.name, 'pause') }));
     bar.append(K.button({ label: 'Edit steps', icon: 'edit', onClick: () => editSteps(t) }));
     bar.append(t.run === 'abandoned'
         ? K.button({ label: 'Reactivate', icon: 'undo', title: 'On again from the start', onClick: () => runAct(t.name, 'reactivate') })
@@ -313,7 +313,7 @@ function changesFold() {
     const head = changesSummary(groups);
     const body = [];
     if (immersed()) body.push(el('p', 'dk-hint', 'Immersion: no pop-ups.'));
-    if (!groups.length) body.push(Object.assign(el('p', 'dk-hint', 'Nothing yet.'), { title: 'What the helper, the director and the board change shows up here, newest first' }));
+    if (!groups.length) body.push(Object.assign(el('p', 'dk-hint', 'Nothing yet.'), { title: 'Board, helper and director changes, newest first' }));
     for (const g of groups) {
         body.push(el('div', 'dle-sv-half', esc(groupLabel(g.i))));
         for (const x of g.items) {
@@ -378,7 +378,7 @@ function draw() {
     try { list = getTrackers(); } catch (err) { console.warn('[DLE] Story: trackers not read', err); }
     if (offFor) {
         const box = el('div', 'dk-state dk-wait dle-sv-off', `<span><b>The board is paused for ${esc(offFor)}.</b></span>`);
-        box.title = 'Nothing of it runs here: no trackers followed or told, no helper calls. Resume it on the top line.';
+        box.title = 'Nothing of it runs here. Resume it on the top line.';
         out.push(box);
     } else {
         let L = null;

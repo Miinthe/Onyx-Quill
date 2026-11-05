@@ -243,14 +243,14 @@ function draw() {
     const showB = k => s[k] !== false;
     const specials = (showB('barReev') ? db('reev', 'reev', 'Re-evaluate and swipe: undo what the newest reply changed, ask again') : '') + (showB('barGuide') ? guideB : '') +
         // ✓ Fix spelling (Miinthe, 2026-11-03): her message box corrected by Mero's AI, with what changed and Undo (spell.js)
-        (showB('barSpell') ? db('spell', 'check', 'Fix spelling: typos, capitals and punctuation in your message — your words stay. You see what changed, with Undo. Right-click (hold on the phone): your words') : '') +
+        (showB('barSpell') ? db('spell', 'check', 'Fix spelling, with Undo. Right-click (hold on phone): your word list') : '') +
         (showB('barSsend') ? db('ssend', 'ssend', 'Simple send: post as your message, no reply') : '') +
         (showB('barDraftBtn') ? db('draft', 'draft', draftText ? 'Put the draft back' : 'Keep as a draft (follows you to other devices)', draftDot) : '');
     if (mode === 'sp' && !specials) mode = 'home';   // the last action button switched off while ⋯ was open: no empty screen
     const allQr = sets.map(x => x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
     let row;
     if (phone() && mode !== 'home') {
-        const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
+        const inner = mode === 'qr' ? (allQr || '<span class="dk-hint" title="Turn sets on in SillyTavern’s Quick Reply settings">No Quick Replies here.</span>') + db('stars', 'pinI', 'Choose which ones sit on the bar on a PC', '', ' small') : specials;
         row = `<div class="dle-grab" data-b="grab" title="Pull up for more room"></div>${db('back', 'back', 'Back')}<div class="dle-take${takeH > 46 ? ' wrapped' : ''}" style="height:${takeH}px">${inner}</div>`;
     } else if (phone()) {
         row = book + panelB + db('qrs', 'qr', 'Quick replies') + notesB + worldB + (specials ? db('sp', 'more', gOn ? `More — a swipe direction is set: “${gd.text}”` : 'More: re-evaluate, guided swipe, fix spelling, simple send, draft', (showB('barDraftBtn') ? draftDot : '') + (gOn && showB('barGuide') ? '<span class="dle-dot" style="right:12px"></span>' : '')) : '');
@@ -282,7 +282,7 @@ function qrDrawerBody() {
     const body = document.createElement('div');
     body.className = 'dle-qrsets';
     if (!qrApi()) { body.innerHTML = '<p class="dk-hint">SillyTavern’s Quick Reply extension is not loaded.</p>'; return body; }
-    if (!sets.length) { body.innerHTML = '<p class="dk-hint" title="Switch sets on in SillyTavern’s Quick Reply settings: global, for this chat or for this character">No Quick Replies here — switch a set on for everywhere, this chat or this character in SillyTavern’s Quick Reply settings.</p>'; return body; }
+    if (!sets.length) { body.innerHTML = '<p class="dk-hint" title="Turn sets on in SillyTavern’s Quick Reply settings">No Quick Replies here — turn a set on in SillyTavern’s Quick Reply settings.</p>'; return body; }
     // the bar's order, rearranged here (Miinthe, 2026-10-19: "rearrange the button sequence in the bar")
     const hot = hotButtons(s.barHot, sets);
     if (hot.length > 1) {
@@ -349,7 +349,7 @@ function fillQrRow(el) {
     }
     const sets = qrSets();
     const html = !qrApi() ? '<span class="dk-hint">SillyTavern’s Quick Reply extension is not loaded.</span>'
-        : !sets.length ? '<span class="dk-hint">No Quick Replies here — switch a set on in SillyTavern’s Quick Reply settings (everywhere, this chat or this character).</span>'
+        : !sets.length ? '<span class="dk-hint">No Quick Replies here — turn a set on in SillyTavern’s Quick Reply settings.</span>'
             : sets.map(x => (sets.length > 1 ? `<span class="dle-xset">${esc(x.name)}</span>` : '') + x.qrs.map(q => qrBtn({ ...q, set: x.name })).join('')).join('<span class="dle-vsep"></span>');
     const full = html + '<span class="dle-xsp"></span>' + db('stars', 'pinI', 'Choose which ones sit on the bar, and their order');
     if (el.dataset.mode === 'run' && el.innerHTML === full) return;

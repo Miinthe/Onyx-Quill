@@ -480,7 +480,7 @@ body.pleft .msgs > * { direction: ltr; }
         <div class="atmenu" id="atmenu" role="listbox" aria-label="Mention" hidden></div>
         <textarea id="c-in" class="grow" rows="2" placeholder="Talk to Mero… (@ to mention a tracker, someone, a reply, a post)" aria-label="Message to Mero"></textarea>
         <div class="row">
-          <button class="btn" id="c-ctx" title="Add context: click 📎, then click a message in the chat, a post or conversation in the world panel, or a lore entry — Mero gets it with your message" aria-label="Add context" aria-pressed="false">📎</button>
+          <button class="btn" id="c-ctx" title="Add context: 📎, then click a chat message, world post or lore entry" aria-label="Add context" aria-pressed="false">📎</button>
           <button class="btn" id="c-pitch" title="Pitches"></button>
           <button class="btn" id="c-where" title="A recap of where the story stands">Where are we?</button>
           <span class="sp"></span>
@@ -491,7 +491,7 @@ body.pleft .msgs > * { direction: ltr; }
     </div>
 
     <section class="drawer" id="d-sess" hidden aria-label="Talks">
-      <div class="dh"><h3 id="sess-h" title="Talks live with the character: every chat and run of it sees them. A note still says where it applies.">Talks</h3><button class="btn" id="new-sess"></button><button class="btn" id="new-game" title="A game with Mero">🎲 Play</button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="dh"><h3 id="sess-h" title="Shared by every chat and run of this character">Talks</h3><button class="btn" id="new-sess"></button><button class="btn" id="new-game" title="A game with Mero">🎲 Play</button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
       <div class="db">
         <input class="srch" id="sess-q" type="search" placeholder="Search talks" aria-label="Search talks">
         <div class="seg" role="group" aria-label="Kind of talk" id="sess-f"><button data-v="all" aria-pressed="true">All</button><button data-v="yap" aria-pressed="false" title="Yapping" aria-label="Yapping">💭</button><button data-v="plan" aria-pressed="false" title="Planning" aria-label="Planning">🗺</button><button data-v="fb" aria-pressed="false" title="Feedback" aria-label="Feedback">✋</button><button data-v="game" aria-pressed="false" title="Games" aria-label="Games">🎲</button></div>
@@ -500,7 +500,7 @@ body.pleft .msgs > * { direction: ltr; }
       </div>
     </section>
     <section class="drawer" id="d-req" hidden aria-label="Requests">
-      <div class="dh"><h3>Requests</h3><button class="btn ghost" id="look-lore" title="Mero reads the latest replies next to the entries sent with them, and says what an entry is missing"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
+      <div class="dh"><h3>Requests</h3><button class="btn ghost" id="look-lore" title="Mero checks the latest replies against the entries sent"></button><button class="ib" data-close title="Close" aria-label="Close"></button></div>
       <div class="db" id="req-list"></div>
     </section>
     <section class="drawer" id="d-notes" hidden aria-label="Notes">
@@ -561,7 +561,7 @@ body.pleft .msgs > * { direction: ltr; }
           <div class="pickhead"><button class="btn ghost" id="pick-back">← Back</button><h3 id="pick-title">Pitches</h3></div>
           <p class="mini" id="pick-sub" style="margin:0"></p>
           <div class="stack" id="p-fresh"></div>
-          <div class="vtools"><button class="btn ghost" id="pick-again" title="Throw these away and pitch again with the same settings"></button><span class="sp"></span><button class="btn ghost" id="pick-aside" title="Set the ones you didn't use or keep aside. They don't count as 👎, and ↩ Bring back returns them once.">Set them all aside</button></div>
+          <div class="vtools"><button class="btn ghost" id="pick-again" title="Throw these away and pitch again with the same settings"></button><span class="sp"></span><button class="btn ghost" id="pick-aside" title="Set unused ones aside — not a 👎; ↩ Bring back returns them">Set them all aside</button></div>
         </div>
         <div class="actbar" id="actbar" hidden role="toolbar" aria-label="What to do with the picked pitches">
           <div class="ah"><span id="act-n"></span><button class="ib" data-b="clear" title="Unpick" aria-label="Unpick"></button></div>
@@ -689,7 +689,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       : `<span class="mact${armed ? ' sure' : ''}">${redoable ? `<button data-mredo="${k}" title="Answer again — this answer stays as a swipe until you write again" aria-label="Answer again">${I('refresh')}</button>` : ''}${del}</span>`;
     // her name on her messages (Miinthe, 2026-11-03: the header was empty) — what Mero calls her, else her persona's name
     const head = mine ? `<div class="mh"><span class="me">${esc(myName())}</span><span class="sp"></span>${acts}</div>`
-      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.lookskip ? '<span class="nolook" title="The AI service was busy, so no lookups for this answer. Next time she tries again.">🔎 no lookups this time</span>' : m.nolook ? '<span class="nolook" title="Mero\'s AI connection can\'t look things up. She still sees the board, the latest replies and the entries sent.">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
+      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.lookskip ? '<span class="nolook" title="The service was busy; she tries again next time">🔎 no lookups this time</span>' : m.nolook ? '<span class="nolook" title="Mero\'s connection can\'t look things up; she still sees the board and replies">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
     const looks = !mine && steps.length && lookOpen.has(key) ? `<div class="steps">${steps.map(x => `<span>${esc(x.label)}${x.got ? ` <span class="got">— ${esc(x.got)}</span>` : ''}</span>`).join('')}</div>` : '';
     const body = mine && editing?.k === k
       ? `<div class="edit"><textarea data-meditin aria-label="Your message">${esc(editing.text ?? m.t)}</textarea><div class="row"><button class="btn p" data-msave="0">Save</button>${k === lastAuthor() ? `<button class="btn m2" data-msave="1"${busyNow ? ' disabled' : ''} title="Mero answers the new words — her answers after it go">Save &amp; ask again</button>` : ''}<button class="btn ghost" data-mcancel>Cancel</button></div></div>`
@@ -1236,7 +1236,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const talkPitchable = () => !!cur && cur.tag !== 'game' && !cur.review && cur.msgs.some(m => m.who === 'author') && cur.msgs.some(m => m.who === 'mero');
   function drawPitchBtn() {
     const b = $('#c-pitch');
-    b.title = 'Turn what you and Mero worked out in this talk into pitches you can send into the story';
+    b.title = 'Turn this talk into pitches for the story';
     b.disabled = talkBusy() || !!PV().busy;
   }
   $('#c-pitch').onclick = async () => {
@@ -1331,7 +1331,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const R = D.requests || { waiting: [], answered: [] };
     $('#look-lore').disabled = !!D.looking || D.settings.job === 'off';
     lbl($('#look-lore'), 'search', D.looking ? 'Mero is looking…' : 'Check the lore');
-    $('#look-lore').title = D.settings.job === 'off' ? 'Mero is off duty (☆ settings → Mero\'s job)' : 'Mero reads the latest replies next to the entries sent with them, and says what an entry is missing';
+    $('#look-lore').title = D.settings.job === 'off' ? 'Mero is off duty (☆ settings → Mero\'s job)' : 'Mero checks the latest replies against the entries sent';
     const one = r => r.done ? `<div class="card done"${r.kind === 'entry' ? ` data-rdone="${esc(r.id)}"` : ''}><div class="ch">${esc(r.title)} <span class="pill">${esc(r.done)}</span></div><div class="mini">${RQ_SRC[r.from] || ''}</div>${r.kind === 'entry' && r.applied ? `${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${baBox(r)}${entryWhere(r)}${r.undone ? '' : `<div class="row"><button class="btn" data-rundo>${I('undo')}Undo</button></div>`}` : ''}</div>`
       : `<div class="card${r.from === 'board' ? ' helper' : ''}" data-req="${esc(r.id)}" style="--kc:${r.from === 'mero' ? 'var(--dk-mero)' : r.from === 'plan' ? 'var(--dk-good)' : 'var(--dk-accent)'}"><div class="ch">${esc(r.title)}${r.now ? ' <span class="pill now">⏸ the reply waits for this</span>' : ''}</div><div class="mini">${RQ_SRC[r.from] || ''}${r.conf ? ` · ${esc(r.conf)} confidence` : ''}</div>
         ${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${r.why ? `<div class="mini">${esc(r.why)}</div>` : ''}${r.kind === 'entry' ? baBox(r) + entryWhere(r) : ''}
@@ -1348,7 +1348,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const gapCard = g => `<div class="card" data-gap="${esc(g.id)}" style="--kc:var(--dk-mero)"><div class="ch">${esc(g.title)}</div>${g.meta ? `<div class="mini">${esc(g.meta)}</div>` : ''}${g.why ? `<div class="mini">${esc(g.why)}</div>` : ''}
       <div class="row">${g.update ? `<button class="btn m2" data-ga="open" title="Open “${esc(g.entry)}” in Obsidian">Open it</button>` : `<button class="btn m2" data-ga="write" title="Opens Write a new entry with this filled in. Mero can draft it there.">Write it</button>`}<button class="btn" data-ga="done" title="Mark it as taken care of">Done</button><button class="btn" data-ga="hide" title="Hidden until it is flagged again">Hide</button><button class="btn ghost" data-ga="no" title="Gone for good, even if it is flagged again">No</button></div></div>`;
     const gapDone = g => `<div class="card done"><div class="ch">${esc(g.title)} <span class="pill">✓ taken care of</span></div><div class="mini">📚 a lore gap</div></div>`;
-    const gaps = G.open.length ? `<h4 class="rg rg-mero" title="Found while replies were written: something the story needed that no entry had, or an entry that needs an update">📚 Lore gaps</h4>` + G.open.map(gapCard).join('') : '';
+    const gaps = G.open.length ? `<h4 class="rg rg-mero" title="Missing or outdated entries, found while replies were written">📚 Lore gaps</h4>` + G.open.map(gapCard).join('') : '';
     $('#req-list').innerHTML = ((groups + gaps) || '<div class="dk-empty"><b>Nothing open.</b><span>When Mero needs you, it shows here.</span></div>') + fold('req-done', 'Answered', [...R.answered.map(one), ...G.done.map(gapDone)]);
     $$('#req-list [data-gap]').forEach(card => card.querySelectorAll('[data-ga]').forEach(b => b.onclick = () => {
       const what = b.dataset.ga, r = HOST.gap(card.dataset.gap, what);
