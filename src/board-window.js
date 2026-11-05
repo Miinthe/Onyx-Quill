@@ -180,7 +180,11 @@ function load() {
             return {
                 stories: recs.filter(r => r?.kind === 'wstory').map(s => ({ title: s.title, at: Number(s.at) || 0, n: (s.phases || []).length, next: (s.phases || [])[Number(s.at) || 0] || '' })),
                 posts: posts.length, msgs: msgs.length, unread: msgs.filter(m => m.to === 'user' && !m.read).length,
-                recent: posts.slice(-3).reverse().map(p => ({ by: p.by, text: (p.title ? p.title + ': ' : '') + String(p.text || '').slice(0, 140) })),
+                // posts AND messages, newest first, up to 15 — the card shows 3 and folds out the rest (Miinthe, 2026-11-04: "should show more than just 3 messages, maybe make it expandable")
+                recent: recs.filter(r => r?.kind === 'post' || r?.kind === 'msg').slice(-15).reverse().map(r => r.kind === 'msg'
+                    ? { kind: 'msg', by: r.from, to: r.to, you: r.to === 'user', unread: r.to === 'user' && !r.read, text: String(r.text || '').slice(0, 140) }
+                    : { kind: 'post', by: r.by, text: (r.title ? r.title + ': ' : '') + String(r.text || '').slice(0, 140) }),
+                counts: by,   // posts + messages per person — the activity bar on each person (World tab v2, 2026-11-04)
                 busiest: Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 4),
                 // stage 5: the rumors going around and who heard them (the poster behind the account stays hidden)
                 rumors: posts.filter(p => p.rumor && typeof p.rumor === 'object').slice(-4).reverse().map(p => ({ kind: ({ true: 'True', twisted: 'Twisted', madeup: 'Made up', planned: 'Planned' })[p.rumor.kind] || 'Rumor', text: String(p.text || '').slice(0, 120), heard: Array.isArray(p.rumor.heard) ? p.rumor.heard.slice(0, 8) : [] })),

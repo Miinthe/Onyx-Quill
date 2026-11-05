@@ -59,7 +59,7 @@ function items(n) {
             ? { label: 'Compare swipes', icon: 'eye', sub: `${m.swipes.length} swipes`, onClick: async () => (await import('./guided-swipe.js')).compareSwipes(n) }
             : null,
         isNewestReply(n)
-            ? { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'undoes its changes', onClick: async () => { const { reEvaluate } = await import('./reevaluate.js'); reEvaluate(); } }
+            ? { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'a fresh look, as a new swipe', onClick: async () => { const { reEvaluate } = await import('./reevaluate.js'); reEvaluate(); } }
             : { label: 'Re-evaluate and swipe', icon: 'reev', sub: 'newest reply only', disabled: true },
     ];
 }

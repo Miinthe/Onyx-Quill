@@ -9,12 +9,11 @@
  */
 import { getContext } from '../../../../extensions.js';
 import { chat_metadata } from '../../../../../script.js';
-import { callGenericPopup, POPUP_TYPE } from '../../../../popup.js';
-import { escapeHtml } from '../../../../utils.js';
 import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE } from '../../../../slash-commands/SlashCommandArgument.js';
-import { turnOf, turnChanges } from './reevaluate-pure.js';
+import { turnOf } from './reevaluate-pure.js';
+import { keepBoardForReevaluate, undoReevaluateKeep } from './swipe-board.js';
 import { getTrackers, rewindTurn, boardTick } from './trackers.js';
 import { runAutoTrack } from './autotrack.js';
 import { STATE_KEY } from './board-live.js';
@@ -24,21 +23,18 @@ import { setTurnIndex } from './turn-index.js';
 let busy = false;
 const say = (msg, kind = 'info') => { try { toastr[kind](msg, 'Re-evaluate'); } catch { /* noop */ } };
 
-/** Re-evaluate the newest reply's turn and swipe. `confirm`: ask first (lists what will be undone). */
-export async function reEvaluate({ confirm = true } = {}) {
+/**
+ * Re-evaluate the newest reply's turn and swipe. No popup (Miinthe, 2026-11-04: "reevaluate doesn't delete anything, since
+ * it's a swipe each swipe should keep the info"): the board of the swipe on screen is kept with that swipe
+ * (swipe-board.js) — flipping back to it brings it back — and the new swipe gets a fresh evaluation.
+ */
+export async function reEvaluate() {
     if (busy) return false;
     const ctx = getContext();
     const chat = ctx?.chat;
     const turn = turnOf(chat);
     if (!turn) { say('Nothing to re-evaluate: it works on the newest reply, after a message of yours.'); return false; }
-    const changes = turnChanges(getTrackers(), chat_metadata?.[STATE_KEY]?.log, turn.start);
-    if (confirm) {
-        const list = changes.count ? `<ul>${changes.lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>` : '<p>Nothing on the board changed in this turn — only the judge is asked again.</p>';
-        const ok = await callGenericPopup(`<h3>Re-evaluate and swipe?</h3><p>This undoes what the newest turn changed:</p>${list}
-            <p style="opacity:.75;font-size:.9em">Then the helper and the judge are asked again (two AI calls) and a new swipe is written. A normal swipe keeps all of this.</p>`,
-        POPUP_TYPE.CONFIRM, '', { okButton: 'Re-evaluate and swipe', cancelButton: 'Cancel' });
-        if (!ok) return false;
-    }
+    keepBoardForReevaluate();
     busy = true;
     try {
         // 1. undo everything this turn caused
@@ -58,6 +54,7 @@ export async function reEvaluate({ confirm = true } = {}) {
         return true;
     } catch (err) {
         console.warn('[DLE] re-evaluate failed:', err?.message || err);
+        undoReevaluateKeep();   // the board of the swipe on screen, as it was before the rewind
         say(`Re-evaluate stopped: ${err?.message || err}`, 'warning');
         return false;
     } finally { busy = false; }
@@ -67,7 +64,7 @@ export function registerReevaluateCommand() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'oq-reevaluate',
         returns: ARGUMENT_TYPE.STRING,
-        callback: async () => { await reEvaluate({ confirm: true }); return ''; },
-        helpString: 'Re-evaluate and swipe: undo what the newest turn changed on the board, ask the helper and the judge again, then write a new swipe.',
+        callback: async () => { await reEvaluate(); return ''; },
+        helpString: 'Re-evaluate and swipe: a new swipe with a fresh look at the newest turn — the helper and the judge are asked again. Each swipe keeps its own board; flipping back brings it back.',
     }));
 }

@@ -90,7 +90,20 @@ button { cursor: pointer; }
 .side textarea.wq { width: 100%; margin-top: 4px; resize: vertical; }
 .side input.wi { width: 100%; margin-top: 4px; }
 .side .wplist { display: flex; flex-direction: column; padding: 4px 0 8px; }
-.side .wphead, .side .wprow { display: grid; grid-template-columns: minmax(0, 1fr) auto 28px 28px; gap: 6px; align-items: center; }
+.side .wphead, .side .wprow { display: grid; grid-template-columns: minmax(0, 1fr) auto 56px 26px 26px; gap: 4px; align-items: center; }
+/* the ✕ had no column and fell onto its own line; the header's last cell spans the three buttons; ↩ sits where ✕ was (Miinthe, 2026-11-04) */
+.side .wphead > span:last-child { grid-column: 3 / -1; }
+.side .wprow.out .wmb { grid-column: -2; }
+/* phone: two lines per person — the name on top, the dials and buttons under it (Miinthe, 2026-11-04: "on mobile I would be fine with people of the world to be two rows") */
+@media (max-width: 520px) {
+  .side .wphead { display: none; }
+  .side .wprow { grid-template-columns: auto minmax(0, 1fr) 30px 30px; row-gap: 4px; padding: 6px 4px; }
+  .side .wprow > .wpn { grid-column: 1 / -1; }
+  .side .wprow > .wpd { grid-column: 1; } .side .wprow > .wact { grid-column: 2; }
+  .side .wprow > [data-mute] { grid-column: 3; } .side .wprow > [data-wout] { grid-column: 4; }
+  .side .wprow.out > .wpn { grid-column: 1 / 4; } .side .wprow.out > [data-wout] { grid-row: 1; }
+  .side .wmb { width: 30px; }
+}
 .side .wphead { font-size: 11px; color: var(--muted); padding: 2px 0 4px; border-bottom: 1px solid var(--line); }
 .side .wprow { padding: 3px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
 .side .wprow[hidden] { display: none; }
@@ -99,9 +112,10 @@ button { cursor: pointer; }
 .side .wdot { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font-size: 11px; cursor: pointer; }
 .side .wdot b { color: var(--muted); font-weight: 700; } .side .wdot i { font-style: normal; letter-spacing: -1px; color: var(--accent); } .side .wdot i span { opacity: .25; color: var(--ink); }
 .side .wdot:hover { border-color: var(--accent); }
-.side .wmb { width: 28px; height: 26px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; filter: grayscale(1); opacity: .55; }
+.side .wmb { width: 26px; height: 26px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; filter: grayscale(1); opacity: .55; }
 .side .wmb:hover { border-color: var(--line); opacity: 1; } .side .wmb.on { filter: none; opacity: 1; border-color: var(--bad, #c55); }
 .side .wmb[data-wp-open] { filter: none; opacity: .8; }
+.side .wmb[data-wp-open].has { opacity: 1; color: var(--dk-accent, var(--accent)); }   /* her chosen accent (Settings › Look), not the board's blue */   /* something is written (was a second ✎ beside the name — Miinthe, 2026-11-04) */
 .side .wpx { padding: 4px 0 8px; border-bottom: 1px solid var(--line); }
 .side .wnever { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; }
 .side .wnever > span { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -121,9 +135,74 @@ button { cursor: pointer; }
 .wpe textarea.s { width: 100%; margin-top: 6px; resize: vertical; }
 .side .linkish { border: 0; background: none; padding: 0; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
 .side .linkish:hover { text-decoration: underline; }
+/* Voices and regulars: as quiet as the People list above it (Miinthe, 2026-11-04: "way more prominent … unbalanced"), and the
+   profile that is open is marked in the list ("nothing in the list indicates which profile I just opened") */
+.side .card.tipopen .tip { display: block !important; }
+.side .card.tipopen > h4 .wtip { color: var(--dk-accent, var(--accent)); }
+.wov-card .wmore { display: inline-block; width: auto; border: 0; background: none; padding: 2px 0; box-shadow: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--dk-accent, var(--accent)); margin-top: 4px; }
+.side .ln.wv { font-size: 13px; padding: 5px 6px; margin: 0 -6px; border-radius: 6px; }
+.side .ln.wv .linkish { font-weight: 400; }
+.side .ln.wv.on { background: var(--dk-accent-soft, var(--accent-soft)); box-shadow: inset 3px 0 0 var(--dk-accent, var(--accent)); border-top-color: transparent; }
+.side .ln.wv.on .linkish { color: var(--dk-accent, var(--accent)); font-weight: 600; }
+.side .ln.wv.on + .ln.wv { border-top-color: transparent; }
 /* the World tab's main space: the side panel's cards, without its layout */
 .wov.wide { max-width: none; }
-.wov .side.wpanel { position: static !important; top: auto !important; max-height: none !important; overflow: visible; padding: 0; border: 0; box-shadow: none; background: transparent; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 14px; align-items: start; }
+.wov .side.wpanel .wcol { display: grid; align-content: start; }   /* People in the world + Voices and regulars, one column (Miinthe, 2026-11-04: Voices was "hanging down there") */
+/* ── World tab v2 (Miinthe, 2026-11-04; mock-up https://claude.ai/artifact/NRPy5mpdayCiBbE3NTnp8e) ── */
+.wov .wglance { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: stretch; }   /* Lately is as tall as the stack beside it */
+.wov .wgside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: stretch; align-content: start; }
+.wov .wgside .wstories { grid-column: 1 / -1; }
+.wov .wnew { font-size: 13px; color: var(--muted); margin: -4px 4px 0; }
+.wov .wnew .linkish { color: var(--dk-accent, var(--accent)); font-weight: 700; }
+.wov button.wbadge { font: inherit; font-size: 12px; cursor: pointer; }
+.wov .wchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.wov .wchipf { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 1px 9px; font-size: 11.5px; color: var(--muted); cursor: pointer; }
+.wov .wchipf[aria-pressed="true"] { background: var(--dk-accent-soft, var(--accent-soft)); border-color: var(--dk-accent, var(--accent)); color: var(--ink); font-weight: 700; }
+.wov .wunread { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; color: var(--wait); } .wov .wunread b { color: var(--wait) !important; }
+.wov .wli.unread b::after { content: " •"; color: var(--wait); }
+.wov .wli small { color: var(--muted); }
+.wov .wlately .wmore { align-self: flex-start; margin-left: 28px; margin-top: 6px; }
+.wov .wov-card .wmore { align-self: flex-start; }
+.wov .wrum { display: grid; gap: 4px; font-size: 12.5px; } .wov .wrum small { color: var(--muted); }
+.wov .wtag { font-size: 10px; padding: 1px 5px; border-radius: 5px; background: var(--menu); color: var(--wait); margin-right: 3px; }
+.wov .wheard { display: flex; } .wov .wheard .wpic { margin-right: -5px; border: 2px solid var(--page); box-sizing: content-box; }
+.wov .wup { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 2px 8px; align-items: center; width: 100%; border: 0; background: none; padding: 2px 0; text-align: left; font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+.wov .wup small { grid-column: 2; color: var(--muted); font-size: 11px; } .wov .wup:hover span { text-decoration: underline; }
+.wov .wempty { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.side .wact { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.side .wact i { display: block; height: 100%; border-radius: 3px; background: var(--good); }
+.side .wprow .wpn .linkish { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side .wprow.sel { background: var(--dk-accent-soft, var(--accent-soft)); box-shadow: inset 3px 0 0 var(--dk-accent, var(--accent)); border-radius: 6px; padding-left: 4px; }
+.side .wprow.sel .wpn .linkish { color: var(--dk-accent, var(--accent)); font-weight: 600; }
+.side .wprow.muted .wpn > .wpic, .side .wprow.muted .wpn .linkish, .side .wprow.muted .wpd, .side .wprow.muted .wact { opacity: .45; }
+.side .wmuted { font-size: 9.5px; font-weight: 800; letter-spacing: .04em; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; margin-left: 6px; }
+.side .wpn { display: flex; align-items: center; }
+.wstabs { display: flex; border-bottom: 1px solid var(--line); margin: 6px 0 10px; }
+.wstabs button { flex: 1; border: 0; background: none; padding: 7px 4px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.wstabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--dk-accent, var(--accent)); }
+/* the Board tab's side panel: Tracker · Step · Links · ⚙ as its top row, staying put while the panel scrolls (Miinthe, 2026-11-05) */
+.side > .stabs { display: flex; position: sticky; top: -16px; z-index: 4; background: var(--page); margin: -16px -16px 12px; padding: 0 8px; border-bottom: 1px solid var(--line); border-radius: 10px 10px 0 0; }
+.side > .stabs button { flex: 1; border: 0; background: none; padding: 11px 4px 9px; margin-bottom: -1px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.side > .stabs button:hover:not(:disabled) { color: var(--ink); }
+.side > .stabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--dk-accent, var(--accent)); }
+.side > .stabs button:disabled { opacity: .35; cursor: default; }
+.side > .stabs .gear { flex: 0 0 44px; display: flex; align-items: center; justify-content: center; padding: 0; }
+.side > .stabs .gear svg { width: 16px; height: 16px; display: block; }
+.side > .stabs .c { font-size: 11px; background: var(--menu); border-radius: 999px; padding: 0 6px; margin-left: 4px; }
+.side > .kind .kt { border: 0; background: none; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+.side > .kind .kt:hover, .side > .kind .kt:focus-visible { color: var(--ink); text-decoration: underline; }
+.side > .lsec { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.side > .lsec::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+#tp-pills .pill.came { background: var(--dk-accent-soft, var(--accent-soft)); border-color: var(--dk-accent, var(--accent)); font-weight: 700; }
+.boardtitle { cursor: text; border-radius: 6px; }
+.boardtitle .btin { font: inherit; color: inherit; width: min(100%, 24ch); padding: 0 4px; border: 1px solid var(--dk-accent, var(--accent)); border-radius: 6px; background: var(--page); }
+.wpcard .wpc-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; } .wpcard .wpc-head h3 { margin: 0; font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 700; } .wpcard .wpc-head small { color: var(--muted); }
+.wpic.big { width: 38px; height: 38px; font-size: 16px; margin-right: 0; }
+.wpcard > .wpd { display: flex; gap: 4px; margin-bottom: 8px; }
+@media (max-width: 900px) { .wov .wglance, .wov .wgside { grid-template-columns: minmax(0, 1fr); } }
+.wov .side.wpanel { position: static !important; top: auto !important; max-height: none !important; overflow: visible; padding: 0; border: 0; box-shadow: none; background: transparent; display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 0 14px; align-items: start; }
+@media (max-width: 900px) { .wov .side.wpanel { grid-template-columns: minmax(0, 1fr); } }
+.wov .side.wpanel { width: auto !important; max-width: none !important; min-width: 0 !important; align-self: stretch !important; }   /* the board's side-panel width doesn't apply to the World page's own cards */
 .wov .wband { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--good) 40%, var(--line)); background: linear-gradient(120deg, color-mix(in oklab, var(--good) 14%, var(--page)), var(--page) 70%); }
 .wov .wglobe { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font-size: 24px; background: color-mix(in oklab, var(--good) 22%, var(--page)); }
 .wov .wbt { flex: 1; min-width: 160px; } .wov .wbt h2 { margin: 0; } .wov .wbt small { color: var(--muted); }
@@ -1621,6 +1700,7 @@ body.mode-link .board .v2t { cursor: crosshair; }
   .side .sheetbar button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 50px; padding: 0 14px; border: 0; background: none; font: 700 14px var(--f-display); color: var(--ink); text-align: left; }
   .side .sheetbar .sbn { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .side .sheetbar .sbc { color: var(--muted); font-size: 16px; }
+  .side.sheet > .stabs { top: 51px; margin: -8px -12px 10px; border-radius: 0; }   /* under the sheet's bar, staying put while it scrolls */
   .side.sheet.folded .sheetbar { border-bottom: 0; }
   /* Mero: a sheet over the bottom of the screen */
   #merowin { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; height: 72dvh !important; min-width: 0; resize: none; border-radius: 14px 14px 0 0; z-index: 46; }
@@ -2070,7 +2150,7 @@ function renderTools() {
     + `<span class="tbsize" role="group" aria-label="Size">${[['full', 'Full'], ['compact', 'Compact'], ['mini', 'Mini']].map(([v, l]) => `<button class="b2" data-zv="${v}" aria-pressed="${zoom === v}" title="${l} tiles (Alt + / −)">${l}</button>`).join('')}</span>`
     + `</div>${bar ? `<div class="tb2" role="toolbar" aria-label="${bar} bar">${barHtml()}</div>` : ''}`;
   const g = id => el.querySelector('#' + id);
-  const closeSideTool = () => { if (connForm || ['conn', 'lines', 'line', 'checks'].includes(sel.kind)) { connForm = null; document.body.classList.remove('picking'); sel = selBeforeLines && sel.kind === 'lines' ? selBeforeLines : { kind: 'board' }; selBeforeLines = null; } };
+  const closeSideTool = () => { if (connForm || ['conn', 'lines', 'line', 'checks'].includes(sel.kind)) { connForm = null; document.body.classList.remove('picking'); sel = selBeforeLines && sel.kind === 'lines' ? selBeforeLines : backPick(); selBeforeLines = null; } };
   const openBar = b => { closeSideTool(); if (b !== 'view') { focusC = null; hl.clear(); } bar = bar === b ? null : b; addKinds = false; barHL = false; if (mode !== 'select') setModeQuiet('select'); render(); };
   g('t-sel').onclick = () => { closeSideTool(); bar = null; leaveTools(); setModeQuiet('select'); render(); };
   g('t-add').onclick = () => openBar('add');
@@ -2138,7 +2218,7 @@ function wireBar(b) {
     g('v-hl').onclick = () => { barHL = !barHL; renderTools(); };
     g('v-focus').onclick = () => { bar = null; if (focusC) { focusC = null; render(); return; } startFocus(sel); };   // the bar closes, so it doesn't cover the Focus view's own buttons
     g('v-arr').onclick = () => arrange();
-    g('v-all').onclick = () => { if (sel.kind === 'lines') { sel = selBeforeLines || { kind: 'board' }; } else { selBeforeLines = sel; sel = { kind: 'lines' }; } render(); };
+    g('v-all').onclick = () => { if (sel.kind === 'lines') { sel = selBeforeLines || backPick(); } else { selBeforeLines = sel; sel = { kind: 'lines' }; } render(); };
     b.querySelectorAll('[data-hl]').forEach(x => x.onclick = () => { hl.has(x.dataset.hl) ? hl.delete(x.dataset.hl) : hl.add(x.dataset.hl); hlIdx = -1; render(); });
     g('hl-x') && (g('hl-x').onclick = () => { hl.clear(); render(); });
     g('hl-next') && (g('hl-next').onclick = () => hlStep(1));
@@ -2149,7 +2229,7 @@ function wireBar(b) {
     const go = k => { ckIdx = (k + is.length) % is.length; const it = is[ckIdx]; if (it.go && typeof it.go === 'object') sel = it.go; else sel = { kind: 'checks' }; render(); setTimeout(() => document.querySelector('.board .sel')?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 60); toast(`${it.sev === 'error' ? '⛔' : it.sev === 'warn' ? '⚠️' : 'ℹ️'} ${it.text}`); };
     g('ck-next') && (g('ck-next').onclick = () => go(ckIdx + 1));
     g('ck-prev') && (g('ck-prev').onclick = () => go(ckIdx < 0 ? -1 : ckIdx - 1));
-    g('ck-list') && (g('ck-list').onclick = () => { sel = sel.kind === 'checks' ? { kind: 'board' } : { kind: 'checks' }; render(); });
+    g('ck-list') && (g('ck-list').onclick = () => { sel = sel.kind === 'checks' ? backPick() : { kind: 'checks' }; render(); });
   }
   if (bar === 'play') g('p-go').onclick = () => { if (play) stopPlay(); else { leaveTools('play'); startPlay(); } };
 }
@@ -2158,7 +2238,7 @@ document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   const go = id => { document.getElementById(id)?.click(); e.preventDefault(); e.stopImmediatePropagation(); };
   if (k === 'a' && bar === 'add') { e.preventDefault(); e.stopImmediatePropagation(); bar = null; render(); AW.open(); } else if (k === 'a') go('t-add'); else if (k === 'v') go('t-view'); else if (k === 'c') go('t-chk'); else if (k === 'p') go('t-play'); else if (k === 'x') go('t-rem'); else if (k === 'm') go('t-mero');
-  else if (k === 'escape') { if (connForm) { connForm = null; sel = { kind: 'board' }; } bar = null; barHL = false; hl.clear(); setModeQuiet('select'); render(); }
+  else if (k === 'escape') { if (connForm) { connForm = null; sel = backPick(); } bar = null; barHL = false; hl.clear(); setModeQuiet('select'); render(); }
 }, true);
 
 // ── the highlighter ──────────────────────────────────────────────────────────
@@ -2455,7 +2535,7 @@ function renderNewForm(el) {
     const g = id => el.querySelector('#' + id), keep = () => { f.name = g('nf-first').value; f.icon = g('nf-icon').value; if (g('nf-list')) f.list = g('nf-list').value; };
     el.querySelectorAll('[data-nk]').forEach(b => b.onclick = () => { keep(); f.pick = b.dataset.nk; render(); });
     el.querySelectorAll('[data-col]').forEach(b => b.onclick = () => { keep(); f.color = b.dataset.col; render(); });
-    g('nf-x').onclick = () => { newForm = null; sel = { kind: 'board' }; render(); };
+    g('nf-x').onclick = () => { newForm = null; sel = backPick(); render(); };
     g('nf-ok').onclick = () => { keep(); const t = createTracker(f); if (!t) return; newForm = null; sel = { kind: 'tracker', t: t.id }; said(`add ${t.name}`); touch(); toast(`Added ${t.name}. Undo takes it back.`); };
     g('nf-first').onkeydown = e => { if (e.key === 'Enter') g('nf-ok').click(); };
     return;
@@ -2474,7 +2554,7 @@ function renderNewForm(el) {
   }
   if (f.kind === 'entry') {
     const r = f.r, o = objOf(r) || (r.kind === 'band' ? T(r.t).meter.bands[r.i] : null);
-    if (!o) { newForm = null; sel = { kind: 'board' }; render(); return; }
+    if (!o) { newForm = null; sel = backPick(); render(); return; }
     const q = (f.q || '').toLowerCase(), have = new Set(ents(o));
     const list = VAULT.filter(v => !q || v.title.toLowerCase().includes(q) || (v.folder || '').toLowerCase().includes(q)).slice(0, 40);
     const byF = {}; for (const v of list) (byF[v.folder || 'vault'] ||= []).push(v);
@@ -2562,6 +2642,17 @@ function renameRef(r, o, n) {
 function renameBoard(n) {
   if (n === cur) return; if (boards[n]) { toast('A board with that name already exists.'); return; }
   boards[n] = boards[cur]; delete boards[cur]; if (neverSaved.has(cur)) { neverSaved.set(n, neverSaved.get(cur)); neverSaved.delete(cur); } else HOST?.rename(cur, n); cur = n; touch(); toast(`Renamed to “${n}”.`);
+}
+/** The board's name on the board: click it and it is a field right there — Enter or clicking away keeps it, Esc cancels. */
+function editBoardName(btn) {
+  if (!btn || btn.querySelector('input')) return;
+  btn.innerHTML = `<input class="rnin btin" value="${esc(cur)}" aria-label="Rename the board">`;
+  const inp = btn.querySelector('input'); inp.focus(); inp.select();
+  let done = false;
+  const finish = keep => { if (done) return; done = true; const v = inp.value.trim(); if (keep && v && v !== cur) renameBoard(v); else render(); };
+  inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } if (e.key === 'Escape') { e.preventDefault(); finish(false); } };
+  inp.onclick = e => e.stopPropagation();
+  inp.onblur = () => finish(true);
 }
 function removeDetour(t, st, d) {
   const i = t.steps.indexOf(st), k = st.detours.indexOf(d); if (k < 0) return;
@@ -2722,8 +2813,8 @@ function renderConnForm(el) {
   g('cf-min') && (g('cf-min').onchange = e => { cf.min = +e.target.value; render(); });
   el.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => { cf.kind = b.dataset.ck; render(); });
   g('cf-inv').onclick = () => { [cf.from, cf.to] = [cf.to, cf.from]; render(); toast('Inverted — check the sentence on top.'); };
-  g('cf-x').onclick = () => { connForm = null; sel = { kind: 'board' }; document.body.classList.remove('picking'); render(); };
-  g('cf-del') && (g('cf-del').onclick = () => removeLine(cf.link, () => { connForm = null; sel = { kind: 'board' }; }));
+  g('cf-x').onclick = () => { connForm = null; sel = backPick(); document.body.classList.remove('picking'); render(); };
+  g('cf-del') && (g('cf-del').onclick = () => removeLine(cf.link, () => { connForm = null; sel = backPick(); }));
   g('cf-ok').onclick = () => {
     const c = draftCond(cf); if (!c) return;
     if (cf.editing) cf.link.list.splice(cf.link.k, 1);
@@ -2735,7 +2826,7 @@ function renderConnForm(el) {
     else { const o = cf.to.kind === 'step' ? tT.steps[cf.to.i] : cf.to.kind === 'item' ? tT.items[cf.to.i] : cf.to.kind === 'band' ? tT.meter.bands[cf.to.i] : tT; const list = cf.kind === 'block' ? (cf.to.kind === 'tracker' ? (tT.blocks ||= []) : (o.blocks ||= [])) : (cf.to.kind === 'tracker' ? (tT.starts ||= []) : (o.needs ||= [])); list.push(c); }
     const was = !!cf.editing;
     connForm = was ? null : { from: cf.from, to: null, kind: cf.kind, editing: null, link: null, active: 'to' };
-    sel = was ? { kind: 'board' } : { kind: 'conn' };
+    sel = was ? backPick() : { kind: 'conn' };
     touch(); toast(`${was ? 'Saved' : 'Created'}: ${sentence}`);
   };
 }
@@ -2747,38 +2838,118 @@ function renderChecks(el) {
     + grp.map(([sv, h]) => { const l = is.map((x, k) => [x, k]).filter(([x]) => (sv === 'info' ? !['error', 'warn'].includes(x.sev) : x.sev === sv)); return l.length ? `<div class="card"><h4>${h} (${l.length})</h4><div class="cflist">${l.map(([x, k]) => `<button class="cfli ckli ${sv}" data-ck="${k}">${esc(x.text)}</button>`).join('')}</div></div>` : ''; }).join('');
   el.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => { const it = is[+b.dataset.ck]; ckIdx = +b.dataset.ck; if (it.go && typeof it.go === 'object') { sel = it.go; render(); setTimeout(() => document.querySelector('.board .sel')?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 60); } });
 }
+// ── the side panel's tabs on the Board tab (Miinthe, 2026-11-05, mock-up "Board Tab Side Panel Tabs") ──────────
+// Tracker · Step · Links · ⚙ instead of one long stack. Tracker is always first, so the tabs never shift; the title under
+// them follows the tab. Tapping a step opens Step, a tracker's name card opens Tracker; Links stays open while you tap
+// around. ⚙ = the board's own settings (also Edit › Board settings…). A connection, an entry, the mailbox, the checks and
+// the add forms still take the whole panel; closing one goes back to what was open before.
+let sideTab = 'tile', sideTabKey = null, lastPick = null;
+const TILE_TAB = { step: 'Step', band: 'Band', branch: 'Branch', item: 'Item', place: 'Place', sfield: 'Field', person: 'Person', detour: 'Detour', entries: 'Step' };
+const GEAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>';
+/** Is this pick still on the board (its tracker and its tile still there)? */
+function pickValid(p) {
+  const t = p && T(p.t); if (!t) return false;
+  if (p.kind === 'tracker') return true;
+  if (p.kind === 'step' || p.kind === 'entries') return !!t.steps?.[p.i];
+  if (p.kind === 'detour') return !!t.steps?.[p.i]?.detours?.[p.d];
+  if (p.kind === 'branch') return !!forkAt(t, p.s)[p.i];
+  if (p.kind === 'band') return !!t.meter?.bands?.[p.i];
+  if (p.kind === 'sfield') return !!sfObj(t, p.key);
+  if (p.kind === 'item') return !!t.items?.[p.i];
+  if (p.kind === 'place') return !!t.places?.[p.i];
+  if (p.kind === 'person') return !!t.people?.[p.i];
+  return false;
+}
+/** Where the panel goes back to after a connection, a form or the checks close: what was open before. */
+const backPick = () => (pickValid(lastPick) ? { ...lastPick } : { kind: 'board' });
+/** Render with another selection for a moment (the Tracker tab of a step, the ⚙ tab of a tile); false when the render
+ *  changed the selection itself (a tile that is gone) — it then drew the panel anew already. */
+function asSel(tmp, fn) { const real = sel; sel = tmp; fn(); if (sel !== tmp) return false; sel = real; return true; }
+function linkCardsOf(r, links) {
+  const isFrom = l => { if (l.from !== r.t) return false; if (r.kind === 'tracker') return true; if (r.kind === 'step') return l.fromStep === r.i; if (r.kind === 'band') return l.fromBd === r.i; if (r.kind === 'branch') return l.fromBrS === r.s && l.fromBr === r.i; if (r.kind === 'item') return l.c.item === T(r.t).items[r.i]?.name; if (r.kind === 'place') return l.fromPl === T(r.t).places[r.i]?.id; if (r.kind === 'sfield') return l.fromSf === r.key; if (r.kind === 'person') return l.c.cast === r.t && l.c.person === T(r.t).people[r.i]?.id; return false; };
+  const isTo = l => { const tr = toRefOf(l); if (l.kind === 'excl') return r.kind === 'tracker' && (l.c.a === r.t || l.c.b === r.t); if (tr.t !== r.t) return false; if (r.kind === 'tracker') return tr.kind === 'tracker'; return tr.kind === r.kind && tr.i === r.i; };
+  const deps = links.filter(isTo), affs = links.filter(l => isFrom(l) && !isTo(l));
+  return { deps, affs, n: deps.length + affs.length };
+}
+function linkCardsHtml(deps, affs, key) {
+  const list = (ls, empty) => ls.length ? `<div class="cflist">${ls.map(l => `<button class="cfli" data-lid="${esc(l.id)}" style="--c:${colorOf(T(l.from))}"><span class="ck">${CK[ckOf(l)]}</span>${esc(sentenceOf(l))}</button>`).join('')}</div>` : `<span class="mini">${empty}</span>`;
+  return `<div class="card v2dep"><h4>Depends on</h4>${list(deps, 'Nothing.')}<div class="btnrow" style="padding:6px 0 8px"><button data-nc="to" data-nck="${key}">+ Connection into this</button></div></div><div class="card v2dep"><h4>Affects</h4>${list(affs, 'Nothing.')}<div class="btnrow" style="padding:6px 0 8px"><button data-nc="from" data-nck="${key}">+ Connection from this</button></div></div>`;
+}
+const isStartsCard = c => /^(Starts when|Story links)$/.test(c.querySelector('h4')?.textContent.trim() || '');
 function renderSide(el) {
+  delete el.dataset.fk;
   if (sel.kind === 'checks') { renderChecks(el); return; }
   if (sel.kind === 'conn' && connForm) { renderConnForm(el); return; }
   if (sel.kind === 'newform' && newForm) { renderNewForm(el); return; }
-  renderSide0(el);
-  titleRename(el);
+  if (['notepad', 'mail', 'line', 'entry', 'lines', 'pend'].includes(sel.kind)) { renderSide0(el); titleRename(el); return; }
+  const t = T(sel.t), tileK = t && TILE_TAB[sel.kind] ? sel.kind : null, picked = !!t && (!!tileK || sel.kind === 'tracker');
+  if (!picked && sel.kind !== 'board') { renderSide0(el); return; }   // "Pick a tracker or a step on the board."
+  // the tab follows a new pick: a step opens Step, a tracker opens Tracker; Links stays
+  const key = JSON.stringify(sel);
+  if (key !== sideTabKey) { sideTabKey = key; if (!picked) sideTab = 'board'; else if (sideTab !== 'links') sideTab = tileK ? 'tile' : 'tracker'; }
+  if (!picked) sideTab = 'board';
+  if (sideTab === 'tile' && !tileK) sideTab = 'tracker';
+  lastPick = picked ? { ...sel } : sel.kind === 'board' ? null : lastPick;
+  const links = picked ? allLines() : [];
+  const tileRef = tileK && isTileRef(sel) ? { ...sel } : null, trRef = picked ? { kind: 'tracker', t: t.id } : null;
+  const nLinks = !picked ? 0 : linkCardsOf(tileRef || (tileK ? trRef : sel), links).n;
+  if (sideTab === 'board') { asSel({ kind: 'board' }, () => { renderBoardPanel(el); titleRename(el); }); el.dataset.fk = 'board'; }
+  else if (sideTab === 'tracker') {
+    const tmp = { kind: 'tracker', t: t.id };
+    if (!asSel(tmp, () => { renderSide0(el); titleRename(el); })) return;
+    el.dataset.fk = 'tracker';
+    tidySide(el, t);
+    el.querySelectorAll(':scope > .card').forEach(c => { if (isStartsCard(c)) c.remove(); });
+    sel === tmp || (() => { const keep = sel; sel = tmp; wireRun(el, t); sel = keep; })();
+    // the step you came from is marked in the list
+    if (tileK && sel.i != null && ['step', 'entries', 'detour'].includes(sel.kind)) el.querySelector(`#tp-pills .pill[data-k="${sel.i}"]`)?.classList.add('came');
+  } else if (sideTab === 'tile') {
+    const real = sel; renderSide0(el); if (sel !== real) return; titleRename(el); el.dataset.fk = sel.kind;
+    tidySide(el, t);
+    el.querySelectorAll(':scope > .card').forEach(c => { if (isStartsCard(c)) c.remove(); });
+    el.querySelector('#s-fork') && (el.querySelector('#s-fork').onclick = () => addFork(T(sel.t), sel.i));
+    // the tracker's name in the line above the title opens its tab
+    const k = el.querySelector(':scope > .kind'), nm = esc(t.name);
+    if (k && k.innerHTML.includes(nm)) { k.innerHTML = k.innerHTML.replace(nm, `<button class="kt" type="button" title="Open ${nm}">${nm}</button>`); k.querySelector('.kt').onclick = () => { sideTab = 'tracker'; render(); }; }
+  } else {
+    // Links: this tile's connections on top, the whole tracker's below ("Starts when" moved here from the tracker)
+    const r = tileRef || trRef, here = tileRef ? linkCardsOf(tileRef, links) : null, whole = linkCardsOf(trRef, links);
+    const kindLine = tileK ? `${sel.kind === 'step' ? `Step ${sel.i + 1}` : TILE_TAB[sel.kind]} of <button class="kt" type="button" title="Open ${esc(t.name)}">${esc(t.name)}</button>` : 'Tracker';
+    el.innerHTML = `<span class="kind">${kindLine}</span><h2>${esc(tileK ? (selName() || t.name) : t.name)}</h2>`
+      + (here ? `<div class="lsec">This ${TILE_TAB[sel.kind].toLowerCase()}</div>${linkCardsHtml(here.deps, here.affs, 'tile')}` : '')
+      + `<div class="lsec">${tileK ? 'The whole tracker' : esc(t.name)}</div>`;
+    // "Starts when" with its editor, taken from the tracker's own panel (wired there)
+    const tmpBox = document.createElement('div'), tmp = { kind: 'tracker', t: t.id };
+    if (!asSel(tmp, () => renderSide0(tmpBox))) return;
+    const starts = [...tmpBox.querySelectorAll(':scope > .card')].find(isStartsCard);
+    if (starts) { starts.querySelector('h4').textContent = 'Starts when'; el.append(starts); }
+    if (!tileK) el.insertAdjacentHTML('beforeend', linkCardsHtml(whole.deps, whole.affs, 'tracker'));
+    else if (!starts) el.insertAdjacentHTML('beforeend', `<span class="mini" style="display:block;padding:2px 0 8px">${whole.n ? `${whole.n} connection${whole.n > 1 ? 's' : ''} — see the Tracker’s Links.` : 'No connections of its own.'}</span>`);
+    if (tileK) titleRename(el);
+    el.dataset.fk = 'links:' + (tileK ? 'tile' : 'tracker');
+    el.querySelector(':scope > .kind .kt') && (el.querySelector(':scope > .kind .kt').onclick = () => { sideTab = 'tracker'; render(); });
+    el.querySelectorAll('[data-lid]').forEach(b => b.onclick = () => { const l = links.find(x => x.id === b.dataset.lid); if (l) openLine(l); });
+    el.querySelectorAll('[data-nc]').forEach(b => b.onclick = () => { const rr = b.dataset.nck === 'tracker' ? trRef : r; openConnForm(b.dataset.nc === 'from' ? { from: { ...rr } } : { to: { ...rr } }); });
+  }
+  // the tabs: the panel's top row
+  const tabs = document.createElement('div'); tabs.className = 'stabs'; tabs.setAttribute('role', 'tablist');
+  const tb = (k, label, extra = '') => `<button type="button" role="tab" data-stab="${k}" aria-selected="${sideTab === k}"${picked || k === 'board' ? '' : ' disabled'}${extra}>${label}</button>`;
+  tabs.innerHTML = tb('tracker', 'Tracker') + (tileK ? tb('tile', TILE_TAB[sel.kind]) : '') + tb('links', `Links<span class="c">${nLinks}</span>`) + tb('board', GEAR_SVG, ' class="gear" aria-label="Board settings" title="Board settings"');
+  tabs.querySelectorAll('[data-stab]').forEach(b => b.onclick = () => { if (b.disabled) return; sideTab = b.dataset.stab; sideTabKey = JSON.stringify(sel); render(); });
+  el.prepend(tabs);
+}
+/** What the Step and Tracker tabs share: hide the chat lines when not showing, and add-ons + note at the end. */
+function tidySide(el, t) {
   if (!showing()) {
     el.querySelectorAll('.card').forEach(c => { const h = c.querySelector('h4')?.textContent.trim() || ''; if (/^In /.test(h) || h === 'Where it stands' || h === `In ${chat}`) c.remove(); });
-    el.querySelectorAll(':scope > .here.chatline').forEach(x => x.remove());   // only where-it-stands lines; ← back, read-only, counts stay
+    el.querySelectorAll(':scope > .here.chatline').forEach(x => x.remove());
   }
-  // one card each way, the same everywhere
-  const r = sel; if (!isTileRef(r)) return;
-  const dropTitles = /^(Waiting on this( band)?|Leads to|Only possible once|Only reachable once|Needs something first|What it waits for|Starts later)$/;
-  el.querySelectorAll('.card h4').forEach(h => { if (h.textContent.trim() === 'Story links') h.textContent = 'Starts when'; });
+  const dropTitles = /^(Waiting on this( band)?|Leads to|Only possible once|Only reachable once|Needs something first|What it waits for|Starts later|Depends on|Affects)$/;
   el.querySelectorAll('.card').forEach(c => { const h = c.querySelector('h4')?.textContent.trim() || ''; if (dropTitles.test(h)) c.remove(); });
-  const links = allLines();
-  const isFrom = l => { if (l.from !== r.t) return false; if (r.kind === 'tracker') return true; if (r.kind === 'step') return l.fromStep === r.i; if (r.kind === 'band') return l.fromBd === r.i; if (r.kind === 'branch') return l.fromBrS === r.s && l.fromBr === r.i; if (r.kind === 'item') return l.c.item === T(r.t).items[r.i]?.name; if (r.kind === 'place') return l.fromPl === T(r.t).places[r.i]?.id; if (r.kind === 'sfield') return l.fromSf === r.key; if (r.kind === 'person') return l.c.cast === r.t && l.c.person === T(r.t).people[r.i]?.id; return false; };
-  const isTo = l => { const tr = toRefOf(l); if (l.kind === 'excl') return r.kind === 'tracker' && (l.c.a === r.t || l.c.b === r.t); if (tr.t !== r.t) return false; if (r.kind === 'tracker') return tr.kind === 'tracker'; return tr.kind === r.kind && tr.i === r.i; };
-  const list = (ls, empty) => ls.length ? `<div class="cflist">${ls.map(l => `<button class="cfli" data-lid="${esc(l.id)}" style="--c:${colorOf(T(l.from))}"><span class="ck">${CK[ckOf(l)]}</span>${esc(sentenceOf(l))}</button>`).join('')}</div>` : `<span class="mini">${empty}</span>`;
-  const deps = links.filter(isTo), affs = links.filter(l => isFrom(l) && !isTo(l));
-  const box = document.createElement('div');
-  box.innerHTML = `<div class="card v2dep"><h4>Depends on</h4>${list(deps, 'Nothing.')}<div class="btnrow" style="padding:6px 0 8px"><button data-nc="to">+ Connection into this</button></div></div><div class="card v2dep"><h4>Affects</h4>${list(affs, 'Nothing.')}<div class="btnrow" style="padding:6px 0 8px"><button data-nc="from">+ Connection from this</button></div></div>`;
-  // order: name · what it is · set-up · Depends on / Affects · add-ons · note
   const isAdd = h => /^(Entries|While |What's worth|What counts|Detours|When are we|Places come from)/.test(h), isNote = h => h === 'Note' || h === 'More';
   const hOf = c => c.querySelector('h4')?.textContent.trim() || '';
   const cards = [...el.querySelectorAll(':scope > .card')];
-  const adds = cards.filter(c => isAdd(hOf(c))), notes = cards.filter(c => isNote(hOf(c)));
-  const tail = [...box.children, ...adds, ...notes];
-  // what sits between an add-on card and the next card (a hint line) travels with it
-  tail.forEach(c => el.append(c));
-  el.querySelectorAll('[data-lid]').forEach(b => b.onclick = () => { const l = links.find(x => x.id === b.dataset.lid); if (l) openLine(l); });
-  el.querySelectorAll('[data-nc]').forEach(b => b.onclick = () => openConnForm(b.dataset.nc === 'from' ? { from: { ...r } } : { to: { ...r } }));
+  [...cards.filter(c => isAdd(hOf(c))), ...cards.filter(c => isNote(hOf(c)))].forEach(c => el.append(c));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -3198,7 +3369,7 @@ function deleteSel() {
   const t = selTracker();
   if (sel.kind === 'band') { if (sel.i === 0) { toast('The lowest band stays — a meter needs somewhere to start.'); return; } const bd = selBand(); if (bd) removeNow(`Remove the band ${bd.name}?`, 'Undo brings it back.', () => { t.meter.bands.splice(t.meter.bands.indexOf(bd), 1); sel = { kind: 'tracker', t: t.id }; said(`remove the band ${bd.name}`); touch(); toast(`Removed the band ${bd.name}. Undo brings it back.`); }, false); return; }
   if (sel.kind === 'detour') { const st = t?.steps[sel.i], d = st?.detours?.[sel.d]; if (d) removeNow(`Remove the detour ${d.name || d}?`, 'Undo brings it back.', () => removeDetour(t, st, d), false); return; }
-  if (sel.kind === 'line') { const l = allLines().find(x => x.c === sel.c); if (l) removeLine(l, () => { sel = selBeforeLines && isTileRef(selBeforeLines) ? selBeforeLines : { kind: 'board' }; }); return; }
+  if (sel.kind === 'line') { const l = allLines().find(x => x.c === sel.c); if (l) removeLine(l, () => { sel = selBeforeLines && isTileRef(selBeforeLines) ? selBeforeLines : backPick(); }); return; }
   const o = selObj(); if (!o) return;
   const r = { ...sel }, what = removeHint(r), big = isBigRemove(r);
   const go = () => {
@@ -3368,8 +3539,8 @@ function act(a) {
   if (a === 'keys') { keysDialog(); return; }
   if (a === 'suggest') { setupDialog(); return; }
   if (a === 'redo') { redo(); return; }
-  if (a === 'settings') { sel = { kind: 'board' }; render(); return; }
-  if (a === 'rename') { nameDialog('Rename board', 'Chats it is applied to keep using it under the new name.', cur, renameBoard); return; }
+  if (a === 'settings') { if (!pickValid(sel)) sel = backPick(); if (tab === 'time' || tab === 'world') tab = 'board'; sideTab = 'board'; sideTabKey = JSON.stringify(sel); render(); return; }
+  if (a === 'rename') { if (!document.getElementById('bt')) { tab = 'board'; render(); } const b = document.getElementById('bt'); if (b) { b.scrollIntoView({ block: 'nearest' }); editBoardName(b); } else nameDialog('Rename board', 'Chats it is applied to keep using it under the new name.', cur, renameBoard); return; }
   if (a === 'renamesel') {
     if (sel.kind === 'detour') { const t = selTracker(), st = t?.steps[sel.i], d = st && detOf(st, sel.d); if (d) nameDialog('Rename', '', d.name, n => renameDetour(t, st, d, n)); return; }
     if (sel.kind === 'band') { const r = { ...sel }, o = selBand(); if (o) nameDialog('Rename', 'Lines and conditions follow the new name.', o.name, n => renameRef(r, o, n)); return; }
@@ -4534,7 +4705,7 @@ function renderBoard(p) {
   if (focusAt) { const saved = focusAt; fv = { rows: doc.trackers.map(t => t.id), show: null, links: null }; const all = (() => { const keep = fv; fv = null; const a = connections(); fv = keep; return a; })(); fv = computeFocus(all); if (!fv) focusAt = null; void saved; }
   const links = connections(), lay = laneLayout(links), n = viewTrackers().length;
   const padL = lay.runway ? lay.runway * RUN + 14 : 4;
-  p.innerHTML = `<h1><button class="boardtitle${sel.kind === 'board' ? ' sel' : ''}" id="bt" title="Board settings: folders, mode, applied to">${esc(cur)} <span style="font-size:14px;color:var(--muted)">⚙️</span></button></h1><p class="sub">Reads ${doc.folders.map(esc).join(', ') || 'no folders yet'} · ${play ? 'showing the <b>play-through</b> (sandbox)' : `showing where the chat <b>${esc(chat)}</b> stands`} · hover a line to see what it means</p>
+  p.innerHTML = `<h1><button class="boardtitle" id="bt" title="Click to rename">${esc(cur)}</button></h1><p class="sub">Reads ${doc.folders.map(esc).join(', ') || 'no folders yet'} · ${play ? 'showing the <b>play-through</b> (sandbox)' : `showing where the chat <b>${esc(chat)}</b> stands`} · hover a line to see what it means</p>
     ${focusMode && !fv ? `<div class="focusbar"><span class="fl">◎ Focus</span><span>Click a step, a tracker or an item to focus on it.</span><button class="btn" id="fx">Exit focus ✕</button></div>` : ''}
     ${fv ? `<div class="focusbar"><span class="fl">◎ Focus</span>${[...focusTrail, focusAt].map((f, k, a) => k < a.length - 1 ? `<button class="crumb" data-crumb="${k}">${esc(focusLabel(f))}</button><span class="sepc">›</span>` : `<b>${esc(focusLabel(f))}</b>`).join('')}<span class="mini">${fv.links.size} connection${fv.links.size === 1 ? '' : 's'}${fv.hidden ? ` · ${fv.hidden} other tracker${fv.hidden === 1 ? '' : 's'} hidden` : ''}</span><button class="btn" id="ffull">← Full view</button><button class="btn" id="fx">Exit focus ✕</button></div>` : ''}
     ${boardOff() ? `<div class="offbar">This board is switched off for <b>${esc((doc.off || []).includes(chat) ? chat : (doc.off || []).find(x => /\(character\)/.test(x)))}</b> — nothing of it shows in that chat. <button class="btn" id="b-on">Switch on</button></div>` : ''}
@@ -4567,7 +4738,7 @@ function renderBoard(p) {
     const d = el.dataset; const r = d.st ? { kind: 'step', t: d.st.split(':')[0], i: +d.st.split(':')[1] } : d.tr ? { kind: 'tracker', t: d.tr } : { kind: 'item', t: d.it.split(':')[0], i: +d.it.split(':')[1] };
     void r;
   }));
-  p.querySelector('#bt').onclick = () => { sel = { kind: 'board' }; render(); };
+  p.querySelector('#bt').onclick = e => editBoardName(e.currentTarget);   // renames in place; the settings are the ⚙ tab (Miinthe, 2026-11-05)
   p.querySelectorAll('[data-br]').forEach(b => b.onclick = e => { const [t, s0, i] = b.dataset.br.split(':'); tileClick(e, { kind: 'branch', t, s: +s0, i: +i }, b); });
   p.querySelectorAll('[data-dts]').forEach(c => {
     const show = () => { document.querySelector('.fanpop')?.remove(); const r = c.getBoundingClientRect(); const pop = document.createElement('div'); pop.className = 'fanpop'; pop.innerHTML = c.querySelector('.fan').innerHTML; document.body.appendChild(pop); pop.style.left = Math.max(8, Math.min(r.left, innerWidth - pop.offsetWidth - 8)) + 'px'; pop.style.top = (r.bottom + 3) + 'px';
@@ -4955,7 +5126,7 @@ function leaveTools(keep) {
   if (keep !== 'focus' && focusC) { focusC = null; focusHist = []; focusBr = null; }
   if (keep !== 'play' && play) stopPlay();
   if (keep !== 'note' && mode === 'note') { mode = 'select'; document.body.classList.remove('mode-note'); noteEdit = null; if (sel.kind === 'notepad' && selBeforeNotes) sel = selBeforeNotes; selBeforeNotes = null; }
-  if (keep !== 'lines' && (sel.kind === 'lines' || sel.kind === 'line')) { sel = selBeforeLines || { kind: 'board' }; selBeforeLines = null; }
+  if (keep !== 'lines' && (sel.kind === 'lines' || sel.kind === 'line')) { sel = selBeforeLines || backPick(); selBeforeLines = null; }
   if (keep !== 'focus' && focusMode) { focusMode = false; focusAt = null; focusTrail = []; }
 }
 function renderTools0() {
@@ -5998,7 +6169,7 @@ function renderDraftReader(el) {
   };
   g('dr-rm').onclick = () => confirmDialog('Remove this new entry?', 'It is unlinked everywhere on the board and never written into your vault. Undo brings it back.', 'Remove', () => {
     const walk = o => { if (Array.isArray(o)) { o.forEach(walk); return; } if (!o || typeof o !== 'object') return; for (const [k, v] of Object.entries(o)) { if (k === 'entries' && Array.isArray(v)) o[k] = v.filter(x => x !== d.title); else walk(v); } };
-    walk(doc.trackers); doc.newEntries = doc.newEntries.filter(x => x !== d); sel = readerBack || { kind: 'board' }; readerBack = null; touch(); });
+    walk(doc.trackers); doc.newEntries = doc.newEntries.filter(x => x !== d); sel = readerBack || backPick(); readerBack = null; touch(); });
 }
 function renderReader(el) {
   if (isDraftEntry(sel.title)) { renderDraftReader(el); return; }
@@ -6044,14 +6215,43 @@ const WLOOK_HINT = { phone: 'Instant messages, read receipts.', letters: 'Letter
 const WDEF = { rumorName: '', newsName: '', on: false, look: 'phone', sections: { feed: true, news: true, msgs: true }, alive: { open: true, big: true, time: true, every: false, everyN: 10, quiet: false, pulse: true, pace: 'normal', movesMin: 0, movesMax: 4, realReplies: true }, paused: false, first: { cast: true, main: true }, pics: { on: true, theirs: true }, planned: [], people: {}, voices: [] };
 function worldDoc() { const w = WORLD ? WORLD.normWorld(doc.world) : null; return w ? { ...WDEF, ...w, planned: Array.isArray(w.planned) ? w.planned : (doc.world?.planned || []) } : WDEF; }
 function setWorld(patch) { doc.world = { ...worldDoc(), ...patch }; touch(); }
+// World tab v2 (Miinthe, 2026-11-04, mock-up https://claude.ai/artifact/NRPy5mpdayCiBbE3NTnp8e): the side panel has tabs —
+// Settings · Planned · ☆ Mero — and shows a person's or a voice's card when one is tapped; the main page never changes height
+let wSide = 'settings', wLatelyFilt = 'all';
 function renderWorldSide(el) {
+  const w = worldDoc();
+  if (!w.on) { renderWorldSettings(el, true); return; }
+  const tabs = [['settings', 'Settings'], ['planned', `📅 Planned · ${w.planned.length}`], ['mero', '☆ Mero']];
+  el.innerHTML = `<span class="kind">World</span><h2>${esc(cur)}</h2><div class="wstabs" role="tablist">${tabs.map(([v, l]) => `<button role="tab" data-wside="${v}" aria-selected="${wSide === v}">${l}</button>`).join('')}</div><div class="wsview"></div>`;
+  const view = el.querySelector('.wsview');
+  if (wSide === 'planned') { view.innerHTML = card('Planned messages', planList(w) + '<div class="btnrow" style="padding:6px 0 8px"><button id="w-p-add">+ Plan a message</button></div>' + planEditor(w)); wirePlans(view); }
+  else if (wSide === 'mero') { view.innerHTML = card('☆ Set up with Mero', setupCard(w)); wireSetup(view); }
+  else if (wSide === 'person' && wPersonOpen) { view.innerHTML = personCard(w, wPersonOpen); wirePeople(view); }
+  else if (wSide === 'voice' && (w.voices || []).some(v => v.id === wVoiceSel)) { view.innerHTML = voiceEditor(w); wireVoiceEditor(view); }
+  else { wSide = 'settings'; renderWorldSettings(view, false); foldSettingGroups(view); }
+  el.querySelectorAll('[data-wside]').forEach(b => b.onclick = () => { wSide = b.dataset.wside; wPersonOpen = null; wVoiceSel = null; render(); });
+}
+/** Settings tab: its groups fold (the first two open), each title says how it is set. */
+const settingFold = new Map();
+function foldSettingGroups(view) {
+  [...view.querySelectorAll(':scope > .card')].forEach((c, i) => {
+    const h = c.querySelector(':scope > h4'); if (!h) return;
+    const key = h.textContent.split(' · ')[0].trim(), open = settingFold.has(key) ? settingFold.get(key) : i < 2;
+    c.classList.add('fcard'); c.classList.toggle('closed', !open);
+    h.setAttribute('role', 'button'); h.tabIndex = 0; h.setAttribute('aria-expanded', open);
+    const flip = () => { const now = c.classList.toggle('closed'); settingFold.set(key, !now); h.setAttribute('aria-expanded', !now); };
+    h.onclick = flip; h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
+  });
+}
+function renderWorldSettings(el, head = true) {
   const w = worldDoc(), title = k => WORLD ? WORLD.sectionTitle(k, w.look) : k;
-  el.innerHTML = `<span class="kind">World</span><h2>${esc(cur)}</h2>
+  const secOn = ['feed', 'news', 'msgs'].filter(k => w.sections[k]).length, pace = { quiet: 'Quiet', normal: 'Normal', lively: 'Lively', own: 'your own' }[w.alive.pace || 'normal'];
+  el.innerHTML = `${head ? `<span class="kind">World</span><h2>${esc(cur)}</h2>` : ''}
     ${card('World layer', line('Use the world layer in this story', 'Off: no world button, no panel, no AI calls in this story\'s chats.', swH('w-on', w.on), w.on))}
-    ${w.on ? card('Look', line('How people reach each other', WLOOK_HINT[w.look], segH('w-look', WLOOKS, w.look), false, true))
-      + card('Sections', ['feed', 'news', 'msgs'].map(k => line(esc(title(k)), '', swH('w-sec-' + k, w.sections[k]), w.sections[k])).join('')
+    ${w.on ? card(`How people reach each other · ${w.look === 'letters' ? 'Letters' : 'Phone'}`, line('How people reach each other', WLOOK_HINT[w.look], segH('w-look', WLOOKS, w.look), false, true))
+      + card(`Sections · ${secOn} on`, ['feed', 'news', 'msgs'].map(k => line(esc(title(k)), '', swH('w-sec-' + k, w.sections[k]), w.sections[k])).join('')
         + '<div class="ln"><span class="mini">A section that\'s off leaves the rail and stays quiet. People is always there.</span></div>')
-      + card('How alive', line('Catch up when I open it', 'after a while away from the world', swH('w-a-open', w.alive.open), w.alive.open)
+      + card(`How alive · ${w.paused ? 'paused' : pace}`, line('Catch up when I open it', 'after a while away from the world', swH('w-a-open', w.alive.open), w.alive.open)
         + line('When something big happens', 'something the people around would talk about: a public scene, a fight, an accident, news, a party. The story helper notices it in the reading it already does each turn.', swH('w-a-big', w.alive.big), w.alive.big)
         + line('When story time passes', 'a new story day (a state tracker with a Day field)', swH('w-a-time', w.alive.time), w.alive.time)
         + line(`Every <input type="number" class="s" id="w-a-n" min="1" max="999" value="${w.alive.everyN}" style="width:56px;margin:0 4px" aria-label="Every how many exchanges"> exchanges`, 'an exchange = your message and the reply', swH('w-a-every', w.alive.every), w.alive.every)
@@ -6060,10 +6260,10 @@ function renderWorldSide(el) {
         + (w.alive.pulse ? `<div class="ln stack"><span>How many after each reply</span>${segH('w-a-pace', [['quiet', 'Quiet 0–2'], ['normal', 'Normal 0–4'], ['lively', 'Lively 1–6'], ['own', 'Your own']], w.alive.pace || 'normal')}${w.alive.pace === 'own' ? `<span>From <input type="number" class="s" id="w-a-min" min="0" max="10" value="${w.alive.movesMin ?? 0}" style="width:56px" aria-label="At least"> to <input type="number" class="s" id="w-a-max" min="1" max="10" value="${w.alive.movesMax ?? 4}" style="width:56px" aria-label="At most"> moves</span>` : ''}</div>` : '')
         + line('Replies take their time', 'each person answers by how chatty they are (their Messages dial below), later while busy in the scene with you, and in the morning when it\'s night on the story clock. Off: everyone answers right away.', swH('w-a-real', w.alive.realReplies !== false), w.alive.realReplies !== false)
         + line('Pause the world', 'nothing new comes in until you switch it back', swH('w-pause', w.paused), w.paused))
-      + (w.sections.feed || w.sections.news ? card('News and rumors', `<div class="ln stack"><span>The news account<small>reports the news when this story has no newspaper voice of its own (Voices and regulars)${w.look === 'letters' ? '' : ''}</small></span><input class="s" id="w-news" value="${esc(w.newsName || '')}" placeholder="${w.look === 'letters' ? 'The Gazette' : 'Local News'}" aria-label="The news account's name"></div>`
+      + (w.sections.feed || w.sections.news ? card('News and rumor accounts', `<div class="ln stack"><span>The news account<small>reports the news when this story has no newspaper voice of its own (Voices and regulars)${w.look === 'letters' ? '' : ''}</small></span><input class="s" id="w-news" value="${esc(w.newsName || '')}" placeholder="${w.look === 'letters' ? 'The Gazette' : 'Local News'}" aria-label="The news account's name"></div>`
         + `<div class="ln stack"><span>The rumor account<small>anyone can post or send it a tip without a name${w.look === 'letters' ? ' — with Letters it shows as an unsigned note' : ''}</small></span><input class="s" id="w-rumor" value="${esc(w.rumorName || '')}" placeholder="Whispers" aria-label="The rumor account's name"></div>`
         + `<div class="ln"><span class="mini">Rumors also start from the story and spread by word of mouth. To let them move a story tracker, switch it on in that tracker's settings ("News and rumors can move this").</span></div>`) : '')
-      + card('Pictures', line('Photos become real pictures', 'a 📷 photo in a message is drawn by SillyTavern\'s Image Generation (whatever you set up there, with its style words). Each picture is one image call. Older photos keep their 🎨 button to draw them by hand.', swH('w-p-on', (w.pics || WDEF.pics).on), (w.pics || WDEF.pics).on)
+      + card(`Pictures · ${(w.pics || WDEF.pics).on ? 'on' : 'off'}`, line('Photos become real pictures', 'a 📷 photo in a message is drawn by SillyTavern\'s Image Generation (whatever you set up there, with its style words). Each picture is one image call. Older photos keep their 🎨 button to draw them by hand.', swH('w-p-on', (w.pics || WDEF.pics).on), (w.pics || WDEF.pics).on)
         + line('People send photos too', 'now and then, when it fits. Off: only the photos you send.', swH('w-p-theirs', (w.pics || WDEF.pics).theirs), (w.pics || WDEF.pics).theirs))
       + card('Who can write to you first', line('The Cast', 'when a plan calls for it, or now and then just to chat', swH('w-f-cast', w.first.cast), w.first.cast)
         + line(esc(HD?.mainName || 'The main character'), '', swH('w-f-main', w.first.main), w.first.main)) : ''}`;
@@ -6134,15 +6334,22 @@ function wireSetup(el) {
   };
   const x = el.querySelector('#w-su-x'); if (x) x.onclick = () => { wSetup = null; render(); };
 }
+// the People card's explanation, as an ⓘ on its title (Miinthe, 2026-11-04: "can we make it an info point instead to keep the UI neat")
+const PEOPLE_TIP = 'G gossip · M messages · P posts — tap a dial to change it. Tap a name for their card. 🔇 mute · ✕ out of the world.';   // few words (Miinthe, 2026-11-04: "why use many words, if few works too?")
+let wLatelyOpen = false;   // Lately shows 3, ＋ more shows up to 15 (in-window only)
 function worldMainCards(w) {
-  return card('☆ Set up with Mero', setupCard(w)) + card('Planned messages', planList(w) + '<div class="btnrow" style="padding:6px 0 8px"><button id="w-p-add">+ Plan a message</button></div>' + planEditor(w))
-    + card('People in the world', '<div class="ln"><span class="mini">How each person acts in the world: how much they gossip, write to people and post, what they care about, and how they write (quirks, in your own words). Muted: they never write to you first or post, and their planned messages to you wait until you unmute them.</span></div>' + ((wPeople().length + 1) > 8 ? '<input class="s wps" id="w-p-search" placeholder="Find someone…" aria-label="Find someone">' : '') + '<div class="wplist"><div class="wphead"><span>Name</span><span>Gossips · Messages · Posts</span><span></span></div>' + [['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name])].map(([k, nm], n) => personBlock(w, k, nm, n)).join('') + '</div>')
-    + card('Voices and regulars', voicesCard(w));
+  return '<div class="wcol">' + card(`People in the world<i class="ii wtip" title="${esc(PEOPLE_TIP)}" aria-label="${esc(PEOPLE_TIP)}">ⓘ</i>`, `<div class="ln"><span class="mini tip">${esc(PEOPLE_TIP)}</span></div>` + ((wPeople().length + 1) > 8 ? '<input class="s wps" id="w-p-search" placeholder="Find someone…" aria-label="Find someone">' : '') + '<div class="wplist"><div class="wphead"><span>Name</span><span>Gossips · Messages · Posts</span><span></span></div>' + [['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name])].map(([k, nm], n) => personBlock(w, k, nm, n)).join('') + '</div>')
+    + '</div><div class="wcol">' + card('Voices and regulars', voicesCard(w)) + '</div>';
 }
 function wireWorldMain(el) {
-  wireSetup(el);
-  wirePlans(el);
-  // the compact people list: a dial cycles low → avg → high, mute toggles, ✎ opens one person
+  foldWorldCards(el);
+  wirePeople(el);
+  wireVoices(el);
+  el.querySelectorAll('[data-wperson]').forEach(b => b.onclick = () => { const k = b.dataset.wperson, again = wSide === 'person' && wPersonOpen === k; wPersonOpen = again ? null : k; wVoiceSel = null; wSide = again ? 'settings' : 'person'; render(); });
+}
+/** The people's controls — in the list and on a person's card (World tab v2). */
+function wirePeople(el) {
+  // a dial cycles low → avg → high, mute toggles, ✕ takes them out of the world
   const setP = (k, patch) => { const ppl = { ...(worldDoc().people || {}) }; ppl[k] = { ...(ppl[k] || { quirks: '' }), ...patch }; if (patch.muted === false) delete ppl[k].muted; setWorld({ people: ppl }); };
   // a tap cycles low → avg → high (→ never, for Gossips and Posts) → low
   el.querySelectorAll('[data-dial]').forEach(b => b.onclick = () => { const [k, d] = b.dataset.dial.split('|'); const v = Number(dialOf(worldDoc().people?.[k], d)); setP(k, { [d]: NEVER_OK(d) ? (v + 1) % 4 : v % 3 + 1 }); });
@@ -6161,10 +6368,8 @@ function wireWorldMain(el) {
     ppl[a] = { ...(ppl[a] || { quirks: '' }), hush: on ? [...cur, o] : cur }; if (!ppl[a].hush.length) delete ppl[a].hush;
     setWorld({ people: ppl });
   });
-  el.querySelectorAll('[data-wp-open]').forEach(b => b.onclick = () => { wPersonOpen = wPersonOpen === b.dataset.wpOpen ? null : b.dataset.wpOpen; render(); });
   const ps = el.querySelector('#w-p-search'); if (ps) ps.oninput = () => { const q = ps.value.trim().toLowerCase(); el.querySelectorAll('[data-wrow]').forEach(r => { r.hidden = !!q && !r.dataset.wrow.includes(q); }); };
   el.querySelectorAll('[data-wi]').forEach(t => t.oninput = () => { doc.world ||= {}; const ppl = (doc.world.people ||= {}); ppl[t.dataset.wi] = { ...(ppl[t.dataset.wi] || {}), interests: t.value.split(',').map(x => x.trim()).filter(Boolean).slice(0, 3) }; dirty = true; });
-  wireVoices(el);
   // quirks: kept as typed (no redraw while typing), saved with the board
   el.querySelectorAll('[data-wq]').forEach(t => t.oninput = () => { doc.world ||= {}; const ppl = (doc.world.people ||= {}); ppl[t.dataset.wq] = { ...(ppl[t.dataset.wq] || {}), quirks: t.value }; dirty = true; });
   el.querySelectorAll('[data-wq]').forEach(t => t.onchange = () => { if (!document.querySelector('#t-save')) render(); });
@@ -6190,28 +6395,43 @@ const DIAL_WORD = ['never', 'low', 'avg', 'high'];
 const neverOn = (w, a, b) => !!((w.people?.[a]?.never || []).includes(b) || (w.people?.[b]?.never || []).includes(a));
 const neverChoices = k => [['user', wName('user')], ['main', HD?.mainName || 'The main character'], ...wPeople().map(x => [x.key, x.name]), ...(worldDoc().voices || []).map(v => ['v:' + v.id, v.name])].filter(([o]) => o !== k);
 function personBlock(w, k, nm, n) {
-  const pp = w.people?.[k] || {}, open = wPersonOpen === k;
+  const pp = w.people?.[k] || {}, sel = wSide === 'person' && wPersonOpen === k;
   if (pp.out) return `<div class="wprow out" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn" title="${esc(nm)}">${wPic(k, nm)}${esc(nm)} <small>— not in the world</small></span><button class="wmb" data-wout="${esc(k)}" title="Bring ${esc(nm)} back into the world">↩</button></div>`;
-  const dialBtn = (d, l) => { const v = Number(dialOf(pp, d)); return `<button class="wdot" data-dial="${esc(k)}|${d}" title="${l}: ${DIAL_WORD[v]} — tap to change" aria-label="${l}: ${DIAL_WORD[v]}"><b>${l[0]}</b><i>${'●'.repeat(v)}<span>${'●'.repeat(3 - v)}</span></i></button>`; };
-  return `<div class="wprow${open ? ' open' : ''}" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn" title="${esc(nm)}">${wPic(k, nm)}${esc(nm)}${pp.quirks || (pp.interests || []).length ? '<small> ✎</small>' : ''}</span>
-    <span class="wpd">${DIALS.map(([d, l]) => dialBtn(d, l)).join('')}</span>
+  const counts = HD?.worldSummary?.counts || {}, max = Math.max(1, ...Object.values(counts).map(Number).filter(Number.isFinite)), act = Number(counts[k]) || 0;
+  return `<div class="wprow${pp.muted ? ' muted' : ''}${sel ? ' sel' : ''}" data-wrow="${esc(nm.toLowerCase())}"><span class="wpn">${wPic(k, nm)}<button class="linkish" data-wperson="${esc(k)}" title="Open ${esc(nm)}'s card">${esc(nm)}</button>${pp.muted ? '<span class="wmuted">MUTED</span>' : ''}</span>
+    <span class="wpd">${DIALS.map(([d, l]) => dialBtn(pp, k, d, l)).join('')}</span>
+    <span class="wact" title="${act} post${act === 1 ? '' : 's'} and messages in this chat"><i style="width:${Math.round(100 * act / max)}%"></i></span>
     <button class="wmb${pp.muted ? ' on' : ''}" data-mute="${esc(k)}" aria-pressed="${pp.muted === true}" title="${pp.muted ? 'Muted — tap to unmute' : 'Mute: a break from the world — writes, answers and posts nothing until you unmute them (still hears what goes around)'}">🔇</button>
-    <button class="wmb" data-wp-open="${esc(k)}" aria-expanded="${open}" title="Interests and quirks">${open ? '▴' : '✎'}</button>
-    <button class="wmb" data-wout="${esc(k)}" title="Not in the world: ${esc(nm)} stays in your scenes, but writes, posts and shows up nowhere in the world">✕</button></div>
-    ${open ? `<div class="wpx"><input class="s wi" data-wi="${esc(k)}" value="${esc((pp.interests || []).join(', '))}" placeholder="Cares about (comma between): memes, photos of her own life">
-    <textarea class="s wq" data-wq="${esc(k)}" rows="2" placeholder="Quirks, e.g. sends several short texts in a row · spells badly · loves emoji · never uses capitals">${esc(pp.quirks || '')}</textarea>
-    <div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div>
-    <div class="wnever"><small>Never gossips about <span class="mini">— no rumors, no talk about their private business (only this person; loyalty to a leader or partner is already understood)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = (pp.hush || []).includes(o); return `<button class="wchip${on ? ' on' : ''}" data-hush="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🤐 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>` : ''}`;
+    <button class="wmb" data-wout="${esc(k)}" title="Not in the world: ${esc(nm)} stays in your scenes, but writes, posts and shows up nowhere in the world">✕</button></div>`;
+}
+const dialBtn = (pp, k, d, l) => { const v = Number(dialOf(pp, d)); return `<button class="wdot" data-dial="${esc(k)}|${d}" title="${l}: ${DIAL_WORD[v]} — tap to change" aria-label="${l}: ${DIAL_WORD[v]}"><b>${l[0]}</b><i>${'●'.repeat(v)}<span>${'●'.repeat(3 - v)}</span></i></button>`; };
+/** A person's card in the side panel (World tab v2): dials, what they did lately, what they heard, interests, quirks, never-lists. */
+function personCard(w, k) {
+  const pp = w.people?.[k] || {}, nm = k === 'main' ? (HD?.mainName || 'The main character') : wName(k), S = HD?.worldSummary || {};
+  const mine = (S.recent || []).filter(r => r.by === k).slice(0, 4), heard = (S.rumors || []).filter(r => (r.heard || []).includes(k));
+  return `<div class="wpcard"><div class="wpc-head">${wPic(k, nm, 'wpic big')}<div><h3>${esc(nm)}</h3><small>${pp.muted ? '🔇 muted · ' : ''}${pp.out ? 'not in the world' : 'in the world'}</small></div></div>
+    <div class="wpd">${DIALS.map(([d, l]) => dialBtn(pp, k, d, l)).join('')}</div>
+    ${card('Lately', mine.length ? mine.map(r => `<div class="ln"><span>${r.to ? `<small>→ ${esc(wName(r.to))}</small> ` : ''}${esc(r.text)}</span></div>`).join('') : '<div class="ln"><span class="mini">Quiet so far.</span></div>')}
+    ${card('Heard', heard.length ? heard.map(r => `<div class="ln"><span>“${esc(r.text)}”</span></div>`).join('') : '<div class="ln"><span class="mini">No rumors yet.</span></div>')}
+    ${card('Cares about and quirks', `<div class="wpx"><input class="s wi" data-wi="${esc(k)}" value="${esc((pp.interests || []).join(', '))}" placeholder="Cares about (comma between): memes, photos of her own life">
+    <textarea class="s wq" data-wq="${esc(k)}" rows="2" placeholder="Quirks, e.g. sends several short texts in a row · spells badly · loves emoji · never uses capitals">${esc(pp.quirks || '')}</textarea></div>`)}
+    ${card('Never', `<div class="wpx"><div class="wnever"><small>Never talks to <span class="mini">— no texts, no answers to each other's posts or comments (both ways; plans you make still go out)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = neverOn(w, k, o); return `<button class="wchip${on ? ' on' : ''}" data-never="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🚫 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div>
+    <div class="wnever"><small>Never gossips about <span class="mini">— no rumors, no talk about their private business (only this person; loyalty to a leader or partner is already understood)</span></small><span>${neverChoices(k).map(([o, onm]) => { const on = (pp.hush || []).includes(o); return `<button class="wchip${on ? ' on' : ''}" data-hush="${esc(k)}|${esc(o)}" aria-pressed="${on}">${on ? '🤐 ' : ''}${esc(onm)}</button>`; }).join('')}</span></div></div>`)}
+    <div class="btnrow" style="padding:6px 0 8px"><button data-wside="settings">Done</button><button data-mute="${esc(k)}">${pp.muted ? 'Unmute' : '🔇 Mute'}</button><button data-wout="${esc(k)}">${pp.out ? '↩ Back into the world' : 'Out of the world'}</button></div></div>`;
 }
 // voices (a newspaper, a shop) and regulars (recurring locals): list, editor, and a suggested mix to approve
 let wVoiceSel = null;
 function voicesCard(w) {
   const vs = w.voices || [];
-  let h = vs.length ? vs.map(v => `<div class="ln${wVoiceSel === v.id ? ' on' : ''}"><span><button class="linkish" data-wv="${esc(v.id)}">${esc(v.name)}${v.muted ? ' 🔇' : ''}</button><small>${v.kind === 'regular' ? 'a regular' : 'a story voice'} · posts ${['never', 'low', 'avg', 'high'][v.p === 0 ? 0 : v.p || 2]}${v.interests?.length ? ' · ' + esc(v.interests.join(', ')) : ''}</small></span></div>`).join('')
+  let h = vs.length ? vs.map(v => `<div class="ln wv${wSide === 'voice' && wVoiceSel === v.id ? ' on' : ''}"><span><button class="linkish" data-wv="${esc(v.id)}">${esc(v.name)}${v.muted ? ' 🔇' : ''}</button><small>${v.kind === 'regular' ? 'a regular' : 'a story voice'} · posts ${['never', 'low', 'avg', 'high'][v.p === 0 ? 0 : v.p || 2]}${v.interests?.length ? ' · ' + esc(v.interests.join(', ')) : ''}</small></span></div>`).join('')
     : '<div class="ln"><span class="mini">None yet. A voice is an institution or publication that fits the setting (a local paper, a shop, a guild board); a regular is a recurring local with a personality (a gossip, a grump, a conspiracy theorist).</span></div>';
   h += `<div class="btnrow" style="padding:6px 0 8px"><button id="w-v-add">+ Voice</button><button id="w-r-add">+ Regular</button></div>`;
-  const v = vs.find(x => x.id === wVoiceSel);
-  if (v) h += `<div class="wpe">
+  return h;
+}
+/** A voice's or regular's profile, in the side panel (World tab v2 — opening one no longer moves the page). */
+function voiceEditor(w) {
+  const v = (w.voices || []).find(x => x.id === wVoiceSel); if (!v) return '';
+  return `<span class="kind">${v.kind === 'regular' ? 'A regular' : 'A story voice'}</span><div class="wpe">
     <div class="ln stack"><span>Name</span><input class="s" id="w-v-name" value="${esc(v.name)}"></div>
     <div class="ln stack"><span>Kind</span>${segH('w-v-kind', [['voice', 'A story voice'], ['regular', 'A regular']], v.kind)}</div>
     <div class="ln stack"><span>Who they are</span><textarea class="s" id="w-v-bio" rows="2" placeholder="e.g. the town's only newspaper, nosy and proud of it">${esc(v.bio || '')}</textarea></div>
@@ -6220,22 +6440,23 @@ function voicesCard(w) {
     <div class="ln stack"><span>Cares about</span><input class="s" id="w-v-int" value="${esc((v.interests || []).join(', '))}" placeholder="comma between"></div>
     <div class="ln"><span>Muted</span>${swH('w-v-mute', v.muted === true)}</div>
     <div class="btnrow" style="padding:6px 0 8px"><button id="w-v-done">Done</button><button id="w-v-del">Delete</button></div></div>`;
-  return h;
 }
 function setVoice(id, patch) { setWorld({ voices: (worldDoc().voices || []).map(v => (v.id === id ? { ...v, ...patch } : v)) }); }
 function wireVoices(el) {
-  el.querySelectorAll('[data-wv]').forEach(b => b.onclick = () => { wVoiceSel = wVoiceSel === b.dataset.wv ? null : b.dataset.wv; render(); });
-  const add = kind => () => { const id = 'vc' + Date.now().toString(36); setWorld({ voices: [...(worldDoc().voices || []), { id, name: kind === 'regular' ? 'New regular' : 'New voice', kind, g: 2, m: 1, p: 2, interests: [] }] }); wVoiceSel = id; render(); };
+  el.querySelectorAll('[data-wv]').forEach(b => b.onclick = () => { const again = wSide === 'voice' && wVoiceSel === b.dataset.wv; wVoiceSel = again ? null : b.dataset.wv; wPersonOpen = null; wSide = again ? 'settings' : 'voice'; render(); });
+  const add = kind => () => { const id = 'vc' + Date.now().toString(36); setWorld({ voices: [...(worldDoc().voices || []), { id, name: kind === 'regular' ? 'New regular' : 'New voice', kind, g: 2, m: 1, p: 2, interests: [] }] }); wVoiceSel = id; wPersonOpen = null; wSide = 'voice'; render(); };
   const va = el.querySelector('#w-v-add'); if (va) va.onclick = add('voice');
   const ra = el.querySelector('#w-r-add'); if (ra) ra.onclick = add('regular');
+}
+function wireVoiceEditor(el) {
   const v = (worldDoc().voices || []).find(x => x.id === wVoiceSel); if (!v) return;
   const id = v.id, inPlace = (sel, key, fn = x => x) => { const t = el.querySelector(sel); if (t) t.oninput = () => { const vv = (doc.world?.voices || []).find(x => x.id === id); if (vv) { vv[key] = fn(t.value); dirty = true; } }; };
   inPlace('#w-v-name', 'name'); inPlace('#w-v-bio', 'bio'); inPlace('#w-v-quirks', 'quirks'); inPlace('#w-v-int', 'interests', x => x.split(',').map(y => y.trim()).filter(Boolean).slice(0, 3));
   wireSeg(el, 'w-v-kind', k => setVoice(id, { kind: k }));
   ['g', 'm', 'p'].forEach(d => wireSeg(el, `w-v-d-${d}`, x => setVoice(id, { [d]: Number(x) })));
   wireSw(el, 'w-v-mute', on => setVoice(id, { muted: on }));
-  el.querySelector('#w-v-done').onclick = () => { wVoiceSel = null; render(); };
-  el.querySelector('#w-v-del').onclick = () => { setWorld({ voices: (worldDoc().voices || []).filter(x => x.id !== id) }); wVoiceSel = null; render(); toast('Removed.'); };
+  el.querySelector('#w-v-done').onclick = () => { wVoiceSel = null; wSide = 'settings'; render(); };
+  el.querySelector('#w-v-del').onclick = () => { setWorld({ voices: (worldDoc().voices || []).filter(x => x.id !== id) }); wVoiceSel = null; wSide = 'settings'; render(); toast('Removed.'); };
 }
 // planned messages (stage 3, 2026-10-19): who → whom, when (one of the board's own conditions), the words
 let wPlanSel = null;
@@ -6306,7 +6527,7 @@ function wirePlans(el) {
   sel('w-p-to', v => setPlan(id, { to: v }));
   // a new kind: show its pickers, then take their first choices as the condition
   for (const [sx, key] of [['', 'cond'], ['2', 'cond2']]) {
-    wireSeg(el, 'w-p-kind' + sx, k => { setPlan(id, { [key]: { __kind: k } }); setTimeout(() => { const c = condFor(k, document.querySelector('.wpanel') || document.getElementById('side'), sx); if (c) setPlan(id, { [key]: c }); }, 0); });
+    wireSeg(el, 'w-p-kind' + sx, k => { setPlan(id, { [key]: { __kind: k } }); setTimeout(() => { const c = condFor(k, document.getElementById('side') || document.querySelector('.wpanel'), sx); if (c) setPlan(id, { [key]: c }); }, 0); });
     ['w-p-dt', 'w-p-day', 'w-p-st', 'w-p-step', 'w-p-pt', 'w-p-at', 'w-p-who'].forEach(sid => sel(sid + sx, () => setPlan(id, { [key]: condFor(wKindOf(p[key]), el, sx) })));
   }
   const and = el.querySelector('#w-p-and'); if (and) and.onclick = () => { setPlan(id, { cond2: null }); render(); };
@@ -6324,28 +6545,40 @@ function renderWorldPage(p) {
   if (!w.on) {
     p.innerHTML = `<div class="wov"><h2>World</h2><div class="wov-empty"><b>The world layer is off for this story.</b><span>Switch it on to get chatter, news, messages and the people of this story in its chats, in a panel of their own.</span><span class="btnrow"><button class="btn primary" id="w-on2">Switch it on</button><button class="btn" id="w-on3">☆ Switch it on and set it up with Mero</button></span></div></div>`;
     p.querySelector('#w-on2').onclick = () => { setWorld({ on: true }); toast('The world layer is on for this story. Save the board to use it.'); };
-    p.querySelector('#w-on3').onclick = () => { setWorld({ on: true }); setTimeout(() => document.getElementById('w-su-go')?.click(), 0); };
+    p.querySelector('#w-on3').onclick = () => { wSide = 'mero'; setWorld({ on: true }); setTimeout(() => document.getElementById('w-su-go')?.click(), 0); };
     return;
   }
-  // what's going on in this chat (the host's summary), then planned messages, people, voices — the mock-up's main space
-  const S = HD?.worldSummary || { stories: [], posts: 0, msgs: 0, unread: 0, recent: [], busiest: [] };
-  const fired = HD?.worldFired || {}, waiting = w.planned.filter(pl => !fired[pl.id]).length, letters = w.look === 'letters';
+  // World tab v2 (Miinthe, 2026-11-04): the band, then Lately beside Rumors · Coming up · World stories, then People beside Voices.
+  // Planned messages, Mero and every card that opens live in the side panel — the page itself never changes height.
+  const S = HD?.worldSummary || { stories: [], posts: 0, msgs: 0, unread: 0, recent: [], busiest: [], counts: {} };
+  const fired = HD?.worldFired || {}, letters = w.look === 'letters';
   const dots = (at, n) => `<span class="wpdots" aria-label="part ${at} of ${n}">${Array.from({ length: n }, (_, k) => `<i class="${k < at ? 'on' : ''}"></i>`).join('')}</span>`;
-  const maxB = Math.max(1, ...S.busiest.map(([, n]) => n));
-  const ov = [
-    `<div class="wov-card"><div class="wch"><span class="wci">📖</span><b>World stories</b></div>${S.stories.length ? S.stories.map(st => `<div class="wst"><span>${esc(st.title)}</span>${dots(Math.min(st.at, st.n), st.n)}<small>${st.at >= st.n ? 'told' : st.next ? 'next: ' + esc(st.next) : ''}</small></div>`).join('') : '<span class="mini">None yet. Start one in the panel\'s News, or the world starts one by itself.</span>'}</div>`,
-    `<div class="wov-card"><div class="wch"><span class="wci">💬</span><b>Lately</b></div><div class="wnums"><span><b>${S.posts}</b> post${S.posts === 1 ? '' : 's'}</span><span><b>${S.msgs}</b> message${S.msgs === 1 ? '' : 's'}</span>${S.unread ? `<span class="hot"><b>${S.unread}</b> unread</span>` : ''}</div>${S.recent.length ? S.recent.map(r => `<div class="wli">${wPic(r.by, wName(r.by), 'wpic sm')}<span><b>${esc(wName(r.by))}</b> ${esc(r.text)}</span></div>`).join('') : '<span class="mini">No posts yet.</span>'}</div>`,
-    `<div class="wov-card"><div class="wch"><span class="wci">⭐</span><b>Busiest</b></div>${S.busiest.length ? S.busiest.map(([k, n]) => `<div class="wbz">${wPic(k, wName(k), 'wpic sm')}<span>${esc(wName(k))}</span><i style="--w:${Math.round(100 * n / maxB)}%"></i><small>${n}</small></div>`).join('') : '<span class="mini">Nobody yet.</span>'}</div>`,
-    `<div class="wov-card"><div class="wch"><span class="wci">◌</span><b>Rumors going around</b></div>${(S.rumors || []).length ? S.rumors.map(r => `<div class="wli"><span><b>${esc(r.kind)}</b> “${esc(r.text)}”<br><small>heard by ${r.heard.length ? esc(r.heard.map(wName).join(', ')) : 'nobody yet'}</small></span></div>`).join('') : '<span class="mini">None yet. They start from the story, from tips to the rumor account, and from leaks.</span>'}</div>`,
-    `<div class="wov-card"><div class="wch"><span class="wci">📅</span><b>Coming up</b></div>${w.planned.length ? `<div class="wnums"><span><b>${waiting}</b> waiting</span><span><b>${w.planned.length - waiting}</b> sent</span></div><span class="mini">planned messages, posts, news and rumors in this chat</span>` : '<span class="mini">Nothing planned. Plan messages, posts or news below.</span>'}</div>`,
-  ];
+  const isNew = !(w.voices || []).length && !Object.keys(w.people || {}).length && !w.planned.length && !wSetup;
+  const feed = (S.recent || []).filter(r => wLatelyFilt === 'all' || (wLatelyFilt === 'you' ? r.you : r.kind === wLatelyFilt));
+  const chip = (v, l) => `<button class="wchipf" data-wlf="${v}" aria-pressed="${wLatelyFilt === v}">${l}</button>`;
+  const lately = `<div class="wov-card wlately"><div class="wch"><span class="wci">💬</span><b>Lately</b></div>
+    <div class="wnums"><span><b>${S.posts}</b> post${S.posts === 1 ? '' : 's'}</span><span><b>${S.msgs}</b> message${S.msgs === 1 ? '' : 's'}</span>${S.unread ? `<button class="hot wunread" id="w-unread" title="Show what was sent to you"><b>${S.unread}</b> unread</button>` : ''}</div>
+    ${(S.recent || []).length ? `<div class="wchips">${chip('all', 'All')}${chip('post', 'Posts')}${chip('msg', 'Messages')}${chip('you', 'To you')}</div>` : ''}
+    ${feed.length ? (wLatelyOpen ? feed : feed.slice(0, 3)).map(r => `<div class="wli${r.unread ? ' unread' : ''}">${wPic(r.by, wName(r.by), 'wpic sm')}<span><b>${esc(wName(r.by))}</b>${r.to ? ` <small>→ ${esc(wName(r.to))}</small>` : ''} ${esc(r.text)}</span></div>`).join('') + (feed.length > 3 ? `<button class="linkish wmore" id="w-lately-more">${wLatelyOpen ? 'Show less' : `＋ ${feed.length - 3} more`}</button>` : '') : `<span class="mini">${(S.recent || []).length ? 'Nothing here.' : 'Nothing yet.'}</span>`}</div>`;
+  const rumors = `<div class="wov-card"><div class="wch"><span class="wci">◌</span><b>Rumors</b></div>${(S.rumors || []).length ? S.rumors.slice(0, 2).map(r => `<div class="wrum"><span><b class="wtag">${esc(r.kind.toUpperCase())}</b> “${esc(r.text)}”</span>${r.heard.length ? `<span class="wheard" title="heard by ${esc(r.heard.map(wName).join(', '))}">${r.heard.slice(0, 6).map(k => wPic(k, wName(k), 'wpic sm')).join('')}</span>` : '<small>nobody heard it yet</small>'}</div>`).join('') : '<span class="mini">None yet. They start from the story and spread by word of mouth.</span>'}</div>`;
+  const waiting = w.planned.filter(pl => !fired[pl.id]);
+  const upLabel = pl => `${esc(wName(pl.from))} ${pl.kind === 'post' ? 'posts' : pl.kind === 'news' ? '· news' : pl.kind === 'rumor' ? '· a rumor' : '→ ' + esc(wName(pl.to))}`;
+  const coming = `<div class="wov-card"><div class="wch"><span class="wci">📅</span><b>Coming up</b></div>${waiting.length ? waiting.slice(0, 3).map(pl => `<button class="wup" data-wup="${esc(pl.id)}" title="Open it in Planned">${wPic(pl.from, wName(pl.from), 'wpic sm')}<span>${upLabel(pl)}</span><small>${esc(WPLAN && pl.cond && !pl.cond.__kind ? WPLAN.whenText(doc, pl.cond).replace(/^when /, '') : 'no When yet')}</small></button>`).join('') + (waiting.length > 3 ? `<button class="linkish wmore" data-wside-go="planned">＋ ${waiting.length - 3} more in Planned</button>` : '') : `<span class="mini">Nothing planned.</span><button class="linkish wmore" data-wside-go="planned">＋ Plan a message</button>`}</div>`;
+  const stories = `<div class="wov-card wstories">${S.stories.length ? `<div class="wch"><span class="wci">📖</span><b>World stories</b></div>` + S.stories.map(st => `<div class="wst"><span>${esc(st.title)}</span>${dots(Math.min(st.at, st.n), st.n)}<small>${st.at >= st.n ? 'told' : st.next ? 'next: ' + esc(st.next) : ''}</small></div>`).join('') : '<div class="wempty"><span aria-hidden="true">📖</span><span>No world stories yet. Start one in the panel’s News, or the world starts one by itself.</span></div>'}</div>`;
   p.innerHTML = `<div class="wov wide${letters ? ' letters' : ''}">
     <div class="wband"><span class="wglobe">🌍</span><div class="wbt"><h2>World</h2><small>${esc(cur)} · in this chat: ${esc(HD?.chat || '—')}</small></div>
-      <div class="wbadges"><span class="wbadge">${letters ? '✉️ Letters' : '📱 Phone'}</span>${shown.map(t => `<span class="wbadge q">${esc(t)}</span>`).join('')}<span class="wbadge ${w.paused ? 'pause' : 'live'}">${w.paused ? '⏸ Paused' : '● Alive'}</span></div></div>
-    <div class="wov-grid">${ov.join('')}</div>
+      <div class="wbadges"><span class="wbadge">${letters ? '✉️ Letters' : '📱 Phone'}</span>${shown.length ? `<span class="wbadge q">${shown.map(esc).join(' · ')}</span>` : ''}<button class="wbadge ${w.paused ? 'pause' : 'live'}" id="w-alive" title="${w.paused ? 'Paused — tap to let the world go on' : 'Tap to pause the world'}">${w.paused ? '⏸ Paused' : '● Alive'}</button></div></div>
+    ${isNew ? '<div class="wnew">New world? <button class="linkish" data-wside-go="mero">☆ Set up with Mero</button></div>' : ''}
+    <div class="wglance">${lately}<div class="wgside">${rumors}${coming}${stories}</div></div>
     <div class="side wpanel">${worldMainCards(w)}</div></div>`;
   p.querySelectorAll('.seg2').forEach(x => x.classList.add('strong'));
   wireWorldMain(p);
+  const lm = p.querySelector('#w-lately-more'); if (lm) lm.onclick = () => { wLatelyOpen = !wLatelyOpen; render(); };
+  p.querySelectorAll('[data-wlf]').forEach(b => b.onclick = () => { wLatelyFilt = b.dataset.wlf; render(); });
+  const un = p.querySelector('#w-unread'); if (un) un.onclick = () => { wLatelyFilt = 'you'; wLatelyOpen = true; render(); };
+  const al = p.querySelector('#w-alive'); if (al) al.onclick = () => { const on = !worldDoc().paused; setWorld({ paused: on }); toast(on ? 'The world is paused: nothing new comes in.' : 'The world goes on again.'); };
+  p.querySelectorAll('[data-wside-go]').forEach(b => b.onclick = () => { wSide = b.dataset.wsideGo; wPersonOpen = null; wVoiceSel = null; if (b.dataset.wsideGo === 'planned' && !worldDoc().planned.length) setTimeout(() => document.getElementById('w-p-add')?.click(), 0); render(); });
+  p.querySelectorAll('[data-wup]').forEach(b => b.onclick = () => { wSide = 'planned'; wPlanSel = b.dataset.wup; wPersonOpen = null; wVoiceSel = null; render(); });
   tipify(p);
 }
 function renderBoardPanel(el) {
@@ -7293,12 +7526,27 @@ function renderMeroBoard(el) {
   meroAskWire(el);
 }
 const cardFold = new Map();
+/** World tab: People in the world and Voices and regulars fold like the side panel's cards (Miinthe, 2026-11-04). */
+function foldWorldCards(el) {
+  el.querySelectorAll('.wcol > .card').forEach(c => {
+    const h = c.querySelector(':scope > h4'); if (!h) return;
+    const key = 'world:' + [...h.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim();
+    const open = cardFold.has(key) ? cardFold.get(key) : true;
+    c.classList.add('fcard'); c.classList.toggle('closed', !open);
+    h.setAttribute('role', 'button'); h.tabIndex = 0; h.setAttribute('aria-expanded', open);
+    const flip = () => { const now = c.classList.toggle('closed'); cardFold.set(key, !now); h.setAttribute('aria-expanded', !now); };
+    // ⓘ: its text unfolds under the title (no popup — phones have no hover; Miinthe, 2026-11-04)
+    h.onclick = e => { if (e.target.closest('.wtip')) { e.stopPropagation(); c.classList.toggle('tipopen'); return; } flip(); };
+    h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } };
+  });
+}
 function foldCards(side) {
-  if (!(isTileRef(sel) || sel.kind === 'board' || sel.kind === 'detour')) return;
+  const fk = side.dataset.fk || (isTileRef(sel) || sel.kind === 'board' || sel.kind === 'detour' ? sel.kind : null);   // the tab's kind (a step's Tracker tab folds like a tracker)
+  if (!fk) return;
   [...side.querySelectorAll(':scope > .card')].forEach((c, i) => {
     const h = c.querySelector(':scope > h4'); if (!h) return;
-    const key = sel.kind + ':' + h.textContent.trim().replace(/\s*\(\d+\)$/, '');
-    const open = cardFold.has(key) ? cardFold.get(key) : i < 2;
+    const key = fk + ':' + h.textContent.trim().replace(/\s*\(\d+\)$/, '');
+    const open = cardFold.has(key) ? cardFold.get(key) : fk.startsWith('links') || i < 2;
     c.classList.add('fcard'); c.classList.toggle('closed', !open);
     h.setAttribute('role', 'button'); h.tabIndex = 0; h.setAttribute('aria-expanded', open);
     const flip = () => { const now = c.classList.toggle('closed'); cardFold.set(key, !now); h.setAttribute('aria-expanded', !now); };
@@ -7415,7 +7663,7 @@ document.querySelector('.toolbar2')?.appendChild(document.querySelector('.chatpi
 const chatSel = document.getElementById('chat');
 chatSel.innerHTML = Object.keys(chats).map(c => `<option>${esc(c)}</option>`).join('');
 chatSel.onchange = () => { if (play) stopPlay(); chat = chatSel.value; tlSel = null; scrollToNow = true; render(); };
-const leaveSideTool = () => { if (connForm || ['conn', 'checks', 'lines'].includes(sel.kind)) { connForm = null; document.body.classList.remove('picking'); sel = { kind: 'board' }; } };
+const leaveSideTool = () => { if (connForm || ['conn', 'checks', 'lines'].includes(sel.kind)) { connForm = null; document.body.classList.remove('picking'); sel = backPick(); } };
 document.getElementById('tab-board').onclick = () => { leaveSideTool(); tab = 'board'; render(); };
 document.getElementById('tab-time').onclick = () => { leaveSideTool(); tab = 'time'; render(); };
 document.getElementById('tab-outline').onclick = () => { leaveSideTool(); tab = 'outline'; render(); };
@@ -7461,7 +7709,7 @@ function render() {
     side.style.height = sideBySide ? p.getBoundingClientRect().height + 'px' : '';
     if (PHONE.matches && tlTracker && tlTracker !== 'all') { const ch = p.querySelector(`.tl-title [data-tlt="${tlTracker}"]`)?.parentElement?.nextElementSibling; if (ch) { side.classList.add('inline'); ch.after(side); } }
   } else if (tab === 'world') { side.style.height = ''; renderWorldSide(side); tipify(side);
-  } else { side.style.height = ''; renderSide(side); if (sel.kind === 'tracker' && T(sel.t)) wireRun(side, T(sel.t)); side.querySelector('#s-fork') && (side.querySelector('#s-fork').onclick = () => addFork(T(sel.t), sel.i)); tipify(side); foldCards(side); }
+  } else { side.style.height = ''; renderSide(side); tipify(side); foldCards(side); }
   phoneSheet(side);
   renderMeroWin();
   const ab = document.getElementById('appl-btn'); if (ab) ab.onclick = e => { e.stopPropagation(); applPop(ab); };

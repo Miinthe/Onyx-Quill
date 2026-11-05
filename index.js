@@ -2102,6 +2102,7 @@ async function _doInit() {
         try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
         // LOCAL PATCH (Miinthe, 2026-10-04): Re-evaluate + swipe (WIP command; its real home is the DeepLore bar)
         import('./src/reevaluate.js').then(m => m.registerReevaluateCommand()).catch(err => console.warn('[DLE] re-evaluate command not registered:', err?.message));
+        import('./src/swipe-board.js').then(m => m.initSwipeBoard()).catch(err => console.warn('[DLE] swipe boards skipped:', err?.message));   // LOCAL PATCH (Miinthe, 2026-11-04): each swipe keeps its own board
         _registerEs(event_types.MESSAGE_DELETED, () => {
             // a regenerate's delete keeps what was done by hand or by the world (regen-pure.js, Miinthe 2026-10-19)
             reconcileTrackers({ prune: true, keep: keepForDelete() }).catch(err => console.warn('[DLE] tracker rewind failed:', err?.message));
