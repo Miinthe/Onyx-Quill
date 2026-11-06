@@ -73,4 +73,9 @@ test('talks saved with the old label keep the author\'s messages (they load as "
     assertEqual(four.normGame({ kind: 'four', first: 'miinthe', moves: [] }).first, 'author');
 });
 
+test('any older label, whatever name it was, loads as the author (the public copy has no name to check for)', () => {
+    const s = asStore({ chars: { 'k.png': { talks: [{ title: 'Old', msgs: [{ who: 'someone', t: 'hi' }, { who: 'mero', t: 'hey' }, { who: '', t: 'dropped' }, { who: 'author', t: 'me' }] }] } } });
+    assertEqual(s.chars['k.png'].talks[0].msgs.map(m => m.who), ['author', 'mero', 'author']);
+});
+
 summary('neutral');

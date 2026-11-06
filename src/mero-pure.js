@@ -61,7 +61,7 @@ function normVersion(m) {
     };
 }
 function normMsg(m) {
-    const out = { who: m.who === 'mero' ? 'mero' : 'author', ...normVersion(m) };   // the old label 'miinthe' becomes 'author'   // (📎 context stays in memory only, as before)
+    const out = { who: m.who === 'mero' ? 'mero' : 'author', ...normVersion(m) };   // an older label (the author's name) becomes 'author'   // (📎 context stays in memory only, as before)
     if (m.who === 'mero' && arr(m.sw).length > 1) {
         const sw = arr(m.sw).filter(isObj).slice(-12).map(normVersion);
         out.sw = sw; out.swi = Math.max(0, Math.min(sw.length - 1, Math.round(Number(m.swi) || 0)));
@@ -99,7 +99,7 @@ export function normTalk(t) {
         created: str(t.created) || new Date().toISOString(), updated: str(t.updated) || str(t.created) || new Date().toISOString(),
         summary: str(t.summary),
         ...(normGame(t.game) ? { game: normGame(t.game) } : {}),   // 🎲 Games (Miinthe, 2026-10-27)
-        msgs: arr(t.msgs).filter(m => isObj(m) && (m.who === 'author' || m.who === 'miinthe' || m.who === 'mero') && typeof m.t === 'string').slice(-MAX_TALK_MSGS).map(normMsg),   // 'miinthe' = the author's messages before 2026-11-03
+        msgs: arr(t.msgs).filter(m => isObj(m) && typeof m.who === 'string' && m.who && typeof m.t === 'string').slice(-MAX_TALK_MSGS).map(normMsg),   // any label but 'mero' is the author's (older versions saved the author's own name)
     };
 }
 

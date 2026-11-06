@@ -9,7 +9,7 @@
 <p align="center">Built on <a href="https://github.com/pixelnull/sillytavern-DeepLore">DeepLore</a> by pixelnull. Thank you for the foundation.</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-ff6fa8" alt="version 1.0.0">
+  <img src="https://img.shields.io/github/manifest-json/v/Miinthe/Onyx-Quill?label=version&color=ff6fa8" alt="version">
   <img src="https://img.shields.io/badge/license-MIT-4c8bf5" alt="license MIT">
   <img src="https://img.shields.io/badge/SillyTavern-1.12.14%2B-7a5cff" alt="SillyTavern 1.12.14+">
 </p>

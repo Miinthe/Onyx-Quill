@@ -87,7 +87,7 @@ test('📚 a vault review: the whole vault goes along, never into the story chat
 test('the store survives damage', () => {
     const s = asStore({ chars: { 'k.png': { talks: [{ title: 'T', msgs: [{ who: 'author', t: 'x' }, { who: 'bad', t: 'y' }, null] }, null] } }, notes: { char: { 'k.png': [{ text: '' }, { text: 'ok', kind: 'weird' }] } }, settings: { chatty: 'loud', initiative: 9 } });
     assertEqual(s.chars['k.png'].talks.length, 1);
-    assertEqual(s.chars['k.png'].talks[0].msgs.length, 1);
+    assertEqual(s.chars['k.png'].talks[0].msgs.map(m => m.who), ['author', 'author'], 'null dropped; an unknown label is an older author label');
     const t2 = asStore({ chars: { k: { talks: [{ msgs: [{ who: 'mero', t: 'x', cards: [{ kind: 'dont', text: 'Rule', state: 'kept', noteId: 'n1' }, { text: '' }] }] }] } } }).chars.k.talks[0];
     assertEqual(t2.msgs[0].cards, [{ kind: 'dont', last: 'pinned', scope: 'chat', text: 'Rule', state: 'kept', noteId: 'n1' }], 'cards stay with the message');
     assertEqual(s.notes.char['k.png'].map(n => n.kind), ['steer']);
