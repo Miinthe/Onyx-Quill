@@ -1,6 +1,6 @@
 Mero ☆ is your co-writer. You talk with her about the story out of character, ask her for ideas (pitches) and plans, keep notes that steer the writer, and let her look after your lore. What you say to her stays between you two: only the notes you keep, the pitches you send and the lore changes you accept ever reach the story.
 
-![The Mero tab in the side panel, a talk open, her rail of icons on the edge](images/mero-tab.png)
+<img src="images/mero-tab.png" width="479" alt="The Mero tab in the side panel, a talk open, her rail of icons on the edge">
 
 ## Where to find her
 
@@ -110,7 +110,7 @@ Three ways to get one:
 - **From a talk**: plan it with her, then press **Pitch** under the talk.
 - **Your own**: **✏ My own** in the Pitches drawer, with no AI at all.
 
-![The Pitches drawer with the folded menu line, three pitch cards and the action bar](images/pitches.png)
+<img src="images/pitches.png" width="479" alt="The Pitches drawer with the folded menu line, three pitch cards and the action bar">
 
 ### Asking for pitches
 

@@ -42,7 +42,8 @@ export function mountReadyView(panel) {
     function draw() {
         const notes = [q('.dle-token-bar-note'), q('.dle-entries-bar-note')].filter(n => n && !n.classList.contains('dle-hidden') && n.textContent.trim()).map(n => n.textContent.trim());
         const mode = (q('.dle-stat[data-stat="mode"]')?.textContent || '').trim();
-        const filters = (q('.dle-active-filters')?.textContent || '').replace(/\s+/g, ' ').trim();
+        // one name per filter, comma-separated (the whole row's text ran together: "TavernRoswyn HalseaClear all ×")
+        const filters = [...(q('.dle-active-filters')?.querySelectorAll('.dle-chip:not(.dle-chip-clear-all):not(.dle-reasoning-warning-btn)') || [])].map(c => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join(', ');
         meters.innerHTML = meter('Lore budget', q('.dle-token-bar-container'), ' tokens') + meter('Entries', q('.dle-entries-bar-container'), '') + meter('Context', q('.dle-context-bar-container'), ' tokens', 0.85)
             + (notes.length ? `<p class="dk-hint">${notes.map(n => n.replace(/[<>&]/g, '')).join(' · ')}</p>` : '')
             + `<p class="dk-hint">${mode && mode !== '—' ? `Mode: ${mode.replace(/[<>&]/g, '')}` : 'Mode: not known yet'}${filters ? ` · ${filters.replace(/[<>&]/g, '')}` : ''}</p>`;

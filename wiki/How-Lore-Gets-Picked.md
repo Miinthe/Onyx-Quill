@@ -14,7 +14,7 @@ For each reply, Onyx Quill:
 
 Afterwards you can see exactly what went in, and why, from the 📖 button on the reply: **Why these entries**.
 
-![The Why these entries window for one reply, with a few entries and the "Not Injected" folds](images/why-these-entries.png)
+<img src="images/why-these-entries.png" width="960" alt="The Why these entries window for one reply, with a few entries and the &quot;Not Injected&quot; folds">
 
 ## Is Onyx Quill on in this chat?
 

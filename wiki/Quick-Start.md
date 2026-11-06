@@ -4,7 +4,7 @@ The shortest way from a fresh install to a reply that used your lore. You connec
 
 The wizard opens by itself the first time Onyx Quill loads. If it doesn't, type `/oq-setup` in the chat box.
 
-![The wizard's Welcome page with its three choice cards](images/wizard-welcome.png)
+<img src="images/wizard-welcome.png" width="960" alt="The wizard&#x27;s Welcome page with its three choice cards">
 
 The Welcome page offers three ways to start:
 
@@ -74,7 +74,7 @@ By default, Onyx Quill reads the vault again before a reply once its copy is fiv
 2. When the reply arrives, open the 📖 menu on it (the book button next to the message's edit button) and choose **Why these entries**. Your entry is listed with the reason it went in.
 3. Open the side panel (the side-panel button on the bar above the message box, or Onyx Quill's book icon in SillyTavern's top bar). The **Lore** tab's **Sent** list shows what went out with the last reply; **Left out** shows what was considered and why it didn't go.
 
-![The 📖 menu's "Why these entries" window listing one entry](images/why-these-entries-one.png)
+<img src="images/why-these-entries-one.png" width="960" alt="The 📖 menu&#x27;s &quot;Why these entries&quot; window listing one entry">
 
 Nothing listed? See [[Troubleshooting]], or run `/oq-health` for a check of your vault and connection.
 
@@ -88,7 +88,7 @@ The storyboard is where Onyx Quill really starts to help: it follows your story'
 4. Give the story helper a connection: **Settings › AI & connections › Story helper** (a saved SillyTavern Connection Profile). Without one, the trackers only move when you move them.
 5. Play on. When the story reaches the next step, a notice shows the move with the quote it is based on and **Undo**, and the writing model is told where things stand.
 
-![A notice "Relationship: Strangers → Acquaintances" with its quote and Undo](images/tracker-notice.png)
+<img src="images/tracker-notice.png" width="300" alt="A notice &quot;Relationship: Strangers → Acquaintances&quot; with its quote and Undo">
 
 ## Next
 

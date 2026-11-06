@@ -11,7 +11,7 @@ When you run it again later, it fills in your current settings, so going through
 
 **Finish later** (at the bottom of every page) closes the wizard without saving and remembers the page you were on. It then won't open by itself again; reopen it with `/oq-setup`. Closing the window any other way works the same.
 
-![The wizard with its row of eight steps](images/wizard-steps.png)
+<img src="images/wizard-steps.png" width="960" alt="The wizard with its row of eight steps">
 
 ## 1. Welcome
 

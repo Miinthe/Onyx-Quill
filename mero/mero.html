@@ -625,8 +625,10 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const OPEN = { 'sess-archived': false, 'notes-ended': false, 'req-done': false }, MORE = {};
 
   const fold = (key, title, items, { limit = 5, empty = '' } = {}) => {
-    if (!items.length) return empty ? `<h4>${title}</h4><p class="mini">${empty}</p>` : '';
+    if (!items.length && !empty) return '';
+    // an empty one folds like the rest (count 0), its "None." inside (2026-11-06: "Ended" was a plain heading)
     const open = OPEN[key] !== false, all = MORE[key], shown = all ? items : items.slice(0, limit), rest = items.length - shown.length;
+    if (!items.length) return `<button class="foldh" data-fold="${key}" aria-expanded="${open}"><span class="ft">${title}</span><span class="cnt">0</span><span class="chev">▾</span></button>` + (open ? `<p class="mini">${empty}</p>` : '');
     return `<button class="foldh" data-fold="${key}" aria-expanded="${open}"><span class="ft">${title}</span><span class="cnt">${items.length}</span><span class="chev">▾</span></button>`
       + (open ? shown.join('') + (rest > 0 ? `<button class="btn ghost more" data-more="${key}">Show ${rest} more</button>` : all && items.length > limit ? `<button class="btn ghost more" data-more="${key}">Show fewer</button>` : '') : '');
   };

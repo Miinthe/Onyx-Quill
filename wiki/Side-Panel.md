@@ -1,6 +1,6 @@
 The side panel is Onyx Quill's home next to the chat. It shows which lore went out with the last reply, which folders and fields this chat reads, where your story trackers stand, your Cast, and Mero ☆, your co-writer. Open it with the side-panel button on [[The Bar]], or with the open-book icon in SillyTavern's top bar. Press the same bar button again to close it.
 
-![The side panel open on the right, header with Ready, the five tabs, the Lore tab on Sent](images/side-panel-lore-sent.png)
+<img src="images/side-panel-lore-sent.png" width="479" alt="The side panel open on the right, header with Ready, the five tabs, the Lore tab on Sent">
 
 ## The header
 
@@ -25,7 +25,7 @@ Tapping **Ready** opens a small window with two parts:
 
 See [[Diagnostics]] for what each check means.
 
-![The Ready pop-up with the three meters and the five health rows](images/ready-popup.png)
+<img src="images/ready-popup.png" width="479" alt="The Ready pop-up with the three meters and the five health rows">
 
 ## The tabs
 
@@ -88,7 +88,7 @@ The side panel, [[My Notes]] and [[World]] (where the board's world layer is on)
 
 On a phone, and in a very narrow window, there are no panel tabs: one panel at a time slides over the chat.
 
-![The right side with the side panel and My notes as two tabs at the bottom, one locked](images/my-notes.png)
+<img src="images/my-notes.png" width="479" alt="The right side with the side panel and My notes as two tabs at the bottom, one locked">
 
 ## Good to know
 

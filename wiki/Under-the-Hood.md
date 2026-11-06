@@ -20,7 +20,7 @@ Every time SillyTavern is about to ask the writing model for a reply (a new mess
 
 After the reply arrives, the jobs that run "after a reply" do their work: the AI notepad (extract mode), Scribe and New lore at their intervals, and the slop guard's count (no AI).
 
-![/oq-inspect for one reply, Stage Timing unfolded](images/inspect.png)
+<img src="images/inspect.png" width="960" alt="/oq-inspect for one reply, Stage Timing unfolded">
 
 ## Three ways to pick lore
 

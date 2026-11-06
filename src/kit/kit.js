@@ -15,6 +15,7 @@
  * windows that live in an iframe. Nothing here saves anything: callers get the values through their callbacks.
  */
 import { icon } from './icons.js';
+import { placeBox } from './place-pure.js';   // inside the visible part, keyboard or not (2026-11-06)
 import { searchEmoji, SWATCHES, normalHex } from './pickers-pure.js';
 
 export { icon };
@@ -173,10 +174,13 @@ export function row({ lead, title, sub, end, selected, onClick, doc = document }
 // ── placing a floating box next to what opened it ──────────────────────────
 
 function placeNear(box, anchor) {
-    const win = box.ownerDocument.defaultView, r = anchor.getBoundingClientRect();
-    const bw = box.offsetWidth, bh = box.offsetHeight, m = 8;
-    box.style.left = Math.max(m, Math.min(win.innerWidth - bw - m, r.right - bw > m && r.left + bw > win.innerWidth - m ? r.right - bw : r.left)) + 'px';
-    box.style.top = (r.bottom + 4 + bh <= win.innerHeight - m ? r.bottom + 4 : Math.max(m, r.top - bh - 4)) + 'px';
+    const win = box.ownerDocument.defaultView, r = anchor.getBoundingClientRect(), vv = win.visualViewport;
+    // the part you can see (a phone's keyboard shrinks and shifts it), not the whole page
+    const view = vv ? { x: vv.offsetLeft, y: vv.offsetTop, w: vv.width, h: vv.height } : { x: 0, y: 0, w: win.innerWidth, h: win.innerHeight };
+    const p = placeBox(r, box.offsetWidth, box.offsetHeight, view);
+    box.style.left = p.left + 'px';
+    box.style.top = p.top + 'px';
+    if (p.maxHeight != null) { box.style.maxHeight = p.maxHeight + 'px'; box.style.overflowY = 'auto'; }
 }
 
 /** Close `box` on Escape, on a press outside it (and outside `anchor`), or when `close()` is called. */

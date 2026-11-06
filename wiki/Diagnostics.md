@@ -11,7 +11,7 @@ When something is off, this order usually finds it fastest:
 
 Every message has a 📖 button next to SillyTavern's own message buttons. It opens a menu for that message; **Why these entries** shows the lore that went out with it. The menu item says how many entries there were. When no lore went out it is grayed out and says "no lore used". For a Cast member's own message it says "no entries linked to them on the board" (see [[Cast]]).
 
-![The Why these entries window for one reply, with two position groups and the Not Injected section folded](images/why-these-entries-groups.png)
+<img src="images/why-these-entries-groups.png" width="960" alt="The Why these entries window for one reply, with two position groups and the Not Injected section folded">
 
 The window shows:
 
@@ -122,7 +122,7 @@ It uses keywords only, with your current **Messages to read** and each entry's o
 
 `/oq-graph` (short: `/oq-g`), or **Graph** in the side panel's ⋯ menu, draws your entries as a map: dots for entries, lines for links, `requires`, `excludes` and cascade links. Drag, zoom and pan. The toolbar has a search, filters by type and tag, two layouts (Force and Layered DAG), color by type, priority, connections, how often an entry is sent, or clusters, **Fit**, **Unpin All**, **Reset**, PNG and JSON export, **Find Gaps** and **Health**. Click an entry to focus on it and its neighbors; **Esc** or **e** leaves focus. **Settings › Interface** has the graph's finer settings.
 
-![The graph of the demo vault, colored by type](images/graph.png)
+<img src="images/graph.png" width="960" alt="The graph of the demo vault, colored by type">
 
 ## /oq-analytics
 

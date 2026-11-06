@@ -9,6 +9,7 @@ import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { palette, parseColor, contrast, MERO_DEFAULT, ST_FALLBACK } from '../src/kit/theme-pure.js';
 import { EMOJI, SWATCHES, searchEmoji, normalHex } from '../src/kit/pickers-pure.js';
 import { ICONS, icon } from '../src/kit/icons.js';
+import { placeBox } from '../src/kit/place-pure.js';
 
 // her themes on test-user (data/test-user/themes/*.json), the Glimmer values from the mock-ups, a light one, odd ones
 const THEMES = {
@@ -123,6 +124,18 @@ test('an Undo that belongs to one chat does nothing once another chat is open (h
     open = 'chat A';
     undo();
     assertEqual(ran, 2, 'back in its chat: it works again');
+});
+
+test('placeBox: menus open inside the part of the page you can see (a phone keyboard shrinks and shifts it)', () => {
+    const whole = { x: 0, y: 0, w: 390, h: 844 };
+    assertEqual(placeBox({ left: 300, right: 340, top: 100, bottom: 130 }, 200, 300, whole), { left: 140, top: 134, maxHeight: null }, 'below, flush right');
+    assertEqual(placeBox({ left: 20, right: 60, top: 760, bottom: 790 }, 200, 300, whole), { left: 20, top: 456, maxHeight: null }, 'above when no room below');
+    // keyboard open: you see y 400..750 of the page; the button sits at its bottom; a 500 px menu fits neither way
+    const kb = { x: 0, y: 400, w: 390, h: 350 };
+    const p = placeBox({ left: 20, right: 60, top: 700, bottom: 730 }, 200, 500, kb);
+    assert(p.top >= 408 && p.top + p.maxHeight <= 742, 'stays inside what you see, and scrolls');
+    assert(p.top !== 8, 'not sent to the top of the page');
+    assertEqual(placeBox({ left: 20, right: 60, top: 700, bottom: 730 }, 200, 200, kb), { left: 20, top: 496, maxHeight: null }, 'a short menu sits right above the button');
 });
 
 summary();

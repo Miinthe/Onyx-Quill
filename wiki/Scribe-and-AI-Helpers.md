@@ -22,7 +22,7 @@ What a session note looks like in your vault:
 
 **Let AI search read them:** **Settings › Lore selection › AI search › Give it the session notes** (behind **More**) sends the Scribe's latest note to AI search as extra story background. That helps it pick entries for threads that started long ago, beyond the messages it reads. It needs at least one session note written in this chat.
 
-![The Scribe history window with a session note](images/scribe-session-notes.png)
+<img src="images/scribe-session-notes.png" width="960" alt="The Scribe history window with a session note">
 
 ### Scribe settings
 
@@ -47,7 +47,7 @@ New lore reads the recent chat, compares it with your entries, and suggests new 
 
 The suggestions open in a review window. Each card shows where it will go; **Accept** writes that entry into your vault, **Reject** skips it. **Write directly (skip review)** at the top writes the whole batch next time without asking.
 
-![The New lore review window with two suggestions](images/new-lore-review.png)
+<img src="images/new-lore-review.png" width="960" alt="The New lore review window with two suggestions">
 
 ### Where new entries go
 
