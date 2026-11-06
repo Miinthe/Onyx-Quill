@@ -3436,6 +3436,7 @@ function renderMenu() {
       <button data-a="vboard">Board</button>
       <button data-a="voutline">Outline</button>
       <button data-a="vtime">Timeline</button>
+      <button data-a="vworld">World</button>
       <hr>
       ${Object.entries(THEMES).map(([k, v]) => `<button data-a="theme-${k}">${themePref() === k ? '✓ ' : ''}${v}</button>`).join('')}
     </div></div>
@@ -4014,12 +4015,12 @@ const EW = (() => {
     if (prefill) { st.f.title = String(prefill.title || ''); st.ask = String(prefill.ask || ''); }
     dialog('<div class="aw ew" id="ew"></div>', sc => { sc.querySelector('.dialog').classList.add('awd', 'ewd'); sc.querySelector('.dialog').setAttribute('aria-label', `Entries for ${label}`); box = sc.querySelector('#ew'); if (draft) st.tab = 'write'; draw(); });
   }
-  // Overhaul 2026-10-17 — "Write a new entry…" from SillyTavern's 📖 (and Mero's lore gaps): this same window on its own,
+  // Overhaul 2026-10-17 — "Write a new entry…" from SillyTavern's 📖: this same window on its own,
   // no tile. Create writes the file at once (that press is the yes); closing it closes the board window too.
-  function openLoose({ title = '', ask = '', gapId = null } = {}) {
+  function openLoose({ title = '', ask = '' } = {}) {
     const byType = HD?.newEntry?.byType || {};
     const folders = [...new Set([...Object.values(byType), ...FOLDERS.map(f => realFolder(f).replace(/\/+$/, ''))])];
-    st = { loose: true, gapId, title0: String(title || ''), ask0: String(ask || ''), o: null, t: null, label: 'a new entry', tab: 'write', folders, folderSet: false, atPlace: null, mero: null, merob: {}, n: 0 };
+    st = { loose: true, title0: String(title || ''), ask0: String(ask || ''), o: null, t: null, label: 'a new entry', tab: 'write', folders, folderSet: false, atPlace: null, mero: null, merob: {}, n: 0 };
     st.f = blankF();
     dialog('<div class="aw ew" id="ew"></div>', sc => { sc.dataset.loose = '1'; sc.classList.add('loose'); sc.addEventListener('click', e => { if (e.target === sc) e.stopImmediatePropagation(); }, true); sc.querySelector('.dialog').classList.add('awd', 'ewd'); sc.querySelector('.dialog').setAttribute('aria-label', 'Write a new entry'); box = sc.querySelector('#ew'); draw(); setTimeout(() => q(st.ask0 ? '#ew-ask' : '#f-title')?.focus(), 0); });
   }
@@ -4188,7 +4189,7 @@ const EW = (() => {
     const mero = st.mero === 'done' && marksOn() ? { madeBy: 'Mero', from: meroFrom(), tags: ['made-by-mero'] } : {};
     const mine = st; mine.saving = true; draw();
     let r;
-    try { r = await HOST.createEntry({ title, folder: f.folder, type: f.type, keys: f.keys.join(', '), summary: f.summary, body: f.body, ...mero }, { gapId: mine.gapId }); } catch (e) { r = { ok: false, error: e?.message || String(e) }; }
+    try { r = await HOST.createEntry({ title, folder: f.folder, type: f.type, keys: f.keys.join(', '), summary: f.summary, body: f.body, ...mero }); } catch (e) { r = { ok: false, error: e?.message || String(e) }; }
     mine.saving = false;
     if (!r?.ok) { if (box?.isConnected) draw(); toast(`Not written: ${r?.error || 'the vault did not answer'}.`); return; }
     HOST.close();   // SillyTavern says where it went (createEntry)
@@ -5856,7 +5857,7 @@ function castPanel(el, t) {
     ${card('What the writer gets', wl.length ? `<div class="wrs">${wl.map((l, k) => `<div class="wr${k ? '' : ' here'}"><b>${hidden.length && k && hidden.some(p => l.startsWith(p.name.toUpperCase())) ? `${esc(l.split(/[:(]/)[0])}… <span class="mini">(hidden — 👁 in the Cast tab)</span>` : esc(l)}</b></div>`).join('')}</div><span class="mini">Only people in the scene, never their inner thoughts. ~${words(wl.join(' '))} words.</span>` : '<span class="mini">Nothing while nobody from the cast is in the scene.</span>')}
     ${card(`People (${t.people.length})`, `<div class="pills">${t.people.map((p, k) => `<span class="pill" data-pp="${k}">${p.hidden ? '🙈 ' : ''}${esc(p.name)}<button class="x" data-px="${k}" aria-label="Remove ${esc(p.name)}">✕</button></span>`).join('')}<button class="add" id="cp-add">+ person</button></div>`)}
     ${card('Options',
-      line('The director', 'updates plans and thoughts of the people here — one call per reply, only while someone is', swH('cp-dir', t.director !== false), t.director !== false) + '<div class="sub"></div>'
+      line('The director', `updates plans and thoughts of the people here — one call per reply, only while someone is here or someone away could come looking for ${esc(HD?.userName || '{{user}}')}`, swH('cp-dir', t.director !== false), t.director !== false) + '<div class="sub"></div>'
       + line('Ties the director notices', 'read from the scene, no extra call · ask me: ✓ / ✕ in Cast · write them: straight in · off: only yours', segH('cp-ties', [['suggest', 'ask me'], ['write', 'write them'], ['off', 'off']], t.ties || 'suggest'), t.director !== false, true) + '<div class="sub"></div>'
       + line('Pin their entries while they are here', 'their linked entries always reach the writer while they are in the scene', swH('cp-pin', t.pinHere !== false), t.pinHere !== false) + '<div class="sub"></div>'
       + line('Sets Onyx Quill\'s Characters Present', 'who is here becomes “Characters Present” in Filters (with the main character) — off: you set it by hand', swH('cp-present', !!t.setsPresent), !!t.setsPresent))}
@@ -6215,6 +6216,19 @@ const WLOOK_HINT = { phone: 'Instant messages, read receipts.', letters: 'Letter
 const WDEF = { rumorName: '', newsName: '', on: false, look: 'phone', sections: { feed: true, news: true, msgs: true }, alive: { open: true, big: true, time: true, every: false, everyN: 10, quiet: false, pulse: true, pace: 'normal', movesMin: 0, movesMax: 4, realReplies: true }, paused: false, first: { cast: true, main: true }, pics: { on: true, theirs: true }, planned: [], people: {}, voices: [] };
 function worldDoc() { const w = WORLD ? WORLD.normWorld(doc.world) : null; return w ? { ...WDEF, ...w, planned: Array.isArray(w.planned) ? w.planned : (doc.world?.planned || []) } : WDEF; }
 function setWorld(patch) { doc.world = { ...worldDoc(), ...patch }; touch(); }
+// the world's pause is kept per chat (Miinthe, 2026-11-05): the switch and the badge pause this chat only, at once (no Save needed).
+// A chat that never set its own follows the board's old paused flag. Not shown for a board this chat doesn't use.
+let wChatPaused = typeof HD?.worldPaused === 'boolean' ? HD.worldPaused : undefined;
+// only for the chat open in SillyTavern: the pause is written there (HOST.worldPause), not to a chat picked in the selector
+const wPauseHere = () => !HOST || (chat === HD?.chat && (doc.applied || []).includes(chat));
+const wPaused = () => (HOST && typeof wChatPaused === 'boolean' ? wChatPaused : worldDoc().paused === true);
+function setWorldPause(on) {
+  if (!HOST) setWorld({ paused: on });
+  else if (HOST.worldPause?.(on)) wChatPaused = on;
+  else { toast('Open a chat that uses this board first.'); return; }
+  toast(on ? 'The world is paused in this chat: nothing new comes in, nobody answers.' : 'The world goes on again in this chat.');
+  render();
+}
 // World tab v2 (Miinthe, 2026-11-04, mock-up https://claude.ai/artifact/NRPy5mpdayCiBbE3NTnp8e): the side panel has tabs —
 // Settings · Planned · ☆ Mero — and shows a person's or a voice's card when one is tapped; the main page never changes height
 let wSide = 'settings', wLatelyFilt = 'all';
@@ -6251,7 +6265,7 @@ function renderWorldSettings(el, head = true) {
     ${w.on ? card(`How people reach each other · ${w.look === 'letters' ? 'Letters' : 'Phone'}`, line('How people reach each other', WLOOK_HINT[w.look], segH('w-look', WLOOKS, w.look), false, true))
       + card(`Sections · ${secOn} on`, ['feed', 'news', 'msgs'].map(k => line(esc(title(k)), '', swH('w-sec-' + k, w.sections[k]), w.sections[k])).join('')
         + '<div class="ln"><span class="mini">A section that\'s off leaves the rail and stays quiet. People is always there.</span></div>')
-      + card(`How alive · ${w.paused ? 'paused' : pace}`, line('Catch up when I open it', 'after a while away from the world', swH('w-a-open', w.alive.open), w.alive.open)
+      + card(`How alive · ${wPauseHere() && wPaused() ? 'paused here' : pace}`, line('Catch up when I open it', 'after a while away from the world', swH('w-a-open', w.alive.open), w.alive.open)
         + line('When something big happens', 'a fight, an accident, news, a party — the helper spots it in its usual read', swH('w-a-big', w.alive.big), w.alive.big)
         + line('When story time passes', 'a new story day (a state tracker with a Day field)', swH('w-a-time', w.alive.time), w.alive.time)
         + line(`Every <input type="number" class="s" id="w-a-n" min="1" max="999" value="${w.alive.everyN}" style="width:56px;margin:0 4px" aria-label="Every how many exchanges"> exchanges`, 'an exchange = your message and the reply', swH('w-a-every', w.alive.every), w.alive.every)
@@ -6259,7 +6273,7 @@ function renderWorldSettings(el, head = true) {
         + line('Little things after every reply', 'small moves of their own once the story has moved, besides anything planned: a post, a comment, an answer to someone\'s comment, an old post dug up, now and then a text between two people who know each other. Uses the World AI connection, whichever you pick in Settings › AI & connections › World.', swH('w-a-pulse', w.alive.pulse), w.alive.pulse)
         + (w.alive.pulse ? `<div class="ln stack"><span>How many after each reply</span>${segH('w-a-pace', [['quiet', 'Quiet 0–2'], ['normal', 'Normal 0–4'], ['lively', 'Lively 1–6'], ['own', 'Your own']], w.alive.pace || 'normal')}${w.alive.pace === 'own' ? `<span>From <input type="number" class="s" id="w-a-min" min="0" max="10" value="${w.alive.movesMin ?? 0}" style="width:56px" aria-label="At least"> to <input type="number" class="s" id="w-a-max" min="1" max="10" value="${w.alive.movesMax ?? 4}" style="width:56px" aria-label="At most"> moves</span>` : ''}</div>` : '')
         + line('Replies take their time', 'each person answers by how chatty they are (their Messages dial below), later while busy in the scene with you, and in the morning when it\'s night on the story clock. Off: everyone answers right away.', swH('w-a-real', w.alive.realReplies !== false), w.alive.realReplies !== false)
-        + line('Pause the world', 'nothing new comes in until you switch it back', swH('w-pause', w.paused), w.paused))
+        + (wPauseHere() ? line('Pause the world in this chat', 'nothing new comes in and nobody answers until you switch it back', swH('w-pause', wPaused()), wPaused()) : ''))
       + (w.sections.feed || w.sections.news ? card('News and rumor accounts', `<div class="ln stack"><span>The news account<small>reports the news when this story has no newspaper voice of its own (Voices and regulars)${w.look === 'letters' ? '' : ''}</small></span><input class="s" id="w-news" value="${esc(w.newsName || '')}" placeholder="${w.look === 'letters' ? 'The Gazette' : 'Local News'}" aria-label="The news account's name"></div>`
         + `<div class="ln stack"><span>The rumor account<small>anyone can post or send it a tip without a name${w.look === 'letters' ? ' — with Letters it shows as an unsigned note' : ''}</small></span><input class="s" id="w-rumor" value="${esc(w.rumorName || '')}" placeholder="Whispers" aria-label="The rumor account's name"></div>`
         + `<div class="ln"><span class="mini">Rumors also start from the story. To let one move a tracker, switch on “News and rumors can move this” there.</span></div>`) : '')
@@ -6275,7 +6289,7 @@ function renderWorldSettings(el, head = true) {
   wireSeg(el, 'w-a-pace', v => setWorld({ alive: { ...worldDoc().alive, pace: v } }));
   for (const [id, k] of [['w-a-min', 'movesMin'], ['w-a-max', 'movesMax']]) { const x = el.querySelector('#' + id); if (x) x.onchange = () => setWorld({ alive: { ...worldDoc().alive, [k]: Math.max(0, Math.min(10, Math.round(Number(x.value)) || 0)) } }); }
   const nIn = el.querySelector('#w-a-n'); if (nIn) nIn.onchange = () => setWorld({ alive: { ...worldDoc().alive, everyN: Math.max(1, Math.round(Number(nIn.value)) || 10) } });
-  wireSw(el, 'w-pause', on => { setWorld({ paused: on }); toast(on ? 'The world is paused: nothing new comes in.' : 'The world goes on again.'); });
+  wireSw(el, 'w-pause', setWorldPause);
   wireSw(el, 'w-f-cast', on => setWorld({ first: { ...worldDoc().first, cast: on } }));
   wireSw(el, 'w-p-on', on => setWorld({ pics: { ...(worldDoc().pics || WDEF.pics), on } }));
   wireSw(el, 'w-p-theirs', on => setWorld({ pics: { ...(worldDoc().pics || WDEF.pics), theirs: on } }));
@@ -6567,7 +6581,7 @@ function renderWorldPage(p) {
   const stories = `<div class="wov-card wstories">${S.stories.length ? `<div class="wch"><span class="wci">📖</span><b>World stories</b></div>` + S.stories.map(st => `<div class="wst"><span>${esc(st.title)}</span>${dots(Math.min(st.at, st.n), st.n)}<small>${st.at >= st.n ? 'told' : st.next ? 'next: ' + esc(st.next) : ''}</small></div>`).join('') : '<div class="wempty"><span aria-hidden="true">📖</span><span>No world stories yet. Start one in the panel’s News, or the world starts one by itself.</span></div>'}</div>`;
   p.innerHTML = `<div class="wov wide${letters ? ' letters' : ''}">
     <div class="wband"><span class="wglobe">🌍</span><div class="wbt"><h2>World</h2><small>${esc(cur)} · in this chat: ${esc(HD?.chat || '—')}</small></div>
-      <div class="wbadges"><span class="wbadge">${letters ? '✉️ Letters' : '📱 Phone'}</span>${shown.length ? `<span class="wbadge q">${shown.map(esc).join(' · ')}</span>` : ''}<button class="wbadge ${w.paused ? 'pause' : 'live'}" id="w-alive" title="${w.paused ? 'Paused — tap to let the world go on' : 'Tap to pause the world'}">${w.paused ? '⏸ Paused' : '● Alive'}</button></div></div>
+      <div class="wbadges"><span class="wbadge">${letters ? '✉️ Letters' : '📱 Phone'}</span>${shown.length ? `<span class="wbadge q">${shown.map(esc).join(' · ')}</span>` : ''}${wPauseHere() ? `<button class="wbadge ${wPaused() ? 'pause' : 'live'}" id="w-alive" title="${wPaused() ? 'Paused in this chat — tap to let the world go on' : 'Tap to pause the world in this chat'}">${wPaused() ? '⏸ Paused' : '● Alive'}</button>` : ''}</div></div>
     ${isNew ? '<div class="wnew">New world? <button class="linkish" data-wside-go="mero">☆ Set up with Mero</button></div>' : ''}
     <div class="wglance">${lately}<div class="wgside">${rumors}${coming}${stories}</div></div>
     <div class="side wpanel">${worldMainCards(w)}</div></div>`;
@@ -6576,7 +6590,7 @@ function renderWorldPage(p) {
   const lm = p.querySelector('#w-lately-more'); if (lm) lm.onclick = () => { wLatelyOpen = !wLatelyOpen; render(); };
   p.querySelectorAll('[data-wlf]').forEach(b => b.onclick = () => { wLatelyFilt = b.dataset.wlf; render(); });
   const un = p.querySelector('#w-unread'); if (un) un.onclick = () => { wLatelyFilt = 'you'; wLatelyOpen = true; render(); };
-  const al = p.querySelector('#w-alive'); if (al) al.onclick = () => { const on = !worldDoc().paused; setWorld({ paused: on }); toast(on ? 'The world is paused: nothing new comes in.' : 'The world goes on again.'); };
+  const al = p.querySelector('#w-alive'); if (al) al.onclick = () => setWorldPause(!wPaused());
   p.querySelectorAll('[data-wside-go]').forEach(b => b.onclick = () => { wSide = b.dataset.wsideGo; wPersonOpen = null; wVoiceSel = null; if (b.dataset.wsideGo === 'planned' && !worldDoc().planned.length) setTimeout(() => document.getElementById('w-p-add')?.click(), 0); render(); });
   p.querySelectorAll('[data-wup]').forEach(b => b.onclick = () => { wSide = 'planned'; wPlanSel = b.dataset.wup; wPersonOpen = null; wVoiceSel = null; render(); });
   tipify(p);
@@ -7730,7 +7744,7 @@ if (HD) {
   // opened from the Story tab's New tracker: straight into the Add window
   if (HD.add) setTimeout(() => AW.open(), 150);
   if (HD.view === 'time' || HD.view === 'outline' || HD.view === 'world') { tab = HD.view; render(); }   // Story → Timeline (Miinthe, 2026-10-16)
-  // "Write a new entry…" (bar 📖, Mero's lore gaps — overhaul 2026-10-17): only the entries window, on its own
+  // "Write a new entry…" (bar 📖 — overhaul 2026-10-17): only the entries window, on its own
   if (HD.entry) setTimeout(() => EW.openLoose(HD.entry), 0);
   else if (HD.changed.length) setTimeout(() => toast(`Changed by commands since the board was last saved here — taken in: ${HD.changed.join(' · ')}`), 400);
 }

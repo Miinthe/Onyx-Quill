@@ -1,8 +1,9 @@
 /**
  * Panel tabs (Miinthe, 2026-11-03; mock-up https://claude.ai/artifact/2rcyY7N1UDEvsMcWG1KLEK v6): DeepLore's side panel,
  * My notes and World each sit on the left or the right; the ones open on a side are tabs in a strip at the BOTTOM of
- * that side ("on the bottom we usually have free real estate while the top is already busy"), always there on a PC —
- * one panel alone gets its tab too, so every panel can be dragged across. One shows, the others wait behind it.
+ * that side ("on the bottom we usually have free real estate while the top is already busy"), on a PC, with two or
+ * more on a side — a panel alone on its side has no strip and moves sides from its header's lock. One shows, the
+ * others wait behind it.
  *
  * Click a tab: it shows. ✕: it closes. Right-click: lock / unlock, move to the other side, close. Drag it across:
  * it moves (remembered per panel). My notes and World take the exact place and size of the side panel on their side

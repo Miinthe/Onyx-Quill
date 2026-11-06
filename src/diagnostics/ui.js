@@ -30,13 +30,13 @@ export async function triggerDiagnosticDownload() {
     // Anonymized report — safe to share.
     downloadBlob(
         new Blob([report], { type: 'text/markdown' }),
-        `dle-diagnostics-${ts}.md`,
+        `onyx-quill-diagnostics-${ts}.md`,
     );
 
     // Unanonymized connections reference — user's eyes only.
     downloadBlob(
         new Blob([referenceFile], { type: 'text/markdown' }),
-        `dle-connections-reference-${ts}.md`,
+        `onyx-quill-connections-reference-${ts}.md`,
     );
 
     return { scrubStats };

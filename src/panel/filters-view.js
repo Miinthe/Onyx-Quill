@@ -42,7 +42,7 @@ function plainChip(o) {
 }
 function runCommand(cmd) {
     const ctx = typeof SillyTavern !== 'undefined' && SillyTavern.getContext ? SillyTavern.getContext() : null;
-    ctx?.executeSlashCommands?.(cmd)?.catch?.(err => console.warn('[DLE] Filters:', cmd, err));
+    ctx?.executeSlashCommands?.(cmd)?.catch?.(err => console.warn('[Onyx Quill] Filters:', cmd, err));
 }
 
 export function mountFiltersView(panel) {
@@ -190,7 +190,7 @@ export function mountFiltersView(panel) {
     function draw() {
         try {
             m = cardModel(chatStatus());
-        } catch (err) { console.warn('[DLE] Filters view:', err); return; }
+        } catch (err) { console.warn('[Onyx Quill] Filters view:', err); return; }
         const changeB = K.button({ label: 'Change folders and fields…', icon: 'settings', title: 'Folders, the on/off switch, and fields' });
         changeB.classList.add('dle-fv-change');
         changeB.setAttribute('aria-haspopup', 'menu');

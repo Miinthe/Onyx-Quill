@@ -96,9 +96,9 @@ export async function runDirector(chatMessages, type, signal) {
         // (2026-10-13) — thoughts, plans and facts with their quotes are longer than tracker moves
         const result = await callAI(DIRECTOR_SYSTEM, user, { ...conn, timeout: Math.max(Number(conn.timeout) || 0, DIRECTOR_TIMEOUT), maxTokens: Math.max(Number(conn.maxTokens) || 0, DIRECTOR_MAX_TOKENS), caller: 'storyTracker', skipThrottle: true, jsonSchema: DIRECTOR_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.7, signal });
         answer = parseDirectorAll(result?.text ?? '');
-        if (!answer.people.length && !answer.away.length && !/^\s*\{\s*\}\s*$/.test(String(result?.text ?? '')) && String(result?.text ?? '').trim()) console.warn('[DLE] cast director: answer unreadable (cut off?) —', String(result.text).slice(0, 200));
+        if (!answer.people.length && !answer.away.length && !/^\s*\{\s*\}\s*$/.test(String(result?.text ?? '')) && String(result?.text ?? '').trim()) console.warn('[Onyx Quill] cast director: answer unreadable (cut off?) —', String(result.text).slice(0, 200));
     } catch (err) {
-        if (err?.name !== 'AbortError') console.warn('[DLE] cast director failed:', err?.message || err);
+        if (err?.name !== 'AbortError') console.warn('[Onyx Quill] cast director failed:', err?.message || err);
         if (arrived.length && openChatId() === chat0) setWishes(arrived);
         return applied;
     }
@@ -108,7 +108,7 @@ export async function runDirector(chatMessages, type, signal) {
     if (!L) return applied;
     const { changes, rejected, wishes, leaves } = validateDirector(answer.people, L.board, L.state, messages, names);
     if (leaves.length && !replaying()) chat_metadata[LEAVES_KEY] = { at, list: leaves };
-    if (rejected.length) console.debug('[DLE] cast director answers not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] cast director answers not applied:', rejected);
     // a plan sends someone looking (step 2) — not while a regenerate replays the round: that redoes it, nobody new joins
     const comes = replaying() ? [] : validateComes(answer.away, L.board, L.state, at);
     setWishes(replaying() ? [] : [...arrived, ...wishes, ...comes.filter(c => c.field === 'here').map(c => ({ cast: c.col, person: c.person, why: 'came looking' }))]);
@@ -140,8 +140,8 @@ async function writeOffscreen(castId, personId, { from = null, to = null, who = 
     try {
         const r = await callAI(OFFSCREEN_SYSTEM, offscreenUser(L.state, cast, p, messages, { cardText, boardLines }), { ...conn, timeout: Math.max(Number(conn.timeout) || 0, DIRECTOR_TIMEOUT), maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'storyTracker', skipThrottle: true, jsonSchema: OFFSCREEN_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.8, signal });
         ans = parseOffscreen(r?.text);
-        if (!ans) console.warn('[DLE] cast off-screen: answer unreadable —', String(r?.text ?? '').slice(0, 300));
-    } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast off-screen failed:', err?.message || err); }
+        if (!ans) console.warn('[Onyx Quill] cast off-screen: answer unreadable —', String(r?.text ?? '').slice(0, 300));
+    } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] cast off-screen failed:', err?.message || err); }
     if (!ans || openChatId() !== chat0) return null;
     const L2 = live(), c2 = L2?.board?.trackers?.find(t => t.id === castId), p2 = personOf(c2, personId);
     if (!p2) return null;
@@ -157,7 +157,7 @@ export async function askOffscreen(castId, personId) {
     const L = live();
     const cast = L?.board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
     if (!p) return null;
-    if (resolveConnectionConfig('storyTracker').mode !== 'profile') { try { toastr.info('The director needs the story helper\'s connection: Onyx Quill settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
+    if (resolveConnectionConfig('storyTracker').mode !== 'profile') { try { toastr.info('The director needs the story helper\'s connection: Settings › AI & connections › Story helper.', 'Cast'); } catch { /* noop */ } return null; }
     const ch = await writeOffscreen(castId, personId, { from: leftAt(L.state, cast, p), to: turnIndex(getContext()?.chat), who: 'asked' });
     if (!ch) { try { toastr.info(`No answer about ${escapeHtml(p.name)} this time — try again.`, 'Cast'); } catch { /* noop */ } return null; }
     return ch[0].to?.at?.(-1)?.text ?? null;
@@ -173,7 +173,7 @@ export async function suggestTies(castId, personId) {
     const cast = L?.board?.trackers?.find(t => t.id === castId), p = personOf(cast, personId);
     if (!p) return null;
     const conn = resolveConnectionConfig('storyTracker');
-    if (conn.mode !== 'profile' || !conn.profileId) { try { toastr.info('Suggest ties uses the story helper\'s connection: Onyx Quill settings → AI Connections → Story Trackers.', 'Cast'); } catch { /* noop */ } return null; }
+    if (conn.mode !== 'profile' || !conn.profileId) { try { toastr.info('Suggest ties uses the story helper\'s connection: Settings › AI & connections › Story helper.', 'Cast'); } catch { /* noop */ } return null; }
     const ctx = getContext();
     const targets = [...runningCasts(L.board, L.state).flatMap(c => (c.people || []).map(x => x.name)).filter(n => n.toLowerCase() !== p.name.toLowerCase()), ctx?.groupId ? '' : (ctx?.name2 || ''), ctx?.name1 || ''].filter((v, k, a) => v && a.indexOf(v) === k);
     const now = personNow(L.state, cast, p);
@@ -184,10 +184,10 @@ export async function suggestTies(castId, personId) {
     try {
         const r = await callAI(SEED_SYSTEM, seedUser({ name: p.name, card: cardText(p), lore, messages, targets, ties: now.ties }), { ...conn, timeout: Math.max(Number(conn.timeout) || 0, DIRECTOR_TIMEOUT), maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'storyTracker', skipThrottle: true, jsonSchema: SEED_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.4 });
         sugs = seedSugs(r?.text, { targets, now });
-        if (!sugs.length) console.debug('[DLE] suggest ties: nothing usable in', String(r?.text ?? '').slice(0, 400));
+        if (!sugs.length) console.debug('[Onyx Quill] suggest ties: nothing usable in', String(r?.text ?? '').slice(0, 400));
     } catch (err) {
         // bug hunt 2026-11-03: a failed call ended "Thinking…" without a word
-        if (err?.name !== 'AbortError') { console.warn('[DLE] cast suggest ties failed:', err?.message || err); try { toastr.warning(`Couldn't get suggestions for ${escapeHtml(p.name)} — the story helper's model didn't answer. Try again.`, 'Cast'); } catch { /* noop */ } }
+        if (err?.name !== 'AbortError') { console.warn('[Onyx Quill] cast suggest ties failed:', err?.message || err); try { toastr.warning(`Couldn't get suggestions for ${escapeHtml(p.name)} — the story helper's model didn't answer. Try again.`, 'Cast'); } catch { /* noop */ } }
         return null;
     }
     if (openChatId() !== chat0) return null;
@@ -215,7 +215,7 @@ export async function checkExit(castId, personId, text) {
     try {
         const r = await callAI(EXIT_SYSTEM, exitUser(p.name, text), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: EXIT_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
         quote = exitFrom(r?.text, text);
-    } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast exit check failed:', err?.message || err); }
+    } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] cast exit check failed:', err?.message || err); }
     if (!quote || openChatId() !== chat0) return false;
     const L2 = live();
     if (!L2?.state?.cast?.[castId]?.[personId]?.here) return false;
@@ -258,7 +258,7 @@ export async function checkReturns(index, speaker, text) {
         try {
             const r = await callAI(RETURN_SYSTEM, returnUser(p.name, speaker, text), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: RETURN_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
             quote = exitFrom(r?.text, text, 'back');
-        } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast return check failed:', err?.message || err); }
+        } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] cast return check failed:', err?.message || err); }
         if (!quote || openChatId() !== chat0) continue;
         const L2 = live();
         if (!L2 || L2.state.cast?.[x.cast]?.[x.person]?.here) continue;

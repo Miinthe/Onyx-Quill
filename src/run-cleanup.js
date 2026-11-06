@@ -163,14 +163,14 @@ export async function openCleanup(r) {
                     read: p => readNote(v.host, v.port, v.apiKey, p, !!v.https),
                     write: (p, c) => writeNote(v.host, v.port, v.apiKey, p, c, !!v.https),
                     del: p => deleteNote(v.host, v.port, v.apiKey, p, !!v.https),
-                }, log: m => console.log(`[DLE] run cleanup: ${m}`) });
+                }, log: m => console.log(`[Onyx Quill] run cleanup: ${m}`) });
             if (!res.ok) failed.push(`${f.path}: ${res.error || 'failed'}`);
         }
         if (forgets) { extension_settings[CHARS_KEY] = setFolders(asStore(extension_settings?.[CHARS_KEY]), r.charKey, r.cardName, [], r.run); saveSettingsDebounced(); }
         w.close();
         const done = list.length - failed.length;
         K.notify({ text: `${forGood() ? `${done} deleted` : `${done} moved to “${folder}”`}.${forgets ? ` Run ${R} is forgotten.` : ''}${failed.length ? ` ${failed.length} couldn't be ${forGood() ? 'deleted' : 'moved'} — they're still in place (see the browser console).` : ''}`, tone: failed.length ? 'wait' : 'good', timeout: 9000 });
-        if (failed.length) console.warn('[DLE] run cleanup — not done:\n' + failed.join('\n'));
+        if (failed.length) console.warn('[Onyx Quill] run cleanup — not done:\n' + failed.join('\n'));
         if (done) buildIndexWithReuse().catch(() => {});
     }
 }

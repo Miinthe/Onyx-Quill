@@ -158,7 +158,7 @@ assert(typeof deletePromptFile === 'function', 'export: deletePromptFile is a fu
 assert(typeof writePromptFile === 'function', 'export: writePromptFile is a function');
 assert(typeof fetchPromptFile === 'function', 'export: fetchPromptFile is a function');
 assert(typeof listPromptsFolder === 'function', 'export: listPromptsFolder is a function');
-assertEqual(DLE_PROMPTS_DEFAULT_DIR, 'DeepLore/prompts/', 'export: DLE_PROMPTS_DEFAULT_DIR matches Q2 default');
+assertEqual(DLE_PROMPTS_DEFAULT_DIR, 'Onyx Quill/prompts/', 'export: DLE_PROMPTS_DEFAULT_DIR matches Q2 default');
 assert(typeof DLE_PROMPTS_LIST_LIMIT === 'number' && DLE_PROMPTS_LIST_LIMIT > 0, 'export: DLE_PROMPTS_LIST_LIMIT positive number');
 assert(typeof DLE_PROMPTS_MAX_FILE_BYTES === 'number' && DLE_PROMPTS_MAX_FILE_BYTES > 0, 'export: DLE_PROMPTS_MAX_FILE_BYTES positive number');
 

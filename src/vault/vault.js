@@ -167,7 +167,7 @@ function computeDerivedIndexFields(entries, settings, previousEntries, precomput
         if (shouldUseIncremental(changed, entries.length)) {
             weights = incrementalMentionWeights(mentionWeights, previousEntries, entries, diff);
             if (settings?.debugMode) {
-                console.debug(`[DLE] mentionWeights incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${weights.size} pairs`);
+                console.debug(`[Onyx Quill] mentionWeights incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${weights.size} pairs`);
             }
         }
     }
@@ -182,7 +182,7 @@ function computeDerivedIndexFields(entries, settings, previousEntries, precomput
         // regex per target + pre-lowered content, O(N × total_content)) is intact.
         weights = buildFullMentionWeights(entries);
         if (settings?.debugMode) {
-            console.debug(`[DLE] Built mention weights: ${weights.size} pairs (full)`);
+            console.debug(`[Onyx Quill] Built mention weights: ${weights.size} pairs (full)`);
         }
     }
     setMentionWeights(weights);
@@ -270,7 +270,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
             setEntityShortNameRegexes(regexes);
             entityIncremental = true;
             if (settings?.debugMode) {
-                console.debug(`[DLE] entity regexes incremental: ${names.size} names, ${regexes.size} regexes`);
+                console.debug(`[Onyx Quill] entity regexes incremental: ${names.size} names, ${regexes.size} regexes`);
             }
         }
     }
@@ -289,7 +289,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
         if (shouldUseIncremental(changed, entries.length)) {
             newBm25 = incrementalBM25Update(fuzzySearchIndex, diff);
             if (newBm25 && settings?.debugMode) {
-                console.debug(`[DLE] BM25 incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${newBm25.docs.size} docs`);
+                console.debug(`[Onyx Quill] BM25 incremental: ${diff.added.length}+, ${diff.removed.length}-, ${diff.modified.length}~ → ${newBm25.docs.size} docs`);
             }
         }
     }
@@ -308,7 +308,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
             cachedResultsCleared: _preCacheResultCount,
             entriesAfter: entries.length,
         });
-        console.debug('[DLE][DIAG] aiSearchCache cleared: trigger=index_rebuild regex v%d→v%d cachedResults=%d entriesAfter=%d',
+        console.debug('[Onyx Quill][DIAG] aiSearchCache cleared: trigger=index_rebuild regex v%d→v%d cachedResults=%d entriesAfter=%d',
             _preRegexVersion, entityRegexVersion, _preCacheResultCount, entries.length);
     }
     resetAiSearchCache();
@@ -321,7 +321,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
                 showChangesToast(changes);
             }
             if (settings.debugMode) {
-                console.log('[DLE] Vault changes detected:', changes);
+                console.log('[Onyx Quill] Vault changes detected:', changes);
             }
         }
     }
@@ -360,7 +360,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
         const isStale = buildEpochAtStart === null ? null : () => buildEpoch !== buildEpochAtStart;
         saveIndexToCache(entries, isStale)
             .then(() => pruneOrphanedCacheKeys())
-            .catch(err => console.warn('[DLE] Cache save/prune failed:', err?.message));
+            .catch(err => console.warn('[Onyx Quill] Cache save/prune failed:', err?.message));
     }
 
     pushEvent('index_build', { entryCount: entries.length, skipCacheSave });
@@ -373,7 +373,7 @@ async function finalizeIndex({ entries, settings, skipCacheSave = false, previou
  */
 export async function buildIndex() {
     if (indexing) {
-        if (getSettings().debugMode) console.debug('[DLE] Index build already in progress, awaiting existing build');
+        if (getSettings().debugMode) console.debug('[Onyx Quill] Index build already in progress, awaiting existing build');
         return buildPromise;
     }
 
@@ -405,7 +405,7 @@ export async function buildIndex() {
         // BUG-F4: Resolve to local first; commit to state once before parsing so
         // entries can't be parsed under inconsistent defs if fallback logic triggers.
         const primaryVault = enabledVaults[0];
-        const fieldDefPath = settings.fieldDefinitionsPath || 'DeepLore/field-definitions.yaml';
+        const fieldDefPath = settings.fieldDefinitionsPath || 'Onyx Quill/field-definitions.yaml';
         let loadedFieldDefs = [...DEFAULT_FIELD_DEFINITIONS];
         try {
             const fdResult = await fetchFieldDefinitions(primaryVault.host, primaryVault.port, primaryVault.apiKey, fieldDefPath, !!primaryVault.https);
@@ -413,20 +413,22 @@ export async function buildIndex() {
                 const { definitions, errors } = parseFieldDefinitionYaml(fdResult.content);
                 if (definitions.length > 0) {
                     loadedFieldDefs = definitions;
-                    if (settings.debugMode) console.log(`[DLE] Loaded ${definitions.length} custom field definitions from ${fieldDefPath}`);
-                    if (errors.length > 0) console.warn('[DLE] Field definition warnings:', errors);
+                    if (settings.debugMode) console.log(`[Onyx Quill] Loaded ${definitions.length} custom field definitions from ${fieldDefPath}`);
+                    if (errors.length > 0) console.warn('[Onyx Quill] Field definition warnings:', errors);
+                } else if (errors.length > 0) {
+                    console.warn(`[Onyx Quill] ${fieldDefPath} gave no field definitions — using the defaults:`, errors);
                 } else {
-                    if (settings.debugMode) console.log('[DLE] Field definitions file empty, using defaults');
+                    if (settings.debugMode) console.log('[Onyx Quill] Field definitions file empty, using defaults');
                 }
             } else {
                 if (fdResult.error === 'not_found') {
-                    if (settings.debugMode) console.log('[DLE] Field definitions file not found — using defaults');
+                    if (settings.debugMode) console.log('[Onyx Quill] Field definitions file not found — using defaults');
                 } else if (settings.debugMode) {
-                    console.warn('[DLE] Could not load field definitions:', fdResult.error, '— using defaults');
+                    console.warn('[Onyx Quill] Could not load field definitions:', fdResult.error, '— using defaults');
                 }
             }
         } catch (err) {
-            console.warn('[DLE] Error loading field definitions:', err.message, '— using defaults');
+            console.warn('[Onyx Quill] Error loading field definitions:', err.message, '— using defaults');
         }
         // BUG-305: Don't publish loadedFieldDefs to state until we commit a new
         // vaultIndex. If all vaults fail in multi-vault mode (early-return below),
@@ -466,14 +468,14 @@ export async function buildIndex() {
             try {
                 const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https, { skipFolder: settings.runTrashFolder || 'zz Deleted runs' });
                 if (!data.files || !Array.isArray(data.files)) {
-                    console.warn(`[DLE] Vault "${vault.name}" returned invalid data`);
+                    console.warn(`[Onyx Quill] Vault "${vault.name}" returned invalid data`);
                     continue;
                 }
 
                 // BUG-366: Partial listing — don't commit a truncated view over a
                 // known-good index. Carry forward this vault's previous entries.
                 if (data.partial) {
-                    console.warn(`[DLE] Vault "${vault.name}" returned a partial directory listing — preserving previous entries for this vault`);
+                    console.warn(`[Onyx Quill] Vault "${vault.name}" returned a partial directory listing — preserving previous entries for this vault`);
                     vaultFetchFailed = true;
                     vaultFailCount++;
                     dedupWarning(
@@ -491,7 +493,7 @@ export async function buildIndex() {
                 if (data.files.length === 0) {
                     const priorForThisVault = priorIndexSnapshot.filter(e => e.vaultSource === vault.name);
                     if (priorForThisVault.length > 0) {
-                        console.warn(`[DLE] Vault "${vault.name}" returned 0 files but prior index had ${priorForThisVault.length} entries — preserving`);
+                        console.warn(`[Onyx Quill] Vault "${vault.name}" returned 0 files but prior index had ${priorForThisVault.length} entries — preserving`);
                         vaultFetchFailed = true;
                         vaultFailCount++;
                         dedupWarning(
@@ -550,7 +552,7 @@ export async function buildIndex() {
                     }
                 }
             } catch (vaultErr) {
-                console.warn(`[DLE] Failed to index vault "${vault.name}":`, vaultErr.message);
+                console.warn(`[Onyx Quill] Failed to index vault "${vault.name}":`, vaultErr.message);
                 vaultFetchFailed = true;
                 vaultFailCount++;
                 // Surface auth errors as toasts even in multi-vault mode — otherwise a
@@ -603,7 +605,7 @@ export async function buildIndex() {
             setFieldDefinitions(loadedFieldDefs);
             setVaultIndex(entries);
             setIndexTimestamp(Date.now() - (settings.cacheTTL * 1000) + 30_000); // retry in ~30s
-            console.warn('[DLE] Merge mode + vault fetch failure — preserving the whole prior index (merged provenance can\'t be split per-vault).');
+            console.warn('[Onyx Quill] Merge mode + vault fetch failure — preserving the whole prior index (merged provenance can\'t be split per-vault).');
             if (isZombie()) return;
             setIndexBuildReport(buildReport);
             await finalizeIndex({ entries, settings, skipCacheSave: true, buildEpochAtStart: capturedEpoch });
@@ -612,7 +614,7 @@ export async function buildIndex() {
 
         const _tokenizerFailCount = await tokenizeEntries(entries);
         if (_tokenizerFailCount > 0) {
-            console.warn(`[DLE] Tokenizer failed for ${_tokenizerFailCount}/${entries.length} entries — using character-based estimates (budget accuracy degraded)`);
+            console.warn(`[Onyx Quill] Tokenizer failed for ${_tokenizerFailCount}/${entries.length} entries — using character-based estimates (budget accuracy degraded)`);
         }
 
         // Cross-vault title duplicates cause Map key collisions.
@@ -641,8 +643,8 @@ export async function buildIndex() {
         setVaultIndex(entries);
         setIndexTimestamp(Date.now());
 
-        if (settings.debugMode) console.log(`[DLE] Indexed ${entries.length} entries from ${totalFiles} vault files across ${enabledVaults.length} vault(s)`);
-        console.log('[DLE] Index built: %d entries in %dms (mode: fresh)', entries.length, Math.round(performance.now() - _buildStart));
+        if (settings.debugMode) console.log(`[Onyx Quill] Indexed ${entries.length} entries from ${totalFiles} vault files across ${enabledVaults.length} vault(s)`);
+        console.log('[Onyx Quill] Index built: %d entries in %dms (mode: fresh)', entries.length, Math.round(performance.now() - _buildStart));
 
         if (isZombie()) return;
         // Publish ledger BEFORE finalizeIndex so observers (stats, health) see it.
@@ -671,7 +673,7 @@ export async function buildIndex() {
             );
         }
     } catch (err) {
-        console.error('[DLE] Failed to build index:', err);
+        console.error('[Onyx Quill] Failed to build index:', err);
         const raw = String(err.message || err);
         let userMsg = raw;
 
@@ -712,7 +714,7 @@ export async function buildIndex() {
     // L-43: deferred already resolved in the finally above; this only catches a throw
     // from the catch/finally themselves. Swallow-and-log so it can't surface as an
     // unhandled rejection (the deferred `promise` is already settled either way).
-    })().catch(err => { console.warn('[DLE] buildIndex post-settle error (ignored):', err?.message || err); });
+    })().catch(err => { console.warn('[Onyx Quill] buildIndex post-settle error (ignored):', err?.message || err); });
     return promise;
 }
 
@@ -806,7 +808,7 @@ export async function hydrateFromCache() {
         // confirms the vault is reachable — not here.
         notifyIndexUpdated();
 
-        if (getSettings().debugMode) console.log(`[DLE] Hydrated ${cached.entries.length} entries from IndexedDB cache`);
+        if (getSettings().debugMode) console.log(`[Onyx Quill] Hydrated ${cached.entries.length} entries from IndexedDB cache`);
 
         // H3: Capture epoch so a stale background rebuild can't apply to a different chat.
         const hydrateEpoch = chatEpoch;
@@ -815,7 +817,7 @@ export async function hydrateFromCache() {
             // mid-flight, skip any post-rebuild continuation for the stale chat.
             if (chatEpoch !== hydrateEpoch) return;
         }).catch(err => {
-            console.warn('[DLE] Background rebuild after cache hydration failed:', err.message);
+            console.warn('[Onyx Quill] Background rebuild after cache hydration failed:', err.message);
             if (chatEpoch !== hydrateEpoch) return;
             if (vaultIndex.length > 0) {
                 // Short-lived timestamp so retries happen on cooldown, not after TTL.
@@ -827,7 +829,7 @@ export async function hydrateFromCache() {
 
         return true;
     } catch (err) {
-        console.warn('[DLE] Failed to load cached vault data:', err.message);
+        console.warn('[Onyx Quill] Failed to load cached vault data:', err.message);
         return false;
     }
 }
@@ -896,7 +898,7 @@ export async function buildIndexWithReuse() {
         const failedVaultNames = new Set();
         let newFieldDefs = fieldDefinitions; // default: keep existing (for non-404 fetch errors)
         const primaryVault = enabledVaults[0];
-        const fieldDefPath = settings.fieldDefinitionsPath || 'DeepLore/field-definitions.yaml';
+        const fieldDefPath = settings.fieldDefinitionsPath || 'Onyx Quill/field-definitions.yaml';
         try {
             const fdResult = await fetchFieldDefinitions(primaryVault.host, primaryVault.port, primaryVault.apiKey, fieldDefPath, !!primaryVault.https);
             if (fdResult.ok && fdResult.content) {
@@ -911,7 +913,7 @@ export async function buildIndexWithReuse() {
             }
             // Other errors (5xx, network): keep existing defs — don't clobber user schema.
         } catch (err) {
-            if (settings.debugMode) console.warn('[DLE] Failed to load field definitions during reuse-sync:', err?.message);
+            if (settings.debugMode) console.warn('[Onyx Quill] Failed to load field definitions during reuse-sync:', err?.message);
         }
 
         const existingMap = new Map();
@@ -938,7 +940,7 @@ export async function buildIndexWithReuse() {
         // and invoke `buildIndex` only when it's false.
         if (fieldDefsChanged) {
             if (settings.debugMode) {
-                console.debug('[DLE] Reuse sync: field definitions changed — delegating to buildIndex for parallel tokenization');
+                console.debug('[Onyx Quill] Reuse sync: field definitions changed — delegating to buildIndex for parallel tokenization');
             }
             _reuseResult = false;
             return;
@@ -983,7 +985,7 @@ export async function buildIndexWithReuse() {
                 const data = await fetchAllMdFiles(vault.host, vault.port, vault.apiKey, !!vault.https, { skipFolder: settings.runTrashFolder || 'zz Deleted runs' });
                 if (isZombie()) { _reuseResult = false; return; }
                 if (!data.files || !Array.isArray(data.files)) {
-                    console.warn(`[DLE] Reuse sync: vault "${vault.name}" returned invalid data — carrying forward existing entries`);
+                    console.warn(`[Onyx Quill] Reuse sync: vault "${vault.name}" returned invalid data — carrying forward existing entries`);
                     anyVaultFailed = true;
                     vaultFailCount++;
                     failedVaultNames.add(vault.name);
@@ -1011,7 +1013,7 @@ export async function buildIndexWithReuse() {
                 // truncated index AND finalizeIndex saves it to IDB (no skipCacheSave). On
                 // next hydrate, analytics-prune strips trackers for the "deleted" entries.
                 if (data.partial) {
-                    console.warn(`[DLE] Reuse sync: vault "${vault.name}" returned a partial directory listing — preserving previous entries for this vault`);
+                    console.warn(`[Onyx Quill] Reuse sync: vault "${vault.name}" returned a partial directory listing — preserving previous entries for this vault`);
                     anyVaultFailed = true;
                     vaultFailCount++;
                     failedVaultNames.add(vault.name);
@@ -1144,7 +1146,7 @@ export async function buildIndexWithReuse() {
                     }
                 }
             } catch (vaultErr) {
-                console.warn(`[DLE] Reuse sync failed for vault "${vault.name}":`, vaultErr.message);
+                console.warn(`[Onyx Quill] Reuse sync failed for vault "${vault.name}":`, vaultErr.message);
                 anyVaultFailed = true;
                 vaultFailCount++;
                 failedVaultNames.add(vault.name);
@@ -1190,7 +1192,7 @@ export async function buildIndexWithReuse() {
             setVaultIndex(carried);
             setIndexTimestamp(Date.now() - (settings.cacheTTL * 1000) + 30_000); // retry in ~30s
             setIndexBuildReport(buildReport);
-            console.warn('[DLE] Reuse sync: merge mode + vault fetch failure — preserving the whole prior index (merged provenance can\'t be split per-vault).');
+            console.warn('[Onyx Quill] Reuse sync: merge mode + vault fetch failure — preserving the whole prior index (merged provenance can\'t be split per-vault).');
             if (isZombie()) { _reuseResult = false; return; }
             await finalizeIndex({
                 entries: carried,
@@ -1215,7 +1217,7 @@ export async function buildIndexWithReuse() {
             // the live index's warning state after a reuse-sync tick.
             setIndexBuildReport(buildReport);
             if (settings.debugMode) {
-                console.debug(`[DLE] Reuse sync: no changes detected${anyVaultFailed ? ' (some vaults failed)' : ''}`);
+                console.debug(`[Onyx Quill] Reuse sync: no changes detected${anyVaultFailed ? ' (some vaults failed)' : ''}`);
             }
             _reuseResult = true;
             return;
@@ -1230,11 +1232,11 @@ export async function buildIndexWithReuse() {
             if (isZombie()) { _reuseResult = false; return; }
         }
         if (_reuseTokenizerFailCount > 0) {
-            console.warn(`[DLE] Tokenizer failed for ${_reuseTokenizerFailCount} re-parsed entries — using character-based estimates (budget accuracy degraded)`);
+            console.warn(`[Onyx Quill] Tokenizer failed for ${_reuseTokenizerFailCount} re-parsed entries — using character-based estimates (budget accuracy degraded)`);
         }
 
         if (settings.debugMode) {
-            console.log(`[DLE] Reuse sync: +${newCount} new, ~${modifiedCount} modified, -${removedCount} removed`);
+            console.log(`[Onyx Quill] Reuse sync: +${newCount} new, ~${modifiedCount} modified, -${removedCount} removed`);
         }
 
         // Cross-vault title duplicates cause Map key collisions.
@@ -1340,13 +1342,13 @@ export async function buildIndexWithReuse() {
         }
 
         if (settings.debugMode) {
-            console.log(`[DLE] Reuse sync: ${allEntries.length} entries after reuse rebuild`);
+            console.log(`[Onyx Quill] Reuse sync: ${allEntries.length} entries after reuse rebuild`);
         }
-        console.log('[DLE] Index built: %d entries in %dms (mode: reuse)', dedupedEntries.length, Math.round(performance.now() - _buildStart));
+        console.log('[Onyx Quill] Index built: %d entries in %dms (mode: reuse)', dedupedEntries.length, Math.round(performance.now() - _buildStart));
 
         _reuseResult = true;
     } catch (err) {
-        console.warn('[DLE] Reuse sync error:', err.message);
+        console.warn('[Onyx Quill] Reuse sync error:', err.message);
         _reuseResult = false;
     } finally {
         // Epoch-gated cleanup: if force-release bumped buildEpoch mid-coroutine and
@@ -1461,6 +1463,6 @@ export async function moveEntryToFolder(entry, destFolder, io = null) {
         from: entry.filename,
         destFolder,
         io: bound,
-        log: (m) => console.log(`[DLE] ${m}`),
+        log: (m) => console.log(`[Onyx Quill] ${m}`),
     });
 }

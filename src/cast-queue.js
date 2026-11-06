@@ -197,7 +197,7 @@ async function sitOuts(signal) {
     try {
         const r = await callAI(SPEAKS_SYSTEM, speaksUser({ messages, people }), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: SPEAKS_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0, signal });
         speak = parseSpeaks(r?.text, people.map(p => p.name));
-    } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] cast round: who speaks — skipped:', err?.message || err); }
+    } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] cast round: who speaks — skipped:', err?.message || err); }
     if (!speak || signal?.aborted) return;   // unreadable: everyone speaks, as before
     const quiet = people.filter(p => !speak.includes(p.name));
     if (!quiet.length) return;
@@ -231,7 +231,7 @@ async function aiItem(x, gone = () => false) {
         const done = generationDone();
         const before = getContext().chat.length;
         const giveBack = holdBox();
-        try { await getContext().generate('normal'); } catch (err) { console.warn('[DLE] cast round: the main reply failed:', err?.message || err); giveBack(); return false; }
+        try { await getContext().generate('normal'); } catch (err) { console.warn('[Onyx Quill] cast round: the main reply failed:', err?.message || err); giveBack(); return false; }
         // generate() is back once the reply is written; a generation that never got going (no connection) sends no
         // GENERATION_ENDED — waiting for it alone hung the round and kept what she had typed (bug hunt 2026-11-03)
         await Promise.race([done, new Promise(r => setTimeout(r, 1500))]);
@@ -264,7 +264,7 @@ export async function runQueue() {
                 if (!text) continue;   // nothing in the chat box: only your NPC lines this round (Miinthe: "I cannot just speak as Kettle")
                 box.value = ''; box.dispatchEvent(new Event('input', { bubbles: true }));
                 try { await sendMessageAsUser(text, ''); } catch (err) {   // not sent: her text goes back in the box, the round stops
-                    console.warn('[DLE] cast round: your message could not be sent:', err?.message || err);
+                    console.warn('[Onyx Quill] cast round: your message could not be sent:', err?.message || err);
                     box.value = text + (box.value ? ` ${box.value}` : ''); box.dispatchEvent(new Event('input', { bubbles: true }));
                     return;
                 }
@@ -281,8 +281,8 @@ export async function runQueue() {
         if (!gone() && !getQueue().some(y => y.kind === 'main')) {
             await waitForIdle();
             const chat = getContext()?.chat || [];
-            if (!gone()) { try { await runAutoTrack(chat, 'normal', ac.signal); } catch (err) { console.warn('[DLE] cast round: the helper skipped:', err?.message || err); } }
-            if (!gone()) { try { await runDirector(chat, 'normal', ac.signal); } catch (err) { console.warn('[DLE] cast round: the director skipped:', err?.message || err); } }
+            if (!gone()) { try { await runAutoTrack(chat, 'normal', ac.signal); } catch (err) { console.warn('[Onyx Quill] cast round: the helper skipped:', err?.message || err); } }
+            if (!gone()) { try { await runDirector(chat, 'normal', ac.signal); } catch (err) { console.warn('[Onyx Quill] cast round: the director skipped:', err?.message || err); } }
             if (gone()) return;
             takeWishes();
         }

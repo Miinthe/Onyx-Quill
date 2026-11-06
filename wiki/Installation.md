@@ -1,126 +1,77 @@
-# Installation
+How to install Onyx Quill and connect it to Obsidian. You need SillyTavern, the Obsidian app with its **Local REST API** plugin, and a vault (your own, or the Duskfrost demo vault that comes with Onyx Quill). The setup wizard does most of the connecting for you; this page covers what comes before it and how to do it by hand.
 
-Install steps for DeepLore. Install the extension, point it at an Obsidian vault, then either run the setup wizard (`/oq-setup`) or configure manually.
+## What you need
 
-## Prerequisites
-
-- [SillyTavern](https://github.com/SillyTavern/SillyTavern) v1.12.14+
-- [Obsidian](https://obsidian.md/) with the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed and enabled
-- A vault for your lore. Your existing Obsidian vault works; `/oq-import` converts SillyTavern World Info JSON into vault entries
-- For AI search (optional): a saved Connection Manager profile in SillyTavern (any provider). This is the only supported connection path as of v2.5 — the old Custom Proxy mode was removed
+- **SillyTavern 1.12.14 or newer.** Older versions refuse to load the extension.
+- **Obsidian** (the desktop app), with the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed and switched on. Obsidian has to be open while you write: Onyx Quill reads your vault through this plugin.
+- **A vault.** Your own Obsidian vault works as it is: only notes with the lore tag (`lorebook`) become entries. To try things first, use the demo vault (see [[Quick Start]]). Coming from World Info? The importer turns a World Info book into notes (see [[Coming from DeepLore or World Info]]).
+- **For the AI parts (optional at first):** a saved SillyTavern **Connection Profile**. AI search, the story helper, Mero ☆ and the other helpers each use one. Picking lore by keywords alone needs no AI at all.
 
 > [!IMPORTANT]
-> If you previously ran the older standalone `sillytavern-DeepLore` extension, uninstall it first. Running both at once corrupts prompt injection.
+> If you have the original DeepLore installed, switch it off first. The two can't run at the same time: when both are on, Onyx Quill stays off and tells you so. See [[Coming from DeepLore or World Info]].
 
----
+## Step 1: set up the Local REST API plugin in Obsidian
 
-## Step 1: install the extension
+1. In Obsidian, open **Settings › Community plugins**, browse for **Local REST API**, install it and switch it on.
+2. Open the plugin's settings. Switch on **Enable Non-Encrypted (HTTP) Server**. Its port is `27123`.
+3. Copy the **API key** shown there. You will paste it into Onyx Quill.
 
-### Option A: built-in installer (recommended)
+Plugins in Obsidian belong to one vault. If you use more than one vault (for example your own and the demo vault), each needs the plugin and has its own API key.
 
-1. Open SillyTavern
-2. Go to the **Extensions** panel (puzzle piece icon)
-3. Click **Install Extension**
-4. Paste the URL:
+> [!NOTE]
+> HTTP is the easy way. The plugin's HTTPS server (port `27124`) uses a self-signed certificate, and your browser only accepts it after you install that certificate into your operating system's trust store. Onyx Quill does not walk you through that; if you need HTTPS, see the [Local REST API author's guide](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F).
+
+## Step 2: install Onyx Quill
+
+1. In SillyTavern, open the **Extensions** panel.
+2. Press **Install extension**.
+3. Paste this address:
    ```
-   https://github.com/pixelnull/sillytavern-DeepLore
+   https://github.com/Miinthe/Onyx-Quill
    ```
-5. Click **Install**
+4. Install it (just for you, or for all users, if SillyTavern asks).
+5. Reload the page if SillyTavern doesn't do it for you.
 
-### Option B: manual git clone
+Onyx Quill now has its own entry in the Extensions panel, with **Enable Onyx Quill** and **Open Onyx Quill Settings**.
+
+**By hand, with git:** clone the same address into SillyTavern's extensions folder and restart SillyTavern. For all users that is `public/scripts/extensions/third-party/`; for one user it is `data/<user>/extensions/`.
 
 ```bash
-cd SillyTavern/public/scripts/extensions/third-party
-git clone https://github.com/pixelnull/sillytavern-DeepLore.git
+git clone https://github.com/Miinthe/Onyx-Quill
 ```
 
----
+## Step 3: run the setup wizard
 
-## Step 2: restart SillyTavern
+The first time Onyx Quill loads with no vault set up, the [[Setup Wizard]] opens on its own (after SillyTavern's own welcome, if that shows). It connects your vault, sets the tags, picks how lore is picked, and can import a World Info book. If you closed it, run `/oq-setup`, or use the side panel's **⋯ › Setup wizard**; it picks up where you left off.
 
-Stop and restart SillyTavern to load the new extension.
+Then follow [[Quick Start]] to see your first entry go out.
 
----
+## Connecting by hand
 
-## First-time setup
+You can skip the wizard and set things up in the settings window instead. Open it from the Extensions panel (**Open Onyx Quill Settings**), from the bar's 📖 menu (**Setup and settings**), or from the side panel's **⋯ › Settings**.
 
-> [!TIP]
-> Run `/oq-setup` in the SillyTavern chat input to use the guided setup wizard. It walks through vault connection, tags, matching, AI search, Mero ☆ (lore tools during replies), vault structure, and lorebook import in one flow. See [[Setup Wizard]].
+1. Go to **Settings › Vault › Vaults**. Press **Add a vault** (or **Edit** on the one that is there).
+2. Fill in **Address** (`127.0.0.1` when Obsidian runs on the same computer), **Port** (`27123`) and **API key**. Leave **HTTPS** off.
+3. Press **Test**. The vault's line should say "connected".
+4. Switch Onyx Quill on: the **On / Off everywhere** switch at the top of the settings window, or **Enable Onyx Quill** in the Extensions panel.
+5. Press **Re-read now** under **Settings › Vault › Reading** (or run `/oq-refresh`).
 
-The rest of this section covers manual setup. Skip it if you ran the wizard.
+**Scan for vaults** looks for a running Local REST API on this computer if you are not sure of the port.
 
-### Obsidian connection
+### Using SillyTavern from another device
 
-1. In Obsidian, open **Settings → Community Plugins** and install/enable **Local REST API**
-2. Go to **Settings → Local REST API**, note the **API port** (default `27123` for HTTP), and copy the **API key**
-3. In SillyTavern, go to **Extensions → DeepLore**
-4. Enter the port and API key in the connection fields
-5. Click **Test All**. You should see a success message
-6. Check **Enable DeepLore**
-7. Click **Refresh Index** to pull entries from your vault
-
-> [!NOTE]
-> HTTP is recommended. HTTPS requires installing the Local REST API plugin's self-signed certificate to your OS trust store, and DLE does not bundle a setup walkthrough for that. If you need HTTPS, see the [Local REST API author's guide on trusting the certificate](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F).
-
-Any entries in your vault tagged `lorebook` (or whatever tag you configured) match by keywords during generation. See [[Writing Vault Entries]] for entry format.
-
-### AI search setup (optional)
-
-AI search adds a second pipeline stage: after keyword pre-filtering, an AI model reads compact summaries of the candidates and selects the contextually relevant ones. See [[AI Search]] for the full mechanism.
-
-AI search reuses an existing SillyTavern API connection through a Connection Manager profile. No extra software, and no `config.yaml` changes.
-
-1. Confirm you have at least one API connection set up in SillyTavern and saved as a Connection Manager profile
-2. In DLE settings, scroll to **AI Search**
-3. Check **Enable AI Search**
-4. Set connection mode to **Connection Profile** (the only mode in v2.5)
-5. Choose your profile from the dropdown
-6. Optionally set a **Model Override** (e.g., to force a cheaper model like Haiku)
-7. Click **Test AI Search** to verify
-
-> [!NOTE]
-> The legacy **Custom Proxy** connection mode was removed in v2.5. If you ran an older DeepLore that pointed AI search at a local proxy (e.g. claude-code-proxy), DeepLore migrates that setting to **Connection Profile** automatically on first load and shows a one-time notice asking you to pick a profile. Connection Profile is now the only supported path, and DeepLore's AI features no longer require `enableCorsProxy: true`. The same applies to the Scribe, Auto Lorebook, AI Notepad, and Optimize Keys channels.
-
----
+Onyx Quill talks to Obsidian from your browser. `127.0.0.1` only works when the browser runs on the same computer as Obsidian. If you open SillyTavern on a phone or another computer, use the address of the computer that runs Obsidian, make sure the Local REST API plugin accepts connections from the network (see its settings), and let the port through that computer's firewall.
 
 ## Updating
 
-If you installed via the built-in installer, SillyTavern shows an update notification when a new version is available. Click **Update** in the Extensions panel.
+When a new version is out, SillyTavern offers the update under **Extensions › Manage extensions**. If you installed with git, run `git pull` in the Onyx Quill folder and reload.
 
-If you installed manually, pull the latest changes:
+## If something doesn't work
 
-```bash
-cd SillyTavern/public/scripts/extensions/third-party/sillytavern-DeepLore
-git pull
-```
+- **Can't reach Obsidian:** is Obsidian open, with the Local REST API plugin switched on in this vault? Does the port match the plugin's settings? Is the HTTP server switched on?
+- **"Authentication failed" or "the API key was refused":** copy the key again from the plugin's settings. It changes when the plugin is reinstalled.
+- **Connected, but no entries:** notes need the lore tag (`lorebook` unless you changed it) in their `tags`. See [[Writing Vault Entries]].
+- **Onyx Quill doesn't show up:** check your SillyTavern version (1.12.14 or newer), then reload the page without the cache (`Ctrl+Shift+R`).
+- **"The original DeepLore is switched on too":** switch one of them off in **Extensions › Manage extensions**, then reload.
 
----
-
-## Troubleshooting
-
-### Connection refused (Obsidian)
-
-- **Is Obsidian open?** The Local REST API plugin only serves requests while Obsidian is running.
-- **Is the Local REST API plugin enabled?** Check Obsidian Settings → Community Plugins.
-- **Check the port:** Default is `27123` (HTTP); `27124` if you configured HTTPS. The port in DLE settings must match what Local REST API is using.
-- **Check the API key:** Copy it fresh from Obsidian Settings → Local REST API. Keys regenerate when the plugin is reinstalled.
-- **Firewall:** If SillyTavern and Obsidian run on different machines, open the port on the host firewall.
-
-### AI search test fails
-
-- **Profile missing or broken:** Confirm the selected profile still exists and its underlying API connection works. Test the connection in SillyTavern's main API panel first.
-- **No profile selected:** Pick a profile in AI Search settings, or create one in Connection Manager.
-- **Timeout:** AI search has a configurable timeout (default 20 seconds). Slow providers — especially local models — may need a longer timeout. See [[Settings Reference]].
-- **"Custom Proxy mode was removed in v2.5":** You (or an old setting) still point a channel at proxy mode. Open **Settings › AI & connections** and pick a Connection Profile for that job.
-
-### No entries found after Refresh Index
-
-- **Check your tags:** Entries must carry the `lorebook` tag (or whatever you set as the lorebook tag). The tag belongs in the frontmatter `tags` array.
-- **Check the vault directory:** DLE scans the entire vault by default. Folder filter in settings restricts it if you want.
-- **Check frontmatter format:** `keys` and other fields must be valid YAML. See [[Writing Vault Entries]].
-
-### Extension not appearing in SillyTavern
-
-- **Check the extensions folder:** The extension lives at `SillyTavern/public/scripts/extensions/third-party/sillytavern-DeepLore/` (or `data/default-user/extensions/sillytavern-DeepLore/` if you installed it for a single user) with `manifest.json` at the root.
-- **Check SillyTavern version:** DeepLore requires SillyTavern v1.12.14+ (enforced by `minimum_client_version` in the manifest). Older versions refuse to load the extension.
-- **Clear browser cache:** Hard-refresh (`Ctrl+Shift+R`) or clear cache and reload.
+More in [[Troubleshooting]].

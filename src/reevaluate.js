@@ -2,10 +2,10 @@
  * LOCAL PATCH (Miinthe, 2026-10-04) — Re-evaluate + swipe (triggers + odds, part 3; roadmap §4 G2 point 5).
  * Rules in reevaluate-pure.js. A normal swipe keeps what the board did; this one undoes everything
  * the newest reply's turn changed, runs the helper and the board again as if the message had just
- * been sent, makes the judge ask fresh, and swipes. Costs one helper call and one judge call.
+ * been sent, makes AI search pick fresh, and swipes. Costs one helper call and one AI search call.
  *
- * WIP controls (the real home is the DeepLore bar, still being designed): /oq-reevaluate and a
- * button in the Story tab.
+ * Controls: /oq-reevaluate and the bar's Re-evaluate and swipe button (Settings › Interface, "Button: Re-evaluate
+ * and swipe").
  */
 import { getContext } from '../../../../extensions.js';
 import { chat_metadata } from '../../../../../script.js';
@@ -53,7 +53,7 @@ export async function reEvaluate() {
         else await ctx.swipe?.right?.();
         return true;
     } catch (err) {
-        console.warn('[DLE] re-evaluate failed:', err?.message || err);
+        console.warn('[Onyx Quill] re-evaluate failed:', err?.message || err);
         undoReevaluateKeep();   // the board of the swipe on screen, as it was before the rewind
         say(`Re-evaluate stopped: ${err?.message || err}`, 'warning');
         return false;
@@ -65,6 +65,6 @@ export function registerReevaluateCommand() {
         name: 'oq-reevaluate',
         returns: ARGUMENT_TYPE.STRING,
         callback: async () => { await reEvaluate(); return ''; },
-        helpString: 'Re-evaluate and swipe: a new swipe with a fresh look at the newest turn — the helper and the judge are asked again. Each swipe keeps its own board; flipping back brings it back.',
+        helpString: 'Re-evaluate and swipe: a new swipe with a fresh look at the newest turn — the story helper and AI search are asked again. Each swipe keeps its own board; flipping back brings it back.',
     }));
 }

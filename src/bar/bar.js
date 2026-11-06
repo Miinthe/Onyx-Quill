@@ -112,16 +112,18 @@ async function simpleSend() {
  * SillyTavern saves all settings at once from whichever window saves last, so a second window or device brought a
  * draft back after it was put back (found 2026-10-18 with two windows open). The old settings value moves over once.
  */
-const DRAFT_FILE = 'deeplore-reply-draft.json';
+const DRAFT_FILE = 'onyx-quill-reply-draft.json';
+const OLD_DRAFT_FILE = 'deeplore-reply-draft.json';   // the name before Onyx Quill: read while the new file isn't there yet, never deleted
 // only ever text — for a day the Draft button's on/off switch was stored under this same key (bug hunt 2026-11-03)
 const oldDraft = () => { const v = getSettings().barDraft; return typeof v === 'string' ? v : ''; };
 let draftText = null;   // what the dot shows (null: not read yet)
 async function readDraft() {
     try {
-        const r = await fetch(`/user/files/${DRAFT_FILE}`, { cache: 'no-store' });
+        let r = await fetch(`/user/files/${DRAFT_FILE}`, { cache: 'no-store' });
+        if (r.status === 404) r = await fetch(`/user/files/${OLD_DRAFT_FILE}`, { cache: 'no-store' });
         if (r.ok) { const j = await r.json(); draftText = typeof j?.text === 'string' ? j.text : ''; return draftText; }
         if (r.status !== 404) throw new Error(`the server said ${r.status}`);
-    } catch (err) { console.warn('[DLE] draft: could not read it:', err?.message || err); return draftText ?? oldDraft(); }
+    } catch (err) { console.warn('[Onyx Quill] draft: could not read it:', err?.message || err); return draftText ?? oldDraft(); }
     // no file yet: the draft kept in the settings before (once)
     const old = oldDraft();
     if (await writeDraft(old)) { getSettings().barDraft = ''; saveSettingsDebounced(); }
@@ -133,7 +135,7 @@ async function writeDraft(text) {
         const r = await fetch('/api/files/upload', { method: 'POST', headers: getContext().getRequestHeaders(), body: JSON.stringify({ name: DRAFT_FILE, data }) });
         if (!r.ok) throw new Error(`the server said ${r.status}`);
         draftText = text; return true;
-    } catch (err) { console.warn('[DLE] draft: could not save it:', err?.message || err); return false; }
+    } catch (err) { console.warn('[Onyx Quill] draft: could not save it:', err?.message || err); return false; }
 }
 async function draft() {
     const step = draftStep({ box: box()?.value || '', draft: await readDraft() });
@@ -231,9 +233,11 @@ function draw() {
     const rc = st.phone ? '' : ' · right-click: lock / unlock';
     const notesB = s.notesEnabled === false ? '' : db('notes', 'notebook', `My notes (never sent to the AI)${s.notesLocked === true ? ' — locked open' : ''}${rc}`, '', notesOpen() ? ' on' : '');
     // the world layer (2026-10-19): a globe only where this chat's board has it switched on
-    const wOn = !!worldHere();
+    const wHere = worldHere(), wOn = !!wHere;
     if (!wOn && worldOpen()) closeWorld();
-    const worldB = wOn ? db('world', 'globe', `World: chatter, news, messages, people${rc}`, worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join(''), worldOpen() ? ' on' : '') : '';
+    // paused in this chat (Miinthe, 2026-11-05): a small ⏸ in the button's corner
+    const wPause = wHere?.paused ? '<span class="dle-wpause" aria-hidden="true" style="position:absolute;bottom:1px;right:2px;font-size:9px;line-height:1;color:var(--dk-wait);pointer-events:none">\u23F8\uFE0E</span>' : '';
+    const worldB = wOn ? db('world', 'globe', `World${wHere.paused ? ' (paused in this chat)' : ''}: chatter, news, messages, people${rc}`, worldDots().map((k, n) => `<span class="dle-dot world${k === 'msg' ? '' : ' ' + k}"${n ? ` style="right:${4 + n * 7}px"` : ''}></span>`).join('') + wPause, worldOpen() ? ' on' : '') : '';
     const panelB = db('panel', pb.icon, pb.title + rc, dot, pCls);
     const draftDot = draftText ? '<span class="dle-dot draft"></span>' : '';
     // 🧭 Guided swipe (Miinthe, 2026-11-02: in the bar after Re-evaluate; the button holds the direction — lit while one is in force)

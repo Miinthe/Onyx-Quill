@@ -159,7 +159,7 @@ export function mountLoreView(panel) {
     function refreshBrowse(redraw = true) {
         const sc = panel.querySelector('.dle-drawer-inner');
         const st = sc?.scrollTop;
-        try { renderBrowseTab(); } catch (err) { console.warn('[DLE] Lore: Browse list', err); }
+        try { renderBrowseTab(); } catch (err) { console.warn('[Onyx Quill] Lore: Browse list', err); }
         if (sc && sc.scrollTop !== st) sc.scrollTop = st;
         // a "Show in All entries" jump (navigateToBrowseEntry: Related, Find in All entries, the big windows) leaves its
         // target here: select it, and open its folder
@@ -206,7 +206,7 @@ export function mountLoreView(panel) {
             else if (S.view === 'inbox') drawInbox(ib);
             else drawAll();
         } catch (err) {
-            console.warn('[DLE] Lore view', err);
+            console.warn('[Onyx Quill] Lore view', err);
             body.append(h('p', 'dle-lv-empty', 'Something went wrong drawing this list. Try Refresh.'));
         }
         if (S.scrollTo) {
@@ -328,7 +328,7 @@ export function mountLoreView(panel) {
                 await mod.runBatchOptimize(keys);
                 if (ds.browseSelectMode) ds.browseSelected?.clear?.();
             } catch (err) {
-                console.error('[DLE] Optimize keywords failed:', err);
+                console.error('[Onyx Quill] Optimize keywords failed:', err);
                 K.notify({ text: `Optimize keywords failed: ${err?.message || err}`, tone: 'bad' });
             } finally { ds._batchOptimizeInflight = false; later(); }
         }, 'The AI suggests better keywords; you check each one before it is written');
@@ -345,7 +345,7 @@ export function mountLoreView(panel) {
                 K.notify({ text: `Summaries: ${r.generated} written, ${r.skipped} skipped, ${r.failed} failed.`, tone: r.failed ? 'wait' : 'good' });
                 if (r.generated > 0) { setIndexTimestamp(0); const { buildIndex } = await import('../vault/vault.js'); await buildIndex(); }
             } catch (err) {
-                console.error('[DLE] Write summaries failed:', err);
+                console.error('[Onyx Quill] Write summaries failed:', err);
                 K.notify({ text: `Write summaries failed: ${err?.message || err}`, tone: 'bad' });
             }
             later();
@@ -670,7 +670,7 @@ export function mountLoreView(panel) {
             const tip = (el, t) => { el.title = t; end.push(el); };
             if (P.isIn(pins, e.title, e.vaultSource)) tip(h('span', 'dle-lv-state', I('pinI')), 'Pinned in this chat');
             if (P.isIn(blocks, e.title, e.vaultSource)) tip(h('span', 'dle-lv-state bad', I('block')), 'Blocked in this chat');
-            if (e.guide) end.push(pill('for Mero ☆', 'g', 'A note for Mero ☆: she reads it in her talks and pitches — never sent to the writing AI'));
+            if (e.guide) end.push(pill('secret for Mero ☆', 'g', 'A secret for Mero ☆: she reads it in her talks and pitches — never sent to the writing AI'));
             const origin = P.originOf(e);
             if (origin) end.push(pill(origin, '', 'Origin: where it came from'));
             const ek = entryKey(e);

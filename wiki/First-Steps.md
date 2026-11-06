@@ -1,146 +1,103 @@
-# First steps
+You have Onyx Quill connected and one entry going out ([[Quick Start]]). This page takes you from there to a small, useful vault: a few good entries, AI search and Mero ☆ connected, the right amount of lore per reply, and ways to check what was sent.
 
-You've installed DeepLore and connected your vault ([[Quick Start]]). This page walks through building a useful starter vault, picking the right pipeline mode, and tuning matching for your workflow.
+## Write a handful of entries
 
-## Pick a pipeline mode
+Start with three to five entries for the things your story leans on most: the main characters, the places scenes happen in, and one or two ideas the world runs on. A good entry has:
 
-DLE has three modes. The setup wizard sets one for you; you can change it any time in **Settings → Lore selection → Mode**.
+- the tag `lorebook`,
+- **keys**: the names and words that call it up (a person's full name, first name, title; a place's name and what people call it),
+- a **summary**: one or two sentences on what the entry is and *when it matters*. AI search reads the summaries, not the full text, to decide what fits.
+- and the text itself, below the frontmatter. Keep it focused: the writer gets all of it each time the entry goes out.
 
-| Mode | How it works | Cost | Best for |
-|------|--------------|------|----------|
-| **Keywords only** | Scans recent chat messages for keywords from your entries | Free | Small vaults (under 50 entries), no AI provider configured |
-| **Two-stage** | Keywords pre-filter, then AI search ranks the candidates against summaries | ~1 extra provider call per turn | The default. Medium and large vaults (50+ entries) |
-| **AI only** | AI search reads the entire vault manifest each turn | Higher: full manifest tokens per call | Small vaults where you want context-only matching, no keywords needed |
+Here is the top of a character entry from the Duskfrost demo vault, shortened:
 
-Two-stage is the recommended default. Keyword-only is fine while you're learning the system; switch to two-stage once you have ~30+ entries and the keyword cast net starts missing things.
-
-## Write your first entries
-
-A useful starter vault has 3 to 5 entries covering the kinds of things your story leans on. Examples:
-
-### A character entry
-
-```yaml
+```markdown
 ---
-tags: [lorebook]
-keys: [Eris, the Spymaster]
-priority: 20
-summary: "Eris, the protagonist's spymaster and closest enforcer. Select when espionage, intelligence, interrogation, or loyalty comes up."
+tags:
+  - lorebook
+keys:
+  - Barlyn Greymantle
+  - Barlyn
+  - Greymantle
+  - the mason
+priority: 48
+summary: "Cirilae master mason and district council representative for the Marblesmiths guild. Select when Cirilae community, construction, the Marblesmiths, or Amberburgh district politics come up."
 ---
+
+# Barlyn Greymantle
+
+Barlyn Greymantle has been laying stone in Duskfrost for sixty-three years...
 ```
 
-- **Priority 20** marks an inner-circle character (lower number = higher priority)
-- Keys cover both the name and the role title
+**Priority** decides who wins when there is more lore than room: a lower number wins. Entries without one count as `100`. Use small numbers for the few entries that must not be dropped.
 
-### A location entry
+More examples are in [[Entry Templates]]; every field is in [[Frontmatter Fields]]; tips for writing them well are in [[Writing Vault Entries]].
 
-```yaml
----
-tags: [lorebook]
-keys: [The Crimson Den, tavern, underground bar]
-priority: 50
-summary: "An underground tavern serving as a neutral meeting ground. Select when taverns, drinking, underground dealings, or nightlife come up."
----
-```
+## Tags that change when an entry is sent
 
-- **Priority 50** is the standard middle priority
-- Keys cover both the proper name and generic terms that should trigger it
+Besides `lorebook`, a few tags change how an entry behaves. You can rename them all in **Settings › Vault › Tags**.
 
-### A lore-concept entry
+| Tag | What it does |
+|---|---|
+| `lorebook-always` (**Always-send tag**) | Sent with every reply. Keep these few: they use up the budget every time. |
+| `lorebook-bootstrap` (**Starter tag**) | Sent while a chat is new (for its first 3 messages unless you change **A chat counts as new for**), then picked like any other entry. Good for the setup of a story. |
+| `lorebook-never` (**Never-send tag**) | Onyx Quill skips the note entirely. It stays in your vault. |
+| `lorebook-guide` (**Secrets-for-Mero tag**) | Secrets for Mero ☆ only: she reads them in her talks and pitches, the writing model never gets them. When the chat has folders, only notes in them (or at the top of the vault) count. See [[Mero]]. |
 
-```yaml
----
-tags: [lorebook]
-keys: [bloodbond, blood bond, feeding dependency]
-priority: 35
-summary: "The biological dependency created when a vampire feeds from a mortal. Select when feeding, biting, addiction, or chattel dynamics come up."
----
-```
+## Choose how lore is picked
 
-- **Priority 35** for core worldbuilding
-- Multiple keyword variants catch different phrasings
+**Settings › Lore selection › Mode › How lore is picked** has three choices:
 
-## Constants, bootstrap, and seed entries
+| Choice | What happens | AI calls for picking lore |
+|---|---|---|
+| **keywords only** | Entries whose keywords show up in the latest messages are sent. | none |
+| **keywords, then AI search** | Keywords find the candidates; AI search reads their summaries and picks what fits the scene. | one per reply |
+| **AI search only** | AI search reads the summaries of the whole vault and picks. | one per reply, with a much longer prompt on a big vault |
 
-Tag combinations control when entries fire:
+Keywords only is a fine start while your vault is small. Once you have more entries and notice the right one staying out because nobody said its name, switch to **keywords, then AI search**. AI search is why summaries matter.
 
-- **Regular entries** (just the `lorebook` tag): inject only when keywords match (or when AI search picks them in two-stage mode)
-- **Constants** (add `lorebook-always`): always inject on every generation. Use for core world rules, persistent character sheets, writing instructions
-- **Bootstrap entries** (add `lorebook-bootstrap`): force-inject when chat is short (first few messages), then revert to regular matching once chat history grows
-- **Seed entries** (add `lorebook-seed`): sent to AI search as story context on new chats, never injected into the writing AI
+## Connect the AI helpers
 
-Keep constants minimal. Every constant spends context budget on every generation.
+Each AI job in Onyx Quill uses a SillyTavern **Connection Profile**. If you have none yet, make one in SillyTavern's **API Connections** (the plug icon) › **Connection Profile**.
 
-## Tune scan depth and budget
+Then open **Settings › AI & connections**. It has one row per job: **AI search**, **Story helper** (moves the board's trackers and directs the Cast), **Mero ☆**, **World**, **Scribe**, **New lore**, **AI notepad** and **Optimize keywords**. Pick a profile for each job you want to use. Some jobs can use **Same as AI search**. Under **Fine print** you can set a different model for a job, how long its answer may be, a time limit, and **Test** the connection.
 
-### Scan depth
+A small, fast model is usually enough for AI search. Mero ☆ and the story helper do more thinking and benefit from a stronger one.
 
-How many recent chat messages DLE scans for keywords:
+## How much lore goes out
 
-- **2 to 3:** matches recent conversation only. Responsive but narrow
-- **4 to 6:** the default. Good balance
-- **8 to 10:** broader matching, may pull in less relevant entries
-- **0:** disables keyword scanning entirely. Use only with AI-only mode
+Two places decide the amount:
 
-### Token budget
+- **Settings › Lore selection › Keywords › Messages to read**: how many recent messages are searched for keywords (default 4). More finds more, and also more that doesn't fit.
+- **Settings › Budget & variety › Budget**: **Entries per reply** (default 10) and **Lore budget** in tokens per reply (default 3072), each with a "no limit" switch.
 
-Maximum tokens DLE can inject per generation:
+The budget can be set for everywhere, for one character, or for one chat: use the **Everywhere · character · This chat** choice at the top of the settings window.
 
-- **1000 to 2000:** conservative, good for smaller contexts
-- **3000 to 5000:** balanced, works for most setups
-- **Unlimited:** DLE uses as much as it needs. Watch your overall context usage
+**Settings › Budget & variety › Variety** keeps the same entries from going out every time: **Give others a turn** steps back an entry that was sent many times in a row, and **Rest after sending** makes an entry wait a few replies before it can go again.
 
-Start with scan depth 4 and budget 3000, then adjust based on `/oq-inspect` output.
+## Check what was sent
 
-## Enable AI search
+- **📖 › Why these entries** on any reply: the entries that went with it, and why each one went in.
+- The side panel's **Lore** tab: **Sent** (the last reply), **Left out** (considered but not sent, grouped by reason) and **All entries** (your whole vault, with search, pin and block).
+- **Try matching** in the side panel's **⋯** menu (or `/oq-simulate`): replays the chat and shows which entries each message calls up.
+- `/oq-health`: checks your vault and settings for problems, such as entries without keywords, entries that require a missing entry, oversized entries, and (with AI search on) entries without a summary.
 
-When you're ready to switch from keywords-only to two-stage:
-
-1. Go to **Settings → Lore selection → Mode → How lore is picked** and select **keywords, then the judge**
-2. In **Settings → AI & connections**, select or create a SillyTavern Connection Manager profile for AI search, pointed at a fast, cheap model (Haiku, GPT-4o-mini, or any local model that handles structured output well)
-3. Run `/oq-status`. It should show "AI search: enabled"
-
-> [!NOTE]
-> AI features use SillyTavern Connection Manager profiles. The old Custom Proxy mode was removed in v2.5 — if an old config still has it selected, the health check flags it and points you to pick a profile.
-
-AI search earns its keep when your vault is large or entries have nuanced triggers that keywords can't capture. Example from the README: a scene about "the consequences of breaking an oath" pulls in your Bloodchain entry without the word "Bloodchain" appearing.
-
-## Audit entry quality
-
-Run `/oq-health` regularly. It checks for:
-
-- Missing or empty keywords
-- Duplicate keywords across entries
-- Missing summaries (AI search needs them)
-- Oversized entries (may dominate your budget)
-- Broken wikilinks
-- Configuration issues
-
-Aim for grade A or A+.
-
-## Verify what's injecting
-
-Three diagnostics show what the pipeline picked:
-
-1. **`/oq-inspect`:** shows the last pipeline trace. What matched, why, and what was injected
-2. **Context Cartographer** (📖 on AI messages → **Why these entries**): shows the per-message source list with token counts
-3. **`/oq-simulate`:** replays the entire chat showing which entries activate at each message
+See [[Diagnostics]] for the rest.
 
 ## Common early mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| Too many constants | Keep constants under 5 to 10. Use keywords for everything else |
-| Keywords too generic | "the", "and", "said" match everything. Use specific terms |
-| Keywords too specific | "Lord Vexathorn the Undying" won't match "Vexathorn". Add aliases |
-| No summaries | AI search needs summaries to work. Write one for every entry |
-| Oversized entries (5000+ tokens) | Split into smaller focused entries or use scan-depth overrides |
-| Every entry at priority 50 | Use the full range: 20 (critical), 35 (core), 50 (standard), 60+ (flavor) |
+| Mistake | What to do |
+|---|---|
+| Too many always-send entries | Keep them few. Give the rest keywords. |
+| Keywords that are too common ("the", "door", "said") | Use names and specific words. |
+| Only the full name as a key | Add what people actually say: first name, nickname, title. |
+| No summaries | AI search can't pick well without them. Write one for every entry, or use **⋯ › Write missing summaries**. |
+| Very long entries | Split them into smaller ones, so each goes out only when it is needed. |
+| `probability: 50` | Probability is written as a fraction: `0.5` means half the time. A number above 1 counts as always. |
 
-## Next steps
+## Next
 
-- Read [[Features]] for the full feature reference
-- Check [[AI Search]] for advanced AI configuration
-- See [[Writing Vault Entries]] for the complete frontmatter reference
-- Browse [[Slash Commands]] for every available command
-- If something breaks, check [[Troubleshooting]]
+- [[Storyboards]] and [[Cast]]: plan the story and give NPCs their own voice.
+- [[Mero]]: talk the story over with your co-writer.
+- [[How Lore Gets Picked]]: the full picture of how entries are chosen.
+- [[Troubleshooting]] if something doesn't behave.

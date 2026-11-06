@@ -42,7 +42,7 @@ export function renderChangesTab() {
     el.querySelectorAll('.dle-changes-undo').forEach(b => b.onclick = () => {
         const it = b.closest('[data-g]'), g = groups.find(x => String(x.i) === it.dataset.g), x = g?.items[+it.dataset.k];
         if (!x?.onclick) return;
-        try { x.onclick(); } catch (err) { console.warn('[DLE] undo from the list failed:', err?.message || err); }
+        try { x.onclick(); } catch (err) { console.warn('[Onyx Quill] undo from the list failed:', err?.message || err); }
         undone.add(x);
         renderChangesTab();
     });

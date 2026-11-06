@@ -48,7 +48,7 @@ export async function fixSpelling(onBusy = () => {}) {
         });
         // the safety net: a word of hers she typed right and the AI "fixed" anyway gets her spelling back
         const { text: fixed, kept } = keepHerWords(text, cleanAnswer(r?.text, text), words);
-        if (kept.length) console.debug('[DLE] Fix spelling kept her words:', kept);
+        if (kept.length) console.debug('[Onyx Quill] Fix spelling kept her words:', kept);
         if (el.value !== text) { K.notify({ title: 'Fix spelling', text: 'You typed on meanwhile, so nothing was changed. Press it again.', tone: 'wait' }); return; }
         const ok = checkFix(text, fixed);
         if (!ok.ok) { K.notify({ title: 'Fix spelling', text: `Your text stays as it was: the correction ${ok.why}.`, tone: 'wait' }); return; }

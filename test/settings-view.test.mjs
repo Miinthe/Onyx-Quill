@@ -186,6 +186,11 @@ test('connections: the same mode / profile keys the old radios wrote', () => {
     for (const j of JOBS) if (CONSTRAINTS[JOB_KEYS[j.tool].mode]?.enum) for (const m of j.modes) assert(CONSTRAINTS[JOB_KEYS[j.tool].mode].enum.includes(m), `${j.tool} offers only allowed modes`);
     assertEqual(jobRuns('scribe', { scribeEnabled: true, scribeInterval: 8 }), 'every 8 messages', 'runs');
     assertEqual(jobRuns('aiSearch', { aiSearchEnabled: false }), 'off (keywords only)', 'judge off');
+    // Mero's Runs follows her job (2026-11-05: it said "when you ask" while a Part-timer checks the lore by herself)
+    assertEqual(jobRuns('mero', {}, { job: 'part' }), 'when you ask; checks the lore every few replies', 'Mero part-timer');
+    assertEqual(jobRuns('mero', {}, { job: 'full' }), 'when you ask; checks the lore after every reply', 'Mero full-timer');
+    assertEqual(jobRuns('mero', {}, { job: 'freelance' }), 'when you ask', 'Mero freelancer');
+    assertEqual(jobRuns('mero', {}, { job: 'off' }), 'when you ask', 'Mero off duty');
     assertEqual(roughTokens('abcdefgh'), 2, 'tokens');
 });
 

@@ -20,6 +20,17 @@ const PRESETS = {
     large:  { scanDepth: 8,  maxEntries: 20, budget: 4096 },
 };
 
+/**
+ * The preset whose three numbers these are, or null when they match none (custom).
+ * @returns {'small'|'medium'|'large'|null}
+ */
+export function matchPreset(scanDepth, maxEntries, budget) {
+    for (const [name, vals] of Object.entries(PRESETS)) {
+        if (vals.scanDepth === Number(scanDepth) && vals.maxEntries === Number(maxEntries) && vals.budget === Number(budget)) return name;
+    }
+    return null;
+}
+
 let currentPage = 1;
 let connectionVerified = false;
 let searchMode = 'keywords';
@@ -164,6 +175,7 @@ function prefillFromSettings() {
     $wizard.find('#dle-wiz-unlimited-budget').prop('checked', !!s.unlimitedBudget);
     if (s.unlimitedEntries) $wizard.find('#dle-wiz-max-entries').prop('disabled', true);
     if (s.unlimitedBudget) $wizard.find('#dle-wiz-budget').prop('disabled', true);
+    syncPresetDisplay(); // the highlighted preset + badge follow the real numbers
 
     // Page 5: AI
     if (s.aiSearchConnectionMode === 'proxy') {
@@ -186,38 +198,53 @@ function wireNavigation() {
     $wizard.find('#dle-wiz-next').on('click', () => {
         if (!validateCurrentPage()) return;
         markStepComplete(currentPage);
+        // "Import a lorebook" from Welcome: once the connection is tested, go on to Import.
+        if (currentPage === 2 && wizardState.importAfterConnect) {
+            wizardState.importAfterConnect = false;
+            goToImportPage();
+            return;
+        }
         let target = currentPage + 1;
         if (target === 5 && searchMode === 'keywords') target = 6;
         if (target <= TOTAL_PAGES) goToPage(target);
     });
 
-    $wizard.find('#dle-wiz-finish').on('click', async () => {
-        // #16: Finish is reachable via clickable completed step-dots or by editing the
-        // API key after a successful test (which resets connectionVerified). Re-assert
-        // the gate here so we never silently commit enabled=true with an unverified
-        // connection. isPageValid() only guards the Page-2 → Page-3 transition.
-        if (!connectionVerified) {
-            const proceed = await callGenericPopup(
-                tr('dle_wiz_finish_unverified_confirm', 'Your Obsidian connection has not been verified on the Connection step. Onyx Quill will be enabled but may not work until the connection succeeds.\n\nFinish anyway?'),
-                POPUP_TYPE.CONFIRM, '', {
-                    okButton: tr('dle_wiz_finish_anyway_btn', 'Finish anyway'),
-                    cancelButton: tr('dle_wiz_go_back_btn', 'Go back'),
-                },
-            );
-            if (!proceed) { goToPage(2); return; }
-        }
-        // Mark finished BEFORE the async work so the close handler (which runs after
-        // callGenericPopup resolves) doesn't misread this as a dismissal and write a skip.
-        wizardFinished = true;
-        try {
-            await applyWizardSettings();
-        } catch (err) {
-            console.error('[DLE] Wizard finish error:', err);
-            toastr.warning(tr('dle_wiz_index_build_failed_toast', 'Setup saved but index build failed — it will retry on first generation.'), 'Onyx Quill');
-        }
-        // Close popup regardless — settings are already saved before buildIndex().
-        closeWizardPopup();
-    });
+    $wizard.find('#dle-wiz-finish').on('click', () => finishWizard());
+}
+
+/**
+ * Save the wizard and close it. Shared by the Finish button and the Done-page shortcut
+ * buttons (which used to close without saving, so the close handler read it as
+ * "Finish later" and the whole setup was lost).
+ * @returns {Promise<boolean>} true when the setup was saved, false when the user went back
+ */
+async function finishWizard() {
+    // #16: Finish is reachable via clickable completed step-dots or by editing the
+    // API key after a successful test (which resets connectionVerified). Re-assert
+    // the gate here so we never silently commit enabled=true with an unverified
+    // connection. isPageValid() only guards the Page-2 → Page-3 transition.
+    if (!connectionVerified) {
+        const proceed = await callGenericPopup(
+            tr('dle_wiz_finish_unverified_confirm', 'Your Obsidian connection has not been verified on the Connection step. Onyx Quill will be enabled but may not work until the connection succeeds.\n\nFinish anyway?'),
+            POPUP_TYPE.CONFIRM, '', {
+                okButton: tr('dle_wiz_finish_anyway_btn', 'Finish anyway'),
+                cancelButton: tr('dle_wiz_go_back_btn', 'Go back'),
+            },
+        );
+        if (!proceed) { goToPage(2); return false; }
+    }
+    // Mark finished BEFORE the async work so the close handler (which runs after
+    // callGenericPopup resolves) doesn't misread this as a dismissal and write a skip.
+    wizardFinished = true;
+    try {
+        await applyWizardSettings();
+    } catch (err) {
+        console.error('[Onyx Quill] Wizard finish error:', err);
+        toastr.warning(tr('dle_wiz_index_build_failed_toast', 'Setup saved but index build failed — it will retry on first generation.'), 'Onyx Quill');
+    }
+    // Close popup regardless — settings are already saved before buildIndex().
+    closeWizardPopup();
+    return true;
 }
 
 function goToPage(page) {
@@ -506,6 +533,7 @@ function wireWelcomeFork() {
     $wizard.find('.dle-wizard-choice-card').on('click', function () {
         const fork = $(this).data('fork');
         markStepComplete(1);
+        wizardState.importAfterConnect = false;
         switch (fork) {
             case 'demo':
                 goToPage(2);
@@ -521,16 +549,22 @@ function wireWelcomeFork() {
                 $wizard.find('#dle-wiz-host').trigger('focus');
                 break;
             case 'import':
-                // Import lives on Page 7. Mark the skipped intermediate steps complete so
-                // the step-dots stay navigable and Prev walks back normally; connection is
-                // still re-gated at Finish (#16) so this can't silently enable an unverified vault.
-                for (let i = 2; i < 7; i++) markStepComplete(i);
-                goToPage(7);
-                $wizard.find('input[name="dle-wiz-import-method"][value="lorebook"]')
-                    .prop('checked', true).trigger('change');
+                // Importing writes to the vault, so it needs the tested connection first:
+                // go to Connection; Next from there jumps on to Import (Page 7).
+                wizardState.importAfterConnect = true;
+                goToPage(2);
+                $wizard.find('#dle-wiz-host').trigger('focus');
                 break;
         }
     });
+}
+
+/** Jump from Connection to Import, marking the skipped steps complete so the step-dots stay navigable and Prev walks back normally. */
+function goToImportPage() {
+    for (let i = 2; i < 7; i++) markStepComplete(i);
+    goToPage(7);
+    $wizard.find('input[name="dle-wiz-import-method"][value="lorebook"]')
+        .prop('checked', true).trigger('change');
 }
 
 // ── Page 2: Scan for vaults ──
@@ -565,7 +599,7 @@ function wireVaultScan() {
                 toastr.info(trf('dle_vaultscan_filled_toast', `${picked.host || host}:${picked.port}`), 'Onyx Quill');
             }
         } catch (err) {
-            console.error('[DLE] Wizard vault scan error:', err);
+            console.error('[Onyx Quill] Wizard vault scan error:', err);
             toastr.error(tr('dle_vaultscan_failed_toast', 'Vault scan didn\'t find anything. Make sure Obsidian is running.'), 'Onyx Quill');
         } finally {
             $btn.prop('disabled', false).html(orig);
@@ -585,31 +619,46 @@ function wirePresets() {
         const values = PRESETS[preset];
         if (!values) return;
 
-        $wizard.find('.dle-wizard-preset').removeClass('active');
-        $(this).addClass('active');
-
         $wizard.find('#dle-wiz-scan-depth').val(values.scanDepth);
         $wizard.find('#dle-wiz-max-entries').val(values.maxEntries);
         $wizard.find('#dle-wiz-budget').val(values.budget);
-
-        const label = preset.charAt(0).toUpperCase() + preset.slice(1);
-        // ${0}=preset label (e.g. "Medium"). English: "Configured for ${0} vault"
-        $wizard.find('#dle-wiz-preset-badge')
-            .html('<i class="fa-solid fa-check"></i> ' + escapeHtml(trf('dle_wiz_preset_configured', label)))
-            .addClass('dle-wizard-badge-visible');
 
         // Presets always override unlimited toggles.
         $wizard.find('#dle-wiz-unlimited-entries').prop('checked', false);
         $wizard.find('#dle-wiz-unlimited-budget').prop('checked', false);
         $wizard.find('#dle-wiz-max-entries, #dle-wiz-budget').prop('disabled', false);
+        syncPresetDisplay();
     });
 
     $wizard.find('#dle-wiz-unlimited-entries').on('change', function () {
         $wizard.find('#dle-wiz-max-entries').prop('disabled', this.checked);
+        syncPresetDisplay();
     });
     $wizard.find('#dle-wiz-unlimited-budget').on('change', function () {
         $wizard.find('#dle-wiz-budget').prop('disabled', this.checked);
+        syncPresetDisplay();
     });
+    $wizard.find('#dle-wiz-scan-depth, #dle-wiz-max-entries, #dle-wiz-budget').on('input', () => syncPresetDisplay());
+}
+
+/** Highlight the preset the fields match (none → Custom), so the badge never claims a preset the numbers aren't. */
+function syncPresetDisplay() {
+    const unlimited = $wizard.find('#dle-wiz-unlimited-entries').is(':checked') || $wizard.find('#dle-wiz-unlimited-budget').is(':checked');
+    const preset = unlimited ? null : matchPreset(
+        $wizard.find('#dle-wiz-scan-depth').val(),
+        $wizard.find('#dle-wiz-max-entries').val(),
+        $wizard.find('#dle-wiz-budget').val(),
+    );
+    $wizard.find('.dle-wizard-preset').removeClass('active');
+    const $badge = $wizard.find('#dle-wiz-preset-badge').addClass('dle-wizard-badge-visible');
+    if (preset) {
+        $wizard.find(`.dle-wizard-preset[data-preset="${preset}"]`).addClass('active');
+        const label = preset.charAt(0).toUpperCase() + preset.slice(1);
+        // ${0}=preset label (e.g. "Medium"). English: "Configured for ${0} vault"
+        $badge.html('<i class="fa-solid fa-check"></i> ' + escapeHtml(trf('dle_wiz_preset_configured', label)));
+    } else {
+        $badge.html('<i class="fa-solid fa-sliders"></i> ' + escapeHtml(tr('dle_wizard_preset_custom_badge', 'Custom numbers')));
+    }
 }
 
 function wireAiSetup() {
@@ -625,7 +674,7 @@ function wireAiSetup() {
     $wizard.find('#dle-wiz-test-ai').on('click', async () => {
         const $btn = $wizard.find('#dle-wiz-test-ai');
         const $result = $wizard.find('#dle-wiz-ai-result');
-        $btn.prop('disabled', true).html('<goo-spinner size="22" color="currentColor" aria-hidden="true"></goo-spinner> ' + tr('dle_wiz_testing', 'Testing...'));
+        $btn.prop('disabled', true).html('<goo-spinner size="22" color="currentColor" aria-hidden="true"></goo-spinner> ' + tr('dle_wizard_ai_checking', 'Checking…'));
         $result.hide();
 
         try {
@@ -671,19 +720,19 @@ function wireAiSetup() {
                 $btn.html('<i class="fa-solid fa-circle-check"></i> ' + tr('dle_wiz_connected', 'Connected')).addClass('dle-wizard-btn-verified');
             } else if (ok) {
                 // profile selected but not live-tested — honest, neutral messaging
-                // ${0}=detail (profile name). English: "Profile selected: ${0} — DLE will use it for AI search. Not live-tested here; a bad key or endpoint will surface on the first generation."
+                // ${0}=detail (profile name). English: "Profile found: ${0}. Onyx Quill will use it for AI search. Nothing is sent to test it, so a bad key or endpoint shows up on the first reply."
                 $result
                     .html('<i class="fa-solid fa-circle-info"></i> ' + escapeHtml(trf('dle_wiz_ai_profile_selected_msg', detail)))
                     .removeClass('dle-wizard-result-error dle-wizard-result-success')
                     .show();
-                $btn.html('<i class="fa-solid fa-circle-check"></i> ' + tr('dle_wiz_ai_profile_selected_btn', 'Profile selected')).addClass('dle-wizard-btn-verified');
+                $btn.html('<i class="fa-solid fa-circle-check"></i> ' + tr('dle_wiz_ai_profile_selected_btn', 'Profile found')).addClass('dle-wizard-btn-verified');
             } else {
                 $result
                     .html(`<i class="fa-solid fa-circle-xmark"></i> ${escapeHtml(detail)}`)
                     .removeClass('dle-wizard-result-success')
                     .addClass('dle-wizard-result-error')
                     .show();
-                $btn.html('<i class="fa-solid fa-brain"></i> ' + tr('dle_setup_wizard_test_ai_btn', 'Test AI Connection'));
+                $btn.html('<i class="fa-solid fa-brain"></i> ' + tr('dle_setup_wizard_test_ai_btn', 'Check profile'));
             }
         } catch (err) {
             $result
@@ -691,7 +740,7 @@ function wireAiSetup() {
                 .removeClass('dle-wizard-result-success')
                 .addClass('dle-wizard-result-error')
                 .show();
-            $btn.html('<i class="fa-solid fa-brain"></i> ' + tr('dle_setup_wizard_test_ai_btn', 'Test AI Connection'));
+            $btn.html('<i class="fa-solid fa-brain"></i> ' + tr('dle_setup_wizard_test_ai_btn', 'Check profile'));
         }
 
         $btn.prop('disabled', false);
@@ -716,7 +765,7 @@ async function loadAiProfiles() {
             $select.after(
                 '<div class="dle-wiz-no-profiles-help dle-text-xs dle-muted" style="margin-top:6px;">'
                 + '<i class="fa-solid fa-circle-info"></i> '
-                + tr('dle_wiz_no_profiles_help', 'Onyx Quill routes AI through SillyTavern <strong>Connection Profiles</strong>. Create one in <strong>API Connections</strong> (the plug icon in the top bar) → <strong>Connection Profile</strong>, then reopen this step. Or choose <strong>Keywords Only</strong> on the previous step to skip AI for now.')
+                + tr('dle_wiz_no_profiles_help', 'Onyx Quill routes AI through SillyTavern <strong>Connection Profiles</strong>. Create one in <strong>API Connections</strong> (the plug icon in the top bar) → <strong>Connection Profile</strong>, then reopen this step. Or choose <strong>Keywords only</strong> on the previous step to skip AI for now.')
                 + '</div>',
             );
             return;
@@ -738,7 +787,7 @@ async function loadAiProfiles() {
         $select.html(options);
     } catch (err) {
         // BUG-112: log so dropdown load failures are diagnosable.
-        console.debug('[DLE] Wizard profile dropdown load failed:', err?.message);
+        console.debug('[Onyx Quill] Wizard profile dropdown load failed:', err?.message);
         $select.html('<option value="">' + escapeHtml(tr('dle_wiz_ai_load_profiles_failed_opt', 'Failed to load profiles')) + '</option>');
     }
 }
@@ -770,7 +819,7 @@ function wireVaultStructurePage() {
     const s = getSettings();
 
     const $fieldsPath = $wizard.find('#dle-wiz-fields-path');
-    if (!$fieldsPath.val()) $fieldsPath.val(s.fieldDefinitionsPath || 'DeepLore/field-definitions.yaml');
+    if (!$fieldsPath.val()) $fieldsPath.val(s.fieldDefinitionsPath || 'Onyx Quill/field-definitions.yaml');
     const $sessPath = $wizard.find('#dle-wiz-sessions-path');
     if (!$sessPath.val()) $sessPath.val(s.scribeFolder || 'Sessions');
 
@@ -831,7 +880,7 @@ async function runVaultStructureCreation() {
     if (createFields) {
         try {
             const yaml = serializeFieldDefinitions(DEFAULT_FIELD_DEFINITIONS);
-            const path = ($wizard.find('#dle-wiz-fields-path').val().trim()) || 'DeepLore/field-definitions.yaml';
+            const path = ($wizard.find('#dle-wiz-fields-path').val().trim()) || 'Onyx Quill/field-definitions.yaml';
             getSettings().fieldDefinitionsPath = path;
             saveSettingsDebounced();
             await writeFieldDefinitions(host, port, apiKey, path, yaml, useHttps);
@@ -920,7 +969,7 @@ function wireImport() {
             }
             importJsonData = JSON.stringify(data, null, 2);
         } catch (err) {
-            console.error('[DLE] Wizard loadWorldInfo error:', err);
+            console.error('[Onyx Quill] Wizard loadWorldInfo error:', err);
             toastr.error(tr('dle_wiz_import_load_lorebook_error', 'Couldn\'t load that lorebook. Try a different one or paste the JSON directly.'), 'Onyx Quill');
         }
     });
@@ -1021,7 +1070,7 @@ async function loadImportLorebooks() {
         $select.html(options);
     } catch (err) {
         // BUG-112: log so dropdown load failures are diagnosable.
-        console.debug('[DLE] Wizard lorebook dropdown load failed:', err?.message);
+        console.debug('[Onyx Quill] Wizard lorebook dropdown load failed:', err?.message);
         $select.html('<option value="">' + escapeHtml(tr('dle_wiz_import_load_lorebooks_failed_opt', 'Failed to load lorebooks')) + '</option>');
     }
 }
@@ -1033,23 +1082,17 @@ function buildSummary() {
     const port = $wizard.find('#dle-wiz-port').val() || '27123';
 
     const modeLabels = {
-        keywords: tr('dle_wiz_summary_mode_keywords', 'Keywords Only'),
-        'two-stage': tr('dle_wiz_summary_mode_two_stage', 'Two-Stage (keywords + AI)'),
-        'ai-only': tr('dle_wiz_summary_mode_ai_only', 'AI Only'),
+        keywords: tr('dle_wiz_summary_mode_keywords', 'Keywords only'),
+        'two-stage': tr('dle_wiz_summary_mode_two_stage', 'Keywords, then AI search'),
+        'ai-only': tr('dle_wiz_summary_mode_ai_only', 'AI search only'),
     };
     const modeLabel = modeLabels[searchMode] || searchMode;
 
     const maxEntries = $wizard.find('#dle-wiz-max-entries').val();
     const budget = $wizard.find('#dle-wiz-budget').val();
 
-    const scanDepth = parseInt($wizard.find('#dle-wiz-scan-depth').val());
-    let presetLabel = tr('dle_wiz_summary_preset_custom', 'Custom');
-    for (const [name, vals] of Object.entries(PRESETS)) {
-        if (vals.scanDepth === scanDepth && vals.maxEntries === parseInt(maxEntries) && vals.budget === parseInt(budget)) {
-            presetLabel = name.charAt(0).toUpperCase() + name.slice(1);
-            break;
-        }
-    }
+    const matched = matchPreset($wizard.find('#dle-wiz-scan-depth').val(), maxEntries, budget);
+    const presetLabel = matched ? matched.charAt(0).toUpperCase() + matched.slice(1) : tr('dle_wiz_summary_preset_custom', 'Custom');
 
     // BUG-139: per-feature outcomes, not the conflated compound state.
     const fieldsCreated = wizardState.fieldsOutcome === 'created' || wizardState.fieldsOutcome === 'exists';
@@ -1088,10 +1131,12 @@ function buildSummary() {
 }
 
 function wireDoneActions() {
-    $wizard.on('click', '.dle-wizard-done-btn', function () {
+    $wizard.on('click', '.dle-wizard-done-btn', async function () {
         const action = $(this).data('action');
-        const popup = $wizard.closest('.popup');
-        if (popup.length) popup.find('.popup_ok, .popup_close').trigger('click');
+        // Save first (same as Finish), then run the shortcut. Closing without saving
+        // counted as "Finish later" and dropped the whole setup.
+        if (wizardFinished) return; // a Finish is already running
+        if (!(await finishWizard())) return;
 
         setTimeout(() => {
             switch (action) {
@@ -1107,7 +1152,7 @@ function wireDoneActions() {
                         const pnl = document.getElementById('deeplore-panel');
                         if (pnl && !pnl.classList.contains('openDrawer')) document.querySelector('#deeploreDrawerIcon')?.closest('.drawer-toggle')?.click();
                         setTimeout(() => document.getElementById('dle-tab-mero')?.click(), 150);
-                    } catch (err) { console.warn('[DLE] Meet Mero open failed:', err); }
+                    } catch (err) { console.warn('[Onyx Quill] Meet Mero open failed:', err); }
                     break;
             }
         }, 300);
@@ -1187,7 +1232,7 @@ async function applyWizardSettings() {
 function executeCommand(cmd) {
     const ctx = typeof SillyTavern !== 'undefined' && SillyTavern.getContext ? SillyTavern.getContext() : null;
     if (ctx?.executeSlashCommands) {
-        ctx.executeSlashCommands(cmd).catch(err => console.error('[DLE] Wizard command error:', cmd, err));
+        ctx.executeSlashCommands(cmd).catch(err => console.error('[Onyx Quill] Wizard command error:', cmd, err));
     }
 }
 

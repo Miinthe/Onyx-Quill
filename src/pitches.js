@@ -90,7 +90,7 @@ function pitchContext(fromMsg) {
     };
 }
 
-const noConn = 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile';
+const noConn = 'Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆';
 
 /**
  * 💡 Pitch (or 🎲 Roll when the menu says hidden). opts: { comment, fromMsg (index), like: [ids] — "more like these"
@@ -115,7 +115,7 @@ export async function pitch({ comment = '', fromMsg = null, like = [] } = {}) {
         const s2 = store();
         if (multi) {
             const plans = parsePlans(r?.text, hidden ? 1 : m.n, names);
-            if (!plans.length) { console.warn('[DLE] plans: nothing usable in the answer', r?.text); return { ok: false, error: 'Mero\'s answer had no plan in it — try again.' }; }
+            if (!plans.length) { console.warn('[Onyx Quill] plans: nothing usable in the answer', r?.text); return { ok: false, error: 'Mero\'s answer had no plan in it — try again.' }; }
             if (hidden) {   // a hidden plan starts at once — the writer is led through it, Miinthe doesn't see it
                 const p = { ...plans[0], hide: true };
                 save(addBatch(s2, [{ ...p, ...startPlan(p, { i: chat.length - 1, sees: menu.sees, timer: menu.timer }) }], { made: chat.length - 1, tone: menu.tone, replace: false }));
@@ -131,11 +131,11 @@ export async function pitch({ comment = '', fromMsg = null, like = [] } = {}) {
             return { ok: true, n: 1, hidden: true };
         }
         const list = parsePitches(r?.text, m.n, names);
-        if (!list.length) { console.warn('[DLE] pitches: nothing usable in the answer', r?.text); return { ok: false, error: 'Mero\'s answer had no pitches in it — try again.' }; }
+        if (!list.length) { console.warn('[Onyx Quill] pitches: nothing usable in the answer', r?.text); return { ok: false, error: 'Mero\'s answer had no pitches in it — try again.' }; }
         save(addBatch(s2, list, { made: chat.length - 1, msg: fm?.i ?? null, tone: m.tone, replace: !likeP.length }));
         return { ok: true, n: list.length };
     } catch (err) {
-        console.warn('[DLE] pitches failed:', err?.message || err);
+        console.warn('[Onyx Quill] pitches failed:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
     } finally { busy = null; changed(); }
 }
@@ -183,7 +183,7 @@ export async function pitchFromTalk(talkId, { ask = true } = {}) {
         });
         return { ok: true, n: made.length };
     } catch (err) {
-        console.warn('[DLE] pitch from a talk failed:', err?.message || err);
+        console.warn('[Onyx Quill] pitch from a talk failed:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
     } finally { busy = null; changed(); }
 }
@@ -381,7 +381,7 @@ async function checkPlans(idx) {
             try {
                 const r = await callAI(BEAT_SYSTEM, beatUser(p, m.mes), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: BEAT_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
                 quote = checkFrom(r?.text, [m.mes], 'happened');
-            } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] plan beat check failed:', err?.message || err); }
+            } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] plan beat check failed:', err?.message || err); }
             if (chatNow()[idx]?.mes !== m.mes) return;
             const p2 = get(p.id);
             if (quote && p2?.st === 'running' && p2.plan.at === p.plan.at) {
@@ -420,7 +420,7 @@ async function checkLanded(idx) {
             try {
                 const r = await callAI(LAND_SYSTEM, landUser(p, m.mes), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: LAND_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
                 quote = checkFrom(r?.text, [m.mes], 'landed');
-            } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] pitch check failed:', err?.message || err); continue; }
+            } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] pitch check failed:', err?.message || err); continue; }
         }
         if (chatNow()[idx]?.mes !== m.mes) return;   // swiped meanwhile — the next MESSAGE_RECEIVED checks again
         const was = get(p.id); if (!was) continue;
@@ -465,7 +465,7 @@ export async function pitchTurn(chatMessages, type, signal) {
             try {
                 const r = await callAI(MOMENT_SYSTEM, momentUser(p.moment, newest), { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 200), caller: 'storyTracker', skipThrottle: true, jsonSchema: MOMENT_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0, signal, timeout: 30000 });
                 quote = checkFrom(r?.text, newest.map(m => m.mes), 'came');
-            } catch (err) { if (err?.name !== 'AbortError') console.warn('[DLE] pitch moment check failed:', err?.message || err); }
+            } catch (err) { if (err?.name !== 'AbortError') console.warn('[Onyx Quill] pitch moment check failed:', err?.message || err); }
         }
         if (!quote && !why) continue;
         const n = addNote({ kind: 'steer', text: surpriseText(p), last: 'flash', scope: 'chat', story: true, hidden: true }, { from: null });
@@ -497,7 +497,7 @@ export function initPitches() {
         add: list => { const s = store(), from = s.next; save(addBatch(s, list, { made: lastIndex(), replace: false })); return list.map((_, k) => from + k); },
     });
     try {
-        eventSource.on(event_types.MESSAGE_RECEIVED, id => { setTimeout(async () => { await checkLanded(Number(id)).catch(() => {}); await checkPlans(Number(id)).catch(err => console.warn('[DLE] plans:', err?.message || err)); }, 0); });
+        eventSource.on(event_types.MESSAGE_RECEIVED, id => { setTimeout(async () => { await checkLanded(Number(id)).catch(() => {}); await checkPlans(Number(id)).catch(err => console.warn('[Onyx Quill] plans:', err?.message || err)); }, 0); });
         eventSource.on(event_types.MESSAGE_SENT, id => { try { onSent(Number(id)); } catch { /* noop */ } });
         eventSource.on(event_types.CHAT_CHANGED, () => { setTimeout(addButtons, 200); changed(); });
         eventSource.on(event_types.MESSAGE_DELETED, () => { rewindFrom(chatNow().length); changed(); });

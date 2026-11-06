@@ -1,124 +1,122 @@
-# Writing Vault Entries
+Your lore lives as ordinary Markdown notes in your Obsidian vault. A note becomes an entry when it carries the `lorebook` tag; its keywords and summary decide when it is picked, and its text is what the writing AI reads. This page is the starting point for writing entries. The reference pages are linked at the end.
 
-This is the hub for authoring lorebook entries in your Obsidian vault. Start here, then jump to the page you need.
-
-## How it works
-
-1. You write notes in Obsidian with YAML frontmatter
-2. Notes tagged with `#lorebook` are indexed as lorebook entries
-3. The `keys` field lists keywords. When those keywords appear in recent chat messages, the entry is injected into the AI prompt
-4. With [[AI Search]] enabled, a `summary` field helps the AI decide when to select the entry even without exact keyword matches
-
-That's it. Tag it, give it keywords, write your lore.
-
-The absolute minimum is a tag and some content:
+## The smallest entry
 
 ```markdown
 ---
 tags:
   - lorebook
 keys:
-  - Silver Keep
+  - Drowned Anchor
+  - harbor tavern
 ---
 
-# Silver Keep
+# The Drowned Anchor
 
-A crumbling fortress on the northern ridge, now home to bandits and bad memories.
+A sailors' tavern on the Bayside Shushail waterfront. Cheap drinks, loud dice games, and more harbor gossip per square foot than anywhere else in Duskfrost.
 ```
 
-When "Silver Keep" appears in chat, this content gets injected. Everything else is optional and exists to give you finer control.
+The part between the two `---` lines is the frontmatter. When "Drowned Anchor" or "harbor tavern" comes up in the chat, this text goes to the writing AI. Everything else is optional.
 
-## Where to go next
+## The title
 
-- **[[Vault Entry Templates]]** — Complete, copy-paste-ready notes for every entry type: characters, locations, lore, organizations, story arcs, constants, seeds, bootstraps, and more. The fastest way to start writing.
-- **[[Frontmatter Fields]]** — The complete field reference: every YAML field, its type, default, and meaning; priority guidelines; the special `#lorebook-*` tags; and the recommended content structure (meta-blocks, hiding content from the AI).
-- **[[Advanced Entry Gating]]** — Conditional control over *when* an entry fires: `requires`/`excludes`, `cooldown`/`warmup`/`probability`, `refine_keys`/`selective_logic`, `cascade_links`, contextual gating, and macro-based `outlet` injection.
-- **[[Custom Fields]]** — Define your own contextual gating fields beyond the four defaults.
-- **[[For World Info Users]]** — If you imported a SillyTavern World Info book, this explains the extra frontmatter fields your entries may carry.
+An entry's title is its first `# ` heading. Without one, the file name is used. A `title:` line in the frontmatter is not read. Titles matter: `requires`, `excludes`, `cascade_links`, pins and AI search all name entries by title, and the title becomes the wrapper around the text in the prompt.
 
-## What each AI sees
+## What the two AIs see
 
-Your vault entry is used by two different AIs that see very different things. Understanding the difference helps you write better entries and summaries.
+Your entry is read by two different AIs, and they see different things.
 
-### The selection AI (AI Search manifest)
-
-The selection AI **never sees your full entry**. It sees a compact one-line manifest entry and uses it to decide whether your entry is relevant to the current conversation:
+**AI search** (when it is on, see [[How Lore Gets Picked]]) never sees the full text. It gets a short card:
 
 ```xml
-<entry name="Valen Ashwick">
-Valen Ashwick (285tok) → Ashwick Estate, Ironveil Guild, Sera Thornwick, Korrath
-Rogue spellsword and former member of the Ironveil Guild. Select when melee combat,
-dual-wielding, shadow magic, guild politics, or the Ashwick bloodline comes up.
-Close ally of Sera and rival of Korrath.
+<entry name="Dockmaster Bram Solvik">
+Dockmaster Bram Solvik (412tok) → Bayside Shushail, Solarguard, Bonehands
+[Location: Bayside Shushail]
+Human dockmaster of the main cargo pier. Select when port operations, cargo inspection, smuggling at the docks, or Bayside Shushail trade come up.
 </entry>
 ```
 
-| Part | Source | Purpose |
-|------|--------|---------|
-| `Valen Ashwick` | Entry title | Identifies the entry |
-| `(285tok)` | Estimated from content length | Helps the AI consider token budget |
-| `→ Ashwick Estate, ...` | Extracted from `[[wikilinks]]` in content | Shows relationships to other entries |
-| Summary text | `summary` frontmatter field | Tells the AI *when* to select this entry |
+That is the title, the entry's size in tokens, the entries it links to with `[[wikilinks]]`, your field values, and the `summary`. Without a summary, AI search gets the start of the text instead (up to 600 characters).
 
-If an entry has no `summary` field, the content is truncated to ~600 characters instead. Writing good summaries matters: the selection AI's only context for your entry is this compact view.
+**The writing AI** gets the cleaned text, wrapped in the entry format (by default `<Title>` … `</Title>`). Before it is sent:
 
-An entry without a summary or wikilinks gets an even simpler manifest line:
+- the frontmatter is removed (keys, summary, priority and so on never reach it),
+- the first `# ` heading is removed (the title is already the wrapper),
+- `[[Link]]` becomes `Link`, and `[[Link|shown text]]` becomes `shown text`,
+- `<div>` tags are removed (the text inside stays),
+- images (`![[picture.png]]`, `![alt](url)`) are removed,
+- Obsidian comments and hidden blocks are removed (below).
 
-```xml
-<entry name="Silver Keep">
-Silver Keep (25tok)
-A crumbling fortress on the northern ridge, now home to bandits and bad memories.
-</entry>
+So: the **summary** is for AI search, the **text** is for the writer. Write each for its reader.
+
+## Hiding text from the AIs
+
+Anything between `%%` markers is an Obsidian comment: hidden in Obsidian's reading view, and never sent. A comment over several lines is only left out when each `%%` starts its own line, as below.
+
+```markdown
+Bram keeps a locked log of every hold heavier than its manifest.
+
+%%
+Plot note: the log is what the Solarguard captain wants in chapter four.
+%%
 ```
 
-### The writing AI (injected context)
+For bigger blocks, wrap them in `%%oq-exclude%%` … `%%/oq-exclude%%`. Both kinds are also left out of AI search's card.
 
-When an entry is selected, the writing AI sees your **cleaned content** wrapped in the injection template (default: `<Title>content</Title>`). Several things are automatically stripped before injection:
+## Good keywords
 
-```xml
-<Valen Ashwick>
-A disgraced spellsword who left the Ironveil Guild after discovering their
-true purpose. Now works as a mercenary, haunted by the magic branded into
-his blood.
+- Use the names people actually say: full name, short name, title, nickname (`Bram Solvik`, `Bram`, `Dockmaster Solvik`, `the dockmaster`).
+- Keywords are not case sensitive and match inside longer words by default: `Bram` also matches "Brambles". Very short keys (two letters) match almost everything. **Whole words only** in **Settings › Lore selection** stops that.
+- Don't use a name that is in every message as a key, like the name of the character you are talking to: the speaker's name is read too, so the entry would go in with every reply. Pin it, or use **Match the active character**, or field filters instead.
+- Write keys as a list, one per line with `- `. A comma line like `keys: "a, b"` is split for you, with a warning in `/oq-lint`.
 
-[Species: Half-elf | Role: Spellsword, mercenary | Aliases: the Duskblade | ...]
+## Good summaries
 
-## Background
-Valen grew up on the Ashwick Estate, trained from childhood in both blade
-and spell...
+The summary is AI search's only view of your entry. A good one says:
 
-## Relationships
-- Sera Thornwick -- Closest ally...
-- Korrath -- Former Guild partner turned hunter...
+1. **What it is**, in one sentence.
+2. **When to pick it**: the situations, topics and people that make it relevant.
+3. **Important ties**, briefly.
 
-## Combat Style
-Valen fights with twin short swords and weaves shadow magic between strikes...
-</Valen Ashwick>
-```
+Weak (describes, but gives no reason to pick it):
 
-Notice what changed compared to the raw Obsidian note:
-- The **first H1 heading** (`# Valen Ashwick`) is stripped. It's redundant with the XML wrapper title.
-- **Wikilinks** are converted to plain text: `[[Sera Thornwick]]` becomes `Sera Thornwick`, `[[Link|Display]]` becomes `Display`.
-- **HTML div tags** are stripped (the content inside is kept, so meta-blocks still work).
-- **Image embeds** (`![[image.png]]`, `![alt](url)`) are removed.
-- **Obsidian comments** (`%%...%%`) are removed.
+> Bram is barrel-chested and sea-weathered, with tar under his nails and a sailor's roll.
 
-| What's included | What's NOT included |
-|-----------------|---------------------|
-| Everything after the frontmatter `---` | YAML frontmatter (`keys`, `priority`, `summary`, `requires`, etc.) |
-| Full prose, meta-blocks, all headings except H1 | The first H1 heading (used as title in the XML wrapper) |
-| Wikilink text (converted to plain text) | Wikilink brackets and image embeds |
-| Content outside exclusion zones | `%%deeplore-exclude%%` regions (see [[Frontmatter Fields#hiding-content-from-the-writing-ai|Hiding content]]) |
+Strong:
 
-The `summary` is for the selection AI. The content is for the writing AI. Two purposes, two surfaces. Write each accordingly. See [[Frontmatter Fields#writing-good-summaries|Writing good summaries]] for how to write summaries that actually help the selection AI.
+> Human dockmaster of Bayside Shushail's main cargo pier; decides which ships berth and what the manifests say. Select when port operations, cargo inspection, smuggling at the docks, or the Solarguard–Bonehands balance on the waterfront come up.
+
+Keep summaries under 600 characters; a summary is sent whole, however long (**Entry text it reads, at most** only caps the text used when there is no summary). Leave out looks and atmosphere; that belongs in the text. The side panel's **Lore** tab has **Write summaries**: select entries without one and the AI drafts them, and you check each before it is saved.
+
+## Special kinds of entries
+
+Add one of these tags next to `lorebook`:
+
+| Tag | What it does |
+|---|---|
+| `lorebook-always` | Sent with every reply. Keep these few and short. |
+| `lorebook-bootstrap` | Sent with every reply while the chat is new (3 messages), then an ordinary entry. |
+| `lorebook-seed` | While the chat is new, given to AI search as background on the setting. |
+| `lorebook-never` | Never used. The note is skipped. |
+| `lorebook-guide` | A **secret for Mero ☆**: only Mero reads it, never the writing AI. It doesn't need the `lorebook` tag. |
+
+Secrets for Mero ☆ are for things your co-writer should know (where you want the story to go, threads to keep in mind, what you like her to bring up), not for writing style; style belongs in your SillyTavern preset. Mero reads the notes in the chat's folders. See [[Mero]].
+
+The tag names can be changed in **Settings › Vault › Tags**. More in [[Frontmatter Fields]].
 
 ## Tips
 
-- **Start simple.** A tag and some keywords is enough. Add fields as you need them.
-- **Keywords are case-insensitive by default.** "Valen", "valen", and "VALEN" all match. You can change this in [[Settings Reference]].
-- **Use wikilinks.** When entry A links to entry B with `[[Entry B]]`, recursive scanning can pull in related entries automatically.
-- **Test with Context Cartographer.** After generating a message, check what was injected and why. See [[Features]] for details.
-- **Summaries are for the search AI, not the writing AI.** Don't put character descriptions in summaries. Put *when to select this entry* in summaries.
-- **Priority matters for constants too.** Even always-send entries use priority to determine injection order.
-- **Don't over-tag.** An entry only needs `#lorebook`. Add special tags (`#lorebook-always`, etc.) only when you specifically need that behavior.
-- **Run `/oq-lint` after authoring.** Catches common frontmatter footguns (case-wrong field names, comma-string `keys`, quoted numerics, missing fences) at once.
+- **Start simple.** A tag, a few keys and good text is enough. Add fields when an entry fires too often, too rarely, or in the wrong scene.
+- **Link related entries** with `[[wikilinks]]`. AI search sees the links, and with AI search on, linked entries become candidates too.
+- **Use folders.** Each chat reads only its folders, so one folder per story or setting keeps stories apart. See [[How Lore Gets Picked]].
+- **Check what was sent.** The 📖 button on a reply › **Why these entries** shows what went in and what nearly did.
+- **Run `/oq-lint`** after editing frontmatter, and `/oq-health` now and then. See [[Diagnostics]].
+- **Let Onyx Quill help.** **Optimize keywords** in the Lore tab suggests better keys; new entries can be suggested from the chat. See [[Scribe and AI Helpers]].
+
+## Where to go next
+
+- [[Entry Templates]]: complete, copy-ready notes for characters, places, lore, factions, events and the special kinds.
+- [[Frontmatter Fields]]: every field and tag, with defaults.
+- [[Advanced Gating]]: control when an entry fires (`requires`, `excludes`, `cooldown`, `refine_keys`, `cascade_links`, `outlet` and more).
+- [[Custom Fields]]: your own filter fields, like `faction` or `time_of_day`.
+- [[Coming from DeepLore or World Info]]: what an imported World Info book looks like in the vault.

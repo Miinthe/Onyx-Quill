@@ -165,7 +165,7 @@ async function rewrite(i, { start, end }, what, extra = {}) {
     try {
         const r = await callAI(system, user, { ...conn, maxTokens: Math.min(Number(conn.maxTokens) || 800, Math.max(200, passage.length)), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
         out = cleanRewrite(r?.text, passage);
-    } catch (err) { console.warn('[DLE] rewrite failed:', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] rewrite failed:', err?.message || err); }
     finally { rewriting = false; wait?.(); }
     if (!out) { K.notify({ text: 'No rewrite came back. Nothing was changed.', tone: 'wait' }); return; }
     const body = document.createElement('div');

@@ -81,7 +81,9 @@ test('card', () => {
     assertEqual(cardModel({ ...st, run: '', setup: { folders: [], runs: {}, on: false } }).rows.map(r => r.key), ['base', 'own'], 'no run line without a run');
     assertEqual(cardModel({ ...st, setup: { on: false } }).charOn, false, 'character off');
     const g = cardModel({ character: null, own: [], chatSwitch: 'off', on: false });
-    assertEqual([g.group, g.title, g.rows.map(r => r.key), g.switchOptions, g.chatSwitch], [true, 'Group chat', ['own'], null, 'off'], 'group chat');
+    assertEqual([g.group, g.title, g.rows.map(r => r.key), g.switchOptions, g.chatSwitch], [true, 'Group chat', ['own'], [['on', 'on'], ['off', 'off']], 'off'], 'group chat');
+    assertEqual(cardModel({ character: null, own: [], chatSwitch: null, on: true }).chatSwitch, 'on', 'group chat: unset = on');
+    assertEqual(cardModel({ character: null, own: [], chatSwitch: 'on', on: true }).chatSwitch, 'on', 'group chat: on');
 });
 
 summary();

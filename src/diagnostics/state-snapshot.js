@@ -513,12 +513,6 @@ export function captureStateSnapshot() {
     } catch (e) { snap.ai = { __error: String(e) }; }
 
     try {
-        snap.loreGaps = {
-            count: Array.isArray(state.loreGaps) ? state.loreGaps.length : 0,
-        };
-    } catch (e) { snap.loreGaps = { __error: String(e) }; }
-
-    try {
         snap.matching = {
             entityNameSetSize: state.entityNameSet?.size ?? 0,
             entityRegexCount: state.entityShortNameRegexes?.size ?? 0,
@@ -600,16 +594,6 @@ export function captureStateSnapshot() {
             snap.ai.cacheRegexVersionMatch = cacheRegexVersion === state.entityRegexVersion;
             snap.ai.cacheRegexVersion = cacheRegexVersion;
             snap.ai.currentRegexVersion = state.entityRegexVersion;
-        }
-    } catch {}
-
-    try {
-        if (snap.loreGaps && typeof snap.loreGaps === 'object' && !snap.loreGaps.__error) {
-            const cm = globalThis.chat_metadata || {};
-            const hidden = cm.deeplore_lore_gaps_hidden;
-            const dismissed = cm.deeplore_lore_gaps_dismissed;
-            snap.loreGaps.hiddenCount = Array.isArray(hidden) ? hidden.length : 0;
-            snap.loreGaps.dismissedCount = Array.isArray(dismissed) ? dismissed.length : 0;
         }
     } catch {}
 

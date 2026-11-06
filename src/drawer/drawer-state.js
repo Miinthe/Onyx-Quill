@@ -44,15 +44,15 @@ export const EXPAND_ACTIONS = {
 
 // the same words as Settings › How lore is picked (bug hunt 2026-10-17: Diagnostics said "AI Only")
 export const MODE_LABELS = {
-    'two-stage': 'keywords, then the judge',
-    'ai-only': 'the judge only',
+    'two-stage': 'keywords, then AI search',
+    'ai-only': 'AI search only',
     'keywords-only': 'keywords only',
 };
 
 export const MODE_DESCRIPTIONS = {
-    'two-stage': 'keywords narrow the field, then the judge picks the best matches',
-    'ai-only': 'the judge reads the whole vault directly (slower, more thorough)',
-    'keywords-only': 'matching by keywords only (the judge is off)',
+    'two-stage': 'keywords narrow the field, then AI search picks the best matches',
+    'ai-only': 'AI search reads the whole vault directly (slower, more thorough)',
+    'keywords-only': 'matching by keywords only (AI search is off)',
 };
 
 export const STATUS_DESCRIPTIONS = {
@@ -267,7 +267,7 @@ export function scheduleRender(renderFn) {
             const fns = [...pendingRenders];
             pendingRenders.clear();
             for (const fn of fns) {
-                try { fn(); } catch (err) { console.warn('[DLE] Drawer render error:', err.message); }
+                try { fn(); } catch (err) { console.warn('[Onyx Quill] Drawer render error:', err.message); }
             }
         });
     }
@@ -316,6 +316,6 @@ export async function loadSTInternals() {
         const pu = await import('../../../../../../scripts/power-user.js');
         power_user = pu.power_user;
     } catch (err) {
-        console.warn('[DLE] Could not load ST internals for drawer (Moving UI/mobile detection unavailable):', err.message);
+        console.warn('[Onyx Quill] Could not load ST internals for drawer (Moving UI/mobile detection unavailable):', err.message);
     }
 }

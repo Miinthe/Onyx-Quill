@@ -1,42 +1,43 @@
-**DeepLore Wiki**
+**Onyx Quill**
+
+[[Home]]
 
 **Getting started**
-- [[What is DeepLore]]
+- [[What is Onyx Quill]]
 - [[Installation]]
 - [[Quick Start]]
 - [[First Steps]]
 - [[Setup Wizard]]
-- [[For World Info Users]]
+- [[Coming from DeepLore or World Info]]
 
-**Features**
-- [[Features]]
-  - [[Drawer|Side Panel]]
-  - [[DeepLore Bar]]
-  - [[My Notes]]
-  - [[Storyboards]]
-  - [[Cast]]
-  - [[Mero]]
-  - [[Inspection and Diagnostics]]
-  - [[AI-Powered Tools]]
-  - [[Entry Matching and Behavior]]
-  - [[Injection and Context Control]]
-  - [[Custom Fields]]
-  - [[AI Notepad]]
-  - [[Infrastructure]]
-  - [[Setup and Import]]
+**Your story**
+- [[Storyboards]]
+- [[Cast]]
+- [[World]]
+- [[Mero]]
+- [[My Notes]]
 
-**Reference**
+**Around the chat**
+- [[Side Panel]]
+- [[The Bar]]
+- [[AI Notepad]]
+- [[Scribe and AI Helpers]]
+
+**Your lore**
+- [[How Lore Gets Picked]]
 - [[Writing Vault Entries]]
   - [[Frontmatter Fields]]
-  - [[Vault Entry Templates]]
-  - [[Advanced Entry Gating]]
-- [[AI Search]]
-- [[Pipeline]]
+  - [[Entry Templates]]
+  - [[Advanced Gating]]
+  - [[Custom Fields]]
+
+**Reference**
 - [[Settings Reference]]
 - [[Slash Commands]]
 - [[Glossary]]
+- [[Diagnostics]]
+- [[Under the Hood]]
 
 **Help**
 - [[Troubleshooting]]
 - [[FAQ]]
-- [[Roadmap]]

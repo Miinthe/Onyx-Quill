@@ -16,7 +16,7 @@
 import { setupPrompt, parseSetup, SETUP_SCHEMA } from './world/setup-pure.js';   // the world layer's ☆ Set up with Mero (stage 6)
 import { chat_metadata, saveSettingsDebounced } from '../../../../../script.js';
 import { getContext, saveMetadataDebounced, extension_settings } from '../../../../extensions.js';
-import { vaultIndex, setIndexTimestamp, loreGaps } from './state.js';
+import { vaultIndex, setIndexTimestamp } from './state.js';
 import { askBeforeRemoving, setAskBeforeRemoving, getSettings, resolveConnectionConfig } from '../settings.js';   // overhaul step 4: one "Ask before removing" switch
 import { buildIndex } from './vault/vault.js';   // the re-read after a save (what /oq-refresh does)
 import { escapeHtml } from '../../../../utils.js';
@@ -25,7 +25,7 @@ import { boardStore, getBoard, putBoard } from './board-store.js';   // engine o
 import { TRACKERS_KEY, asList } from './trackers-pure.js';
 import { saveTrackers, currentBoardName, setCharacterBoard, characterBoardName, detachBoard, notifyTrackersView, getTrackers, deleteBoard } from './trackers.js';
 import { normalizeState, freshState, fromEngineList, toEngineList } from './board-model-pure.js';
-import { syncLiveLocation } from './board-live.js';   // places: here → DeepLore's location filter
+import { syncLiveLocation, worldChatPaused, setWorldPaused } from './board-live.js';   // places: here → DeepLore's location filter; the world's pause in this chat
 import { toWindowBoard, fromWindowBoard, toWindowChat, fromWindowChat, withVaultLinks, journalWindowMoves, timelineEvents } from './board-window-pure.js';
 // LOCAL PATCH (Miinthe, 2026-10-04): creating an entry right from the board
 import { runStampYaml } from './ai/run-stamp-pure.js';
@@ -39,7 +39,6 @@ import { callAI } from './ai/ai.js';
 import { meroSettings, meroWhere, meroConnectionName, boardMeroAnswer, meroLore } from './mero.js';
 import { BOARD_MERO_TASKS, buildBoardMeroPrompt, parseBoardMero, meroBoardBlock, boardHandover } from './board-mero-pure.js';
 import { STARTER_TEMPLATES } from './board-templates-pure.js';
-import { persistGaps } from './lore-gaps.js';
 import { meroNames } from './mero-names-pure.js';
 
 export { V2_KEY } from './board-store.js';
@@ -126,7 +125,7 @@ function folderTree() {
 let frame = null;
 let pendingSelect = null;   // a row to open the window at (Story tab → a collection)
 let pendingAdd = false;   // open straight into the Add window (Story tab → New tracker, overhaul 2026-10-16)
-let pendingEntry = null;   // "Write a new entry…" (bar 📖, Mero's lore gaps): { title?, ask?, gapId? } — the window opens on it alone
+let pendingEntry = null;   // "Write a new entry…" (bar 📖): { title?, ask? } — the window opens on it alone
 let pendingView = null;   // open on a view: 'time' (Story → Timeline, Miinthe 2026-10-16)
 
 /** What the window asks for when it opens. */
@@ -190,6 +189,7 @@ function load() {
                 rumors: posts.filter(p => p.rumor && typeof p.rumor === 'object').slice(-4).reverse().map(p => ({ kind: ({ true: 'True', twisted: 'Twisted', madeup: 'Made up', planned: 'Planned' })[p.rumor.kind] || 'Rumor', text: String(p.text || '').slice(0, 120), heard: Array.isArray(p.rumor.heard) ? p.rumor.heard.slice(0, 8) : [] })),
             };
         })(),
+        worldPaused: worldChatPaused(),   // this chat's own world pause (undefined: never set here — the board's old flag counts)
         worldFired: Object.fromEntries((chat_metadata?.deeplore_world?.records || []).filter(r => r?.kind === 'fired' && r.plan).map(r => [r.plan, { i: r.i, hit: r.hit !== false }])),
         prefs: { ...prefs() },
         templates: STARTER_TEMPLATES,   // the built-in starter templates of New board (board-templates-pure.js, 2026-11-02)
@@ -262,7 +262,7 @@ async function meroAsk(task, input) {
         const r = await callAI(system, user, { ...resolveConnectionConfig('mero'), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
         return parseBoardMero(task, r?.text ?? '', inp);
     } catch (err) {
-        console.warn('[DLE] Mero on the board could not answer:', err?.message || err);
+        console.warn('[Onyx Quill] Mero on the board could not answer:', err?.message || err);
         return { ok: false, error: `Mero could not answer: ${err?.message || err}` };
     } finally { meroAsking = false; }
 }
@@ -293,14 +293,10 @@ async function worldSetup(input) {
 
 /**
  * "Write a new entry…" — Create in the window: one new file, written now (Miinthe pressed Create), never over an existing
- * one. A lore gap it answers (Mero's Requests) is marked written.
+ * one.
  */
-async function createEntry(form, { gapId = null } = {}) {
+async function createEntry(form) {
     const r = await writeEntry(form, { reindex: true });
-    if (r.ok && gapId) {
-        const g = loreGaps.find(x => x.id === gapId);
-        if (g) { g.status = 'written'; persistGaps([...loreGaps]); }
-    }
     if (r.ok) { try { toastr.success(`“${escapeHtml(form.title)}” is in your vault: ${escapeHtml(r.filename)}${form.madeBy ? ' (marked as Mero’s draft)' : ''}.`, 'New entry', { escapeHtml: false }); } catch { /* noop */ } }
     return JSON.parse(JSON.stringify(r));
 }
@@ -403,7 +399,7 @@ function holdPage(on) {
 
 /** An error inside the window: a notice in SillyTavern and a line in the browser console. */
 function report(msg) {
-    console.error('[DLE] board window:', msg);
+    console.error('[Onyx Quill] board window:', msg);
     try { toastr.error(String(msg).split('\n')[0], 'Storyboard window', { timeOut: 0, extendedTimeOut: 0, closeButton: true }); } catch { /* noop */ }
 }
 
@@ -424,7 +420,7 @@ async function writeEntries(list) {
 /** After every board save: re-read the vault, as /oq-refresh does (Miinthe, 2026-10-05), in the background. */
 function refreshVault() {
     try { setIndexTimestamp(0); } catch { /* noop */ }
-    buildIndex().then(() => notifyTrackersView()).catch(err => console.warn('[DLE] re-reading the vault after a board save failed:', err?.message || err));
+    buildIndex().then(() => notifyTrackersView()).catch(err => console.warn('[Onyx Quill] re-reading the vault after a board save failed:', err?.message || err));
 }
 
 /** The Timeline's "Go to message #": close the window and scroll the chat there. */
@@ -441,11 +437,19 @@ function openCast(personKey) {
     try { window.__dleOpenCast?.(personKey || null); } catch { /* noop */ }
 }
 
-window.__dleBoardHost = { load, save, rename, remove, apply: (name, picked) => { applyTargets(name, picked); notifyTrackersView(); }, close, report, setPref, writeEntries, goto, openCast, setAskBeforeRemoving, meroAsk, meroStatus, createEntry, worldSetup };
+/** The World tab's pause switch: this chat only, at once (Miinthe, 2026-11-05). The World panel and the bar follow. */
+function worldPause(on) {
+    const ok = setWorldPaused(on);
+    if (ok) notifyTrackersView();
+    if (ok && !on) import('./world/world.js').then(m => m.wakeWorld()).catch(err => console.warn('[Onyx Quill] world: wake', err));   // answer what waited
+    return ok;
+}
+
+window.__dleBoardHost = { load, save, rename, remove, apply: (name, picked) => { applyTargets(name, picked); notifyTrackersView(); }, close, report, setPref, writeEntries, goto, openCast, setAskBeforeRemoving, meroAsk, meroStatus, createEntry, worldSetup, worldPause };
 
 /**
  * Open the board window over SillyTavern; `select` opens it at that row (a tracker or collection id), `add` straight
- * into its Add window, `entry` (true or { title, ask, gapId }) on its entries window alone: "Write a new entry…".
+ * into its Add window, `entry` (true or { title, ask }) on its entries window alone: "Write a new entry…".
  */
 export async function openBoardWindow({ select = null, add = false, view = null, entry = null } = {}) {
     if (frame) return;

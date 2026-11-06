@@ -150,8 +150,12 @@ export function validateFieldDefinition(raw) {
 }
 
 /**
- * Line-based YAML parser (no external lib). Expects the format produced by
- * serializeFieldDefinitions().
+ * Small YAML reader for field-definitions.yaml (no external lib). LOCAL PATCH (Miinthe, 2026-11-05): it used to read only
+ * the exact layout serializeFieldDefinitions() writes ("  - name:" at two spaces, keys at four), so a file in normal
+ * YAML style (`- name:` at column 0, four-space indents, `values: [a, b]`, `gating: { … }`, a bare list without
+ * `fields:`) silently parsed to zero fields. Now it follows the indentation the file uses: block mappings, block
+ * sequences (also "indentless" ones under a key), flow lists / maps, quotes and `#` comments. The rule builder's own
+ * layout reads exactly as before.
  * @param {string} yamlText
  * @returns {{ definitions: FieldDefinition[], errors: string[] }}
  */
@@ -159,107 +163,187 @@ export function parseFieldDefinitionYaml(yamlText) {
     if (!yamlText || typeof yamlText !== 'string') {
         return { definitions: [], errors: [] };
     }
-
-    const trimmed = yamlText.trim();
-    if (trimmed.length === 0) {
+    if (yamlText.trim().length === 0) {
         return { definitions: [], errors: [] };
     }
 
     const errors = [];
     const definitions = [];
 
-    const lines = trimmed.split('\n');
-    let currentField = null;
-    let inGating = false;
-    let inValues = false;
-    let sawContent = false; // did any non-comment/non-blank line appear?
-
-    for (let i = 0; i < lines.length; i++) {
-        // Obsidian indents with tabs by default; the serializer uses 2-space units.
-        // Expand leading tabs (1 tab = one indent level → 2 spaces) so the \s{2}/\s{4}/\s{6}
-        // structure regexes match tab-indented hand-edited files instead of silently
-        // parsing zero fields.
-        const line = lines[i].replace(/^\t+/, t => '  '.repeat(t.length));
-        const stripped = line.trimEnd();
-
-        if (stripped.startsWith('#') || stripped === '' || stripped === 'fields:') continue;
-        sawContent = true;
-
-        // New field: "  - name: ..."
-        if (/^\s{2}-\s+name:\s*(.+)/.test(stripped)) {
-            if (currentField) {
-                const { field, errors: fieldErrors } = validateFieldDefinition(currentField);
-                if (field) definitions.push(field);
-                errors.push(...fieldErrors);
-            }
-            currentField = { name: stripped.match(/name:\s*(.+)/)[1].trim(), gating: {} };
-            inGating = false;
-            inValues = false;
-            continue;
-        }
-
-        if (!currentField) continue;
-
-        if (/^\s{4}gating:/.test(stripped)) {
-            inGating = true;
-            inValues = false;
-            continue;
-        }
-
-        if (/^\s{4}values:/.test(stripped)) {
-            inValues = true;
-            inGating = false;
-            if (/values:\s*\[\s*\]/.test(stripped)) {
-                currentField.values = [];
-                inValues = false;
-            }
-            continue;
-        }
-
-        if (inGating && /^\s{6}\w/.test(stripped)) {
-            const match = stripped.match(/^\s{6}(\w+):\s*(.+)/);
-            if (match) {
-                const [, key, val] = match;
-                const parsed = parseYamlValue(val.trim());
-                if (!currentField.gating) currentField.gating = {};
-                currentField.gating[key] = parsed;
-            }
-            continue;
-        }
-
-        if (inValues && /^\s{6}-\s/.test(stripped)) {
-            if (!currentField.values) currentField.values = [];
-            const valMatch = stripped.match(/^\s{6}-\s+(.+)/);
-            if (valMatch) currentField.values.push(valMatch[1].trim());
-            continue;
-        }
-
-        // Indent-4 = top-level field property — reset sub-block flags.
-        if (/^\s{4}\w/.test(stripped)) {
-            inGating = false;
-            inValues = false;
-            const match = stripped.match(/^\s{4}(\w+):\s*(.+)/);
-            if (match) {
-                const [, key, val] = match;
-                currentField[key] = parseYamlValue(val.trim());
-            }
-        }
+    // Obsidian indents with tabs by default: one leading tab = one indent level (2 spaces).
+    const lines = [];
+    for (const rawLine of yamlText.split(/\r?\n/)) {
+        const line = rawLine.replace(/^[\t ]+/, ws => ws.replace(/\t/g, '  ')).trimEnd();
+        const text = line.trim();
+        if (text === '' || text.startsWith('#') || text === '---' || text === '...') continue;
+        lines.push({ indent: line.length - line.trimStart().length, text });
     }
 
-    // Last field has no terminator — flush.
-    if (currentField) {
-        const { field, errors: fieldErrors } = validateFieldDefinition(currentField);
+    let root;
+    const pos = { i: 0, errs: [] };
+    try {
+        root = _yamlBlock(lines, pos);
+    } catch (err) {
+        errors.push(`Could not read field-definitions.yaml: ${err?.message || err}`);
+        return { definitions, errors };
+    }
+    errors.push(...pos.errs);
+
+    let items = null;
+    if (Array.isArray(root)) items = root;
+    else if (root && typeof root === 'object' && 'fields' in root) {
+        if (Array.isArray(root.fields)) items = root.fields;
+        else if (root.fields == null || root.fields === '') items = [];
+    }
+    if (!items) {
+        if (lines.length) errors.push('No field definitions parsed from non-empty content — expected a "fields:" list of "- name: …" items (check the indentation).');
+        return { definitions, errors };
+    }
+
+    for (const item of items) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+        const raw = { ...item };
+        delete raw[_RAW];
+        if (raw.gating == null || typeof raw.gating !== 'object' || Array.isArray(raw.gating)) raw.gating = {};
+        if (Array.isArray(raw.values)) {
+            // A value written "a: b" reads as a little mapping in YAML — keep the text as written.
+            raw.values = raw.values.map(v => (v && typeof v === 'object' && v[_RAW]) ? v[_RAW] : v).filter(v => v != null && typeof v !== 'object');
+        }
+        for (const k of ['name', 'label', 'contextKey']) if (typeof raw[k] === 'number') raw[k] = String(raw[k]);
+        const { field, errors: fieldErrors } = validateFieldDefinition(raw);
         if (field) definitions.push(field);
         errors.push(...fieldErrors);
     }
 
-    // Non-empty content that produced zero definitions is almost always a structure
-    // problem (e.g. mixed/wrong indentation). Surface it instead of failing silently.
-    if (definitions.length === 0 && errors.length === 0 && sawContent) {
-        errors.push('No field definitions parsed from non-empty content — check indentation and the "  - name:" structure (use spaces or tabs consistently, not mid-line mixes).');
+    if (definitions.length === 0 && errors.length === 0 && items.length > 0) {
+        errors.push('No field definitions parsed from non-empty content — each item needs a "name:" (check the indentation).');
     }
 
     return { definitions, errors };
+}
+
+/** Marks a one-line `- a: b` sequence item with its text, so a value like "Inn: The Mug" can be read back as text. */
+const _RAW = Symbol('yamlRaw');
+
+/** Read the block (mapping or sequence) that starts at lines[pos.i], at that line's indentation. */
+function _yamlBlock(lines, pos) {
+    const ln = lines[pos.i];
+    if (!ln) return null;
+    if (ln.text === '-' || ln.text.startsWith('- ')) return _yamlSeq(lines, pos, ln.indent);
+    return _yamlMap(lines, pos, ln.indent);
+}
+
+function _yamlSeq(lines, pos, indent) {
+    const out = [];
+    while (pos.i < lines.length) {
+        const ln = lines[pos.i];
+        if (ln.indent !== indent || !(ln.text === '-' || ln.text.startsWith('- '))) break;
+        const rest = ln.text === '-' ? '' : ln.text.slice(2).trimStart();
+        if (rest === '') {
+            pos.i++;
+            const next = lines[pos.i];
+            out.push(next && next.indent > indent ? _yamlBlock(lines, pos) : null);
+            continue;
+        }
+        if (_yamlKey(rest)) {
+            // "- key: value" starts a mapping whose keys line up with "key".
+            const childIndent = indent + (ln.text.length - rest.length);
+            lines[pos.i] = { indent: childIndent, text: rest };
+            const startI = pos.i;
+            const map = _yamlMap(lines, pos, childIndent);
+            if (pos.i === startI + 1 && map && typeof map === 'object') map[_RAW] = _yamlUnquote(rest);
+            out.push(map);
+            continue;
+        }
+        pos.i++;
+        out.push(_yamlFlowOrText(rest));
+    }
+    return out;
+}
+
+function _yamlMap(lines, pos, indent) {
+    const out = {};
+    while (pos.i < lines.length) {
+        const ln = lines[pos.i];
+        if (ln.indent < indent) break;
+        if (ln.indent > indent) { (pos.errs ||= []).push(`Skipped a line with unexpected indentation: "${ln.text}"`); pos.i++; continue; }
+        const kv = _yamlKey(ln.text);
+        if (!kv) {
+            if (ln.text === '-' || ln.text.startsWith('- ')) break;   // a sequence at this level ends the mapping
+            (pos.errs ||= []).push(`Skipped a line that is not "key: value": "${ln.text}"`); pos.i++; continue;
+        }
+        pos.i++;
+        const [key, rest] = kv;
+        if (rest !== '') { out[key] = _yamlScalar(rest, key); continue; }
+        const next = lines[pos.i];
+        if (next && next.indent > indent) out[key] = _yamlBlock(lines, pos);
+        else if (next && next.indent === indent && (next.text === '-' || next.text.startsWith('- '))) out[key] = _yamlSeq(lines, pos, indent);
+        else out[key] = null;
+    }
+    return out;
+}
+
+/** "key: rest" → [key, rest] (rest '' when the value is on the next lines), or null. */
+function _yamlKey(text) {
+    const m = text.match(/^("([^"]*)"|'([^']*)'|[^\s"'#\-[\]{},:][^:]*?|-[^\s:][^:]*?)\s*:(?:\s+(.*))?$/);
+    if (!m) return null;
+    const key = m[2] ?? m[3] ?? m[1];
+    return [key.trim(), (m[4] || '').trim()];
+}
+
+/** A map value: free text for `label` (a "#" may be part of it), typed scalars elsewhere; flow lists / maps. */
+function _yamlScalar(rest, key) {
+    if (rest.startsWith('[') || rest.startsWith('{')) return _yamlFlow(_yamlStripComment(rest));
+    if (key === 'label') return _yamlUnquote(rest);
+    return parseYamlValue(_yamlStripComment(rest));
+}
+
+/** A sequence item: kept as text (values are text), flow lists / maps read as such. */
+function _yamlFlowOrText(rest) {
+    if (rest.startsWith('[') || rest.startsWith('{')) return _yamlFlow(_yamlStripComment(rest));
+    return _yamlUnquote(rest);
+}
+
+function _yamlStripComment(s) {
+    if (s.startsWith('"') || s.startsWith("'")) {
+        const q = s[0];
+        const end = s.indexOf(q, 1);
+        return end > 0 ? s.slice(0, end + 1) : s;
+    }
+    return s.replace(/\s+#.*$/, '').trim();
+}
+
+function _yamlUnquote(s) {
+    const t = s.trim();
+    if (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) return t.slice(1, -1);
+    return t;
+}
+
+/** `[a, "b c"]` → ['a', 'b c'] (text); `{ enabled: true, operator: eq }` → { enabled: true, operator: 'eq' }. */
+function _yamlFlow(s) {
+    const t = s.trim();
+    const isList = t.startsWith('[');
+    const close = isList ? ']' : '}';
+    if (!t.endsWith(close)) throw new Error(`unclosed ${isList ? 'list' : 'map'} "${t}"`);
+    const parts = [];
+    let cur = '', q = null;
+    for (const ch of t.slice(1, -1)) {
+        if (q) { cur += ch; if (ch === q) q = null; continue; }
+        if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+        if (ch === ',') { parts.push(cur); cur = ''; continue; }
+        cur += ch;
+    }
+    parts.push(cur);
+    const items = parts.map(p => p.trim()).filter(p => p !== '');
+    if (isList) return items.map(_yamlUnquote);
+    const out = {};
+    for (const p of items) {
+        const i = p.indexOf(':');
+        if (i < 0) continue;
+        const k = _yamlUnquote(p.slice(0, i));
+        out[k] = k === 'label' ? _yamlUnquote(p.slice(i + 1)) : parseYamlValue(p.slice(i + 1).trim());
+    }
+    return out;
 }
 
 /**
@@ -270,7 +354,7 @@ export function parseFieldDefinitionYaml(yamlText) {
 function parseYamlValue(val) {
     if (val === 'true') return true;
     if (val === 'false') return false;
-    if (val === 'null') return null;
+    if (val === 'null' || val === '~') return null;
     if (/^-?\d+(\.\d+)?$/.test(val)) return Number(val);
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         return val.slice(1, -1);

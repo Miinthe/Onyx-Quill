@@ -114,8 +114,9 @@ export function writerLines(phrases, replies) {
     const q = l => l.map(p => `"${p.t}"`).join(', ');
     const ban = used.filter(p => p.m === 'ban'), less = used.filter(p => p.m === 'less');
     const out = [];
-    if (ban.length) out.push({ kind: 'dont', text: `Don't use these phrases: ${q(ban)}. Find fresh wording.` });
-    if (less.length) out.push({ kind: 'dont', text: `Use these rarely, only where they really fit: ${q(less)}.` });
+    // close variants count too (Miinthe, 2026-11-05: told to drop a phrase, the AI "cheats and says a ridiculous similar phrase")
+    if (ban.length) out.push({ kind: 'dont', text: `Don't use these phrases, and don't swap in a close variant of them either (the same image or gesture in other words, like a reworded or synonym version): ${q(ban)}. Write the moment differently.` });
+    if (less.length) out.push({ kind: 'dont', text: `Use these rarely, only where they really fit, and the same goes for close variants of them: ${q(less)}.` });
     return out;
 }
 

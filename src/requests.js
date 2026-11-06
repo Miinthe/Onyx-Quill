@@ -16,7 +16,7 @@ import { live } from './board-live.js';
 const waiters = new Map();      // request id → resolve(answer) for a card that holds a reply
 const listeners = new Set();
 export function onRequestsChanged(cb) { listeners.add(cb); return () => listeners.delete(cb); }
-function notify() { for (const cb of [...listeners]) { try { cb(); } catch (e) { console.warn('[DLE] requests listener:', e?.message); } } }
+function notify() { for (const cb of [...listeners]) { try { cb(); } catch (e) { console.warn('[Onyx Quill] requests listener:', e?.message); } } }
 
 const store = () => asRequests(chat_metadata?.[REQ_KEY]);
 function put(s) { chat_metadata[REQ_KEY] = trimAnswered(s); saveMetadataDebounced(); notify(); }

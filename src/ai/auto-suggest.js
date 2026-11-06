@@ -73,7 +73,7 @@ export async function callAutoSuggest(systemPrompt, userMessage, toolKey = 'auto
             const response = await Promise.race([
                 quietPromise.finally(() => clearTimeout(suggestTimer)),
                 new Promise((_, reject) => { suggestTimer = setTimeout(() => {
-                    console.warn('[DLE] Auto-suggest quiet prompt timed out — orphaned generation may still complete in background');
+                    console.warn('[Onyx Quill] Auto-suggest quiet prompt timed out — orphaned generation may still complete in background');
                     const err = new Error(`Auto-suggest quiet prompt timed out (${Math.round(effectiveTimeout / 1000)}s)`);
                     err.timedOut = true;
                     reject(err);
@@ -90,7 +90,7 @@ export async function callAutoSuggest(systemPrompt, userMessage, toolKey = 'auto
                     try {
                         eventSource.on(event_types.GENERATION_STOPPED, onStop);
                     } catch (regErr) {
-                        console.warn('[DLE] Auto-suggest stop-listener registration failed:', regErr?.message);
+                        console.warn('[Onyx Quill] Auto-suggest stop-listener registration failed:', regErr?.message);
                         onStop = null;
                     }
                 }),
@@ -199,7 +199,8 @@ export async function runAutoSuggest() {
 function _buildSuggestionFile(s, settings, place = null) {
     // overhaul (2026-10-17): where it goes (by what it's about, or always the Target folder) and its marks
     const folder = place ? newEntryFolder({ type: s.type, mode: settings.newEntryPlacement, target: settings.autoSuggestFolder, base: place.base, run: place.run }).folder : (settings.autoSuggestFolder || '');
-    const marks = place && settings.newEntryMark !== false ? entryMarks({ chat: place.chat, message: place.message }) : null;
+    // marked as the New lore job's (not Mero's: she didn't write them) — the made-by-new-lore tag
+    const marks = place && settings.newEntryMark !== false ? { ...entryMarks({ chat: place.chat, message: place.message }), madeBy: 'New lore', tags: ['made-by-new-lore'] } : null;
     let safeTitle = s.title.replace(/[<>:"/\\|?*]/g, '_');
     safeTitle = safeTitle.replace(/^\.+|\.+$/g, '');
     safeTitle = safeTitle.trimEnd();
@@ -285,7 +286,7 @@ export async function showSuggestionPopup(suggestions) {
             toastr.success(trf('dle_suggest_toast_batch_success', successes.length, results.length, failNote), 'Onyx Quill');
             // Reindex once at end (per-card flow does one per accept).
             try { await buildIndex(); } catch (reidxErr) {
-                console.warn('[DLE] Auto-suggest batch reindex failed:', reidxErr?.message);
+                console.warn('[Onyx Quill] Auto-suggest batch reindex failed:', reidxErr?.message);
                 try {
                     toastr.warning(
                         trf('dle_suggest_toast_batch_reindex_failed', reidxErr?.message || 'unknown error'),
@@ -380,7 +381,7 @@ export async function showSuggestionPopup(suggestions) {
                             this.textContent = 'Accepted';
                             toastr.success(trf('dle_suggest_toast_created', s.title), 'Onyx Quill');
                             try { await buildIndex(); } catch (reidxErr) {
-                                console.warn('[DLE] Auto-suggest reindex after write failed:', reidxErr?.message);
+                                console.warn('[Onyx Quill] Auto-suggest reindex after write failed:', reidxErr?.message);
                                 // BUG-AUDIT: without surfacing this, the new entry is
                                 // unretrievable until the next manual refresh.
                                 try {
@@ -392,7 +393,7 @@ export async function showSuggestionPopup(suggestions) {
                                 } catch { /* toastr unavailable */ }
                             }
                         } else {
-                            console.warn('[DLE] Auto-suggest write failed:', data && data.error);
+                            console.warn('[Onyx Quill] Auto-suggest write failed:', data && data.error);
                             toastr.error(tr('dle_suggest_toast_write_fail_single'), 'Onyx Quill');
                         }
                     } catch (err) {

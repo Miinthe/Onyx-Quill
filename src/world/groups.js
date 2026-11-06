@@ -181,8 +181,22 @@ function send(body, w, g) {
  * reply; they may pass).
  */
 export async function answer(w, g, m, { only = null, these = null } = {}) {
-    if (!H || !w || w.paused) return;
+    if (!H || !w) return;
     const L = live(); if (!L) return;
+    if (w.paused) {
+        // paused in this chat: her message waits — each member may chime in once she wakes the world (deliverGroups)
+        if (!only && !these && m.mine) {
+            const li = Math.max(0, lastI());
+            let st = H.store();
+            for (const k of g.members.filter(k => k !== m.from && k !== USER && !w.people?.[k]?.muted && !neverTalk(w, k, m.from))) {
+                const old = st.records.find(r => r.kind === 'gwait' && r.group === g.id && r.who === k);
+                st = old ? { ...st, records: st.records.map(r => (r === old ? { ...r, msg: m.id } : r)) } : addRecord(st, { kind: 'gwait', id: newId('gw'), group: g.id, msg: m.id, who: k, wait: { from: li }, auto: true }, li);
+            }
+            H.save(st);
+            K.notify({ title: 'World', text: 'The world is paused: the group answers once you wake it.' });
+        }
+        return;
+    }
     const conn = resolveConnectionConfig('world');
     if (conn.mode !== 'profile' || !conn.profileId) { K.notify({ title: 'World', text: 'No AI connection for the world yet. Pick one in Settings › AI & connections › World.', tone: 'warn' }); return; }
     const li = Math.max(0, lastI()), clock = clockNow(), cid = H.chat();
@@ -214,7 +228,7 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
         const thread = msgs.map(x => ({ who: nameOf(x.from), text: textOf(x) }));
         const pr = groupPrompt({ groupName: g.name, people, others: g.members.filter(k => !can.includes(k)).map(nameOf), thread, max: only ? 1 : groupMax(w.alive.pace), userName: nameOf(USER), alone: !!only });
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 700), caller: 'world', skipThrottle: true, jsonSchema: GROUP_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
-        if (window.__dleWorldDebug) console.log('[DLE] world group', g.name, r?.text);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world group', g.name, r?.text);
         if (H.chat() !== cid) return;
         let replies = parseGroup(r?.text, people, only ? 1 : groupMax(w.alive.pace));
         if (!replies.length && !only && people.length) replies = [];   // nobody had anything to add: fine
@@ -226,7 +240,7 @@ export async function answer(w, g, m, { only = null, these = null } = {}) {
             H.save({ ...s2, records: s2.records.filter(r => !(r.kind === 'gwait' && r.group === g.id && r.who === rep.who.key)) });
             H.render(); H.changed();
         }
-    } catch (err) { console.warn('[DLE] world: group answer failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: group answer failed', err?.message || err); }
     finally {
         busy.delete(g.id); H.render(); H.changed();
         // she wrote again while they answered: that message is answered now (hunt 2: it got no answer at all)
@@ -261,6 +275,7 @@ export async function deliverGroups(w) {
 async function nudge(w, g) {
     const st = H.store(), ws = st.records.filter(r => r.kind === 'gwait' && r.group === g.id);
     if (!ws.length) return;
+    if (w.paused) { K.notify({ title: 'World', text: 'The world is paused: wake it first.' }); return; }
     // someone is still writing here: the waits stay (hunt 2: they were dropped, and nobody answered)
     if (busy.has(g.id)) { K.notify({ title: 'World', text: 'Someone is still writing in this group. Try again in a moment.' }); return; }
     H.save({ ...st, records: st.records.filter(r => !ws.includes(r)) });

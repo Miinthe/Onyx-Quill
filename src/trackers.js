@@ -118,7 +118,7 @@ export function onTrackersChanged(cb) { listeners.add(cb); return () => listener
 function changed() {
     // The judge's cached picks were made against the old story state.
     try { resetAiSearchCache(); } catch { /* noop */ }
-    for (const cb of [...listeners]) { try { cb(); } catch (e) { console.warn('[DLE] tracker listener:', e?.message); } }
+    for (const cb of [...listeners]) { try { cb(); } catch (e) { console.warn('[Onyx Quill] tracker listener:', e?.message); } }
 }
 
 /** Redraw views and drop stale judge picks — e.g. after switching chats. */
@@ -537,7 +537,7 @@ export function syncBoardOnOpen() {
                 'Storyboard', { escapeHtml: false, timeOut: 0, extendedTimeOut: 0, closeButton: true });
         } catch { /* noop */ }
     }
-    try { completeChat(name); } catch (err) { console.warn('[DLE] v2 log not completed:', err?.message || err); }
+    try { completeChat(name); } catch (err) { console.warn('[Onyx Quill] v2 log not completed:', err?.message || err); }
     if (chat_metadata?.[STATE_KEY]?.stepsRebuilt) syncOnV2(name);
     return { synced: name, lost };
 }
@@ -732,7 +732,7 @@ export async function reconcileTrackers({ prune = false, confirm = false, keep =
         try {
             const undone = rewindLiveTo(lastMessageIndex(), keep);
             if (undone.length) echo(() => toastr.info(`${undone.length} change${undone.length > 1 ? 's' : ''} on the board rolled back with the deleted messages.`, 'Storyboard'));
-        } catch (err) { console.warn('[DLE] board rewind skipped:', err?.message || err); }
+        } catch (err) { console.warn('[Onyx Quill] board rewind skipped:', err?.message || err); }
     }
     else if (confirm) { try { rewindLiveTo(lastMessageIndex()); } catch { /* noop */ } }
     return [];
@@ -856,10 +856,11 @@ export function registerTrackerCommands() {
             const steps = (raw.log || []).filter(e => e.kind === 'step').length;
             const m = diff.length ? `They disagree:\n${diff.map(d => `${d.tracker} · ${d.field}: v2 ${JSON.stringify(d.v2)} — engine ${JSON.stringify(d.engine)}`).join('\n')}` : `The engine's list and the v2 state agree about every step tracker (${steps} step move${steps === 1 ? '' : 's'} in the v2 log).`;
             toast(m.split('\n')[0], diff.length ? 'warning' : 'success');
-            if (diff.length) console.warn('[DLE] engine check:', diff);
+            if (diff.length) console.warn('[Onyx Quill] engine check:', diff);
             return m;
         },
-        helpString: 'Engine on v2 (step 1): compare the step trackers in the engine\'s list with the v2 state — they should always agree.',
+        // SillyTavern's SlashCommand has no "hide from /help" option, so the help text says what it is.
+        helpString: 'Developer check, not needed for play: compares the step trackers in the engine\'s list with the v2 state — they should always agree.',
     });
 
     // LOCAL PATCH (Miinthe, 2026-10-04): pause / continue / abandon / reactivate, and the board on/off for this chat (WIP controls)
@@ -928,7 +929,7 @@ export function registerTrackerCommands() {
                 toast(m, 'success'); return m;
             }
             // LOCAL PATCH (Miinthe, 2026-10-05): no name → the board window (stage 2).
-            try { (await import('./board-window.js')).openBoardWindow(); } catch (e) { console.warn('[DLE] board window:', e?.message); }
+            try { (await import('./board-window.js')).openBoardWindow(); } catch (e) { console.warn('[Onyx Quill] board window:', e?.message); }
             const cur = currentBoardName();
             const all = listBoards();
             const ch = characterBoardName();

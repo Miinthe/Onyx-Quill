@@ -2,8 +2,8 @@
  * World layer (Miinthe, 2026-10-18; design: docs/storyboard/19 world layer design.md) — the pure part.
  *
  * Stage 0: the board's world settings, the panel's side and sections, and the per-chat world
- * store. Everything the world writes is logged by message, so a delete takes it back and a swipe
- * or a new reply at that message replaces it (the pitches pattern, pitches-pure.js rewindPlan).
+ * store. Everything the world writes is logged by message, so a delete takes it back (a swipe
+ * does not replace it).
  */
 
 import { normAlive, normFirst } from './alive-pure.js';
@@ -58,11 +58,17 @@ export function normWorld(raw) {
     };
 }
 
-/** The world settings of a board, or null when the world layer is off for it. */
-export function worldOf(board) {
+/** The world settings of a board, or null when the world layer is off for it. `chatPaused`: this chat's own pause (see worldPaused). */
+export function worldOf(board, chatPaused) {
     const w = normWorld(board?.world);
-    return w.on ? w : null;
+    return w.on ? { ...w, paused: worldPaused(w.paused, chatPaused) } : null;
 }
+
+/**
+ * Paused in this chat? The pause is kept per chat (Miinthe, 2026-11-05: the rail's pause looked per chat but paused every chat on
+ * the board). A chat that never set its own follows the board's old `paused` flag, so a chat paused before stays paused.
+ */
+export const worldPaused = (boardPaused, chatPaused) => (typeof chatPaused === 'boolean' ? chatPaused : boardPaused === true);
 
 /** Never talk to each other (either one's list names the other): no texts, no answers to each other's posts or comments. */
 export function neverTalk(world, a, b) {
@@ -151,7 +157,7 @@ export function addRecord(store, record, i) {
     return { ...s, records: [...s.records, { ...record, i }] };
 }
 
-/** Undo everything at or after message index `from` — a swipe or a new reply at that message replaces it. */
+/** Undo everything at or after message index `from` (messages cut away). Swipes never touch the world. */
 export function rewindFrom(store, from) {
     const s = normStore(store);
     return { ...s, records: s.records.filter(r => r.i < from) };

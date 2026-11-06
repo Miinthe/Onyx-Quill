@@ -1,152 +1,132 @@
-# Setup wizard
+The setup wizard takes you from a fresh install to a working connection in one window. It has eight pages: **Welcome**, **Connection**, **Tags**, **Matching**, **AI**, **Vault**, **Import** and **Done**. Your settings are saved when you press **Finish** on the last page. A few things take effect earlier: the two folder paths on the Vault page, and whatever **Create Helpers** or **Import** writes into your vault.
 
-The setup wizard walks you through configuring DeepLore for the first time. Eight pages: Welcome, vault connection, tags and search mode, matching, AI search, vault structure, lorebook import, and Done. It takes you from install to working lore injection without leaving the popup.
+## Opening it
 
-If you pick **keywords-only** on the tags-and-search-mode page, the AI search page is skipped, so you'll see seven pages instead of eight.
+- It opens **by itself** the first time Onyx Quill loads with no vault set up (after SillyTavern's own welcome, if that shows).
+- Run `/oq-setup`, or use the side panel's **⋯ › Setup wizard**. Both pick up on the page where you left off.
+- **Settings › Advanced › Reference › Setup wizard › Run** starts it from the first page.
+- While there are no entries yet, the side panel's **Lore** tab shows a **Setup wizard** button (and **Import World Info**).
 
-## When it runs
+When you run it again later, it fills in your current settings, so going through it again changes only what you change.
 
-- **Automatically** on first load when the extension has never been configured
-- **Manually** any time with `/oq-setup`
+**Finish later** (at the bottom of every page) closes the wizard without saving and remembers the page you were on. It then won't open by itself again; reopen it with `/oq-setup`. Closing the window any other way works the same.
 
-You can re-run the wizard whenever you want to reconfigure. It prefills with your current settings.
+<!-- screenshot: the wizard with its row of eight steps -->
 
-## Pages
+## 1. Welcome
 
-### 1. Welcome
+What Onyx Quill does, in short, and three ways to start:
 
-Introduction to what the wizard configures. No settings on this page.
+- **Try the demo vault** (easiest start): jumps to the Connection page with the demo vault's steps open and its connection filled in.
+- **Connect my Obsidian**: jumps to the Connection page for your own vault.
+- **Import a lorebook**: jumps to the Import page with **From SillyTavern Lorebook** chosen.
 
-### 2. Obsidian connection
+Or press **Next** to go through every page.
 
-Connect to your Obsidian vault's Local REST API plugin.
+## 2. Connection
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| Vault Name | `Primary` | Display name for this vault |
-| Host | `127.0.0.1` | IP or hostname where Obsidian is running |
-| Port | `27123` | REST API port (set in the Local REST API plugin settings) |
-| Use HTTPS | Off | Switch to HTTPS (default port 27124). HTTP is recommended |
-| API Key | empty | Bearer token from the Local REST API plugin settings |
+Connects to Obsidian through the Local REST API plugin (see [[Installation]] for setting up the plugin).
 
-Click **Test Connection** to verify. The test must pass before you continue.
+| Field | Default | What it is |
+|---|---|---|
+| **Vault Name** | `Primary` | A name for this vault in Onyx Quill. |
+| **Host** | `127.0.0.1` | Where Obsidian runs. `127.0.0.1` is this computer. |
+| **Port** | `27123` | The plugin's port. |
+| **API Key** | empty | The key from the plugin's settings. |
+| **Use HTTPS** | off | Switches to the plugin's HTTPS server (port `27124`). HTTP is recommended: HTTPS only works after you install the plugin's certificate in your operating system. |
 
-> [!NOTE]
-> HTTP is recommended. HTTPS requires installing the plugin's self-signed certificate to your OS trust store, and DLE does not bundle a setup walkthrough for that. If you need HTTPS, see the [Local REST API author's guide on trusting the certificate](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F).
+Press **Test Connection**. **Next** stays locked until the test passes ("Test connection to continue"). If the test fails, a line under the buttons says what went wrong (for example that the API key was refused), and when Obsidian can't be reached or the HTTPS certificate isn't trusted, a help window explains what to check.
 
-**Demo vault:** A collapsible callout at the bottom introduces the bundled Duskfrost demo vault (257 pre-built entries). Click "Show me how" for instructions on opening the bundled `test-vault` folder as an Obsidian vault, then "Auto-fill connection for demo vault" to populate the connection fields.
+**Scan for vaults** looks for a running Local REST API on the host and fills in what it finds. You still press **Test Connection** afterwards.
 
-> If the test fails, check that Obsidian is open and the Local REST API plugin is enabled. See [[Troubleshooting#Connection Issues]].
+**New to Onyx Quill? Try the demo vault.** This box at the bottom explains the Duskfrost demo vault. **Show me how** lists the steps and shows the path of the `test-vault` folder with a copy button; **Auto-fill connection for demo vault** fills in the fields, so you only paste the demo vault's API key and test. The steps are in [[Quick Start]].
 
-### 3. Tags and search mode
+The path the wizard shows starts with `public/scripts/extensions/third-party/`. That is where the folder is when Onyx Quill was installed for all users. Installed for one user, it is in `data/<user>/extensions/Onyx-Quill/test-vault` instead.
 
-Configure which Obsidian tags identify lorebook entries, and pick your search strategy.
+## 3. Tags
 
-**Tags:**
+Which notes become entries, and how they are picked.
 
-| Tag | Default | Purpose |
-|-----|---------|---------|
-| Lorebook tag | `lorebook` | Entries with this tag are indexed |
-| Constant tag | `lorebook-always` | Always injected regardless of matching |
-| Seed tag | `lorebook-seed` | Sent to AI search as story context on new chats |
-| Bootstrap tag | `lorebook-bootstrap` | Force-injected when chat is short |
+| Tag | Default | What it does |
+|---|---|---|
+| **Lorebook Tag** | `lorebook` | Notes with this tag become entries. |
+| **Always-send tag** | `lorebook-always` | Entries sent with every reply. |
+| **Seed Tag** | `lorebook-seed` | Sent quietly in the background while a chat is new. |
+| **Starter tag** | `lorebook-bootstrap` | Sent while a chat is new (its first few messages). |
 
-**Search mode** (radio buttons):
+The settings window calls these the **Lore tag**, **Always-send tag**, **Seed tag** and **Starter tag** (**Settings › Vault › Tags**).
 
-| Mode | Description |
-|------|-------------|
-| Keywords only | Match entries by keyword triggers only. No AI calls |
-| Two-stage | Keywords pre-filter, then AI search ranks the candidates. Recommended |
-| AI only | Send the entire vault manifest to AI search. More thorough, more expensive |
+**Search Mode:**
 
-If you select keywords-only, the AI search page is skipped.
+| Choice | What it does |
+|---|---|
+| **Keywords only** | Entries are picked by their keywords. No AI calls. The wizard's default. |
+| **Keywords, then AI search** (recommended) | Keywords find candidates, then AI search (an AI) picks the ones that fit. |
+| **AI search only** | AI search reads the summaries of the whole vault. More expensive, no keywords needed. |
 
-### 4. Matching configuration
+With **Keywords only**, the wizard skips the AI page. In the settings window the same choice is **Settings › Lore selection › Mode › How lore is picked** (**keywords only** · **keywords, then AI search** · **AI search only**).
 
-Configure how deep the keyword scanner looks and how many entries can inject.
+## 4. Matching
 
-**Vault size presets:**
+How far back to look and how much lore to send. Pick a preset for your vault's size, or set the numbers yourself.
 
-| Preset | Scan Depth | Max Entries | Token Budget |
-|--------|-----------|-------------|--------------|
-| Small | 4 | 10 | 2,048 |
-| Medium | 6 | 15 | 3,072 |
-| Large | 8 | 20 | 4,096 |
+| Preset | For | Scan Depth | Max Entries | Token Budget |
+|---|---|---|---|---|
+| **Small** | under 50 entries | 4 | 10 | 2048 |
+| **Medium** | 50 to 200 entries | 6 | 15 | 3072 |
+| **Large** | over 200 entries | 8 | 20 | 4096 |
 
-Click a preset to fill the values, or set them manually:
+- **Scan Depth**: how many recent chat messages are searched for keywords.
+- **Max Entries**: the most entries sent with one reply. **Unlimited** removes the cap.
+- **Token Budget**: the most tokens of lore per reply. **Unlimited** removes the cap.
+- **Enable fuzzy search**: also finds entries whose words are close to the chat, not only exact keywords.
 
-| Field | Description |
-|-------|-------------|
-| Scan Depth | Recent messages to scan for keywords (0 to 100) |
-| Max Entries | Maximum entries to inject per generation |
-| Token Budget | Maximum total tokens for injected lore |
-| Unlimited Entries | Ignore the max entries cap |
-| Unlimited Budget | Ignore the token budget cap |
-| Fuzzy Search | Add BM25 ranked-relevance scoring alongside keyword matching |
+A preset turns both **Unlimited** boxes off. In the settings window these are **Messages to read** and **Loose matching** (**Settings › Lore selection › Keywords**), and **Entries per reply** and **Lore budget** (**Settings › Budget & variety**).
 
-### 5. AI search setup
+## 5. AI
 
-*Skipped if you chose keywords-only on page 3.*
+Only shown for **Keywords, then AI search** and **AI search only**. AI search uses a SillyTavern **Connection Profile**: choose one from **Connection Profile**. If the list is empty, make a profile in SillyTavern's **API Connections** (the plug icon) › **Connection Profile**, then open this page again.
 
-DLE connects to an AI for entry selection through a saved **SillyTavern Connection Manager profile**. Pick your profile from the dropdown, then click **Test AI Connection** to verify the selected connection works.
+**Check profile** checks that the profile you picked exists ("Profile found"). Nothing is sent to test it, so a wrong key or address shows up with the first reply; use **Test** in **Settings › AI & connections › Fine print** for a real test.
 
-> [!NOTE]
-> As of v2.5 the wizard offers only Connection Profile mode — the old Custom Proxy option was removed. No `config.yaml` changes are needed. If you upgraded from an older DeepLore that used a proxy, that setting is migrated to a profile automatically and a one-time notice asks you to choose one.
+This page sets AI search only. Mero ☆, the story helper and the other helpers get their profiles in **Settings › AI & connections** (see [[First Steps]]).
 
-### 6. Vault structure
+## 6. Vault
 
-Optional. Creates starter files in your Obsidian vault.
+Optional helper files. Onyx Quill finds entries by tag, not by folder, so you don't have to point it at anything here. This page needs a tested connection; without one it shows **Connection Not Verified** and a **Back to Connection** button.
 
-| Item | Path | Purpose |
-|------|------|---------|
-| Field definitions | `DeepLore/field-definitions.yaml` | Custom gating field schema. See [[Custom Fields]] |
-| Sessions folder | `Sessions/` | Where Session Scribe writes notes |
+- **Field definitions** (checked): creates `Onyx Quill/field-definitions.yaml`, the file for filter fields like era, location, scene type and characters present. **Show template** shows what goes in it. See [[Custom Fields]].
+- **Optional: Session Scribe folder**: creates the `Sessions` folder that Scribe writes its session notes into. See [[Scribe and AI Helpers]].
 
-Both are checkboxes. Status indicators show success or error for each.
+You can change both paths. Press **Create Helpers** to create the checked items (a line under each says Created or Failed), or **Skip this step**.
 
-### 7. Import
+## 7. Import
 
-Optional. Import an existing SillyTavern lorebook into your Obsidian vault. You can also import later with `/oq-import`.
+Optional. Brings a SillyTavern World Info book into your vault as notes. You can always do this later with `/oq-import`.
 
-Import methods:
+- **Skip Import** (the default).
+- **From SillyTavern Lorebook**: choose one of your World Info books.
+- **From JSON File**: a World Info export or a character card with an embedded book.
+- **Paste JSON**: paste World Info JSON.
 
-- **Skip import** (default): set up entries in Obsidian manually or import later
-- **From SillyTavern lorebook:** select an existing ST World Info book from a dropdown
-- **From JSON file:** upload a World Info export JSON or V2 character card
-- **From paste:** paste raw JSON text directly
+**Target Folder** (optional) is where the notes go; empty means the top of the vault. Press **Import Entries**. A line shows how many were imported, renamed (when a file of that name already existed) or failed.
 
-Set a target folder for imported entries. Results show counts of imported, failed, and renamed entries.
+The import writes into your vault, so it needs the connection from page 2. If you jumped here from **Import a lorebook** on the Welcome page, click **Connection** in the step row first and test it.
 
-### 8. Done
+`/oq-import` does more after an import than the wizard does: a full report of which fields came over, a reminder about priority order, and, with AI search on, an offer to write real summaries. See [[Coming from DeepLore or World Info]].
 
-Review what got configured:
+## 8. Done
 
-- Vault connection details
-- Search mode
-- Matching settings (entries, budget)
-- Files created
+A summary: the vault and its address, the search mode, the matching numbers (and which preset they match), and what was created or imported. With the demo vault, it suggests mentioning "Duskfrost" or "Bellsummit" in a chat, and running `/oq-health` and `/oq-graph`.
 
-Action buttons let you immediately:
+The buttons are shortcuts: **Run Health Check**, **Open Graph**, **Browse Entries**, **Open Settings** and **Meet Mero** (opens Mero ☆ in the side panel). Each one first saves the setup, the same as **Finish**, and then opens.
 
-- **Run Health Check:** audit your entries for issues
-- **Open Graph:** open the relationship graph
-- **Browse Entries:** open the entry browser
-- **Open Settings:** fine-tune advanced settings
-- **Meet Mero:** meet Mero ☆, your co-writer, in the side panel
+**Finish** saves everything, switches Onyx Quill on and reads your vault. If the connection was never tested, it asks first (**Finish anyway** or **Go back**). Once finished, the wizard won't open by itself again.
 
-## What happens on finish
-
-When you click **Finish**:
-
-1. All settings are saved
-2. The extension is enabled
-3. A full vault index build is triggered
-4. The wizard completion flag is set so the wizard does not auto-launch again
-
-You're ready. Send a message and open the side panel's **Lore** tab (its **Sent** list) to see the lore that was picked.
+Then send a message and open the side panel's **Lore** tab to see what was sent. Next: [[First Steps]].
 
 ## See also
 
-- [[Installation]]: prerequisites and install steps
-- [[Quick Start]]: getting started after setup
-- [[Settings Reference]]: every setting explained
+- [[Installation]]: what to set up before the wizard.
+- [[Quick Start]]: the shortest path through it.
+- [[Settings Reference]]: every setting the wizard touches, and more.

@@ -50,7 +50,7 @@ export const ACCEPTED_PROMPT_KEYS = new Set([
 
 /**
  * Maximum path length accepted by Layer 1 sub-check #10.
- * 200 chars is generous for `DeepLore/prompts/SCREAMING_SNAKE_CASE.md`
+ * 200 chars is generous for `Onyx Quill/prompts/SCREAMING_SNAKE_CASE.md`
  * (longest real key is ~36 chars; typical prefix ~17 chars).
  */
 export const MAX_PROMPT_PATH_LENGTH = 200;

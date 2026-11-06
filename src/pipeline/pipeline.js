@@ -99,8 +99,8 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
     // the AI category pre-filter all ran over the whole vault and the folders were applied afterwards: the
     // pre-filter's AI call saw other stories' categories, and could narrow the candidates toward them before the
     // folder cut removed them (Miinthe: "DeepLore still seemed to go through entries that are not in those filtered
-    // folders"). Now nothing in this run looks past the chat's folders; pinned / constant / bootstrap entries keep
-    // their exemption (applyFolderFilter), exactly as before. The later folder calls below stay as a no-op guard.
+    // folders"). Now nothing in this run looks past the chat's folders; pinned entries keep
+    // their exemption (applyFolderFilter); since 2026-11-05 always-send / seed / starter entries follow the folders too. The later folder calls below stay as a no-op guard.
     const vaultSnapshot = folderFilter && folderFilter.length > 0
         ? applyFolderFilter(fullSnapshot, folderFilter, exemptionPolicy, settings.debugMode)
         : fullSnapshot;
@@ -143,7 +143,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
     };
 
     if (settings.debugMode) {
-        console.debug('[DLE][DIAG] pipeline-run', {
+        console.debug('[Onyx Quill][DIAG] pipeline-run', {
             mode: trace.mode,
             vaultSnapshotSize: vaultSnapshot.length,
             chatLength: chat.length,
@@ -188,7 +188,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         if (preFiltered != null) {
             aiOnlyCandidates = preFiltered;
             if (settings.debugMode) {
-                console.log(`[DLE] Hierarchical clustering: ${vaultSnapshot.length} → ${aiOnlyCandidates.length} candidates`);
+                console.log(`[Onyx Quill] Hierarchical clustering: ${vaultSnapshot.length} → ${aiOnlyCandidates.length} candidates`);
             }
         }
 
@@ -246,7 +246,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
                         // Warn when ai-only fallback collapsed to constants-only.
                         const nonConstant = kwResult.matched.filter(e => !e.constant && !e.bootstrap);
                         if (nonConstant.length === 0 && kwResult.matched.length > 0) {
-                            console.warn('[DLE] AI-only mode failed and keyword fallback found only constants/bootstraps — lore coverage is minimal');
+                            console.warn('[Onyx Quill] AI-only mode failed and keyword fallback found only constants/bootstraps — lore coverage is minimal');
                             dedupWarning('AI search hit a snag — only your always-send lore is active.', 'ai_fallback', { hint: 'Check AI connection in Onyx Quill settings.' });
                         }
                     }
@@ -308,7 +308,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         if (linkedCandidates.length > 0) {
             trace.keywordMatched.push(...linkedCandidates.map(e => ({ title: e.title, vaultSource: e.vaultSource || '', matchedBy: matchedKeys.get(trackerKey(e)) || '?' })));
             if (settings.debugMode) {
-                console.log(`[DLE] Wiki-link expansion: +${linkedCandidates.length} candidates (${linkedCandidates.map(e => e.title).join(', ')})`);
+                console.log(`[Onyx Quill] Wiki-link expansion: +${linkedCandidates.length} candidates (${linkedCandidates.map(e => e.title).join(', ')})`);
             }
         }
 
@@ -322,7 +322,7 @@ export async function runPipeline(chat, externalSnapshot, contextualGatingContex
         if (preFiltered != null) {
             twoStageCandidates = preFiltered;
             if (settings.debugMode) {
-                console.log(`[DLE] Two-stage hierarchical: ${keywordResult.matched.length} → ${twoStageCandidates.length} candidates`);
+                console.log(`[Onyx Quill] Two-stage hierarchical: ${keywordResult.matched.length} → ${twoStageCandidates.length} candidates`);
             }
         }
 

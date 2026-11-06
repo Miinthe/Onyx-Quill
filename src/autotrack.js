@@ -25,7 +25,7 @@ import {
     buildAutoTrackUser, validateChanges, describeMove, describeReason, rememberUndo,
 } from './autotrack-pure.js';
 // LOCAL PATCH (Miinthe, 2026-10-05): collections and the purse (storyboard stage 3, round 2)
-import { live, saveLiveState, entryText, liveStepJudgeSection } from './board-live.js';
+import { live, saveLiveState, entryText, liveStepJudgeSection, worldChatPaused } from './board-live.js';
 import { worldOf } from './world/world-pure.js';                 // the world layer (2026-10-19): the helper also reads the moment
 import { parseMoment } from './world/alive-pure.js';
 import { placesHelperSection, validatePlaceChanges, applyPlaceChanges, describePlaceChange, placeFromUserMessage } from './places-pure.js';   // round 3: places
@@ -78,14 +78,14 @@ export async function runAutoTrack(chatMessages, type, signal) {
     const castSection = L0 ? castHelperSection(L0.board, L0.state, { judgeText: entryText, placeName: h => placeOf(trackerOf(L0.board, h.place), h.at)?.name ?? null }) : '';
     const stepRules = L0 && trackers.length ? liveStepJudgeSection() : '';   // ⚖ judge entries on steps (2026-10-04)
     if (!trackers.length && !colSection && !placeSection && !stateSection && !meterSection && !castSection) return [];
-    const wl = L0 ? worldOf(L0.board) : null;   // world layer on, with big or quiet moments in its mix → one more field
+    const wl = L0 ? worldOf(L0.board, worldChatPaused()) : null;   // world layer on, with big or quiet moments in its mix → one more field
     const want = { collections: !!colSection, places: !!placeSection, state: !!stateSection, meters: !!meterSection, cast: !!castSection, world: !!(wl && !wl.paused && (wl.alive.big || wl.alive.quiet)) };
 
     const conn = resolveConnectionConfig('storyTracker');
     if (conn.mode !== 'profile' || !conn.profileId) {
         if (!warnedNoProfile) {
             warnedNoProfile = true;
-            try { toastr.info('Story trackers can follow the story by themselves once they have a connection: Onyx Quill settings → AI Connections → Story Trackers → pick a profile.', 'Onyx Quill', { timeOut: 12000 }); } catch { /* noop */ }
+            try { toastr.info('Story trackers can follow the story by themselves once they have a connection: Settings › AI & connections › Story helper.', 'Onyx Quill', { timeOut: 12000 }); } catch { /* noop */ }
         }
         return [];
     }
@@ -123,7 +123,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
         if (want.world) { const moment = parseMoment(result?.text); if (moment) window.dispatchEvent(new CustomEvent('dle-world-moment', { detail: { moment, i: nowI0 } })); }
         ({ presence: cast, learns } = splitPeopleEvents(people, cast, learns));   // the Cast: one "people" list of events
     } catch (err) {
-        if (err?.name !== 'AbortError') console.warn('[DLE] story tracker check failed:', err?.message || err);
+        if (err?.name !== 'AbortError') console.warn('[Onyx Quill] story tracker check failed:', err?.message || err);
         return [];
     }
 
@@ -131,7 +131,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
     let current = usedUp(getTrackers());
     const active = new Set(getActiveTrackers().map(t => t.name));
     const { moves, rejected } = validateChanges(changes, current.filter(t => active.has(t.name) && !t.ended), messages, (t, k) => unmetNeeds(t, k, current));
-    if (rejected.length) console.debug('[DLE] story tracker changes not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] story tracker changes not applied:', rejected);
     // Refused jumps go into the timeline (the other refusals are housekeeping:
     // repeats, no change, unknown names).
     const at0 = lastMessageIndex();
@@ -215,7 +215,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
             const before = current.find(t => t.name === m.name);
             const meta = { who: 'auto', at: new Date().toISOString(), quote: m.quote, reason: m.reason || null, confidence: m.confidence || null };
             const r = takeBranchAtV2(board, st, board.trackers.find(t => t.id === before.id), m.step, m.branch, at, meta);
-            if (r.error) { console.debug('[DLE] branch not taken:', r.error); continue; }
+            if (r.error) { console.debug('[Onyx Quill] branch not taken:', r.error); continue; }
             const startedOther = r.effect.started ? { name: r.effect.started } : null;
             J.set(before.id, n => ({ ...n, journal: record(n.journal, at, n.index, n.aside, { ...meta, took: { ...(n.took || {}) }, ...(n.ended ? { ended: n.ended } : {}) }),
                 lastAuto: { ...m, fromTook: before.took || {}, fromEnded: before.ended || null, fromLog: (before.branchLog || []).length, startedOther, at: new Date().toISOString(), message: at } }));
@@ -229,7 +229,7 @@ export async function runAutoTrack(chatMessages, type, signal) {
             J.set(t0.id, n => ({ ...moveTo(prior ? prior(n) : n, n.index, at, meta), lastAuto: { ...m, at: new Date().toISOString(), message: at } }));
         }
     });
-    if (!v2) { console.warn('[DLE] story tracker: this chat has no storyboard — moves not applied'); return colApplied; }
+    if (!v2) { console.warn('[Onyx Quill] story tracker: this chat has no storyboard — moves not applied'); return colApplied; }
     current.splice(0, current.length, ...v2.list);
     saveTrackers(current);
 
@@ -254,7 +254,7 @@ function applyCollections(items, money, messages, finds = []) {
     const checked = validateCollectionChanges(items, money, L.board, L.state, messages);
     const { rejected } = checked;
     let { changes } = checked;
-    if (rejected.length) console.debug('[DLE] collection changes not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] collection changes not applied:', rejected);
     for (const r of rejected) {
         const say = r.reason === 'needs' ? `${r.what} — only possible once ${r.needs.join(' and ')}.`
             : r.reason === 'cannot afford' ? `${r.what} — costs ${r.cost}, there is only ${r.have}.`
@@ -286,7 +286,7 @@ function applyState(stateList, dateList, messages) {
     const L = live();
     if (!L) return [];
     const { changes, rejected } = validateStateChanges(stateList, dateList, L.board, L.state, messages);
-    if (rejected.length) console.debug('[DLE] state changes not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] state changes not applied:', rejected);
     if (!changes.length) return [];
     saveLiveState(applyStateChanges(L.board, L.state, changes, lastMessageIndex(), { who: 'auto' }));
     const at = lastMessageIndex();
@@ -337,7 +337,7 @@ function applyMeters(list, messages) {
     if (!L) return [];
     const at = lastMessageIndex();
     const { changes, rejected } = validateMeterChanges(list, L.board, L.state, messages);
-    if (rejected.length) console.debug('[DLE] meter changes not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] meter changes not applied:', rejected);
     for (const r of rejected.filter(x => x.held)) {
         try { toastr.warning(`${escapeHtml(r.what.split(':')[0])} stays below ${escapeHtml(r.held.band)} — only reachable once ${escapeHtml(r.held.why)}.${r.quote ? `<br><i>“${escapeHtml(r.quote)}”</i>` : ''}`, 'Storyboard', { escapeHtml: false, timeOut: 12000 }); } catch { /* noop */ }
     }
@@ -362,7 +362,7 @@ function applyCast(presence, learns, messages) {
     const L = live();
     if (!L) return [];
     const { changes, rejected } = validateCastChanges(presence, learns, L.board, L.state, messages);
-    if (rejected.length) console.debug('[DLE] cast changes not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] cast changes not applied:', rejected);
     if (!changes.length) return [];
     saveLiveState(applyCastChanges(L.board, L.state, changes, lastMessageIndex(), { who: 'auto' }));
     for (const ch of changes) {
@@ -378,7 +378,7 @@ function applyPlaces(places, messages) {
     const L = live();
     if (!L) return [];
     const { changes, rejected } = validatePlaceChanges(places, L.board, L.state, messages);
-    if (rejected.length) console.debug('[DLE] place moves not applied:', rejected);
+    if (rejected.length) console.debug('[Onyx Quill] place moves not applied:', rejected);
     for (const r of rejected.filter(x => x.reason === 'not one of its places')) {
         try { toastr.warning(`${escapeHtml(r.unknown.tracker)}: “${escapeHtml(r.unknown.place)}” isn't one of its places — the scene stays where it was.${r.unknown.quote ? `<br><i>“${escapeHtml(r.unknown.quote)}”</i>` : ''}`, 'Storyboard', { escapeHtml: false, timeOut: 12000 }); } catch { /* noop */ }
     }

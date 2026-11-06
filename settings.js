@@ -32,7 +32,7 @@ export const defaultSettings = {
     neverInsertTag: 'lorebook-never',
     seedTag: 'lorebook-seed',
     bootstrapTag: 'lorebook-bootstrap',
-    // The writing-guide tag (Settings › Vault › "Writing-guide tag"): entries with it are style guides, never story lore.
+    // The Secrets-for-Mero tag (Settings › Vault › "Secrets-for-Mero tag"): notes only Mero reads, never sent to the writer.
     // Saved as `librarianGuideTag` until settings version 7 (2026-11-02), which renames it.
     guideTag: 'lorebook-guide',
     newChatThreshold: 3,
@@ -60,10 +60,10 @@ export const defaultSettings = {
     // prompt text (settings.aiSystemPrompt, scribePrompt, etc.) is unaffected.
     aiPromptLocale: '',
     // Editable prompts (v2.5): folder inside Obsidian vault where prompt
-    // override .md files live. Default 'DeepLore/prompts/' — sibling to
+    // override .md files live. Default 'Onyx Quill/prompts/' — sibling to
     // field-definitions.yaml. Sanitized via sanitizePromptsFolderPath() before
     // every I/O call. Empty/null = use the default.
-    promptsFolderPath: 'DeepLore/prompts/',
+    promptsFolderPath: 'Onyx Quill/prompts/',
     // Author's Notebook (user-written)
     notebookEnabled: false,
     notebookPosition: 1,
@@ -71,7 +71,7 @@ export const defaultSettings = {
     notebookRole: 0,
     // AI Notepad (AI-written session notes)
     aiNotepadEnabled: false,
-    aiNotepadMode: 'tag',    // 'tag' = AI emits <dle-notes>; 'extract' = post-gen API call extracts notes
+    aiNotepadMode: 'tag',    // 'tag' = AI emits <oq-notes>; 'extract' = post-gen API call extracts notes
     aiNotepadPosition: 1,
     aiNotepadDepth: 4,
     aiNotepadRole: 0,
@@ -226,7 +226,7 @@ export const defaultSettings = {
     // overhaul (built 2026-10-17): where Auto Lorebook's new entries go — 'about': about the run → the run's folder,
     // otherwise the character's base folder (none: the Target folder) · 'target': always the Target folder (autoSuggestFolder)
     newEntryPlacement: 'about',
-    newEntryMark: true,                    // mark them: made_by, from (chat and message), the made-by-mero tag (the date is always stamped)
+    newEntryMark: true,                    // mark them: made_by, from (chat and message), the made-by-mero tag (Mero's entries) or made-by-new-lore (New lore's) — the date is always stamped
     // cleaning up a run (Miinthe, 2026-10-27): its files go to the trash folder (never read) or are deleted for good
     runCleanupMode: 'trash',
     runTrashFolder: 'zz Deleted runs',
@@ -248,7 +248,7 @@ export const defaultSettings = {
     graphShowLabels: true,
     graphEdgeFilterAlpha: 0.05,        // disparity-filter alpha (0.01-0.5, lower = sparser backbone)
     graphSavedLayout: null,            // { positions: {title: {x,y}}, timestamp }
-    fieldDefinitionsPath: 'DeepLore/field-definitions.yaml',
+    fieldDefinitionsPath: 'Onyx Quill/field-definitions.yaml',
     decayEnabled: false,
     decayBoostThreshold: 5,    // generations without injection before freshness boost
     decayPenaltyThreshold: 2,  // consecutive injections before frequency penalty
@@ -291,7 +291,7 @@ export const defaultSettings = {
     analyticsData: {},
     _wizardCompleted: false,
     // Increment to trigger migrations in runMigrations().
-    settingsVersion: 8,
+    settingsVersion: 9,
 };
 
 /** Per-tool settings-key map for resolveConnectionConfig(). */
@@ -317,7 +317,7 @@ const TOOL_SETTINGS_KEYS = {
 export function resolveConnectionConfig(toolKey) {
     const s = getSettings();
     const keys = TOOL_SETTINGS_KEYS[toolKey];
-    if (!keys) throw new Error(`[DLE] Unknown tool key for connection config: ${toolKey}`);
+    if (!keys) throw new Error(`[Onyx Quill] Unknown tool key for connection config: ${toolKey}`);
 
     const mode = s[keys.mode];
     const toolModel = s[keys.model] || '';

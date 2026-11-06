@@ -151,7 +151,7 @@ export async function showImportReport(result, source, folder, deps = {}) {
         try {
             res = await deps.onRetry(payload);
         } catch (err) {
-            console.warn('[DLE] Import retry hook threw:', err);
+            console.warn('[Onyx Quill] Import retry hook threw:', err);
         }
         // The hook returns an importEntries-shaped result. A row succeeded if its
         // filename no longer appears in the new errors[]. Without a usable result

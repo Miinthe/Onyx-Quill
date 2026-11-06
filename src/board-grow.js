@@ -46,7 +46,7 @@ export async function writeEntry(form, { reindex = true } = {}) {
         if (there.status !== 404) return { ok: false, error: `the vault did not answer (${there.error || there.status}) — nothing was written` };
         const w = await writeNote(v.host, v.port, v.apiKey, filename, content, !!v.https);
         if (!w.ok) return { ok: false, error: w.error || 'the vault refused it' };
-        if (reindex) buildIndexWithReuse().catch(err => console.warn('[DLE] re-reading the vault after a new entry failed:', err?.message || err));
+        if (reindex) buildIndexWithReuse().catch(err => console.warn('[Onyx Quill] re-reading the vault after a new entry failed:', err?.message || err));
         return { ok: true, filename, vault: v.name || '' };
     } catch (err) {
         return { ok: false, error: err?.message || String(err) };

@@ -79,8 +79,8 @@ test('Mero\'s prompt: who she is, reading the room, what she knows; the talk as 
 
 test('📚 a vault review: the whole vault goes along, never into the story chat; the talk remembers it is one', () => {
     const v = buildMeroPrompt({ talk: { msgs: [{ who: 'author', t: 'Look it over?' }] }, entries: [{ title: 'Last', content: 'x' }], vault: [{ title: 'Kettle', content: 'Steams when upset.' }, { title: 'Spoon', content: 'Stirs trouble.' }] }).system;
-    assert(v.includes("The author's whole lore vault (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite their entries') && !v.includes('Lore the writer was given'));
-    assert(!buildMeroPrompt({ talk: { msgs: [] } }).system.includes('whole lore vault'));
+    assert(v.includes("The lore this story reads (2 entries)") && v.includes('### Kettle\nSteams when upset.') && v.includes('Never rewrite their entries') && !v.includes('Lore the writer was given'));
+    assert(!buildMeroPrompt({ talk: { msgs: [] } }).system.includes('The lore this story reads'));
     assertEqual(asStore({ chars: { 'k.png': { talks: [{ title: 'R', review: true, msgs: [] }] } } }).chars['k.png'].talks[0].review, true);
 });
 
@@ -404,7 +404,7 @@ test('writing guides: Mero reads those in this chat\'s folders, capped; the writ
     const big = Array.from({ length: 9 }, (_, k) => ({ title: 'G' + k, content: 'w '.repeat(1000) }));
     assert(guidesText(big).length <= GUIDE_MAX, 'capped');
     const sys = buildMeroPrompt({ talk: { tag: 'plan', msgs: [] }, guides: guidesIn(idx, ['Dragon']) }).system;
-    assert(sys.includes('Notes the author wrote for you only') && sys.includes('Present tense') && sys.includes('Formal, archaic') && !sys.includes('Slang'));
+    assert(sys.includes('Secrets the author shares with you only') && sys.includes('Present tense') && sys.includes('Formal, archaic') && !sys.includes('Slang'));
     assert(!buildMeroPrompt({ talk: { tag: 'plan', msgs: [] } }).system.includes('writing guides'), 'no guides: no section');
 });
 

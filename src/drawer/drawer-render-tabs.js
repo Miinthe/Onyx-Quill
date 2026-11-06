@@ -1233,7 +1233,7 @@ export function renderBrowseWindow() {
         if (e.tokenEstimate) _hoverParts.push(`Tokens: ${e.tokenEstimate}`);
         const _hoverTitle = _hoverParts.length ? ` title="${_hoverParts.join('&#10;&#10;')}"` : '';
         html += `<div class="dle-browse-info" role="button" tabindex="0" aria-expanded="false" aria-label="Expand ${escapeHtml(e.title)} (Enter or click)" aria-describedby="${previewId}"${_hoverTitle}>`;
-        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="For Mero ☆ only; never sent to the writer (lorebook-guide tag)">☆ for Mero</span>' : ''}</span>`;
+        html += `<span class="dle-browse-title">${escapeHtml(e.title)}${e.guide ? ' <span class="dle-browse-guide-pill" title="A secret for Mero ☆: never sent to the writer (lorebook-guide tag)">☆ secret for Mero</span>' : ''}</span>`;
         // LOCAL PATCH 2026-08-03: show the entry's origin on the COLLAPSED row.
         // `character` (and `instance`) previously appeared only in the expanded preview, so
         // triaging a folder of unsorted entries meant opening each one to find out where it
@@ -1378,7 +1378,7 @@ export function renderGatingTab() {
     // Wave F: skip painting into a hidden drawer; replayed on open (drawer.js toggle handler).
     if (!isDrawerVisible()) return;
     const ctx = chat_metadata?.deeplore_context;
-    try { renderCharacterCard(); } catch (err) { console.warn('[DLE] character card failed:', err?.message || err); }
+    try { renderCharacterCard(); } catch (err) { console.warn('[Onyx Quill] character card failed:', err?.message || err); }
 
     // ── Folder filter section ──
     const activeFolders = chat_metadata?.deeplore_folder_filter || [];

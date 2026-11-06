@@ -2,7 +2,7 @@
  * LOCAL PATCH (Miinthe, 2026-10-05) — Mero ☆'s entry ideas: SillyTavern glue (rules: mero-lore-pure.js).
  *
  * Mero looks at the latest replies next to the entries that were sent with them — in the background, after a reply
- * arrived, as often as her chattiness says (Quiet: only on "Check the lore"). Each idea becomes a ☆ card in 📬 with
+ * arrived, as often as her job says (Freelancer: only on "Check the lore"). Each idea becomes a ☆ card in 📬 with
  * the exact before / after. Her "entry changes" setting: ask me (default) · apply on their own (then the card goes
  * straight to Answered, with Undo) · off.
  * Builder's notes kept (Miinthe's TunnelVision lesson): a card is gone with the message it came from (deleted / swiped);
@@ -42,7 +42,7 @@ async function readEntry(entry) {
 async function writeEntry(entry, content) {
     const v = vaultOf(entry.vault);
     const w = await writeNote(v.host, v.port, v.apiKey, entry.filename, content, !!v.https);
-    if (w.ok) buildIndexWithReuse().catch(err => console.warn('[DLE] Mero: re-reading the vault after an entry change failed:', err?.message || err));
+    if (w.ok) buildIndexWithReuse().catch(err => console.warn('[Onyx Quill] Mero: re-reading the vault after an entry change failed:', err?.message || err));
     return w;
 }
 
@@ -67,7 +67,7 @@ const msgStart = m => String(m?.mes ?? '').slice(0, 80);
  */
 export async function lookAtLore({ force = false } = {}) {
     const st = meroSettings();
-    if (st.job === 'off') return { ok: false, error: 'Mero is off duty (☆ settings → Mero\'s job)' };
+    if (st.job === 'off') return { ok: false, error: 'Mero is off duty (Settings › Mero › Her job › How much she does)' };
     if (looking) return { ok: false, error: 'Mero is already looking' };
     const ctx = getContext(), chat = ctx?.chat || [];
     const isAi = k => !!chat[k] && !chat[k].is_user && !chat[k].is_system;
@@ -78,7 +78,7 @@ export async function lookAtLore({ force = false } = {}) {
     idx = idx.slice(-MAX_REPLIES);
     if (!idx.length) return { ok: false, error: 'no replies to look at yet' };
     const conn = resolveConnectionConfig('mero');
-    if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆' };
+    if (!conn.profileId) return { ok: false, error: 'Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆' };
     const entries = entriesFor(idx);
     putLore({ ...L, last: chat.length - 1 });   // looked at, whatever comes of it — the next look starts after these
     if (!entries.length) return { ok: true, found: 0, noEntries: true };
@@ -95,7 +95,7 @@ export async function lookAtLore({ force = false } = {}) {
         for (const idea of ideas) {
             const e = entries.find(x => x.title === idea.title);
             const file = await readEntry(e);
-            if (!file.ok) { console.warn('[DLE] Mero: could not read', e.filename, file.error); continue; }
+            if (!file.ok) { console.warn('[Onyx Quill] Mero: could not read', e.filename, file.error); continue; }
             if (applyChange(file.content, idea.change).error) continue;   // a rewrite of text that isn't there
             const i = idx.includes(idea.i) ? idea.i : idx[idx.length - 1];
             const card = {
@@ -113,7 +113,7 @@ export async function lookAtLore({ force = false } = {}) {
         }
         return { ok: true, found };
     } catch (err) {
-        console.warn('[DLE] Mero could not look at the lore:', err?.message || err);
+        console.warn('[Onyx Quill] Mero could not look at the lore:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
     } finally { setLooking(false); }
 }
@@ -166,11 +166,11 @@ export async function undoEntry(id) {
     return { ok: true };
 }
 
-/** Wire once: answers for ☆ entry cards; a look after a new reply when Mero's chattiness says it's time. */
+/** Wire once: answers for ☆ entry cards; a look after a new reply when Mero's job says it's time. */
 export function initMeroLore() {
     onAnswer('entry', answerEntry);
     let timer = null;
-    const soon = () => { clearTimeout(timer); timer = setTimeout(() => { lookAtLore().then(r => { if (r?.ok === false && !/off duty|already looking|no connection|no replies/.test(r.error || '')) console.warn('[DLE] Mero look:', r.error); }); }, 2500); };
+    const soon = () => { clearTimeout(timer); timer = setTimeout(() => { lookAtLore().then(r => { if (r?.ok === false && !/off duty|already looking|no connection|no replies/.test(r.error || '')) console.warn('[Onyx Quill] Mero look:', r.error); }); }, 2500); };
     try { eventSource.on(event_types.MESSAGE_RECEIVED, soon); } catch { /* noop */ }
     try { eventSource.on(event_types.CHAT_CHANGED, () => clearTimeout(timer)); } catch { /* noop */ }
 }

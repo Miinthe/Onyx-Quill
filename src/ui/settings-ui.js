@@ -11,7 +11,7 @@ import { renderExtensionTemplateAsync } from '../../../../../extensions.js';
 import { accountStorage } from '../../../../../util/AccountStorage.js';
 import { EXTENSION_REF } from '../ext-path.js';
 import { buildAiChatContext } from '../../core/utils.js';
-import { getSettings, getPrimaryVault, PROMPT_TAG_PREFIX, settingsConstraints, invalidateSettingsCache, defaultSettings, resolveConnectionConfig } from '../../settings.js';
+import { getSettings, getPrimaryVault, PROMPT_TAG_PREFIX, settingsConstraints, invalidateSettingsCache, defaultSettings, resolveConnectionConfig, setAskBeforeRemoving } from '../../settings.js';
 import { promptManager } from '../../../../../openai.js';
 import { testConnection, buildConnectionGuidanceHtml } from '../vault/obsidian-api.js';
 import { testProxyConnection } from '../ai/proxy-api.js';
@@ -56,7 +56,7 @@ export function drainPendingPromptListCleanup() {
             const pmEntry = promptManager.getPromptById(id);
             if (pmEntry) pmEntry.content = '';
         }
-    } catch (e) { console.warn('[DLE] drainPendingPromptListCleanup failed:', e?.message); return; }
+    } catch (e) { console.warn('[Onyx Quill] drainPendingPromptListCleanup failed:', e?.message); return; }
     settings._pendingPromptListCleanup = false;
     saveSettingsDebounced();
 }
@@ -302,7 +302,7 @@ function bindVaultListEvents(settings, $scope = null, $addBtn = null) {
                 POPUP_TYPE.CONFIRM, '', { okButton: 'Remove', cancelButton: 'Cancel' },
             );
         } catch (err) {
-            console.warn('[DLE] vault-remove confirm popup failed:', err?.message);
+            console.warn('[Onyx Quill] vault-remove confirm popup failed:', err?.message);
             return;
         }
         if (!confirmed) return;
@@ -394,7 +394,7 @@ function populateProfileDropdownIn($container, selectId, settingsKey) {
         }
     } catch (err) {
         // BUG-112: log so dropdown load failures are diagnosable.
-        console.debug('[DLE] Profile dropdown load failed:', err?.message);
+        console.debug('[Onyx Quill] Profile dropdown load failed:', err?.message);
         const opt = document.createElement('option');
         opt.value = '';
         opt.textContent = 'Connection Manager not available';
@@ -963,11 +963,11 @@ export async function openSettingsPopup(navigateTo = null) {
     try {
         view = await import('../settings/settings-view.js');
     } catch (err) {
-        console.warn('[DLE] new settings window did not load — opening the old one', err);
+        console.warn('[Onyx Quill] new settings window did not load — opening the old one', err);
     }
     if (view) {
         try { return await view.openSettingsView(navigateTo); } catch (err) {
-            console.warn('[DLE] new settings window failed — opening the old one', err);
+            console.warn('[Onyx Quill] new settings window failed — opening the old one', err);
         }
     }
     return openOldSettingsPopup(navigateTo);
@@ -1098,7 +1098,7 @@ export async function openOldSettingsPopup(navigateTo = null) {
                     $accordion.find('.dle-conn-accordion-body').show();
                 }
             }
-        } catch (e) { console.warn('[DLE] applyNavigateTo failed:', e); }
+        } catch (e) { console.warn('[Onyx Quill] applyNavigateTo failed:', e); }
     }
 
     // Nav API bridge for handlers wired in bindPopupEvents (different function
@@ -1297,7 +1297,7 @@ export async function openOldSettingsPopup(navigateTo = null) {
                             el.classList.add('dle-pulse');
                             setTimeout(() => el.classList.remove('dle-pulse'), 2000);
                         }
-                    } catch (e) { console.warn('[DLE] navigateTo scroll/pulse failed:', e); }
+                    } catch (e) { console.warn('[Onyx Quill] navigateTo scroll/pulse failed:', e); }
                 }));
             }
             // BUG-102: clicking the ::backdrop area of the <dialog> fires a click
@@ -1360,7 +1360,7 @@ function loadPopupSettings($container) {
     $c('#dle-sp-enabled').prop('checked', settings.enabled);
     renderVaultList(settings, $c('#dle-sp-vault-list')[0]);
     $c('#dle-sp-multi-vault-conflict').val(settings.multiVaultConflictResolution);
-    $c('#dle-sp-field-definitions-path').val(settings.fieldDefinitionsPath || 'DeepLore/field-definitions.yaml');
+    $c('#dle-sp-field-definitions-path').val(settings.fieldDefinitionsPath || 'Onyx Quill/field-definitions.yaml');
 
     // ── Prompts tab ──
     $c('#dle-sp-prompts-language').val(settings.aiPromptLocale || '');
@@ -1403,7 +1403,6 @@ function loadPopupSettings($container) {
     $c('#dle-sp-priority-reversed').prop('checked', settings.priorityReversed);
     $c('#dle-sp-import-compress-default').prop('checked', settings.importCompressByDefault);
     $c('#dle-sp-wi-import-em-handling').val(settings.wiImportEmHandling || 'append');
-    $c('#dle-sp-contextual-gating-tolerance').val(settings.contextualGatingTolerance);
 
     // ── Injection tab ──
     $c(`input[name="dle-sp-injection-mode"][value="${settings.injectionMode || 'extension'}"]`).prop('checked', true);
@@ -1553,7 +1552,7 @@ function loadPopupSettings($container) {
     try {
         renderPromptsGrid($container);
     } catch (err) {
-        console.warn('[DLE prompts] grid render failed:', err?.message);
+        console.warn('[Onyx Quill prompts] grid render failed:', err?.message);
     }
 }
 
@@ -1603,9 +1602,9 @@ export async function exportDiagnosticsFlow() {
         await callGenericPopup(
             `<div class="dle-diag-done">
                 <h3>2 files downloaded</h3>
-                <p><strong><code>dle-diagnostics-*.md</code></strong> — Anonymized report, safe to share on GitHub issues.
+                <p><strong><code>onyx-quill-diagnostics-*.md</code></strong> — Anonymized report, safe to share on GitHub issues.
                 Drop it into a flagship LLM (Claude, GPT-5, Gemini) for self-diagnosis.</p>
-                <p><strong><code>dle-connections-reference-*.md</code></strong> — Your real connection data (profile names,
+                <p><strong><code>onyx-quill-connections-reference-*.md</code></strong> — Your real connection data (profile names,
                 URLs, models). <strong>Do NOT share this file.</strong> It's for your own reference when reading the anonymized report.</p>
                 ${statsHtml}
                 <p><strong>Please verify the diagnostic file before sharing.</strong>
@@ -1626,7 +1625,7 @@ export async function exportDiagnosticsFlow() {
         );
         return true;
     } catch (err) {
-        console.error('[DLE] Diagnostic export failed:', err);
+        console.error('[Onyx Quill] Diagnostic export failed:', err);
         const msg = String(err?.message || '');
         const hint = msg.includes('CompressionStream') || msg.includes('CompressionStream')
             ? 'Your browser may not support gzip compression. Try a recent Chrome, Firefox, or Safari.'
@@ -1664,7 +1663,7 @@ export async function scanForVaultFlow() {
         toastr.success(`Added ${picked.vaultName} (${picked.host}:${picked.port}) — fill in the API key if needed.`, 'Onyx Quill');
         return true;
     } catch (err) {
-        console.error('[DLE] Vault scan error:', err);
+        console.error('[Onyx Quill] Vault scan error:', err);
         toastr.error('Vault scan didn\'t find anything. Make sure Obsidian is running.', 'Onyx Quill');
         return false;
     }
@@ -1680,6 +1679,8 @@ export async function resetAllSettingsFlow() {
     if (!confirmed) return false;
     resetToDefaults(settings, defaultSettings);
     settings._vaultsMigrated = true;
+    // "Ask before removing" also lives in this browser (the board's old sb-ask-remove); reset that copy too.
+    setAskBeforeRemoving(!!defaultSettings.askBeforeRemoving);
     invalidateSettingsCache();
     saveSettingsDebounced();
     toastr.success('Settings are back to their defaults. Your connections, prompts, words and lists stayed.', 'Onyx Quill');
@@ -1863,7 +1864,7 @@ function bindPopupEvents($container) {
 
     bindVaultListEvents(settings, $c('#dle-sp-vault-list'), $c('#dle-sp-add-vault'));
     $c('#dle-sp-multi-vault-conflict').on('change', function () { settings.multiVaultConflictResolution = String($(this).val()); saveSettingsDebounced(); });
-    $c('#dle-sp-field-definitions-path').on('change', function () { settings.fieldDefinitionsPath = String($(this).val()).trim() || 'DeepLore/field-definitions.yaml'; saveSettingsDebounced(); });
+    $c('#dle-sp-field-definitions-path').on('change', function () { settings.fieldDefinitionsPath = String($(this).val()).trim() || 'Onyx Quill/field-definitions.yaml'; saveSettingsDebounced(); });
     $c('#dle-sp-edit-fields-btn').on('click', async () => {
         // BUG-138: await so post-await errors surface to the catch.
         const { openRuleBuilder } = await import('./rule-builder.js');
@@ -1986,7 +1987,6 @@ function bindPopupEvents($container) {
         settings.wiImportEmHandling = v === 'skip' ? 'skip' : 'append';
         saveSettingsDebounced();
     });
-    $c('#dle-sp-contextual-gating-tolerance').on('change', function () { settings.contextualGatingTolerance = String($(this).val()); saveSettingsDebounced(); });
 
     // ── Injection tab ──
     $c('input[name="dle-sp-injection-mode"]').on('change', function () {
@@ -2194,7 +2194,7 @@ function bindPopupEvents($container) {
         // Wave I: hide the rotate glyph, show a goo-spinner while re-indexing.
         $btn.prop('disabled', true); $icon.hide(); $btn.append('<goo-spinner class="dle-btn-goo" size="22" color="currentColor" aria-hidden="true"></goo-spinner>');
         try { setVaultIndex([]); setIndexTimestamp(0); await buildIndex(); toastr.success(`Indexed ${vaultIndex.length} entries.`, 'Onyx Quill'); updatePopupIndexStats(); }
-        catch (err) { console.warn('[DLE] Refresh index failed:', err); toastr.error('Couldn\'t refresh your lore. Check your Obsidian connection.', 'Onyx Quill'); }
+        catch (err) { console.warn('[Onyx Quill] Refresh index failed:', err); toastr.error('Couldn\'t refresh your lore. Check your Obsidian connection.', 'Onyx Quill'); }
         finally { $btn.prop('disabled', false); $btn.find('.dle-btn-goo').remove(); $icon.show(); }
     });
     $c('#dle-sp-browse-entries').on('click', () => showBrowsePopup());

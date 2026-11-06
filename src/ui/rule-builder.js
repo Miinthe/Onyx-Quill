@@ -28,7 +28,7 @@ const OPERATOR_LABELS = {
 const TOLERANCE_LABELS = {
     strict: ['dle_tolerance_strict', 'Strict — require match or filter out'],
     moderate: ['dle_tolerance_moderate', 'Moderate — pass if context not set'],
-    lenient: ['dle_tolerance_lenient', 'Lenient — pass unless mismatch'],
+    lenient: ['dle_tolerance_lenient', 'Lenient — keep even on a mismatch (Match Any / All)'],
 };
 
 const TYPE_LABELS = {
@@ -362,7 +362,7 @@ export async function openRuleBuilder() {
                 return;
             }
             const yaml = serializeFieldDefinitions(newDefs);
-            const path = settings.fieldDefinitionsPath || 'DeepLore/field-definitions.yaml';
+            const path = settings.fieldDefinitionsPath || 'Onyx Quill/field-definitions.yaml';
             const result = await writeFieldDefinitions(vault.host || '127.0.0.1', vault.port, vault.apiKey, path, yaml, vault.https || false);
             if (!result?.ok) {
                 $errBox.html('<i class="fa-solid fa-triangle-exclamation"></i> Failed to write field definitions to Obsidian. Check your connection and try again.').show();
@@ -381,7 +381,7 @@ export async function openRuleBuilder() {
             // Surface reindex failure: fields saved but vault still indexed without
             // new extractions is a silent data-drift footgun.
             buildIndex().catch(err => {
-                console.warn('[DLE] Index rebuild after field save failed:', err?.message);
+                console.warn('[Onyx Quill] Index rebuild after field save failed:', err?.message);
                 try {
                     toastr.error(
                         `Fields saved, but index rebuild failed: ${err?.message || 'unknown error'}. Run /oq-refresh or rebuild from the drawer.`,

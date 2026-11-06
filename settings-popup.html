@@ -198,8 +198,8 @@
                         </div>
                     </div>
                     <div class="flex-container">
-                        <div class="flex1" title="Notes with this tag are for Mero ☆ only — never sent to the writing AI." data-i18n="[title]dle_guide_tag_tooltip">
-                            <label for="dle-sp-guide-tag"><small data-i18n="dle_guide_tag_label">Notes-for-Mero tag</small></label>
+                        <div class="flex1" title="Secrets for Mero ☆: notes with this tag only Mero reads — never sent to the writing AI." data-i18n="[title]dle_guide_tag_tooltip">
+                            <label for="dle-sp-guide-tag"><small data-i18n="dle_guide_tag_label">Secrets-for-Mero tag</small></label>
                             <input id="dle-sp-guide-tag" type="text" class="text_pole" placeholder="lorebook-guide" data-i18n="[placeholder]dle_guide_tag_placeholder">
                         </div>
                         <div class="flex1" title="Message count threshold for new chat features. Default: 3." data-i18n="[title]dle_new_chat_threshold_tooltip">
@@ -218,7 +218,7 @@
             <div class="flex-container" style="align-items: flex-end;">
                 <div class="flex1" title="Path to the YAML file in Obsidian that defines custom gating fields. Relative to vault root." data-i18n="[title]dle_field_defs_path_tooltip">
                     <label for="dle-sp-field-definitions-path"><small data-i18n="dle_field_defs_path_label">Field Definitions Path</small></label>
-                    <input id="dle-sp-field-definitions-path" type="text" class="text_pole" placeholder="DeepLore/field-definitions.yaml" data-i18n="[placeholder]dle_default_field_definitions_path">
+                    <input id="dle-sp-field-definitions-path" type="text" class="text_pole" placeholder="Onyx Quill/field-definitions.yaml" data-i18n="[placeholder]dle_default_field_definitions_path">
                 </div>
                 <div id="dle-sp-edit-fields-btn" class="menu_button" title="Open the field definition editor" style="height: fit-content; margin-left: 8px; white-space: nowrap;" data-i18n="[title]dle_edit_fields_tooltip">
                     <i class="fa-solid fa-gear" aria-hidden="true"></i> <span data-i18n="dle_edit_fields_button">Edit Fields</span>
@@ -272,9 +272,9 @@
                     <div class="flex1" title="How Onyx Quill matches entries to inject." data-i18n="[title]dle_search_mode_tooltip">
                         <label for="dle-sp-search-mode"><small data-i18n="dle_search_mode_label">Mode</small></label>
                         <select id="dle-sp-search-mode" class="text_pole">
-                            <option value="keywords-only" data-i18n="dle_search_mode_keywords">Keyword Only</option>
-                            <option value="two-stage" data-i18n="dle_search_mode_two_stage">Two-Stage (Keywords &rarr; AI)</option>
-                            <option value="ai-only" data-i18n="dle_search_mode_ai_only">AI Only</option>
+                            <option value="keywords-only" data-i18n="dle_search_mode_keywords">keywords only</option>
+                            <option value="two-stage" data-i18n="dle_search_mode_two_stage">keywords, then AI search</option>
+                            <option value="ai-only" data-i18n="dle_search_mode_ai_only">AI search only</option>
                         </select>
                     </div>
                 </div>
@@ -424,18 +424,6 @@
                     <div class="flex1" title="How many prior messages to check for recently injected entries." data-i18n="[title]dle_strip_lookback_tooltip">
                         <label for="dle-sp-strip-lookback"><small data-i18n="dle_strip_lookback_label">Messages to check</small></label>
                         <input id="dle-sp-strip-lookback" type="number" class="text_pole" min="1" max="10" />
-                    </div>
-                </div>
-
-                <label class="dle-advanced-subheader"><small data-i18n="dle_settings_scene_filters_subheader">Scene Filters</small></label>
-                <div class="flex-container">
-                    <div class="flex1" title="How to handle entries with era/location/scene requirements when no context is set. Strict: block if any dimension is missing. Moderate: block only when entry's dimension is set but doesn't match. Lenient: allow all entries when no context dimensions are set." data-i18n="[title]dle_gating_tolerance_tooltip">
-                        <label for="dle-sp-contextual-gating-tolerance"><small data-i18n="dle_gating_tolerance_label">Filter Strictness</small></label>
-                        <select id="dle-sp-contextual-gating-tolerance" class="text_pole">
-                            <option value="strict" data-i18n="dle_settings_gating_tolerance_strict">Strict (block when context missing)</option>
-                            <option value="moderate" data-i18n="dle_settings_gating_tolerance_moderate">Moderate (block only on mismatch)</option>
-                            <option value="lenient" data-i18n="dle_settings_gating_tolerance_lenient">Lenient (allow when no context set)</option>
-                        </select>
                     </div>
                 </div>
             </div>
@@ -636,7 +624,7 @@
                 <div class="dle-overlay-notice-card">
                     <i class="fa-solid fa-brain" aria-hidden="true" style="font-size: 1.4em; opacity: 0.6;"></i>
                     <p data-i18n="dle_ai_disabled_notice">AI search is currently disabled.</p>
-                    <p data-i18n-html="dle_ai_disabled_help">Set Search Mode to <strong>Two-Stage</strong> or <strong>AI Only</strong> in the
+                    <p data-i18n-html="dle_ai_disabled_help">Set How lore is picked to <strong>keywords, then AI search</strong> or <strong>AI search only</strong> in the
                     <a href="#" id="dle-sp-goto-matching" class="dle-notice-link">Search Mode section above</a>
                     to configure these settings.</p>
                 </div>
@@ -863,7 +851,7 @@
                 <div id="dle-sp-ai-notepad-mode-controls">
                     <label><small data-i18n="dle_ai_notepad_capture_mode_label_full">Capture Mode</small></label>
                     <div class="radio_group">
-                        <label title="The writing AI appends notes in &lt;dle-notes&gt; tags. Free — no extra API calls. Requires a model that reliably follows formatting instructions." data-i18n="[title]dle_notepad_tag_mode_tooltip_full">
+                        <label title="The writing AI appends notes in &lt;oq-notes&gt; tags. Free — no extra API calls. Requires a model that reliably follows formatting instructions." data-i18n="[title]dle_notepad_tag_mode_tooltip_full">
                             <input type="radio" name="dle-sp-ai-notepad-mode" value="tag" />
                             <span data-i18n="dle_notepad_tag_mode_label_full">Tag Mode</span>
                         </label>
@@ -874,7 +862,7 @@
                     </div>
                     <div id="dle-sp-ai-notepad-mode-tag-desc" class="dle-text-xs dle-muted" style="margin-top: var(--dle-space-1);">
                         <i class="fa-solid fa-tag" aria-hidden="true"></i>
-                        The writing AI includes <code>&lt;dle-notes&gt;</code> tags in its response. No extra API calls — notes are extracted from the response text. Best with flagship models (Claude Opus/Sonnet, GPT-4o). Smaller models may not follow the format.
+                        The writing AI includes <code>&lt;oq-notes&gt;</code> tags in its response. No extra API calls — notes are extracted from the response text. Best with flagship models (Claude Opus/Sonnet, GPT-4o). Smaller models may not follow the format.
                     </div>
                     <div id="dle-sp-ai-notepad-mode-extract-desc" class="dle-text-xs dle-muted" style="display: none; margin-top: var(--dle-space-1);">
                         <i class="fa-solid fa-bolt" aria-hidden="true"></i>
@@ -901,7 +889,7 @@
                 <span class="dle-text-xs dle-muted" data-i18n-html="dle_settings_injection_pos_configured_note">Injection position: configured in the <a href="#" class="dle-goto-tab-link" data-goto-tab="injection">Injection tab</a>.</span>
                 <div id="dle-sp-ai-notepad-tag-options">
                     <label for="dle-sp-ai-notepad-prompt"><small data-i18n="dle_ai_notepad_custom_tag_label_full">Custom Tag Instruction (leave empty for default)</small></label>
-                    <textarea id="dle-sp-ai-notepad-prompt" class="text_pole" rows="3" placeholder="Leave empty for default. Instructs the AI to append &lt;dle-notes&gt; after its response."></textarea>
+                    <textarea id="dle-sp-ai-notepad-prompt" class="text_pole" rows="3" placeholder="Leave empty for default. Instructs the AI to append &lt;oq-notes&gt; after its response."></textarea>
                 </div>
                 <div id="dle-sp-ai-notepad-extract-options" style="display: none;">
                     <span class="dle-text-xs dle-muted" data-i18n-html="dle_settings_connection_settings_note">Connection settings: <a href="#" class="dle-goto-ai-connections">AI Connections</a> under Setup.</span>
@@ -1107,9 +1095,9 @@
                 </div>
 
                 <div class="flex-container dle-sp-margin-top">
-                    <div class="flex1" title="Path inside your Obsidian vault where prompt override files live. Default: DeepLore/prompts/. Must be relative, end with /, no traversal." data-i18n="[title]dle_prompts_folder_path_tooltip">
+                    <div class="flex1" title="Path inside your Obsidian vault where prompt override files live. Default: Onyx Quill/prompts/. Must be relative, end with /, no traversal." data-i18n="[title]dle_prompts_folder_path_tooltip">
                         <label for="dle-sp-prompts-folder-path"><small data-i18n="dle_prompts_folder_path_label">Prompts Folder (relative to vault root)</small></label>
-                        <input type="text" id="dle-sp-prompts-folder-path" class="text_pole" placeholder="DeepLore/prompts/" />
+                        <input type="text" id="dle-sp-prompts-folder-path" class="text_pole" placeholder="Onyx Quill/prompts/" />
                     </div>
                 </div>
 

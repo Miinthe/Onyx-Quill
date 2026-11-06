@@ -164,20 +164,35 @@ export function extractWikiLinks(body) {
 }
 
 /**
+ * Remove the parts of a note nobody should read: %%oq-exclude%% regions (older %%deeplore-exclude%% too) and
+ * Obsidian %%...%% comments. Used before cleaning and before reading [[links]], so a
+ * link inside a hidden part neither reaches the writer nor pulls its entry in.
+ * @param {string} content - Raw markdown body
+ * @returns {string}
+ */
+export function stripHiddenText(content) {
+    if (!content || typeof content !== 'string') return '';
+    let cleaned = content;
+
+    // User-controlled exclusion regions.
+    cleaned = cleaned.replace(/%%(oq|deeplore)-exclude%%[\s\S]*?%%\/\1-exclude%%/g, '');
+
+    // Obsidian %%...%% comment/plugin blocks (timeline, dataview, etc.). Three passes:
+    // inline on single line, multi-line blocks with %% at line boundaries, then any
+    // multi-line comment whose markers sit mid-line (Obsidian hides those too).
+    cleaned = cleaned.replace(/%%[^%\n]+%%/g, '');
+    cleaned = cleaned.replace(/^%%[\s\S]*?^%%$/gm, '');
+    cleaned = cleaned.replace(/%%[\s\S]*?%%/g, '');
+    return cleaned;
+}
+
+/**
  * Clean markdown content for prompt injection.
  * @param {string} content - Raw markdown body (frontmatter already stripped)
  * @returns {string} Cleaned content
  */
 export function cleanContent(content) {
-    let cleaned = content;
-
-    // User-controlled exclusion regions.
-    cleaned = cleaned.replace(/%%deeplore-exclude%%[\s\S]*?%%\/deeplore-exclude%%/g, '');
-
-    // Obsidian %%...%% comment/plugin blocks (timeline, dataview, etc.). Two passes:
-    // inline on single line, then multi-line blocks (require %% at line boundaries).
-    cleaned = cleaned.replace(/%%[^%\n]+%%/g, '');
-    cleaned = cleaned.replace(/^%%[\s\S]*?^%%$/gm, '');
+    let cleaned = stripHiddenText(content);
 
     cleaned = cleaned.replace(/<\/?div[^>]*>/g, '');
 
@@ -365,7 +380,7 @@ function clampWithLog(obj, key, min, max, label) {
     // propagates into budgets/depths. Fall back to the safe lower bound (min).
     if (Number.isNaN(obj[key])) {
         obj[key] = min;
-        console.info(`[DLE] ${label} was NaN; reset to ${min} (range: ${min}-${max})`);
+        console.info(`[Onyx Quill] ${label} was NaN; reset to ${min} (range: ${min}-${max})`);
         return;
     }
     // Round only when the constraint range is integer-based — float constraints
@@ -373,7 +388,7 @@ function clampWithLog(obj, key, min, max, label) {
     const isIntegerRange = Number.isInteger(min) && Number.isInteger(max);
     obj[key] = Math.max(min, Math.min(max, isIntegerRange ? Math.round(obj[key]) : obj[key]));
     if (before !== obj[key]) {
-        console.info(`[DLE] ${label} clamped from ${before} to ${obj[key]} (range: ${min}-${max})`);
+        console.info(`[Onyx Quill] ${label} clamped from ${before} to ${obj[key]} (range: ${min}-${max})`);
     }
 }
 
@@ -469,7 +484,7 @@ export function validateSettings(settings, constraints, defaults) {
             // BUG-344: reset typo'd enum values to default.
             if (settings[key] !== undefined && !enumValues.includes(settings[key])) {
                 const fallback = defaults ? defaults[key] : enumValues[0];
-                console.info(`[DLE] ${label || key} invalid enum value ${JSON.stringify(settings[key])} reset to ${JSON.stringify(fallback)} (allowed: ${enumValues.join(', ')})`);
+                console.info(`[Onyx Quill] ${label || key} invalid enum value ${JSON.stringify(settings[key])} reset to ${JSON.stringify(fallback)} (allowed: ${enumValues.join(', ')})`);
                 settings[key] = fallback;
             }
             continue;

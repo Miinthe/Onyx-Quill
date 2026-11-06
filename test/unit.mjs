@@ -27,7 +27,7 @@ import { parseVaultFile, clearPrompts } from '../core/pipeline.js';
 import { takeIndexSnapshot, detectChanges } from '../core/sync.js';
 
 // Enhanced-only pure functions (imported from production code, not reimplemented)
-import { extractAiResponseClient, clusterEntries, buildCategoryManifest, buildObsidianURI, convertWiEntry, stripObsidianSyntax, normalizeResults as normalizeResultsProd, checkHealthPure, parseMatchReason, computeSourcesDiff, categorizeRejections, resolveEntryVault, tokenBarColor, formatRelativeTime, isForceInjected, normalizePinBlock, matchesPinBlock, normalizeLoreGap, fuzzyTitleMatch, extractAiNotes, sanitizeFilename, cmrsResultToText } from '../src/helpers.js';
+import { extractAiResponseClient, clusterEntries, buildCategoryManifest, buildObsidianURI, convertWiEntry, stripObsidianSyntax, normalizeResults as normalizeResultsProd, checkHealthPure, parseMatchReason, computeSourcesDiff, categorizeRejections, resolveEntryVault, tokenBarColor, formatRelativeTime, isForceInjected, normalizePinBlock, matchesPinBlock, fuzzyTitleMatch, extractAiNotes, sanitizeFilename, cmrsResultToText } from '../src/helpers.js';
 import { encodeVaultPath, validateVaultPath, pruneCircuitBreakers } from '../src/vault/obsidian-api.js';
 
 // BM25 functions (extracted to bm25.js for testability)
@@ -319,6 +319,21 @@ test('cleanContent: collapses blank lines', () => {
     assertEqual(cleanContent('Line 1\n\n\n\n\nLine 2'), 'Line 1\n\nLine 2', 'should collapse 5 newlines to 2');
 });
 
+test('cleanContent: strips oq-exclude regions (the new name)', () => {
+    assertEqual(
+        cleanContent('Before\n%%oq-exclude%%\nHidden stuff\n%%/oq-exclude%%\nAfter'),
+        'Before\n\nAfter',
+        'should strip oq-exclude region and contents',
+    );
+});
+
+test('extractAiNotes: reads the new <oq-notes> and the older <dle-notes>', () => {
+    const r = extractAiNotes('Story.\n<oq-notes>\n- new\n</oq-notes>\n<dle-notes>- old</dle-notes>');
+    assertEqual(r.notes, '- new\n- old', 'both tags read');
+    assertEqual(r.cleanedMessage, 'Story.', 'both tags removed');
+    assertEqual(extractAiNotes('<oq-notes>x</dle-notes>').notes, null, 'mismatched tags are not notes');
+});
+
 test('cleanContent: strips deeplore-exclude regions', () => {
     assertEqual(
         cleanContent('Before\n%%deeplore-exclude%%\nHidden stuff\n%%/deeplore-exclude%%\nAfter'),
@@ -342,6 +357,13 @@ test('cleanContent: strips Obsidian %% comment blocks', () => {
     );
     assertEqual(cleanContent('%%aat-event-end-of-body%%'), '',
         'should strip standalone %% markers');
+});
+
+test('cleanContent: strips multi-line %% comments whose markers sit mid-line', () => {
+    assertEqual(cleanContent('Before %%hidden\nsecret plan\nend%% after'), 'Before  after',
+        'mid-line multi-line comment never reaches the writer');
+    assertEqual(cleanContent('Seen.\nText %%a\nb%%\nAlso seen.'), 'Seen.\nText \nAlso seen.',
+        'text around it stays');
 });
 
 test('cleanContent: strips HTML div tags', () => {
@@ -909,6 +931,17 @@ test('parseVaultFile: parses valid lorebook entry', () => {
     assertEqual(entry.constant, false, 'should not be constant');
     assertEqual(entry.seed, false, 'should not be seed');
     assertEqual(entry.bootstrap, false, 'should not be bootstrap');
+});
+
+test('parseVaultFile: [[links]] inside %% comments or deeplore-exclude blocks are not links', () => {
+    const file = {
+        filename: 'Characters/Eris.md',
+        content: '---\ntags:\n  - lorebook\nkeys:\n  - Eris\n---\n# Eris\n\nShe knows [[Temple]].\n%%deeplore-exclude%%\nSee [[Secret Cult]].\n%%/deeplore-exclude%%\nNote %%ask about [[Hidden Past]]%% here.\nAnd %%draft\nmaybe [[Old Lover]]\n%% done.',
+    };
+    const tagConfig = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: '', bootstrapTag: '' };
+    const entry = parseVaultFile(file, tagConfig);
+    assertEqual(entry.links, ['Temple'], 'only the visible link counts');
+    assert(!/Secret Cult|Hidden Past|Old Lover/.test(entry.content), 'hidden text stays out of the content');
 });
 
 test('parseVaultFile: coerces scalar keys string to array', () => {
@@ -5038,32 +5071,6 @@ test('isForceInjected: missing fields default to falsy', () => {
 // ============================================================================
 // Sprint 2: Pin/Block Migration (H23)
 // ============================================================================
-
-test('normalizeLoreGap: legacy acknowledged status collapses to pending', () => {
-    const out = normalizeLoreGap({ id: 'a', status: 'acknowledged', query: 'x' });
-    assertEqual(out.status, 'pending', 'acknowledged → pending');
-    assertEqual(out.query, 'x', 'other fields preserved');
-});
-
-test('normalizeLoreGap: legacy in_progress status collapses to pending', () => {
-    const out = normalizeLoreGap({ id: 'a', status: 'in_progress' });
-    assertEqual(out.status, 'pending', 'in_progress → pending');
-});
-
-test('normalizeLoreGap: legacy rejected status collapses to pending', () => {
-    const out = normalizeLoreGap({ id: 'a', status: 'rejected' });
-    assertEqual(out.status, 'pending', 'rejected → pending');
-});
-
-test('normalizeLoreGap: pending and written are preserved', () => {
-    assertEqual(normalizeLoreGap({ status: 'pending' }).status, 'pending');
-    assertEqual(normalizeLoreGap({ status: 'written' }).status, 'written');
-});
-
-test('normalizeLoreGap: missing/unknown status defaults to pending', () => {
-    assertEqual(normalizeLoreGap({}).status, 'pending');
-    assertEqual(normalizeLoreGap({ status: 'bogus' }).status, 'pending');
-});
 
 test('normalizePinBlock: bare string normalized to {title, vaultSource: null}', () => {
     const result = normalizePinBlock('Eris');

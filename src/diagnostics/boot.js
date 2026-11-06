@@ -11,5 +11,5 @@
 import { installInterceptors } from './interceptors.js';
 import { startPerformanceObservers } from './performance.js';
 
-try { installInterceptors(); } catch (e) { try { console.warn('[DLE-boot] interceptor install failed:', e); } catch { /* noop */ } }
-try { startPerformanceObservers(); } catch (e) { try { console.warn('[DLE-boot] perf observer install failed:', e); } catch { /* noop */ } }
+try { installInterceptors(); } catch (e) { try { console.warn('[Onyx Quill boot] interceptor install failed:', e); } catch { /* noop */ } }
+try { startPerformanceObservers(); } catch (e) { try { console.warn('[Onyx Quill boot] perf observer install failed:', e); } catch { /* noop */ } }

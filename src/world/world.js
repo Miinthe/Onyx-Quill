@@ -6,13 +6,13 @@
  * switched on (the board's World tab); off → no bar button, no panel, no AI calls.
  *
  * Also here: the per-chat world store (chat_metadata.deeplore_world). Everything the world writes is tagged with its
- * message, so a delete takes it back and a swipe at that message replaces it. Stage 0 writes nothing yet; the store
+ * message, so a delete takes it back (a swipe does not replace it). Stage 0 writes nothing yet; the store
  * and its rollback are wired now so every later stage gets them for free.
  */
 import { chat_metadata, eventSource, event_types } from '../../../../../../script.js';
 import { getContext, saveMetadataDebounced } from '../../../../../extensions.js';
 import { getSettings } from '../../settings.js';
-import { live, onLiveChanged, setWorldPaused } from '../board-live.js';
+import { live, onLiveChanged, setWorldPaused, worldChatPaused } from '../board-live.js';
 import { onTrackersChanged, notifyTrackersView } from '../trackers.js';
 import { regenDeleteNow } from '../regen.js';
 import { icon as I } from '../kit/icons.js';
@@ -36,9 +36,9 @@ const RAIL_ICON = { feed: 'chatter', news: 'news', msgs: 'phone', people: 'peopl
 
 // ── this chat's world ───────────────────────────────────────────────────────
 
-/** The world settings of this chat's board, or null when the world layer is off here. */
+/** The world settings of this chat's board (with this chat's pause), or null when the world layer is off here. */
 export function worldHere() {
-    try { return worldOf(live()?.board); } catch { return null; }
+    try { return worldOf(live()?.board, worldChatPaused()); } catch { return null; }
 }
 
 /** This chat's world store (read fresh each time: chat_metadata changes with the chat). */
@@ -117,6 +117,12 @@ function changed() { window.dispatchEvent(new CustomEvent('dle-world')); }
 
 const phone = () => !!document.getElementById('deeplore-panel')?.classList.contains('dle-mobile') || window.matchMedia?.('(max-width: 700px)').matches;
 const drawerSide = () => (document.getElementById('deeplore-panel')?.classList.contains('dle-left') ? 'left' : getSettings().drawerSide === 'left' ? 'left' : 'right');
+
+/** After the world is woken in this chat: answer what waited while it was paused (the same calls the next reply would
+ *  make — no new ones; bug hunt 2026-11-06: the notice says it answers once woken). */
+export function wakeWorld() {
+    setTimeout(() => { const w = worldHere(); if (w && !w.paused) { deliverLetters(w); firePlans(w); } }, 300);
+}
 
 export function openWorld() {
     const w = worldHere();
@@ -217,7 +223,7 @@ function render() {
         const ic = k === 'msgs' && w.look === 'letters' ? 'mail' : RAIL_ICON[k], t = sectionTitle(k, w.look);
         const dot = k === 'msgs' && unreadCount() ? '<span class="rdot"></span>' : k === 'feed' && dots.includes('rumor') ? '<span class="rdot rumor"></span>' : k === 'news' && dots.includes('news') ? '<span class="rdot news"></span>' : '';
         return `<button type="button" class="ri" data-sec="${k}" aria-pressed="${k === section}" title="${t}" aria-label="${t}">${I(ic)}${dot}</button>`;
-    }).join('') + '<span class="sp"></span>' + `<button type="button" class="ri" data-wpause aria-pressed="${!!w.paused}" title="${w.paused ? 'Paused: nothing new comes in. Wake the world' : 'Pause the world'}" aria-label="${w.paused ? 'Wake the world' : 'Pause the world'}">${I(w.paused ? 'play' : 'pause')}</button>` + '<button type="button" class="ri" data-board title="World settings (the board\'s World tab)" aria-label="World settings">' + I('settings') + '</button>';
+    }).join('') + '<span class="sp"></span>' + `<button type="button" class="ri" data-wpause aria-pressed="${!!w.paused}" title="${w.paused ? 'Paused in this chat: nothing new comes in, nobody answers. Wake the world' : 'Pause the world in this chat'}" aria-label="${w.paused ? 'Wake the world' : 'Pause the world in this chat'}">${I(w.paused ? 'play' : 'pause')}</button>` + '<button type="button" class="ri" data-board title="World settings (the board\'s World tab)" aria-label="World settings">' + I('settings') + '</button>';
     if (rail.innerHTML !== railHtml) rail.innerHTML = railHtml;
     const body = win.querySelector('.dle-wd-body');
     // a redraw while typing (the world posting in the background) keeps the box, its text, cursor and the @ list (Miinthe's tags test)
@@ -296,11 +302,11 @@ function onClick(e) {
     if (section !== 'msgs' && e.target.closest('.dle-wd-body') && onFeedClick(e, win.querySelector('.dle-wd-body'), worldHere())) return;
     if (e.target.closest('[data-wpause]')) {
         const w = worldHere();
-        if (w && setWorldPaused(!w.paused)) { K.notify({ title: 'World', text: w.paused ? 'The world is awake again.' : 'The world is paused: nothing new comes in until you wake it.' }); notifyTrackersView(); }
+        if (w && setWorldPaused(!w.paused)) { K.notify({ title: 'World', text: w.paused ? 'The world is awake again.' : 'The world is paused in this chat: nothing new comes in and nobody answers until you wake it.' }); notifyTrackersView(); if (w.paused) wakeWorld(); }
         return;
     }
     if (e.target.closest('[data-board]')) {
-        import('../board-window.js').then(m => m.openBoardWindow({ view: 'world' })).catch(err => console.warn('[DLE] world: board window', err));
+        import('../board-window.js').then(m => m.openBoardWindow({ view: 'world' })).catch(err => console.warn('[Onyx Quill] world: board window', err));
     }
 }
 
@@ -402,7 +408,7 @@ function afterReply() {
         if (chatNow() !== cid) return;
         const w = worldHere(); if (!w) return;
         // one after the other, each only while the same chat is open (hunt 2: a chat opened during the first got the rest)
-        try { await continueThreads(w); if (chatNow() === cid) await pulse(w); if (chatNow() === cid) await fireAsks(w); } catch (err) { console.warn('[DLE] world: after the reply', err?.message || err); }
+        try { await continueThreads(w); if (chatNow() === cid) await pulse(w); if (chatNow() === cid) await fireAsks(w); } catch (err) { console.warn('[Onyx Quill] world: after the reply', err?.message || err); }
     }, 4000);
 }
 

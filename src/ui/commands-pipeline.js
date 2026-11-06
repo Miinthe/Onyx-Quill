@@ -7,10 +7,10 @@ import { SlashCommand } from '../../../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE } from '../../../../../slash-commands/SlashCommandArgument.js';
 import { NO_ENTRIES_MSG, classifyError } from '../../core/utils.js';
 import { formatAndGroup } from '../../core/matching.js';
-import { buildExemptionPolicy, applyRequiresExcludesGating, applyContextualGating } from '../stages.js';
+import { buildExemptionPolicy, applyRequiresExcludesGating, applyContextualGating, applyPinBlock, applyReinjectionCooldown, applyStripDedup } from '../stages.js';
 import { getSettings, PROMPT_TAG_PREFIX } from '../../settings.js';
 import {
-    vaultIndex, getWriterVisibleEntries, injectionHistory, generationCount,
+    vaultIndex, injectionHistory, generationCount,
     generationLock, trackerKey, buildPromise, fieldDefinitions,
 } from '../state.js';
 import { getCurrentForChat as getCurrentVerdictForChat } from '../verdict/verdict-store.js';
@@ -24,6 +24,7 @@ function _currentVerdictForChat() {
 }
 import { DEFAULT_FIELD_DEFINITIONS } from '../fields.js';
 import { runPipeline } from '../pipeline/pipeline.js';
+import { generationInputs } from '../pipeline/generation-inputs.js';
 import { ensureFreshOrToast } from './commands-shared.js';
 import { showSourcesPopup } from './cartographer.js';
 import { runSimulation, showSimulationPopup, buildCopyButton, attachCopyHandler } from './popups.js';
@@ -44,7 +45,8 @@ export function registerPipelineCommands() {
                 return '';
             }
             toastr.info(tr('dle_cmd_simulate_running_toast'), 'Onyx Quill', { timeOut: 2000 });
-            const timeline = runSimulation(chat);
+            // the chat's folders, today's pins / field values / budget; no board narrowing (its past states can't be known)
+            const timeline = runSimulation(chat, await generationInputs({ board: false }));
             showSimulationPopup(timeline);
             return '';
         },
@@ -72,49 +74,39 @@ export function registerPipelineCommands() {
                 return '';
             }
 
+            // LOCAL PATCH (Miinthe, 2026-11-05): the same inputs the real reply uses (index.js onGenerate) — the board's
+            // narrowing (steps, branches, items) and pins, the chat's folders, this chat's budget (generation-inputs.js).
+            const inp = await generationInputs();
+            if (!inp.on) {
+                toastr.info(`Onyx Quill is off in this chat (${inp.why}) — the next reply gets no lore.`, 'Onyx Quill');
+                return '';
+            }
             const settings = getSettings();
             // Confirm before making a real API call.
             if (settings.aiSearchEnabled) {
                 const proceed = await callGenericPopup('This will make a live AI search call and use API tokens. Continue?', POPUP_TYPE.CONFIRM);
                 if (!proceed) return '';
             }
-            // BUG-F2: pass context/pins/blocks so AI pre-filter respects gating.
-            const gatingContext = chat_metadata?.deeplore_context || {};
-            const cmdPins = chat_metadata.deeplore_pins || [];
-            const cmdBlocks = chat_metadata.deeplore_blocks || [];
-            let folderFilter = chat_metadata?.deeplore_folder_filter || null;
-            try { folderFilter = (await import('../characters.js')).effectiveFolderFilter(); } catch { /* chat's own folders */ }   // LOCAL PATCH (Miinthe, 2026-10-04)
-            let finalEntries, matchedKeys;
+            const gatingContext = inp.ctx;
+            const { pins: cmdPins, blocks: cmdBlocks, folderFilter, budget } = inp;
+            let finalEntries, matchedKeys, trace;
             try {
-                ({ finalEntries, matchedKeys } = await runPipeline(chat, getWriterVisibleEntries(), gatingContext, { pins: cmdPins, blocks: cmdBlocks, folderFilter }));
+                ({ finalEntries, matchedKeys, trace } = await runPipeline(chat, inp.snapshot, gatingContext, { pins: cmdPins, blocks: cmdBlocks, folderFilter, budget }));
             } catch (err) {
-                console.warn('[DLE] /oq-why pipeline failed:', err);
+                console.warn('[Onyx Quill] /oq-why pipeline failed:', err);
                 notify.error(classifyError(err), { copyable: true });
                 return '';
             }
 
-            // Mirror onGenerate order: cooldown → contextual gating → requires/excludes → format.
-            let filtered = finalEntries;
-            if (settings.reinjectionCooldown > 0) {
-                filtered = finalEntries.filter(e => {
-                    if (e.constant) return true;
-                    const lastGen = injectionHistory.get(trackerKey(e));
-                    return lastGen === undefined || (generationCount - lastGen) >= settings.reinjectionCooldown;
-                });
-            }
-
-            // /oq-why is a diagnostic preview — bootstrapActive=false intentionally.
-            // Showing the user "what would inject right now if bootstrap is OFF" is
-            // the conservative (and accurate, post-bootstrap) view. Gotcha #60.
-            if (gatingContext && Object.keys(gatingContext).length > 0) {
-                const fieldDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
-                const cmdPolicy = buildExemptionPolicy(vaultIndex, cmdPins, cmdBlocks, false);
-                filtered = applyContextualGating(filtered, gatingContext, cmdPolicy, settings.debugMode, settings, fieldDefs);
-            }
-
-            const cmdPolicy2 = buildExemptionPolicy(vaultIndex, cmdPins, cmdBlocks, false);
-            const { result: gated } = applyRequiresExcludesGating(filtered, cmdPolicy2, settings.debugMode, settings.priorityReversed);
-            const { count: injectedCount, acceptedEntries } = formatAndGroup(gated, settings, PROMPT_TAG_PREFIX);
+            // Mirror onGenerate order: pins/blocks → contextual gating → cooldown → requires/excludes → strip dedup → format with this chat's budget.
+            const cmdPolicy = buildExemptionPolicy(inp.snapshot, cmdPins, cmdBlocks, trace?.bootstrapActive === true);
+            let filtered = applyPinBlock(finalEntries, inp.snapshot, cmdPolicy, matchedKeys);
+            const fieldDefs = fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS;
+            filtered = applyContextualGating(filtered, gatingContext, cmdPolicy, settings.debugMode, settings, fieldDefs);
+            filtered = applyReinjectionCooldown(filtered, cmdPolicy, injectionHistory, generationCount, settings.reinjectionCooldown, settings.debugMode);
+            let { result: gated } = applyRequiresExcludesGating(filtered, cmdPolicy, settings.debugMode, settings.priorityReversed);
+            if (settings.stripDuplicateInjections) gated = applyStripDedup(gated, cmdPolicy, chat_metadata.deeplore_injection_log, settings.stripLookbackDepth, settings, settings.debugMode);
+            const { count: injectedCount, acceptedEntries } = formatAndGroup(gated, { ...settings, ...budget }, PROMPT_TAG_PREFIX);
             const injected = acceptedEntries || gated.slice(0, injectedCount);
 
             if (injected.length === 0) {
@@ -444,6 +436,10 @@ export function registerPipelineCommands() {
             }
             pushHtmlSection(sections[2]); // injected
             pushHtmlSection(sections[3]); // contextualGatingRemoved
+            if (t.folderFilter) {
+                html += `<h4>ℹ Folder Filter</h4>`;
+                html += `<p>${escapeHtml(t.folderFilter.folders.join(', '))} — ${t.folderFilter.removed} entries removed (${t.folderFilter.before} → ${t.folderFilter.after})</p>`;
+            }
             pushHtmlSection(sections[4]); // cooldown
             pushHtmlSection(sections[5]); // gatedOut
             pushHtmlSection(sections[6]); // stripDedup

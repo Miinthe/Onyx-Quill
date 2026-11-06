@@ -302,7 +302,7 @@ async function react(w, postId, commentText) {
             H.save(updatePost(H.store(), postId, p => addComment(p, { id: newId('c'), by: c.who.key, text: c.text, auto: true })));
             H.render();
         }
-    } catch (err) { console.warn('[DLE] world: reactions failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: reactions failed', err?.message || err); }
     finally { reacting.delete(postId); H.changed(); H.render(); }
 }
 
@@ -378,7 +378,7 @@ export async function feedTick(w, reason, { force = false } = {}) {
         const focus = storyToTell(stories);
         const pr = feedPrompt({ userName: nameOf(USER), people: ppl, recent, old, stories: focus ? [focus] : [], reason, look: w.look, when: c ? stampText({ day: c.day, part: c.part }) : '', newStoryOk: stories.length === 0 && !force });
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 1400), caller: 'world', skipThrottle: true, jsonSchema: FEED_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.95 });
-        if (window.__dleWorldDebug) console.log('[DLE] world feed', reason, r?.text);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world feed', reason, r?.text);
         if (H.chat() !== cid) return;
         const a = parseFeed(r?.text, ppl);
         let st = H.store();
@@ -413,7 +413,7 @@ export async function feedTick(w, reason, { force = false } = {}) {
         H.save(st);
         for (const [keys, outlet, head, pid] of quoted) { const u = tellQuoted(keys, outlet, head); if (u) H.save(updatePost(H.store(), pid, x => ({ taught: mergeTaught(x.taught, u) }))); }
         for (const rec of asks.slice(0, 1)) askComment(w, rec);   // after the save: the knowledge is logged on the live state
-    } catch (err) { console.warn('[DLE] world: feed failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: feed failed', err?.message || err); }
     finally {
         feedBusy = false; H.changed(); H.render();
         if (feedAgain) { const [w2, r2] = feedAgain; feedAgain = null; if (H.chat() === cid) feedTick(w2, r2, { force: true }); }
@@ -463,7 +463,7 @@ export async function pulse(w) {
         const gs = groupsForPulse(w).map(g => ({ ...g, keys: g.members, members: g.members.map(nameOf) }));
         const pr = pulsePrompt({ userName: nameOf(USER), people: ppl, recent, old, texters, open, story, groups: gs, feed: !!w.sections.feed, msgs: !!w.sections.msgs, look: w.look, when: c ? stampText({ day: c.day, part: c.part }) : '', min: w.alive.movesMin, max: w.alive.movesMax });
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 300 + 200 * w.alive.movesMax), caller: 'world', skipThrottle: true, jsonSchema: PULSE_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.95 });
-        if (window.__dleWorldDebug) console.log('[DLE] world pulse', r?.text);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world pulse', r?.text);
         if (H.chat() !== cid || lastI() < li) return;
         const moves = parsePulse(r?.text, ppl, texters, w.alive.movesMax, gs);
         let st = H.store();
@@ -486,7 +486,7 @@ export async function pulse(w) {
             }
         }
         H.save(st);
-    } catch (err) { console.warn('[DLE] world: the small moves failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: the small moves failed', err?.message || err); }
     finally { feedBusy = false; H.changed(); H.render(); }
 }
 

@@ -582,4 +582,13 @@ test('#14 source-pin: commands-vault retry consumes row.entry — no filename-ma
     assert(src.includes('rows.map(f => f.entry)'), 'retry re-imports the source WI entries straight off the rows');
 });
 
+test('constant WI entries get the configured Always-send tag, not a hard-coded one', () => {
+    const wi = { comment: 'Rules', key: ['r'], content: 'c', constant: true };
+    assert(convertWiEntry(wi, 'lorebook').content.includes('  - lorebook-always'), 'default tag when none passed');
+    const out = convertWiEntry(wi, 'lore', { constantTag: 'lore-always-on' });
+    assert(out.content.includes('  - lore-always-on'), 'renamed Always-send tag is used');
+    assert(!out.content.includes('lorebook-always'), 'old default tag is not emitted');
+    assert(IMPORT_SRC.split('constantTag: settings.constantTag').length === 3, 'both importEntries and upsertConvertedEntry pass settings.constantTag');
+});
+
 await summary('WI Import Full-Parity Tests');

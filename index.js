@@ -59,7 +59,6 @@ import {
     notifyChatInjectionCountsUpdated,
     fieldDefinitions,
     folderList,
-    setLoreGaps,
     setPipelinePhase, pipelineLabelFor,
     skipNextPipeline, setSkipNextPipeline,
     buildPromise,
@@ -99,7 +98,7 @@ import { initChangesTab } from './src/changes-tab.js';   // LOCAL PATCH (Miinthe
 import { dedupError, dedupWarning } from './src/toast-dedup.js';
 import { createDrawerPanel, resetDrawerState, destroyDrawerPanel } from './src/drawer/drawer.js';
 import { pushActivity } from './src/drawer/drawer-state.js';
-import { extractAiNotes, normalizeLoreGap, normalizeNotepadLine, normalizePinBlock as _dlePinNorm, matchesNormalizedPinBlock as _dlePinMatch } from './src/helpers.js';   // LOCAL PATCH: pin helpers for the step filter
+import { extractAiNotes, normalizeNotepadLine, normalizePinBlock as _dlePinNorm, matchesNormalizedPinBlock as _dlePinMatch } from './src/helpers.js';   // LOCAL PATCH: pin helpers for the step filter
 import { isUnderlyingClaudeModel as isUnderlyingClaude } from './src/ai/claude-model-pure.js';
 import {
     buildVerdict,
@@ -197,7 +196,7 @@ function _installRealChatChangedHandler(handler) {
         _pendingChatChangedFired = false;
         const queued = _pendingChatChanged;
         _pendingChatChanged = null;
-        try { handler(queued); } catch (err) { console.warn('[DLE] queued CHAT_CHANGED replay failed:', err?.message); }
+        try { handler(queued); } catch (err) { console.warn('[Onyx Quill] queued CHAT_CHANGED replay failed:', err?.message); }
     }
 }
 
@@ -207,7 +206,7 @@ let _debugNamespaceUnsub = null;
 
 function _registerEs(event, handler, { once = false } = {}) {
     // Feature-detect guard: events that don't exist in this ST version pass undefined here.
-    if (!event) { console.debug('[DLE] _registerEs: skipped undefined event type'); return; }
+    if (!event) { console.debug('[Onyx Quill] _registerEs: skipped undefined event type'); return; }
     _dleListeners.eventSource.push({ event, handler, once });
     if (once) eventSource.once(event, handler);
     else eventSource.on(event, handler);
@@ -228,12 +227,12 @@ function _teardownDleExtension() {
     inSteppedThinking = false;
     // Settings-ui registers 4 state observers (onIndexUpdated, onAiStatsUpdated, onCircuitStateChanged,
     // onClaudeAutoEffortChanged); without this, re-init accumulates duplicates.
-    try { teardownSettingsUI(); } catch (err) { console.warn('[DLE] teardownSettingsUI failed:', err?.message); }
+    try { teardownSettingsUI(); } catch (err) { console.warn('[Onyx Quill] teardownSettingsUI failed:', err?.message); }
     if (_debugNamespaceUnsub) {
         try { _debugNamespaceUnsub(); } catch { /* ignore */ }
         _debugNamespaceUnsub = null;
     }
-    try { destroyDrawerPanel(); } catch (err) { console.warn('[DLE] destroyDrawerPanel failed:', err?.message); }
+    try { destroyDrawerPanel(); } catch (err) { console.warn('[Onyx Quill] destroyDrawerPanel failed:', err?.message); }
     // BUG-062: namespaced delegated handler on #chat needs explicit detach.
     try { $('#chat').off('.dle-carto'); } catch { /* ignore */ }
     if (_dleBeforeUnloadHandler) {
@@ -364,13 +363,13 @@ function _startPmRegistrationLatch() {
         if (ensurePmEntriesRegistered()) {
             clearInterval(_pmRegistrationLatchTimer);
             _pmRegistrationLatchTimer = null;
-            console.info('[DLE] PM-mode entries registered (background latch).');
+            console.info('[Onyx Quill] PM-mode entries registered (background latch).');
             return;
         }
         if (Date.now() >= _pmRegistrationLatchDeadline) {
             clearInterval(_pmRegistrationLatchTimer);
             _pmRegistrationLatchTimer = null;
-            console.warn('[DLE] PM-mode registration latch expired after 5 min with no active character. Switch to a character or change Injection Mode in DLE settings.');
+            console.warn('[Onyx Quill] PM-mode registration latch expired after 5 min with no active character. Switch to a character or change Injection Mode in Onyx Quill settings.');
         }
     }, _PM_LATCH_INTERVAL_MS);
 }
@@ -379,8 +378,6 @@ function _startPmRegistrationLatch() {
 const DEFAULT_AI_NOTEPAD_EXTRACT_PROMPT = `You are a session note-taker for a roleplay. Given the AI's latest response and (optionally) its previous session notes, extract anything worth remembering for future context.
 
 Extract: character decisions, relationship shifts, emotional states, revealed information, plot developments, world state changes, unresolved threads, promises made, lies told, or anything else a writer would want to track.
-
-If the response contains visible "notes to self", "OOC" commentary, or meta-commentary by the AI, extract the useful content from those too.
 
 If there is nothing noteworthy, respond with exactly: NOTHING_TO_NOTE
 
@@ -560,7 +557,7 @@ function _pipelineCancel() {
     try {
         stopGeneration();
     } catch (e) {
-        console.warn('[DLE] pipeline cancel: stopGeneration() failed:', e?.message);
+        console.warn('[Onyx Quill] pipeline cancel: stopGeneration() failed:', e?.message);
         // Fallback: synthesize the event directly so DLE's own listeners still tear down,
         // then clear the toast so the user isn't stranded on a stuck status.
         try { eventSource.emit(event_types.GENERATION_STOPPED); } catch { /* noop */ }
@@ -816,7 +813,7 @@ async function _maybeShowProxyDeprecationNotice() {
             wide: true,
         });
     } catch (err) {
-        console.warn('[DLE] proxy-deprecation popup failed:', err?.message);
+        console.warn('[Onyx Quill] proxy-deprecation popup failed:', err?.message);
         // Treat failure as dismissal — still clear the sentinel so we don't loop.
     }
 
@@ -846,10 +843,10 @@ async function _maybeShowProxyDeprecationNotice() {
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                     setTimeout(() => $acc.removeClass('dle-pulse-attention'), 6000);
-                } catch (e) { console.warn('[DLE] pulse-attention failed:', e?.message); }
+                } catch (e) { console.warn('[Onyx Quill] pulse-attention failed:', e?.message); }
             }, 250);
         } catch (err) {
-            console.warn('[DLE] proxy-deprecation: open settings failed:', err?.message);
+            console.warn('[Onyx Quill] proxy-deprecation: open settings failed:', err?.message);
         }
     }
 }
@@ -994,7 +991,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     if (npcTurnActive()) return;
     // LOCAL PATCH (Miinthe, 2026-10-13): Send while someone is in the Cast's round plays the round (cast-queue.js) — this
     // reply stops here, before the helper or the lore run.
-    try { if (takeOverSend(type, abort) || takeOverRegen(type, abort)) return; } catch (err) { console.warn('[DLE] cast round take-over skipped:', err?.message || err); }
+    try { if (takeOverSend(type, abort) || takeOverRegen(type, abort)) return; } catch (err) { console.warn('[Onyx Quill] cast round take-over skipped:', err?.message || err); }
     const settings = getSettings();
 
     if (type === 'quiet' || !settings.enabled) {
@@ -1006,15 +1003,15 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     // LOCAL PATCH (Miinthe, 2026-10-04): DeepLore can be off for this chat or its character, and a
     // character with no folders anywhere doesn't use it (characters.js). Off = nothing at all:
     // no lore, no trackers, no helper — and nothing left over from an earlier reply.
-    try { autoRun(); } catch (err) { console.warn('[DLE] automatic run letter skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): a new chat gets its run letter
+    try { autoRun(); } catch (err) { console.warn('[Onyx Quill] automatic run letter skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): a new chat gets its run letter
     try {
         const _cs = chatStatus();
         if (!_cs.on) {
             _clearAllDlePrompts(settings);
-            if (settings.debugMode) console.debug('[DLE] off for this chat:', _cs.why);
+            if (settings.debugMode) console.debug('[Onyx Quill] off for this chat:', _cs.why);
             return;
         }
-    } catch (err) { console.warn('[DLE] character switch check failed:', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] character switch check failed:', err?.message || err); }
 
     // LOCAL PATCH (Miinthe, 2026-10-05): Miinthe's [OOC: …] brackets go to Mero and are taken out of what the writer sees
     // (the stored message stays as she wrote it). A message that is only [OOC] starts no story reply.
@@ -1025,7 +1022,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             try { toastr.info('That was only for Mero — no story reply. Her answer is in the ☆ Mero tab.', 'Onyx Quill', { timeOut: 6000 }); } catch { /* noop */ }
             return;
         }
-    } catch (err) { console.warn('[DLE] [OOC] routing skipped:', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] [OOC] routing skipped:', err?.message || err); }
 
     // Run BEFORE the skip guards so prefill survives stepped-thinking,
     // skipNextPipeline, and tool-call continuation generations (those still
@@ -1036,7 +1033,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     // generation pass is in flight. See `inSteppedThinking` declaration for the
     // rationale (would otherwise re-enter pipeline N× per user turn).
     if (inSteppedThinking) {
-        if (settings.debugMode) console.debug('[DLE] Pipeline skipped — Stepped Thinking active');
+        if (settings.debugMode) console.debug('[Onyx Quill] Pipeline skipped — Stepped Thinking active');
         try { generationBuffer.push({ t: Date.now(), skipped: true, reason: 'stepped_thinking' }); } catch { /* noop */ }
         return;
     }
@@ -1044,7 +1041,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     // /oq-review and similar bypass the full pipeline by setting skipNextPipeline.
     if (skipNextPipeline) {
         setSkipNextPipeline(false);
-        if (settings.debugMode) console.debug('[DLE] Pipeline skipped (skipNextPipeline flag)');
+        if (settings.debugMode) console.debug('[Onyx Quill] Pipeline skipped (skipNextPipeline flag)');
         return;
     }
 
@@ -1054,7 +1051,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     if (chatMessages.length > 0) {
         const lastMsg = chatMessages[chatMessages.length - 1];
         if (lastMsg?.extra?.tool_invocations || lastMsg?.is_system) {
-            if (settings.debugMode) console.debug('[DLE] Skipping pipeline for tool-call continuation');
+            if (settings.debugMode) console.debug('[Onyx Quill] Skipping pipeline for tool-call continuation');
             try { generationBuffer.push({ t: Date.now(), skipped: true, reason: 'tool_call_continuation' }); } catch { /* noop */ }
             return;
         }
@@ -1068,7 +1065,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         const lockAge = Date.now() - generationLockTimestamp;
         if (lockAge > 30_000) {
             // Auto-recover stale locks past 30s.
-            console.warn(`[DLE] Previous lore selection took too long (${Math.round(lockAge / 1000)}s) — releasing lock`);
+            console.warn(`[Onyx Quill] Previous lore selection took too long (${Math.round(lockAge / 1000)}s) — releasing lock`);
             dedupWarning('Lore from the last message is taking longer than expected — check your AI timeout setting.', 'pipeline_lock_stale', { hint: 'Pipeline lock held past 30s.' });
             // BUG-274: bump lockEpoch so the stuck pipeline (if it ever unsticks) can't win
             // commit order against this new one. Releasing without the bump would let its
@@ -1077,7 +1074,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             setGenerationLockEpoch(generationLockEpoch + 1);
             setGenerationLock(false);
         } else {
-            console.warn('[DLE] Generation lock active — another pipeline is still running. Lore skipped for this generation.');
+            console.warn('[Onyx Quill] Generation lock active — another pipeline is still running. Lore skipped for this generation.');
             dedupWarning('Lore from the last message is still loading — reusing what we had.', 'pipeline_lock');
             try { generationBuffer.push({ t: Date.now(), skipped: true, reason: 'lock_contention', lockAgeMs: lockAge }); } catch { /* noop */ }
             return;
@@ -1129,12 +1126,12 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
     const pipelineAbort = new AbortController();
     const onStop = () => abortWith(pipelineAbort, 'pipeline:generation_stopped');
     const onChatChange = () => abortWith(pipelineAbort, 'pipeline:chat_changed');
-    try { eventSource.on(event_types.GENERATION_STOPPED, onStop); } catch { console.warn('[DLE] Could not register GENERATION_STOPPED abort handler'); }
-    try { eventSource.on(event_types.CHAT_CHANGED, onChatChange); } catch { console.warn('[DLE] Could not register CHAT_CHANGED abort handler'); }
+    try { eventSource.on(event_types.GENERATION_STOPPED, onStop); } catch { console.warn('[Onyx Quill] Could not register GENERATION_STOPPED abort handler'); }
+    try { eventSource.on(event_types.CHAT_CHANGED, onChatChange); } catch { console.warn('[Onyx Quill] Could not register CHAT_CHANGED abort handler'); }
 
     // Remove pipeline status on first streaming token (one-shot). Torn down in finally.
     const onFirstToken = () => { _removePipelineStatus(); };
-    try { eventSource.once(event_types.STREAM_TOKEN_RECEIVED, onFirstToken); } catch { console.warn('[DLE] Could not register STREAM_TOKEN_RECEIVED handler'); }
+    try { eventSource.once(event_types.STREAM_TOKEN_RECEIVED, onFirstToken); } catch { console.warn('[Onyx Quill] Could not register STREAM_TOKEN_RECEIVED handler'); }
 
     try {
         // Two intentional non-clears at pipeline entry:
@@ -1147,7 +1144,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // First gen after hydration: nuke dedup log because cached _contentHash values may not
         // match current Obsidian content.
         if (!indexEverLoaded && vaultIndex.length > 0 && chat_metadata?.deeplore_injection_log?.length > 0) {
-            if (settings.debugMode) console.debug('[DLE][DIAG] hydration-clear — wiping injection log (indexEverLoaded=false, vaultSize=%d, logLen=%d)', vaultIndex.length, chat_metadata.deeplore_injection_log.length);
+            if (settings.debugMode) console.debug('[Onyx Quill][DIAG] hydration-clear — wiping injection log (indexEverLoaded=false, vaultSize=%d, logLen=%d)', vaultIndex.length, chat_metadata.deeplore_injection_log.length);
             chat_metadata.deeplore_injection_log = [];
         }
 
@@ -1161,7 +1158,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 new Promise((_, reject) => { indexTimer = setTimeout(() => reject(new Error('Index refresh timed out')), INDEX_TIMEOUT_MS); }),
             ]);
         } catch (timeoutErr) {
-            console.warn(`[DLE] ${timeoutErr.message} — proceeding with stale data`);
+            console.warn(`[Onyx Quill] ${timeoutErr.message} — proceeding with stale data`);
             if (vaultIndex.length === 0) {
                 // Hunt 2 (2026-11-03): no lore this turn, but the run goes on (no `return`) — the writer blocks, the
                 // story helper and the Cast don't need the vault; an empty run clears last turn's lore (see below).
@@ -1173,7 +1170,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         if (settings.debugMode) {
             const _diagLog = chat_metadata.deeplore_injection_log;
             const _diagSnap = lastGenerationTrackerSnapshot;
-            console.debug('[DLE][DIAG] pipeline-entry', {
+            console.debug('[Onyx Quill][DIAG] pipeline-entry', {
                 generationCount, vaultSize: vaultIndex.length, indexEverLoaded,
                 chatMsgCount: chatMessages.length, buildPending: !!buildPromise,
                 epoch, chatEpoch,
@@ -1204,11 +1201,13 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // Bail before touching the swipe tracker snapshot — otherwise we'd tag a stale snapshot
         // with the new chat's swipe keys or pollute its cooldown/decay/injection maps.
         if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
-            console.debug('[DLE] Chat changed during index refresh — discarding pipeline');
+            console.debug('[Onyx Quill] Chat changed during index refresh — discarding pipeline');
             try { generationBuffer.push({ t: Date.now(), discarded: true, reason: 'chat_changed_during_index' }); } catch { /* noop */ }
             return;
         }
 
+        // KEEP IN STEP: src/pipeline/generation-inputs.js rebuilds these same inputs (writer-visible entries, board
+        // narrowing + pins, folder filter, budget) for /oq-why and /oq-simulate — a change here needs the same change there.
         // Snapshot vaultIndex at pipeline start to avoid races with background rebuilds.
         // getWriterVisibleEntries filters out lorebook-guide — those are writing guides and
         // must never reach the writing AI through any path.
@@ -1226,7 +1225,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // slop guard, notebook) — and left last turn's prompts in place. A vault with no entries (yet) still has
             // all of those; the run goes on and ends at "No entries matched" (_commitEmptyAndReturn).
             if (settings.debugMode) {
-                console.debug('[DLE] No entries indexed — no lore this turn');
+                console.debug('[Onyx Quill] No entries indexed — no lore this turn');
             }
         }
 
@@ -1254,7 +1253,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             _snapMatch = !!(lastGenerationTrackerSnapshot && (lastGenerationTrackerSnapshot.swipeKey === earlySwipeKey
                 || ((type === 'swipe' || type === 'regenerate' || type === 'continue') && lastGenerationTrackerSnapshot.idx === earlyIdx)));
             if (settings.debugMode) {
-                console.debug('[DLE][DIAG] swipe-check', {
+                console.debug('[Onyx Quill][DIAG] swipe-check', {
                     earlyIdx, earlySwipeId, earlySwipeKey,
                     snapshotSwipeKey: lastGenerationTrackerSnapshot?.swipeKey ?? 'NO_SNAPSHOT',
                     snapshotGenCount: lastGenerationTrackerSnapshot?.generationCount ?? 'N/A',
@@ -1272,11 +1271,11 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 // BUG-396b: clear injection log on swipe/regen — old injections were for the message
                 // being replaced; strip-dedup must not filter them out of the new generation.
                 if (chat_metadata.deeplore_injection_log?.length > 0) {
-                    if (settings.debugMode) console.debug('[DLE][DIAG] swipe-restore-clear-log — clearing injection log (%d entries) because swipe/regen replaces the prior generation', chat_metadata.deeplore_injection_log.length);
+                    if (settings.debugMode) console.debug('[Onyx Quill][DIAG] swipe-restore-clear-log — clearing injection log (%d entries) because swipe/regen replaces the prior generation', chat_metadata.deeplore_injection_log.length);
                     chat_metadata.deeplore_injection_log = [];
                     saveMetadataDebounced();
                 }
-                if (settings.debugMode) console.debug('[DLE][DIAG] swipe-restore', {
+                if (settings.debugMode) console.debug('[Onyx Quill][DIAG] swipe-restore', {
                     restoredGenerationCount: snap.generationCount,
                     cooldownKeys: [...snap.cooldown.keys()],
                     historyKeys: [...snap.injectionHistory.keys()],
@@ -1293,7 +1292,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 generationCount: generationCount,
             });
             if (settings.debugMode) {
-                console.debug('[DLE][DIAG] swipe-snapshot-taken', {
+                console.debug('[Onyx Quill][DIAG] swipe-snapshot-taken', {
                     swipeKey: earlySwipeKey,
                     snapshotGenerationCount: generationCount,
                 });
@@ -1307,15 +1306,15 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // model crashed) is a first reply, not a redo: the helper and the director run for it.
         const _turnType = type === 'regenerate' && _regenWithoutReply ? 'normal' : type;
         try { await runAutoTrack(chatMessages, _turnType, pipelineAbort.signal); }
-        catch (err) { console.warn('[DLE] story tracker step skipped:', err?.message || err); }
+        catch (err) { console.warn('[Onyx Quill] story tracker step skipped:', err?.message || err); }
         // LOCAL PATCH (Miinthe, 2026-10-13): the Cast — after the helper said who is here, the director updates their plans
         // and thoughts, so the writer block below already carries this turn's plans.
         try { await runDirector(chatMessages, _turnType, pipelineAbort.signal); }
-        catch (err) { console.warn('[DLE] cast director skipped:', err?.message || err); }
+        catch (err) { console.warn('[Onyx Quill] cast director skipped:', err?.message || err); }
         // LOCAL PATCH (Miinthe, 2026-10-14): a 🙈 hidden pitch whose moment came goes to the writer with this reply (a hidden
         // ⚡ flash note — before the [Author's notes] block below is built)
         try { await pitchTurn(chatMessages, _turnType, pipelineAbort.signal); }
-        catch (err) { console.warn('[DLE] hidden pitches skipped:', err?.message || err); }
+        catch (err) { console.warn('[Onyx Quill] hidden pitches skipped:', err?.message || err); }
         // Hunt 2 (2026-11-03): the three steps above wait on AI calls. A chat switch (or Stop) meanwhile aborts them, but
         // the run went on — the board's turn below then ran on the NEW chat's board, with no message of its own.
         if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch || pipelineAbort.signal.aborted) {
@@ -1324,7 +1323,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         }
         // LOCAL PATCH (Miinthe, 2026-10-04): the board's own turn (triggers + odds) on every reply —
         // a failed roll may roll again after N messages even when nothing moved.
-        try { boardTick(); } catch (err) { console.warn('[DLE] board turn skipped:', err?.message || err); }
+        try { boardTick(); } catch (err) { console.warn('[Onyx Quill] board turn skipped:', err?.message || err); }
 
         // LOCAL PATCH (Miinthe, 2026-10-03): entries linked to a tracker step other than the
         // current one leave the snapshot — the judge never sees them, keywords can't pull
@@ -1342,10 +1341,10 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             vaultSnapshot = filterByBranch(vaultSnapshot, _all, e => _pins.some(pb => _dlePinMatch(pb, e)), t => _active.has(t.name));
             // LOCAL PATCH (Miinthe, 2026-10-05): entries linked on an item exist once it is found / kept.
             vaultSnapshot = filterLiveEntries(vaultSnapshot, e => _pins.some(pb => _dlePinMatch(pb, e)));
-        } catch (err) { console.warn('[DLE] story-step filter skipped:', err?.message || err); }
+        } catch (err) { console.warn('[Onyx Quill] story-step filter skipped:', err?.message || err); }
 
         // LOCAL PATCH (Miinthe, 2026-10-05): places — "here" sets the location filter before gating reads it.
-        try { syncLiveLocation(); } catch (err) { console.warn('[DLE] board location skipped:', err?.message || err); }
+        try { syncLiveLocation(); } catch (err) { console.warn('[Onyx Quill] board location skipped:', err?.message || err); }
         // ctx is passed to pipeline (pre-filter) AND post-pipeline stages (applyContextualGating).
         const ctx = chat_metadata.deeplore_context || {};
 
@@ -1357,7 +1356,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         const blocks = chat_metadata.deeplore_blocks || [];
         // LOCAL PATCH (Miinthe, 2026-10-04): the character's base folders + its run's + the chat's own (characters.js)
         let folderFilter = chat_metadata.deeplore_folder_filter || null;
-        try { folderFilter = effectiveFolderFilter(); } catch (err) { console.warn('[DLE] character folders skipped:', err?.message || err); }
+        try { folderFilter = effectiveFolderFilter(); } catch (err) { console.warn('[Onyx Quill] character folders skipped:', err?.message || err); }
         // overhaul (2026-10-17): this chat's budget — the most specific wins: the chat's own → its character's → Everywhere
         const _budget = budgetOverlay(settings);
 
@@ -1370,7 +1369,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         trace.totalMs = Math.round(performance.now() - _pipelineStartMs);
         trace.ensureIndexFreshMs = _indexFreshMs;
         if (pipelineAbort.signal.aborted) {
-            if (settings.debugMode) console.debug('[DLE] Pipeline aborted by user before commit');
+            if (settings.debugMode) console.debug('[Onyx Quill] Pipeline aborted by user before commit');
             return;
         }
 
@@ -1385,7 +1384,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // metadata/state mutation. The lockEpoch half is the one that catches the
         // same-chat case; chatEpoch covers the cross-chat case for completeness.
         if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
-            console.warn('[DLE] Pipeline superseded (lock force-released or chat changed) immediately after runPipeline — discarding before any metadata write');
+            console.warn('[Onyx Quill] Pipeline superseded (lock force-released or chat changed) immediately after runPipeline — discarding before any metadata write');
             try { generationBuffer.push({ t: Date.now(), discarded: true, reason: 'superseded_post_pipeline' }); } catch { /* noop */ }
             return;
         }
@@ -1440,13 +1439,13 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // story stands — current step only, never the next. Always called, so an
             // empty string clears the block once the last tracker is removed.
             let _boardLines = [];
-            try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[DLE] board lines skipped:', err?.message || err); }
+            try { _boardLines = liveWriterLines(); } catch (err) { console.warn('[Onyx Quill] board lines skipped:', err?.message || err); }
             _boardLines = [..._boardLines, ...worldWriterLines()];   // the world layer: what the main character knows from messages (2026-10-19)
             _injectAuxPrompt('deeplore_story_trackers', writerBlock(readActiveTrackers(), _boardLines),   // engine on v2, step 2: read from v2
                 settings.storyBlockPosition ?? extension_prompt_types.IN_CHAT, settings.storyBlockDepth ?? 4, settings.storyBlockRole ?? extension_prompt_roles.SYSTEM);   // overhaul (2026-10-17): its place is a setting (was fixed: in chat, depth 4, system)
             // overhaul (2026-10-17): her own prompt pieces (Settings › Prompts › + Your own prompt), each where it says
             try { for (const o of ownInjections(settings.ownPrompts)) setExtensionPrompt(o.slot, o.text, o.position, o.depth, false, o.role); }
-            catch (err) { console.warn('[DLE] own prompts skipped:', err?.message || err); }
+            catch (err) { console.warn('[Onyx Quill] own prompts skipped:', err?.message || err); }
             // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes Miinthe kept — one [Author's notes] block close to the reply
             // (models follow instructions best there). Always called, so an empty string clears it.
             _injectAuxPrompt('deeplore_author_notes', authorNotesForGeneration(type),
@@ -1465,7 +1464,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             }
 
             // AI Notepad injection.
-            // Tag mode: previous notes + instruction prompt (AI writes <dle-notes> tags).
+            // Tag mode: previous notes + instruction prompt (AI writes <oq-notes> tags).
             // Extract mode: previous notes only — extraction runs post-generation, no instruction needed.
             if (settings.aiNotepadEnabled) {
                 const notepadMode = settings.aiNotepadMode || 'tag';
@@ -1492,9 +1491,9 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         };
 
         const _commitEmptyAndReturn = (reason) => {
-            if (settings.debugMode) console.debug(`[DLE] ${reason}`);
+            if (settings.debugMode) console.debug(`[Onyx Quill] ${reason}`);
             if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
-                console.warn(`[DLE] Stale pipeline reached ${reason} branch — skipping clearPrompts`);
+                console.warn(`[Onyx Quill] Stale pipeline reached ${reason} branch — skipping clearPrompts`);
                 return false;
             }
             clearPrompts(extension_prompts, PROMPT_TAG_PREFIX, PROMPT_TAG);
@@ -1506,8 +1505,8 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     msgIdx: verdictMsgIdx,
                     epoch,
                     lockEpoch,
-                })).catch(err => console.warn('[DLE] Verdict write failed:', err?.message));
-            } catch (err) { console.warn('[DLE] Verdict build failed:', err?.message); }
+                })).catch(err => console.warn('[Onyx Quill] Verdict write failed:', err?.message));
+            } catch (err) { console.warn('[Onyx Quill] Verdict build failed:', err?.message); }
             notifyInjectionSourcesReady();
             // the same as the no-groups commit below: Prompt-List entries emptied too, not left with last turn's lore
             if (settings.injectionMode === 'prompt_list' && promptManager) {
@@ -1537,18 +1536,20 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         if (trace?.aiFallback) {
             const aiErr = trace.aiError || '';
             let fallbackMsg = 'AI search failed';
-            if (/timeout|timed out|abort/i.test(aiErr)) fallbackMsg += ' (timed out — try increasing the timeout in Settings > AI Search)';
+            if (/timeout|timed out|abort/i.test(aiErr)) fallbackMsg += ' (timed out — try a longer time limit in Settings › AI & connections › Fine print)';
             else if (/401|403|auth/i.test(aiErr)) fallbackMsg += ' (auth error — check your API key or connection profile)';
-            else if (/not found|no.*profile/i.test(aiErr)) fallbackMsg += ' (connection profile not found — check Settings > AI Search)';
+            else if (/not found|no.*profile/i.test(aiErr)) fallbackMsg += ' (connection profile not found — check Settings › AI & connections)';
             else if (/ECONNREFUSED|Failed to fetch|NetworkError|fetch|network/i.test(aiErr)) fallbackMsg += ' (network error — check your AI connection settings)';
             else if (/5\d\d|502|503|server/i.test(aiErr)) fallbackMsg += ' (server error — try again later)';
             else if (aiErr) fallbackMsg += ` (${aiErr.slice(0, 80)})`;
-            console.warn('[DLE] AI search error:', aiErr);
-            dedupWarning(`${fallbackMsg} — falling back to keywords`, 'ai_search', { timeOut: 6000 });
+            console.warn('[Onyx Quill] AI search error:', aiErr);
+            // what really happens next: Settings › Lore selection › If AI search fails (pipeline.js resolveAiFallback)
+            const failWords = { keyword: 'using the keyword picks', constants_only: 'sending always-send entries only', bootstrap_only: 'sending starter entries only', none: 'sending no lore' };
+            dedupWarning(`${fallbackMsg} — ${failWords[settings.aiErrorFallback || 'keyword'] || failWords.keyword}`, 'ai_search', { timeOut: 6000 });
         }
 
         if (settings.debugMode && trace) {
-            console.log(`[DLE] Pipeline (${trace.mode}): ${trace.keywordMatched.length} keyword matches, ${trace.aiSelected.length} AI selected` + (trace.aiFallback ? ' (AI FALLBACK)' : ''));
+            console.log(`[Onyx Quill] Pipeline (${trace.mode}): ${trace.keywordMatched.length} keyword matches, ${trace.aiSelected.length} AI selected` + (trace.aiFallback ? ' (AI FALLBACK)' : ''));
         }
 
         if (finalEntries.length === 0) {
@@ -1595,7 +1596,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // swipe/regen (_snapMatch) or a genuine cache miss clears the log.
             if (settings.stripDuplicateInjections && (_snapMatch || trace.aiCached === false)) {
                 if (chat_metadata.deeplore_injection_log?.length > 0) {
-                    if (settings.debugMode) console.debug('[DLE][DIAG] strip-dedup-log-clear — %s, clearing %d stale injection log entries',
+                    if (settings.debugMode) console.debug('[Onyx Quill][DIAG] strip-dedup-log-clear — %s, clearing %d stale injection log entries',
                         _snapMatch ? 'swipe/regen detected' : 'AI cache missed (context changed)',
                         chat_metadata.deeplore_injection_log.length);
                     chat_metadata.deeplore_injection_log = [];
@@ -1605,7 +1606,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             if (!settings.stripDuplicateInjections) return gated;
             if (settings.debugMode) {
                 const _sLog = chat_metadata.deeplore_injection_log;
-                console.debug('[DLE][DIAG] strip-dedup-input', {
+                console.debug('[Onyx Quill][DIAG] strip-dedup-input', {
                     gatedCount: gated.length,
                     gatedTitles: gated.map(e => e.title),
                     lookbackDepth: settings.stripLookbackDepth,
@@ -1620,7 +1621,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             const deduped = applyStripDedup(gated, policy, chat_metadata.deeplore_injection_log, settings.stripLookbackDepth, settings, settings.debugMode);
             if (settings.debugMode) {
                 const _removed = gated.filter(e => !deduped.some(p => p.title === e.title));
-                console.debug('[DLE][DIAG] strip-dedup-result', {
+                console.debug('[Onyx Quill][DIAG] strip-dedup-result', {
                     keptCount: deduped.length,
                     keptTitles: deduped.map(e => e.title),
                     removedCount: _removed.length,
@@ -1697,7 +1698,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         // await between here and either clearPrompts, so we never wipe prompts without
         // verified replacement (or a verified this-turn-empty verdict) in hand.
         if (epoch !== chatEpoch || lockEpoch !== generationLockEpoch) {
-            console.warn('[DLE] Stale pipeline reached commit phase — discarding');
+            console.warn('[Onyx Quill] Stale pipeline reached commit phase — discarding');
             return;
         }
 
@@ -1759,8 +1760,8 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     msgIdx: verdictMsgIdx,
                     epoch,
                     lockEpoch,
-                })).catch(err => console.warn('[DLE] Verdict write failed:', err?.message));
-            } catch (err) { console.warn('[DLE] Verdict build failed:', err?.message); }
+                })).catch(err => console.warn('[Onyx Quill] Verdict write failed:', err?.message));
+            } catch (err) { console.warn('[Onyx Quill] Verdict build failed:', err?.message); }
             // Notify drawer early so Why? tab populates BEFORE ST generation starts.
             notifyInjectionSourcesReady();
         } else {
@@ -1782,8 +1783,8 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     msgIdx: verdictMsgIdx,
                     epoch,
                     lockEpoch,
-                })).catch(err => console.warn('[DLE] Verdict write failed:', err?.message));
-            } catch (err) { console.warn('[DLE] Verdict build failed:', err?.message); }
+                })).catch(err => console.warn('[Onyx Quill] Verdict write failed:', err?.message));
+            } catch (err) { console.warn('[Onyx Quill] Verdict build failed:', err?.message); }
             notifyInjectionSourcesReady();
         }
 
@@ -1833,7 +1834,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 chat_metadata.deeplore_injection_log = chat_metadata.deeplore_injection_log.slice(-maxHistory);
             }
             if (settings.debugMode) {
-                console.debug('[DLE][DIAG] injection-log-write', {
+                console.debug('[Onyx Quill][DIAG] injection-log-write', {
                     genRecorded: generationCount + 1,
                     injectedTitles: injectedEntries.map(e => e.title),
                     injectedCount: injectedEntries.length,
@@ -1848,7 +1849,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             // Saving them together atomically prevents a chat switch from persisting counts but
             // dropping this same-turn injection-log row (which would let strip-dedup re-inject it).
         } else if (settings.debugMode) {
-            console.debug('[DLE][DIAG] injection-log-write-SKIPPED', {
+            console.debug('[Onyx Quill][DIAG] injection-log-write-SKIPPED', {
                 stripDuplicateInjections: settings.stripDuplicateInjections,
                 epochMatch: epoch === chatEpoch,
                 lockEpochMatch: lockEpoch === generationLockEpoch,
@@ -1943,7 +1944,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             }
 
             if (settings.debugMode) {
-                console.log(`[DLE] ${finalEntries.length} selected, ${postDedup.length} after gating+dedup, ${injectedCount} injected (~${totalTokens} tokens) in ${groups.length} group(s)` +
+                console.log(`[Onyx Quill] ${finalEntries.length} selected, ${postDedup.length} after gating+dedup, ${injectedCount} injected (~${totalTokens} tokens) in ${groups.length} group(s)` +
                     (contextSize > 0 ? ` (${Math.round(totalTokens / contextSize * 100)}% of ${contextSize} context)` : ''));
                 console.table(injectedEntries.map(e => ({
                     title: e.title,
@@ -1953,7 +1954,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                     constant: e.constant,
                 })));
                 if (groups.length > 1) {
-                    console.log('[DLE] Injection groups:', groups.map(g =>
+                    console.log('[Onyx Quill] Injection groups:', groups.map(g =>
                         `${g.tag}: pos=${g.position} depth=${g.depth} role=${g.role}`));
                 }
             }
@@ -1970,10 +1971,10 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
         _removePipelineStatus();
         // BUG-233: user aborts are not errors — no toast, no log spam.
         if (err?.userAborted || err?.name === 'AbortError' || pipelineAbort.signal.aborted) {
-            if (settings.debugMode) console.debug('[DLE] Pipeline aborted:', err?.message || 'user stop');
+            if (settings.debugMode) console.debug('[Onyx Quill] Pipeline aborted:', err?.message || 'user stop');
             try { const { recordAbort } = await import('./src/diagnostics/flight-recorder.js'); recordAbort(err?.message || 'user stop'); } catch { /* noop */ }
         } else {
-            console.error('[DLE] Error during generation:', err);
+            console.error('[Onyx Quill] Error during generation:', err);
             dedupError('Couldn\'t load your lore. Try /oq-refresh, or /oq-health for diagnostics.', 'pipeline', { hint: classifyError(err) });
         }
     } finally {
@@ -1993,11 +1994,11 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
                 decrementTrackers(cooldownTracker, decayTracker, injectedEntries, settings, consecutiveInjections);
             } else if (pipelineRan) {
                 // Stale pipeline; cooldowns intentionally freeze for it (the active pipeline owns them).
-                console.debug('[DLE] Stale pipeline — generation tracking skipped');
+                console.debug('[Onyx Quill] Stale pipeline — generation tracking skipped');
                 try { generationBuffer.push({ t: Date.now(), discarded: true, reason: 'stale_pipeline_tracking_skipped' }); } catch { /* noop */ }
             }
         } catch (trackingErr) {
-            console.error('[DLE] Error in generation tracking:', trackingErr);
+            console.error('[Onyx Quill] Error in generation tracking:', trackingErr);
         }
         // Release lock and phase BEFORE notify so pipeline-complete renders see correct state.
         // Lock-epoch guard: a force-released stale pipeline must NOT release the new pipeline's lock.
@@ -2005,7 +2006,7 @@ async function onGenerate(chatMessages, contextSize, abort, type) {
             setPipelinePhase('idle');
             setGenerationLock(false);
         } else {
-            console.warn('[DLE] Stale pipeline did not release lock (epoch mismatch)');
+            console.warn('[Onyx Quill] Stale pipeline did not release lock (epoch mismatch)');
             try { generationBuffer.push({ t: Date.now(), lockReleaseBlocked: true, reason: 'epoch_mismatch', staleEpoch: lockEpoch, currentEpoch: generationLockEpoch }); } catch { /* noop */ }
         }
         // BUG-277: only notify drawer when WE are still the active pipeline — a stale
@@ -2059,7 +2060,7 @@ async function _doInit() {
             const { initDleI18n } = await import('./src/i18n/i18n.js');
             await initDleI18n();
         } catch (err) {
-            console.warn('[DLE] i18n init failed (falling back to English):', err?.message);
+            console.warn('[Onyx Quill] i18n init failed (falling back to English):', err?.message);
         }
 
         const settingsHtml = await renderExtensionTemplateAsync(
@@ -2074,9 +2075,9 @@ async function _doInit() {
         bindSettingsEvents(buildIndex);
         // overhaul step 4: Settings → Interface → Ask before removing (= the board's Edit ▸ Ask before removing) makes every removal ask
         // Settings › Interface › Look: follow SillyTavern's theme, or always light / dark
-        try { configureTheme({ scheme: () => { const v = getSettings().dkTheme; return v === 'light' || v === 'dark' ? v : null; } }); eventSource.on(event_types.SETTINGS_UPDATED, () => { setAccent(getSettings().accentColor); repaintTheme(); }); setAccent(getSettings().accentColor); } catch (err) { console.warn('[DLE] theme choice not wired', err); }
+        try { configureTheme({ scheme: () => { const v = getSettings().dkTheme; return v === 'light' || v === 'dark' ? v : null; } }); eventSource.on(event_types.SETTINGS_UPDATED, () => { setAccent(getSettings().accentColor); repaintTheme(); }); setAccent(getSettings().accentColor); } catch (err) { console.warn('[Onyx Quill] theme choice not wired', err); }
         // "Don't ask me again" answers are kept with the settings (settings.kitNoAsk), so they survive a reload
-        try { configureKit({ alwaysAsk: () => askBeforeRemoving(), get: k => getSettings().kitNoAsk?.[k], set: (k, v) => { const st = getSettings(); st.kitNoAsk = { ...(st.kitNoAsk || {}), [k]: v }; saveSettingsDebounced(); } }); } catch (err) { console.warn('[DLE] shared parts: ask-before-removing not wired', err); }
+        try { configureKit({ alwaysAsk: () => askBeforeRemoving(), get: k => getSettings().kitNoAsk?.[k], set: (k, v) => { const st = getSettings(); st.kitNoAsk = { ...(st.kitNoAsk || {}), [k]: v }; saveSettingsDebounced(); } }); } catch (err) { console.warn('[Onyx Quill] shared parts: ask-before-removing not wired', err); }
         registerSlashCommands();
         // LOCAL PATCH (Miinthe, 2026-10-03): branch → new run, and story trackers.
         // One coordinated CHAT_CHANGED step, deferred so the chat and its metadata
@@ -2088,33 +2089,33 @@ async function _doInit() {
         registerBranchRunCommand();
         registerTrackerCommands();
         registerCharacterCommands();   // LOCAL PATCH (Miinthe, 2026-10-04): characters own their folders (WIP commands)
-        try { initMeroTab(); } catch (err) { console.warn('[DLE] Mero tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
-        try { initBar(); } catch (err) { console.warn('[DLE] bar skipped:', err?.message || err); }   // overhaul 2a (2026-10-15)
-        try { initIconDrawer(); } catch (err) { console.warn('[DLE] icon drawer skipped:', err?.message || err); }   // 2026-11-02
-        try { initSlop(); } catch (err) { console.warn('[DLE] slop guard skipped:', err?.message || err); }   // 2026-11-02
-        try { initGuidedSwipe(); } catch (err) { console.warn('[DLE] guided swipe skipped:', err?.message || err); }   // 2026-11-02
-        try { initNotes(); } catch (err) { console.warn('[DLE] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
-        try { initRegenWatch(); } catch (err) { console.warn('[DLE] regenerate watch skipped:', err?.message || err); }
-        try { initWorld(); } catch (err) { console.warn('[DLE] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)
-        try { initDock(); } catch (err) { console.warn('[DLE] panel tabs skipped:', err?.message || err); }   // panel tabs (2026-11-03)
-        try { initRunCleanup(); } catch (err) { console.warn('[DLE] Run cleanup skipped:', err?.message || err); }   // cleaning up a run (2026-10-27)
-        try { initReplyMenu(); } catch (err) { console.warn('[DLE] reply menu skipped:', err?.message || err); }   // overhaul 2a
-        try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[DLE] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
+        try { initMeroTab(); } catch (err) { console.warn('[Onyx Quill] Mero tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-05): Mero ☆
+        try { initBar(); } catch (err) { console.warn('[Onyx Quill] bar skipped:', err?.message || err); }   // overhaul 2a (2026-10-15)
+        try { initIconDrawer(); } catch (err) { console.warn('[Onyx Quill] icon drawer skipped:', err?.message || err); }   // 2026-11-02
+        try { initSlop(); } catch (err) { console.warn('[Onyx Quill] slop guard skipped:', err?.message || err); }   // 2026-11-02
+        try { initGuidedSwipe(); } catch (err) { console.warn('[Onyx Quill] guided swipe skipped:', err?.message || err); }   // 2026-11-02
+        try { initNotes(); } catch (err) { console.warn('[Onyx Quill] My notes skipped:', err?.message || err); }   // My notes (2026-10-18)
+        try { initRegenWatch(); } catch (err) { console.warn('[Onyx Quill] regenerate watch skipped:', err?.message || err); }
+        try { initWorld(); } catch (err) { console.warn('[Onyx Quill] World layer skipped:', err?.message || err); }   // the world layer (2026-10-19)
+        try { initDock(); } catch (err) { console.warn('[Onyx Quill] panel tabs skipped:', err?.message || err); }   // panel tabs (2026-11-03)
+        try { initRunCleanup(); } catch (err) { console.warn('[Onyx Quill] Run cleanup skipped:', err?.message || err); }   // cleaning up a run (2026-10-27)
+        try { initReplyMenu(); } catch (err) { console.warn('[Onyx Quill] reply menu skipped:', err?.message || err); }   // overhaul 2a
+        try { initCastVoice(); initCastQueue(); initCastTab(); initChangesTab(); } catch (err) { console.warn('[Onyx Quill] Cast tab skipped:', err?.message || err); }   // LOCAL PATCH (Miinthe, 2026-10-13): the Cast
         // LOCAL PATCH (Miinthe, 2026-10-04): Re-evaluate + swipe (WIP command; its real home is the DeepLore bar)
-        import('./src/reevaluate.js').then(m => m.registerReevaluateCommand()).catch(err => console.warn('[DLE] re-evaluate command not registered:', err?.message));
-        import('./src/swipe-board.js').then(m => m.initSwipeBoard()).catch(err => console.warn('[DLE] swipe boards skipped:', err?.message));   // LOCAL PATCH (Miinthe, 2026-11-04): each swipe keeps its own board
+        import('./src/reevaluate.js').then(m => m.registerReevaluateCommand()).catch(err => console.warn('[Onyx Quill] re-evaluate command not registered:', err?.message));
+        import('./src/swipe-board.js').then(m => m.initSwipeBoard()).catch(err => console.warn('[Onyx Quill] swipe boards skipped:', err?.message));   // LOCAL PATCH (Miinthe, 2026-11-04): each swipe keeps its own board
         _registerEs(event_types.MESSAGE_DELETED, () => {
             // a regenerate's delete keeps what was done by hand or by the world (regen-pure.js, Miinthe 2026-10-19)
-            reconcileTrackers({ prune: true, keep: keepForDelete() }).catch(err => console.warn('[DLE] tracker rewind failed:', err?.message));
+            reconcileTrackers({ prune: true, keep: keepForDelete() }).catch(err => console.warn('[Onyx Quill] tracker rewind failed:', err?.message));
         });
         _registerEs(event_types.CHAT_CHANGED, () => {
             setTimeout(async () => {
                 let startedRun = false;
-                try { startedRun = await maybeOfferBranchRun(); } catch (err) { console.warn('[DLE] branch-run check failed:', err?.message); }
+                try { startedRun = await maybeOfferBranchRun(); } catch (err) { console.warn('[Onyx Quill] branch-run check failed:', err?.message); }
                 // LOCAL PATCH (Miinthe, 2026-10-03): storyboards — migrate, apply the character's default, or sync.
-                try { syncBoardOnOpen(); } catch (err) { console.warn('[DLE] storyboard sync failed:', err?.message); }
+                try { syncBoardOnOpen(); } catch (err) { console.warn('[Onyx Quill] storyboard sync failed:', err?.message); }
                 reconcileTrackers({ confirm: !startedRun })
-                    .catch(err => console.warn('[DLE] tracker check failed:', err?.message))
+                    .catch(err => console.warn('[Onyx Quill] tracker check failed:', err?.message))
                     .finally(() => notifyTrackersView());
             }, 600);
         });
@@ -2131,7 +2132,7 @@ async function _doInit() {
             const { startFlightRecorder } = await import('./src/diagnostics/flight-recorder.js');
             startFlightRecorder();
         } catch (err) {
-            console.warn('[DLE] Flight recorder failed to start:', err?.message);
+            console.warn('[Onyx Quill] Flight recorder failed to start:', err?.message);
         }
 
         // Claude adaptive-thinking warning is REACTIVE-ONLY (gotcha #82). The proactive
@@ -2192,7 +2193,7 @@ async function _doInit() {
                     const { showSetupWizard } = await import('./src/ui/setup-wizard.js');
                     showSetupWizard();
                 } catch (err) {
-                    console.warn('[DLE] Setup wizard auto-open failed:', err?.message);
+                    console.warn('[Onyx Quill] Setup wizard auto-open failed:', err?.message);
                 }
             };
             // BUG-118: this `once` registration sits after several awaits in init(); on fast
@@ -2271,7 +2272,7 @@ async function _doInit() {
                     }
                     // hydrateFromCache (when it succeeds) triggers a background buildIndex itself.
                 } catch (err) {
-                    console.warn('[DLE] Auto-connect:', err.message);
+                    console.warn('[Onyx Quill] Auto-connect:', err.message);
                 }
             };
             _registerEs(event_types.APP_READY, _autoConnectOnce, { once: true });
@@ -2336,9 +2337,16 @@ async function _doInit() {
                 // Drawer mascot would otherwise stick on 'writing'/'searching'/'generating' post-Stop.
                 // Epoch bump above guarantees no active pipeline can race this write.
                 setPipelinePhase('idle');
-            } catch (err) { console.warn('[DLE] GENERATION_STOPPED cleanup failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] GENERATION_STOPPED cleanup failed:', err?.message); }
         });
 
+        // The notepad changes the newest reply's text: keep its swipe copy and the shown message in step, so the removed
+        // notes don't come back after swiping away and back, and don't stay on screen until a reload (fact check 2026-11-05).
+        const setNewestText = (msg, text) => {
+            msg.mes = text;
+            if (Array.isArray(msg.swipes) && typeof msg.swipes[msg.swipe_id] === 'string') msg.swipes[msg.swipe_id] = text;
+            try { globalThis.SillyTavern?.getContext?.()?.updateMessageBlock?.(chat.length - 1, msg); } catch { /* not shown */ }
+        };
         _registerEs(event_types.GENERATION_ENDED, () => {
             const settings = getSettings();
             if (!settings.aiNotepadEnabled) return;
@@ -2352,7 +2360,7 @@ async function _doInit() {
                 const tagEpoch = chatEpoch;
                 const { notes, cleanedMessage } = extractAiNotes(lastMessage.mes);
                 if (notes && tagEpoch === chatEpoch) {
-                    lastMessage.mes = cleanedMessage;
+                    setNewestText(lastMessage, cleanedMessage);
                     lastMessage.extra = lastMessage.extra || {};
                     lastMessage.extra.deeplore_ai_notes = notes;
                     const existing = chat_metadata.deeplore_ai_notepad || '';
@@ -2361,7 +2369,7 @@ async function _doInit() {
                     // user switches chat within 1s of the auto-extract. Notepad fires on every gen.
                     try { saveMetadata(); } catch { saveMetadataDebounced(); }
                     pushEvent('ai_notepad', { action: 'tag_extracted', noteLength: notes.length });
-                    if (settings.debugMode) console.debug('[DLE] Notepad: extracted %d chars from tags', notes.length);
+                    if (settings.debugMode) console.debug('[Onyx Quill] Notepad: extracted %d chars from tags', notes.length);
                 }
             } else if (mode === 'extract') {
                 // Strip visible note-taking prose first, then fire async API extraction.
@@ -2371,8 +2379,9 @@ async function _doInit() {
                 }
                 cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trimEnd();
                 if (cleaned !== lastMessage.mes) {
-                    lastMessage.mes = cleaned;
-                    saveMetadataDebounced();
+                    setNewestText(lastMessage, cleaned);
+                    // The edit is in the message, not the metadata: save the chat itself.
+                    saveChatConditional().catch(err => console.warn('[Onyx Quill] Notepad: chat save failed:', err?.message));
                 }
 
                 // BUG-AUDIT-7 + C04: fire-and-forget async extraction. Epoch guard prevents
@@ -2382,7 +2391,7 @@ async function _doInit() {
                 const extractEpoch = chatEpoch;
                 const msgIndex = chat.length - 1;
                 const swipeIdAtStart = lastMessage.swipe_id;
-                if (settings.debugMode) console.debug('[DLE] Notepad: starting AI extraction');
+                if (settings.debugMode) console.debug('[Onyx Quill] Notepad: starting AI extraction');
                 (async () => {
                     try {
                         // L-40: set the flag + emit INSIDE the try (the comment above always
@@ -2404,13 +2413,13 @@ async function _doInit() {
 
                         // BUG-AUDIT-7: chat-changed guard.
                         if (extractEpoch !== chatEpoch) {
-                            if (getSettings().debugMode) console.debug('[DLE] Notepad: extraction skipped (epoch changed)');
+                            if (getSettings().debugMode) console.debug('[Onyx Quill] Notepad: extraction skipped (epoch changed)');
                             return;
                         }
                         // BUG-AUDIT-CNEW01: swipe/delete guard for the same message slot.
                         const currentMsg = chat[msgIndex];
                         if (!currentMsg || currentMsg.swipe_id !== swipeIdAtStart) {
-                            if (getSettings().debugMode) console.debug('[DLE] Notepad: extraction skipped (epoch changed)');
+                            if (getSettings().debugMode) console.debug('[Onyx Quill] Notepad: extraction skipped (epoch changed)');
                             return;
                         }
                         if (responseText && responseText !== 'NOTHING_TO_NOTE') {
@@ -2421,12 +2430,12 @@ async function _doInit() {
                             // #10: immediate save (BUG-306) — debounced-only loses the note on a fast chat switch.
                             try { saveMetadata(); } catch { saveMetadataDebounced(); }
                             pushEvent('ai_notepad', { action: 'extract_completed', noteLength: responseText?.length || 0 });
-                            if (getSettings().debugMode) console.debug('[DLE] Notepad: AI extracted %d chars', responseText.length);
+                            if (getSettings().debugMode) console.debug('[Onyx Quill] Notepad: AI extracted %d chars', responseText.length);
                         } else if (responseText === 'NOTHING_TO_NOTE') {
                             pushEvent('ai_notepad', { action: 'extract_empty' });
                         }
                     } catch (err) {
-                        console.warn('[DLE] AI Notebook extract error:', err.message);
+                        console.warn('[Onyx Quill] AI Notebook extract error:', err.message);
                         pushEvent('ai_notepad', { action: 'extract_error', error: err?.message?.slice(0, 200) });
                     } finally {
                         setNotepadExtractInProgress(false);
@@ -2463,7 +2472,7 @@ async function _doInit() {
                     }
                     // overhaul 2a (2026-10-15): no separate Why? button; Why these entries is in the reply's ⋯ (src/reply-menu.js)
                 }
-            } catch (err) { console.warn('[DLE] Cartographer render-handler failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] Cartographer render-handler failed:', err?.message); }
 
             // --- AI Notepad fallback extraction (catches cases GENERATION_ENDED missed, e.g. swipe) ---
             try {
@@ -2488,7 +2497,7 @@ async function _doInit() {
                         }
                     }
                 }
-            } catch (err) { console.warn('[DLE] AI Notebook render-handler failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] AI Notebook render-handler failed:', err?.message); }
 
 
             // --- Session Scribe auto-trigger ---
@@ -2499,7 +2508,7 @@ async function _doInit() {
                         // Surface failures via dedup'd toast — silent fire-and-forget would
                         // hide background-scribe breakage from users until they noticed missing notes.
                         runScribe().catch(err => {
-                            console.warn('[DLE] Scribe auto-trigger failed:', err?.message);
+                            console.warn('[Onyx Quill] Scribe auto-trigger failed:', err?.message);
                             dedupWarning(
                                 `Session Scribe auto-run failed: ${err?.message || 'unknown error'}.`,
                                 'scribe_auto_trigger_fail',
@@ -2508,7 +2517,7 @@ async function _doInit() {
                         });
                     }
                 }
-            } catch (err) { console.warn('[DLE] Scribe render-handler failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] Scribe render-handler failed:', err?.message); }
 
             // --- Auto Lorebook every N messages ---
             try {
@@ -2521,7 +2530,7 @@ async function _doInit() {
                                 const suggestions = await runAutoSuggest();
                                 if (suggestions && suggestions.length > 0) await showSuggestionPopup(suggestions);
                             } catch (err) {
-                                console.warn('[DLE] Auto-suggest auto-trigger failed:', err?.message);
+                                console.warn('[Onyx Quill] Auto-suggest auto-trigger failed:', err?.message);
                                 // Same rationale as Scribe above: dedup'd toast so failures don't stack.
                                 dedupWarning(
                                     `Auto Lorebook run failed: ${err?.message || 'unknown error'}.`,
@@ -2532,7 +2541,7 @@ async function _doInit() {
                         })();
                     }
                 }
-            } catch (err) { console.warn('[DLE] Auto-suggest render-handler failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] Auto-suggest render-handler failed:', err?.message); }
         });
 
         _registerEs(event_types.MESSAGE_SWIPED, (messageId) => {
@@ -2596,7 +2605,7 @@ async function _doInit() {
                 setChatInjectionCounts(rebuilt);
                 chat_metadata.deeplore_chat_counts = Object.fromEntries(rebuilt);
                 saveMetadataDebounced();
-            } catch (err) { console.warn('[DLE] MESSAGE_SWIPED count rebuild failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] MESSAGE_SWIPED count rebuild failed:', err?.message); }
         });
 
         // BUG-037: message-lifecycle events were previously ignored. Without these handlers,
@@ -2645,7 +2654,7 @@ async function _doInit() {
             // misaligned per-swipe counts.
             const deletedSwipeId = (payload && typeof payload === 'object' && payload.swipeId != null)
                 ? Number(payload.swipeId) : NaN;
-            try { _cleanupMessageExtras(messageId); } catch (err) { console.warn('[DLE] MESSAGE_SWIPE_DELETED cleanup failed:', err.message); }
+            try { _cleanupMessageExtras(messageId); } catch (err) { console.warn('[Onyx Quill] MESSAGE_SWIPE_DELETED cleanup failed:', err.message); }
             // Reindex perSwipeInjectedKeys to mirror ST's swipes-array compaction:
             //   1. drop the deleted slot's key exactly (`messageId|deletedSwipeId`),
             //   2. shift every surviving key for this message with swipeId > deletedSwipeId
@@ -2681,7 +2690,7 @@ async function _doInit() {
                     );
                     saveMetadataDebounced();
                 }
-            } catch (err) { console.warn('[DLE] MESSAGE_SWIPE_DELETED reindex failed:', err?.message); }
+            } catch (err) { console.warn('[Onyx Quill] MESSAGE_SWIPE_DELETED reindex failed:', err?.message); }
         });
 
         const _onChatDeleted = (name) => {
@@ -2690,7 +2699,7 @@ async function _doInit() {
             // GROUP_CHAT_DELETED hand the deleted chat's id (same form getCurrentChatId
             // returns — the value verdict keys its IDB rows on) as the first arg.
             // Fire-and-forget: do NOT await in the event handler.
-            try { if (name) clearChatIdb(name); } catch (e) { console.warn('[DLE] verdict IDB cleanup on chat delete failed:', e?.message); }
+            try { if (name) clearChatIdb(name); } catch (e) { console.warn('[Onyx Quill] verdict IDB cleanup on chat delete failed:', e?.message); }
         };
         _registerEs(event_types.CHAT_DELETED, _onChatDeleted);
         _registerEs(event_types.GROUP_CHAT_DELETED, _onChatDeleted);
@@ -2723,7 +2732,7 @@ async function _doInit() {
                         'profile_deleted',
                     );
                 }
-            } catch (err) { console.warn('[DLE] CONNECTION_PROFILE_DELETED cleanup failed:', err.message); }
+            } catch (err) { console.warn('[Onyx Quill] CONNECTION_PROFILE_DELETED cleanup failed:', err.message); }
         };
         const _onProfileUpdated = () => {
             try { invalidateSettingsCache(); } catch { /* no-op */ }
@@ -2773,7 +2782,7 @@ async function _doInit() {
                 }
                 delete message.extra.deeplore_ai_notes;
                 saveMetadataDebounced();
-            } catch (err) { console.warn('[DLE] MESSAGE_EDITED cleanup failed:', err.message); }
+            } catch (err) { console.warn('[Onyx Quill] MESSAGE_EDITED cleanup failed:', err.message); }
         });
 
         // Boot-MED-3: defined as a named function so the early-CHAT_CHANGED stub can
@@ -2895,14 +2904,9 @@ async function _doInit() {
                 clearVerdictRing();
                 setVerdictChatId(newVerdictChatId);
                 if (newVerdictChatId) {
-                    hydrateVerdictChat(newVerdictChatId).catch(err => console.warn('[DLE] Verdict hydrate failed:', err?.message));
+                    hydrateVerdictChat(newVerdictChatId).catch(err => console.warn('[Onyx Quill] Verdict hydrate failed:', err?.message));
                 }
             }
-
-            // Lore gaps (Mero's Requests): hydrate. normalizeLoreGap collapses legacy v1
-            // statuses (acknowledged / in_progress / rejected) → v2 set (pending ↔ written).
-            const savedGaps = chat_metadata?.deeplore_lore_gaps;
-            setLoreGaps(savedGaps ? savedGaps.map(normalizeLoreGap) : []);
 
             resetDrawerState();
             notifyPipelineComplete();
@@ -2967,9 +2971,9 @@ async function _doInit() {
                         // immediate; a re-check of injectEpoch guards against stale writes.
                         if (injectEpoch !== chatEpoch) return;
                         try { await saveChatConditional(); }
-                        catch (saveErr) { console.warn('[DLE] Chat load migration save failed:', saveErr?.message); }
+                        catch (saveErr) { console.warn('[Onyx Quill] Chat load migration save failed:', saveErr?.message); }
                     }
-                } catch (err) { console.error('[DLE] Chat load UI injection error:', err); }
+                } catch (err) { console.error('[Onyx Quill] Chat load UI injection error:', err); }
                 });
             };
             setTimeout(() => { if (injectEpoch === chatEpoch) injectAllChatLoadUI(); }, 100);
@@ -3045,15 +3049,15 @@ async function _doInit() {
         // infra is fully mounted (mirrors the wizard's setTimeout pattern).
         setTimeout(() => {
             _maybeShowProxyDeprecationNotice().catch(err => {
-                console.warn('[DLE] proxy-deprecation notice failed:', err?.message);
+                console.warn('[Onyx Quill] proxy-deprecation notice failed:', err?.message);
             });
         }, 500);
 
         _dleInitCount++;
         pushEvent('init', { initCount: _dleInitCount, vaultCount: (getSettings().vaults || []).filter(v => v.enabled).length });
-        console.log('[DLE] Onyx Quill client extension initialized');
+        console.log('[Onyx Quill] Onyx Quill client extension initialized');
     } catch (err) {
-        console.error('[DLE] Failed to initialize:', err);
+        console.error('[Onyx Quill] Failed to initialize:', err);
         toastr.error('Onyx Quill failed to initialize. Check the browser console (F12) for details.', 'Onyx Quill Error', { timeOut: 0 });
     }
 }
@@ -3062,22 +3066,22 @@ jQuery(async function () {
     // The original DeepLore is switched on too: Onyx Quill stays off (nothing set up) and says why.
     if (deepLoreClash) { console.warn(`[Onyx Quill] the original DeepLore (${deepLoreClash}) is on — Onyx Quill stays off`); showClashNotice(); return; }
     // Overhaul step 1: load the shared parts' stylesheet and keep their colors in step with SillyTavern's theme.
-    try { followTheme(document, { frame: true }); } catch (err) { console.warn('[DLE] shared parts: theme colors not loaded', err); }
+    try { followTheme(document, { frame: true }); } catch (err) { console.warn('[Onyx Quill] shared parts: theme colors not loaded', err); }
     // DeepLore's older pop-ups (graph, Browse, Why, health, notebooks, wizard, confirms…) in the new look
-    try { initLegacySkin(); } catch (err) { console.warn('[DLE] older pop-ups: new look not applied', err); }
+    try { initLegacySkin(); } catch (err) { console.warn('[Onyx Quill] older pop-ups: new look not applied', err); }
     // Boot-MED-1 (2026-05-22): promise-based init latch.
     // If a second jQuery dispatch fires while the first init is mid-await (HMR,
     // duplicate dispatch, fast double-load), await the in-flight init and return
     // — DO NOT tear down a still-initializing instance.
     if (_dleInitInProgress) {
         try { await _dleInitInProgress; }
-        catch (err) { console.warn('[DLE] previous init failed, second invocation suppressed:', err?.message); }
+        catch (err) { console.warn('[Onyx Quill] previous init failed, second invocation suppressed:', err?.message); }
         return;
     }
     if (_dleInitialized) {
         // Init fully completed previously. This is a true re-init (e.g. extension
         // hot-reload after stable mount). Tear down then continue below to redo init.
-        console.warn('[DLE] init() called twice — tearing down prior instance before re-initializing');
+        console.warn('[Onyx Quill] init() called twice — tearing down prior instance before re-initializing');
         _teardownDleExtension();
     }
     _dleInitInProgress = (async () => {

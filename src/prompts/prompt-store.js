@@ -48,7 +48,7 @@ export async function getAiPromptDictForLocale(locale) {
         const dict = await import(`../i18n/prompts/${target}.js`);
         return { dict, resolvedLocale: target };
     } catch (err) {
-        console.warn(`[DLE prompts] AI prompt dict for "${target}" missing, falling back to en:`, err);
+        console.warn(`[Onyx Quill prompts] AI prompt dict for "${target}" missing, falling back to en:`, err);
         return { dict: PromptsEn, resolvedLocale: 'en' };
     }
 }
@@ -128,7 +128,7 @@ export async function loadPromptsForBoot(settings) {
         const connection = buildPromptsConnectionFromSettings(settings);
         await loadPrompts(settings?.aiPromptLocale, connection);
     } catch (err) {
-        console.warn('[DLE prompts] boot-time load failed:', err?.message);
+        console.warn('[Onyx Quill prompts] boot-time load failed:', err?.message);
     }
 }
 
@@ -192,7 +192,7 @@ let _lastConnection = null;
  */
 export function getPrompt(key) {
     if (typeof key !== 'string' || key === '') {
-        console.warn('[DLE prompts] getPrompt called with invalid key:', key);
+        console.warn('[Onyx Quill prompts] getPrompt called with invalid key:', key);
         return '';
     }
     if (promptCache.has(key)) {
@@ -204,7 +204,7 @@ export function getPrompt(key) {
     if (typeof enValue === 'string') {
         return enValue;
     }
-    console.warn(`[DLE prompts] unknown key: ${key}`);
+    console.warn(`[Onyx Quill prompts] unknown key: ${key}`);
     return '';
 }
 
@@ -266,12 +266,12 @@ export async function loadPrompts(locale, connection) {
                 if (result.ok) {
                     overrides.set(stem, result.content);
                 } else if (result.error !== 'not_found') {
-                    console.warn(`[DLE prompts] fetch failed for ${stem}: ${result.error}`);
+                    console.warn(`[Onyx Quill prompts] fetch failed for ${stem}: ${result.error}`);
                 }
             }
         } else {
             vaultListPartial = true;
-            console.warn(`[DLE prompts] listPromptsFolder failed: ${listResult.error}`);
+            console.warn(`[Onyx Quill prompts] listPromptsFolder failed: ${listResult.error}`);
         }
     }
 

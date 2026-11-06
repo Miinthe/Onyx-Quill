@@ -119,7 +119,7 @@ export function initPanelFrame($drawer) {
     const more = K.moreButton(() => moreItems(panel), { title: 'More: tools, diagnostics, left or right, settings' });
     more.classList.add('dle-tab-more');
     // ── the tab row as in the mock-up: Lore · Filters · Story · Cast · Mero · ⋯ ──
-    // Changes is a fold in Story (src/panel/story-view.js); the old helper's lore gaps are in Mero › Requests (2026-10-17).
+    // Changes is a fold in Story (src/panel/story-view.js).
     const bar = panel.querySelector('.dle-tab-bar');
     if (bar) {
         const TABS = [['injection', 'lore', 'Lore'], ['gating', 'filter', 'Filters'], ['story', 'story', 'Story'], ['cast', 'cast', 'Cast'], ['mero', 'mero', 'Mero']];

@@ -36,7 +36,7 @@ import { verifyPromptFileForDeletion } from './prompt-store-pure.js';
  * `promptsFolderPath` setting (Q2 B). Sanitized through
  * `sanitizePromptsFolderPath()` before use.
  */
-export const DLE_PROMPTS_DEFAULT_DIR = 'DeepLore/prompts/';
+export const DLE_PROMPTS_DEFAULT_DIR = 'Onyx Quill/prompts/';
 
 /**
  * Maximum number of files we'll accept in a single folder listing. Defensive

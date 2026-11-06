@@ -86,4 +86,10 @@ test('bug hunt 2026-11-03: a rewrite of plain narration doesn\'t come back as an
     assertEqual(cleanRewrite('*She grins.*', '*She grinned.*'), '*She grins.*');
 });
 
+test('the writer is told that close variants of a listed phrase count too (Miinthe, 2026-11-05)', () => {
+    const lines = writerLines([{ t: 'her breath hitched', m: 'ban' }, { t: 'a testament to', m: 'less' }], ['Her breath hitched. It was a testament to everything.']);
+    assert(lines[0].text.includes('her breath hitched') && /close variant/.test(lines[0].text), 'banned: variants named');
+    assert(lines[1].text.includes('a testament to') && /close variants/.test(lines[1].text), 'use less: variants named');
+});
+
 summary('slop');

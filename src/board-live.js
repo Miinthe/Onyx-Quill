@@ -104,13 +104,19 @@ function awayLines() {
         a.main && c?.name2 ? `NOT IN THIS SCENE: ${c.name2} — they aren't here. Nobody talks to them or answers them.` : ''].filter(Boolean);
 }
 
-/** Pause the world layer (or wake it) for this chat's board — the World panel's rail shortcut (Miinthe, 2026-10-19). */
+/**
+ * The world's pause, kept per chat (Miinthe, 2026-11-05) — the World panel's rail button. true / false once set in this chat;
+ * undefined: never set here, the board's old `world.paused` flag counts (world-pure.js worldPaused).
+ */
+export const WORLD_PAUSE_KEY = 'onyxquill_world_paused';
+export function worldChatPaused() { const v = chat_metadata?.[WORLD_PAUSE_KEY]; return typeof v === 'boolean' ? v : undefined; }
+/** Pause the world layer (or wake it) in this chat only. */
 export function setWorldPaused(paused) {
     const name = chat_metadata?.[BOARD_KEY];
     const rec = name ? boardStore()?.boards?.[name] : null;
-    if (!rec?.board) return false;
-    rec.board = { ...rec.board, world: { ...(rec.board.world || {}), paused: !!paused } };   // replaced, never edited in place
-    saveSettingsDebounced();
+    if (!rec?.board || !chat_metadata) return false;
+    chat_metadata[WORLD_PAUSE_KEY] = !!paused;
+    saveMetadataDebounced();
     return true;
 }
 
@@ -151,7 +157,7 @@ export function logSteps(board, prev, next, list, i, { silent = false } = {}) {
 // who wants to hear that the live state changed (the Cast tab, 2026-10-13)
 const liveListeners = new Set();
 export function onLiveChanged(cb) { liveListeners.add(cb); return () => liveListeners.delete(cb); }
-export function notifyLive() { for (const cb of liveListeners) { try { cb(); } catch (err) { console.warn('[DLE] live listener failed:', err?.message || err); } } }
+export function notifyLive() { for (const cb of liveListeners) { try { cb(); } catch (err) { console.warn('[Onyx Quill] live listener failed:', err?.message || err); } } }
 
 /** Store this chat's v2 state (the caller then re-runs the trackers' starts: saveTrackers). */
 export function saveLiveState(state) {

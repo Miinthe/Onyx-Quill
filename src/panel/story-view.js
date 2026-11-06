@@ -129,7 +129,7 @@ function editSteps(t) {
     let skip = t.skip === true;
     const sw = K.toggle({ checked: skip, onChange: v => { skip = v; } });
     const body = [nameBox, stepsBox, K.setting({ title: 'May skip steps', help: 'For time jumps. Off: one step at a time.', control: sw }),
-        Object.assign(el('p', 'dk-hint', 'Tip: name steps as your stage entries’ summaries do.'), { title: 'That’s how the lore judge finds the right entry' })];
+        Object.assign(el('p', 'dk-hint', 'Tip: name steps as your stage entries’ summaries do.'), { title: 'That’s how AI search finds the right entry' })];
     const w = K.openWindow({
         title: `Edit ${t.name}`, body,
         foot: [K.button({ label: 'Cancel', onClick: () => w.close() }), K.button({ label: 'Save', kind: 'primary', onClick: () => {
@@ -321,7 +321,7 @@ function changesFold() {
             const was = undone.has(x);
             const endPart = x.onclick && !was
                 ? K.button({ label: 'Undo', kind: 'quiet', onClick: () => {
-                    try { x.onclick(); } catch (err) { console.warn('[DLE] undo from the list failed:', err?.message || err); }
+                    try { x.onclick(); } catch (err) { console.warn('[Onyx Quill] undo from the list failed:', err?.message || err); }
                     undone.add(x); draw();
                 } })
                 : was ? el('span', 'dk-hint', 'undone') : null;
@@ -375,7 +375,7 @@ function draw() {
     const out = [tools()];
     const offFor = boardOffHere();
     let list = [];
-    try { list = getTrackers(); } catch (err) { console.warn('[DLE] Story: trackers not read', err); }
+    try { list = getTrackers(); } catch (err) { console.warn('[Onyx Quill] Story: trackers not read', err); }
     if (offFor) {
         const box = el('div', 'dk-state dk-wait dle-sv-off', `<span><b>The board is paused for ${esc(offFor)}.</b></span>`);
         box.title = 'Nothing of it runs here. Resume it on the top line.';

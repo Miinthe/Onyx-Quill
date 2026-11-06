@@ -70,7 +70,7 @@ async function _findUniquePath(vault, filename, folder) {
         }
         if (!verdict.accept) {
             if (probeErr) {
-                console.warn(`[DLE Import] _findUniquePath: existence check for "${candidatePath}" failed (${probeErr.name || 'Error'}): ${probeErr.message}`);
+                console.warn(`[Onyx Quill import] _findUniquePath: existence check for "${candidatePath}" failed (${probeErr.name || 'Error'}): ${probeErr.message}`);
             }
             return { path: null, failureSite: 'dedup-transient' };
         }
@@ -154,7 +154,7 @@ export async function importEntries(entries, folder, onProgress, options = {}) {
         let filename = '';
         let entryTitle = '';
         try {
-            const converted = convertWiEntry(wiEntry, lorebookTag, { compress, report, emHandling });
+            const converted = convertWiEntry(wiEntry, lorebookTag, { compress, report, emHandling, constantTag: settings.constantTag });
             filename = converted.filename;
             entryTitle = converted.title;
             const { content, _emPosition } = converted;
@@ -207,7 +207,7 @@ export async function importEntries(entries, folder, onProgress, options = {}) {
             } catch (existErr) {
                 // obsidianFetch returns {status, data} for all HTTP responses including 404,
                 // so a thrown error is always a network/timeout problem.
-                console.warn(`[DLE Import] Network error checking existence of "${fullPath}":`, existErr.message);
+                console.warn(`[Onyx Quill import] Network error checking existence of "${fullPath}":`, existErr.message);
                 errors.push(`${filename}: skipped — could not verify existence (${existErr.message})`);
                 failures.push(makeImportFailure('exist-check', {
                     filename,
@@ -286,7 +286,7 @@ export async function upsertConvertedEntry(wiEntry, folder, options = {}) {
     let filename, content, _emPosition;
     const report = { nativeApplied: {}, roundTripped: {}, skipped: {}, emAppended: 0, emSkipped: 0, emEntries: [] };
     try {
-        ({ filename, content, _emPosition } = convertWiEntry(wiEntry, settings.lorebookTag, { compress, report, emHandling }));
+        ({ filename, content, _emPosition } = convertWiEntry(wiEntry, settings.lorebookTag, { compress, report, emHandling, constantTag: settings.constantTag }));
     } catch (err) {
         return { ok: false, action: null, path: '', error: `convert failed: ${err.message}` };
     }

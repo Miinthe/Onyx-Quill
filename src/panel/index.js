@@ -19,6 +19,6 @@ export function initPanelViews($drawer) {
         const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.append(l);
     }
     for (const [name, fn] of [['Lore', mountLoreView], ['Filters', mountFiltersView], ['Story', mountStoryView], ['Cast', mountCastView], ['Mero', mountMeroView], ['Ready', mountReadyView]]) {
-        try { fn(panel); } catch (err) { console.warn(`[DLE] ${name} tab: new view skipped, today's stays`, err); }
+        try { fn(panel); } catch (err) { console.warn(`[Onyx Quill] ${name} tab: new view skipped, today's stays`, err); }
     }
 }

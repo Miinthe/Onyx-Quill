@@ -93,7 +93,7 @@ export async function startFlightRecorder() {
         const stateMod = await import('../state.js');
         const { onPipelineComplete } = stateMod;
         if (typeof onPipelineComplete !== 'function') {
-            console.warn('[DLE] Flight recorder: onPipelineComplete not found in state.js — generation recording disabled');
+            console.warn('[Onyx Quill] Flight recorder: onPipelineComplete not found in state.js — generation recording disabled');
             started = false;
             return;
         }
@@ -118,7 +118,7 @@ export async function startFlightRecorder() {
             }
         });
     } catch (err) {
-        console.warn('[DLE] Flight recorder start failed, will retry:', err?.message);
+        console.warn('[Onyx Quill] Flight recorder start failed, will retry:', err?.message);
         started = false; // allow retry — import may succeed later
     }
 }

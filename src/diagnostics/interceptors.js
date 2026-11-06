@@ -3,7 +3,7 @@
  *
  * Installed at module-eval time via boot.js (first import in index.js). Writes to
  * in-memory ring buffers regardless of debugMode; the toggle only controls whether
- * the same data echoes to a user-visible log surface (`[DLE-DBG]` console group).
+ * the same data echoes to a user-visible log surface (`[Onyx Quill debug]` console group).
  *
  * Every interceptor is wrapped in try/catch so a bug here can't break ST.
  */
@@ -66,7 +66,7 @@ function maybeEcho(level, label, payload) {
     try {
         // Use saved originals to avoid recursing into our patched console.
         const fn = ORIGINAL_CONSOLE[level] || ORIGINAL_CONSOLE.log;
-        fn.call(console, `[DLE-DBG ${label}]`, payload);
+        fn.call(console, `[Onyx Quill debug ${label}]`, payload);
     } catch { /* noop */ }
 }
 
@@ -82,8 +82,8 @@ function patchConsole() {
             try {
                 const msg = safeStringify(args);
                 const entry = { t: Date.now(), level, msg };
-                // Tag DLE-originated entries so they can be split from global noise.
-                if (msg.startsWith('[DLE') || msg.startsWith('"[DLE')) entry.dle = true;
+                // Tag Onyx Quill-originated entries so they can be split from global noise.
+                if (msg.startsWith('[Onyx Quill') || msg.startsWith('"[Onyx Quill')) entry.dle = true;
                 consoleBuffer.push(entry);
             } catch {
                 try { consoleBuffer.push({ t: Date.now(), level, msg: '[serialization failed]' }); } catch { /* last resort */ }

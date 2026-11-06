@@ -184,7 +184,7 @@ export function setClaudeAutoEffortState(bad, detail) {
     claudeAutoEffortBad = !!bad;
     claudeAutoEffortDetail = detail || null;
     for (const cb of claudeAutoEffortObservers) {
-        try { cb(claudeAutoEffortBad, claudeAutoEffortDetail); } catch (e) { console.warn('[DLE] Claude auto-effort observer callback error:', e?.message); }
+        try { cb(claudeAutoEffortBad, claudeAutoEffortDetail); } catch (e) { console.warn('[Onyx Quill] Claude auto-effort observer callback error:', e?.message); }
     }
 }
 export function onClaudeAutoEffortChanged(cb) { claudeAutoEffortObservers.add(cb); return () => claudeAutoEffortObservers.delete(cb); }
@@ -194,7 +194,7 @@ const debugModeObservers = new Set();
 export function onDebugModeChanged(cb) { debugModeObservers.add(cb); return () => debugModeObservers.delete(cb); }
 export function notifyDebugModeChanged() {
     for (const cb of [...debugModeObservers]) {
-        try { cb(); } catch (err) { console.warn('[DLE] debugMode observer callback error:', err?.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] debugMode observer callback error:', err?.message); }
     }
 }
 
@@ -266,7 +266,7 @@ export function setPipelinePhase(phase) {
     if (pipelinePhase === phase) return;
     pipelinePhase = phase;
     for (const cb of [...pipelinePhaseCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Pipeline phase callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Pipeline phase callback error:', err.message); }
     }
 }
 
@@ -404,12 +404,6 @@ export function resetVaultIndexState() {
     setBuildEpoch(buildEpoch + 1); // epoch fence — see doc comment above (gotcha #95)
     notifyIndexUpdated();
 }
-
-// ── Lore gaps (Mero's Requests; stored by src/lore-gaps.js) ──
-
-/** Gap records for the current chat (hydrated from chat_metadata.deeplore_lore_gaps). */
-export let loreGaps = [];
-export function setLoreGaps(v) { loreGaps = v; notifyLoreGapsChanged(); }
 
 /** Custom field definitions: loaded from Obsidian YAML or defaults */
 /** @type {import('./fields.js').FieldDefinition[]} */
@@ -634,7 +628,7 @@ export function onIndexUpdated(callback) {
 
 export function notifyIndexUpdated() {
     for (const cb of [...indexUpdatedCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Index update callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Index update callback error:', err.message); }
     }
 }
 
@@ -648,7 +642,7 @@ export function onAiStatsUpdated(callback) {
 
 export function notifyAiStatsUpdated() {
     for (const cb of [...aiStatsCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] AI stats callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] AI stats callback error:', err.message); }
     }
 }
 
@@ -662,7 +656,7 @@ export function onCircuitStateChanged(callback) {
 
 export function notifyCircuitStateChanged(detail = null) {
     for (const cb of [...circuitStateCallbacks]) {
-        try { cb(detail); } catch (err) { console.warn('[DLE] Circuit state callback error:', err.message); }
+        try { cb(detail); } catch (err) { console.warn('[Onyx Quill] Circuit state callback error:', err.message); }
     }
 }
 
@@ -678,7 +672,7 @@ export function clearPipelineCompleteCallbacks() { pipelineCompleteCallbacks.cle
 
 export function notifyPipelineComplete() {
     for (const cb of [...pipelineCompleteCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Pipeline complete callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Pipeline complete callback error:', err.message); }
     }
 }
 
@@ -694,7 +688,7 @@ export function onInjectionSourcesReady(callback) {
 
 export function notifyInjectionSourcesReady() {
     for (const cb of [...injectionSourcesReadyCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Injection sources ready callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Injection sources ready callback error:', err.message); }
     }
 }
 
@@ -711,7 +705,7 @@ export function clearGatingCallbacks() { gatingChangedCallbacks.clear(); }
 export function notifyGatingChanged() {
     resetAiSearchCache();
     for (const cb of [...gatingChangedCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Gating changed callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Gating changed callback error:', err.message); }
     }
 }
 
@@ -728,7 +722,7 @@ export function clearPinBlockCallbacks() { pinBlockChangedCallbacks.clear(); }
 export function notifyPinBlockChanged() {
     resetAiSearchCache();
     for (const cb of [...pinBlockChangedCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Pin/block changed callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Pin/block changed callback error:', err.message); }
     }
 }
 
@@ -744,7 +738,7 @@ export function clearGenerationLockCallbacks() { generationLockCallbacks.clear()
 
 function notifyGenerationLockChanged() {
     for (const cb of [...generationLockCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Generation lock callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Generation lock callback error:', err.message); }
     }
 }
 
@@ -759,7 +753,7 @@ export function onFieldDefinitionsUpdated(callback) {
 function notifyFieldDefinitionsUpdated() {
     resetAiSearchCache();
     for (const cb of [...fieldDefinitionsCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Field definitions callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Field definitions callback error:', err.message); }
     }
 }
 
@@ -773,23 +767,7 @@ export function onIndexingChanged(callback) {
 
 function notifyIndexingChanged() {
     for (const cb of [...indexingChangedCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Indexing changed callback error:', err.message); }
-    }
-}
-
-/** @type {Set<() => void>} */
-const loreGapsChangedCallbacks = new Set();
-
-export function onLoreGapsChanged(callback) {
-    loreGapsChangedCallbacks.add(callback);
-    return () => loreGapsChangedCallbacks.delete(callback);
-}
-
-export function clearLoreGapsCallbacks() { loreGapsChangedCallbacks.clear(); }
-
-export function notifyLoreGapsChanged() {
-    for (const cb of [...loreGapsChangedCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Lore gaps changed callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Indexing changed callback error:', err.message); }
     }
 }
 
@@ -806,7 +784,7 @@ export function clearChatInjectionCountsCallbacks() { chatInjectionCountsCallbac
 export function notifyChatInjectionCountsUpdated() {
     chatInjectionCountsVersion++;
     for (const cb of [...chatInjectionCountsCallbacks]) {
-        try { cb(); } catch (err) { console.warn('[DLE] chatInjectionCounts callback error:', err.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] chatInjectionCounts callback error:', err.message); }
     }
 }
 

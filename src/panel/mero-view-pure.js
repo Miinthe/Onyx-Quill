@@ -62,29 +62,3 @@ export function pitchLine(m = {}) {
     const multi = m.shape === 'multi', hid = m.vis === 'hide';
     return [multi ? '🪜 multistep' : '⚡ one-shot', hid ? '🙈 hidden' : `👁 ${m.n || 3}`, PS[m.str] || '', String(m.tone || 'sfw').toUpperCase(), m.focus ? `focus: ${m.focus}` : null].filter(Boolean).join(' · ');
 }
-
-/**
- * Overhaul (2026-10-17): the old helper's "Lore gaps" in Mero's Requests (one home — the side panel's ⋯ item is gone).
- * Gaps were flagged while replies were written: something the story needed that no entry had (Write it), or an entry
- * that needs an update (Open it). Hide = until it is flagged again; No = for good. Open ones newest first; the
- * written ones go under Answered.
- * @param {Array} gaps loreGaps (type 'flag'; subtype 'gap' | 'update'; status 'pending' | 'written')
- * @returns {{ open: Array, done: Array }} each { id, title, why, meta, update, entry }
- */
-export function gapCards(gaps = [], { hidden = [], dismissed = [] } = {}) {
-    const off = new Set([...(hidden || []), ...(dismissed || [])]);
-    const list = (Array.isArray(gaps) ? gaps : []).filter(g => g && g.id && g.type === 'flag' && !off.has(g.id) && String(g.query || '').trim())
-        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    const card = g => {
-        const update = g.subtype === 'update' && !!g.entryTitle;
-        const n = Number(g.frequency) || 1;
-        return {
-            id: g.id, update, entry: update ? String(g.entryTitle) : null,
-            title: update ? `Update “${g.entryTitle}”?` : `Write “${String(g.query).trim()}”?`,
-            why: String(g.reason || '').replace(/\s+/g, ' ').trim(),
-            meta: [update ? String(g.query).trim() : '', n > 1 ? `came up ${n} times` : '', g.urgency === 'high' ? 'urgent' : ''].filter(Boolean).join(' · '),
-            query: String(g.query).trim(),
-        };
-    };
-    return { open: list.filter(g => g.status !== 'written').map(card), done: list.filter(g => g.status === 'written').map(card) };
-}

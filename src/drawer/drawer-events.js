@@ -84,11 +84,11 @@ function executeCommand(cmd) {
     const ctx = typeof SillyTavern !== 'undefined' && SillyTavern.getContext ? SillyTavern.getContext() : null;
     if (ctx?.executeSlashCommands) {
         ctx.executeSlashCommands(cmd).catch(err => {
-            console.error('[DLE] Command error:', cmd, err);
+            console.error('[Onyx Quill] Command error:', cmd, err);
             dedupError('A drawer command failed. Check the browser console for details.', 'drawer_cmd_error');
         });
     } else {
-        console.warn('[DLE] Cannot execute command — SillyTavern.getContext() unavailable');
+        console.warn('[Onyx Quill] Cannot execute command — SillyTavern.getContext() unavailable');
     }
 }
 
@@ -152,6 +152,10 @@ export function switchTab($drawer, tabName) {
 // Wire Functions (one-time event binding)
 // ════════════════════════════════════════════════════════════════════════════
 
+// Onyx Quill starts switched off until setup is done, so the setup wizard and the
+// World Info import must still open while it is off (the master-off gate skips them).
+const SETUP_ACTIONS_WHILE_OFF = new Set(['setup', 'import-wi']);
+
 export function wireToolsTab($drawer) {
     // BUG-354: Delegate from $drawer (not #dle-panel-tools) so binding survives container replacement.
     $drawer.on('click', '#dle-panel-tools .dle-tool-btn[data-action]', function () {
@@ -160,7 +164,7 @@ export function wireToolsTab($drawer) {
         if (!cmd) return;
         // BUG-359: gate on generation lock, indexing, or master-disabled.
         const settings = getSettings();
-        if (!settings.enabled) {
+        if (!settings.enabled && !SETUP_ACTIONS_WHILE_OFF.has(action)) {
             toastr.warning(tr('dle_toast_disabled'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }
@@ -219,7 +223,7 @@ export function wireTabExpand($drawer) {
             const cmd = EXPAND_ACTIONS[target];
             if (cmd) executeCommand(cmd);
         } catch (err) {
-            console.error('[DLE] Tab expand error:', err);
+            console.error('[Onyx Quill] Tab expand error:', err);
             toastr.error(tr('dle_toast_expand_failed'), 'Onyx Quill');
         }
     });
@@ -315,7 +319,7 @@ export function wireStatusActions($drawer) {
                     toastr.success(`Run ${next.toUpperCase()} open — instance and folders carried over.`, 'Onyx Quill', { timeOut: 6000 });
                     announceToScreenReader(`New run ${next} started`);
                 } catch (err) {
-                    console.error('[DLE] New run failed:', err);
+                    console.error('[Onyx Quill] New run failed:', err);
                     notify.error('Could not start the new run: ' + (err?.message || err), { copyable: true });
                 }
                 })();
@@ -330,7 +334,7 @@ export function wireStatusActions($drawer) {
                 $refreshBtn.append('<goo-spinner class="dle-btn-goo" size="22" color="currentColor" aria-hidden="true"></goo-spinner>');
                 buildIndex().catch(err => {
                     // Manual refresh is user-initiated; surface failure rather than silently letting the status bar stay stale.
-                    console.warn('[DLE] Manual refresh failed:', err?.message);
+                    console.warn('[Onyx Quill] Manual refresh failed:', err?.message);
                     try {
                         toastr.error(
                             trf('dle_toast_refresh_failed', err?.message || 'unknown error'),
@@ -394,7 +398,7 @@ export function wireStatusActions($drawer) {
                 if (settings.debugMode) {
                     const snap = lastGenerationTrackerSnapshot;
                     const log = chat_metadata.deeplore_injection_log;
-                    console.debug('[DLE][DIAG] clear-picks-start', {
+                    console.debug('[Onyx Quill][DIAG] clear-picks-start', {
                         aiCache: {
                             hashEmpty: !aiSearchCache.hash,
                             manifestHashEmpty: !aiSearchCache.manifestHash,
@@ -426,7 +430,7 @@ export function wireStatusActions($drawer) {
                     saveMetadataDebounced();
                 }
                 if (settings.debugMode) {
-                    console.debug('[DLE][DIAG] clear-picks-done', {
+                    console.debug('[Onyx Quill][DIAG] clear-picks-done', {
                         logAfterClear: chat_metadata.deeplore_injection_log,
                         cacheAfterClear: { hashEmpty: !aiSearchCache.hash, resultCount: aiSearchCache.results?.length ?? 0 },
                     });
@@ -464,7 +468,7 @@ export function wireStatusActions($drawer) {
             // Resume where a "Finish later" skip left off (returns 1 for fresh/completed).
             showSetupWizard(getWizardResumeStep());
         } catch (err) {
-            console.error('[DLE] Setup wizard error:', err);
+            console.error('[Onyx Quill] Setup wizard error:', err);
             toastr.error('Failed to open setup wizard.', 'Onyx Quill');
         }
     });
@@ -592,7 +596,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
         const live = await listAllFolders(v.host, v.port, v.apiKey, '', 0, !!v.https);
         for (const f of live) known.add(f);
     } catch (err) {
-        console.warn('[DLE] Could not list vault folders; falling back to indexed folders only:', err);
+        console.warn('[Onyx Quill] Could not list vault folders; falling back to indexed folders only:', err);
     }
     const folders = [...known].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const options = folders.filter(f => f !== currentFolder);
@@ -835,7 +839,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
             const r = await moveEntryToFolder(e, dest);
             if (r.ok) ok++;
             else {
-                console.error('[DLE] Move failed:', e.title, r);
+                console.error('[Onyx Quill] Move failed:', e.title, r);
                 notify.error(`${e.title}: ${r.error || 'Move failed.'}`, { copyable: true, timeOut: r.orphaned ? 0 : 8000 });
                 if (r.orphaned) orphaned = true;
             }
@@ -878,7 +882,7 @@ export async function moveEntryFlow(entry, { entries } = {}) {
         await rebuildIndex();
         renderBrowseTab();
     } else {
-        console.error('[DLE] Move failed:', result);
+        console.error('[Onyx Quill] Move failed:', result);
         // `orphaned` = the entry now exists in TWO places. Loud, and the toast must not
         // auto-dismiss, because a duplicate title is a health-check error.
         notify.error(result.error || 'Move failed.', { copyable: true, timeOut: result.orphaned ? 0 : 8000 });
@@ -1437,7 +1441,7 @@ export function wireBrowseTab($drawer) {
             if (ds.browseSelected instanceof Set) ds.browseSelected.clear();
             scheduleRender(renderBrowseTab);
         } catch (err) {
-            console.error('[DLE] runBatchOptimize failed:', err);
+            console.error('[Onyx Quill] runBatchOptimize failed:', err);
             notify.error(trf('dle_toast_batch_optimize_failed', err?.message || err), { copyable: true });
         } finally {
             ds._batchOptimizeInflight = false;
@@ -1510,7 +1514,7 @@ export function wireGatingTab($drawer) {
                 <option value="forward"${dir === 'forward' ? ' selected' : ''}>Forward only — it never moves back by itself (you still can)</option>
             </select>
             <label style="display:flex;align-items:center;gap:8px;margin:.8em 0 .2em;cursor:pointer"><input type="checkbox" class="dle-tf-skip"${existing?.skip === true ? ' checked' : ''} style="flex:none"> May skip steps (e.g. a time jump). Off: it moves one step at a time and tells you when the story jumps ahead.</label>
-            <p style="opacity:.7;font-size:.9em;margin-top:.8em">${existing ? 'It stays on its current step if that step is still in the list.' : 'It starts on the first step.'} Name the steps the way your stage entries\' summaries name them — that is how the lore judge finds the right entry.</p>
+            <p style="opacity:.7;font-size:.9em;margin-top:.8em">${existing ? 'It stays on its current step if that step is still in the list.' : 'It starts on the first step.'} Name the steps the way your stage entries\' summaries name them — that is how AI search finds the right entry.</p>
         </div>`;
         const ok = await pop(html, PT.CONFIRM, '', {
             okButton: 'Save', cancelButton: 'Cancel', wide: true,
@@ -1863,7 +1867,7 @@ export function wireGatingTab($drawer) {
         const cmd = TOOL_ACTIONS[action];
         if (!cmd) return;
         const settings = getSettings();
-        if (!settings.enabled) {
+        if (!settings.enabled && !SETUP_ACTIONS_WHILE_OFF.has(action)) {
             toastr.warning(tr('dle_toast_disabled'), 'Onyx Quill', { timeOut: 2500 });
             return;
         }

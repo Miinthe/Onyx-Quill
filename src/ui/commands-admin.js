@@ -35,6 +35,7 @@ export const DLE_COMMANDS = [
     { cmd: '/oq-browse', desc: 'Search and preview vault entries (alias: /oq-b)', i18nKey: 'dle_cmd_desc_browse' },
     { cmd: '/oq-why', desc: 'Show why entries would/wouldn\'t inject (alias: /oq-context)', i18nKey: 'dle_cmd_desc_why' },
     { cmd: '/oq-inspect', desc: 'Inspect what happened in the last message (alias: /oq-i)', i18nKey: 'dle_cmd_desc_inspect' },
+    { cmd: '/oq-reevaluate', desc: 'New swipe with a fresh look at the newest turn (story helper and AI search ask again)' },
     { cmd: '/oq-health', desc: 'Run vault health check (alias: /oq-h)', i18nKey: 'dle_cmd_desc_health' },
     { cmd: '/oq-lint', desc: 'Show parser warnings and skipped entries from last index build (alias: /oq-l)', i18nKey: 'dle_cmd_desc_lint' },
     { cmd: '/oq-refresh', desc: 'Rebuild vault index from Obsidian (alias: /oq-r)', i18nKey: 'dle_cmd_desc_refresh' },
@@ -49,9 +50,12 @@ export const DLE_COMMANDS = [
     { cmd: '/oq-scribe', desc: 'Run Session Scribe now', i18nKey: 'dle_cmd_desc_scribe' },
     { cmd: '/oq-scribe-history', desc: 'View past Scribe notes', i18nKey: 'dle_cmd_desc_scribe_history' },
     { cmd: '/oq-newlore', desc: 'AI suggests new lorebook entries from chat', i18nKey: 'dle_cmd_desc_newlore' },
+    { cmd: '/oq-suggest', desc: 'Same as /oq-newlore' },
     { cmd: '/oq-optimize-keys', desc: 'AI keyword suggestions for an entry', i18nKey: 'dle_cmd_desc_optimize_keys' },
     { cmd: '/oq-summarize', desc: 'AI-generate summary fields for all entries missing one', i18nKey: 'dle_cmd_desc_summarize' },
-    { cmd: '/oq-review', desc: 'Mero reviews your entire vault in a new talk', i18nKey: 'dle_cmd_desc_review' },
+    { cmd: '/oq-summarize-range', desc: 'Summarize a chat range, hide the originals: /oq-summarize-range 5-15' },
+    { cmd: '/oq-summarize-rollback', desc: 'Undo a /oq-summarize-range (id or all)' },
+    { cmd: '/oq-review', desc: 'Mero reviews the lore this story reads in a new talk', i18nKey: 'dle_cmd_desc_review' },
     { cmd: '/oq-import', desc: 'Import SillyTavern World Info into Obsidian vault', i18nKey: 'dle_cmd_desc_import' },
     { cmd: '/oq-setup', desc: 'Run guided setup wizard', i18nKey: 'dle_cmd_desc_setup' },
     { sep: true, label: 'Per-Chat Overrides', i18nKey: 'dle_cmd_section_overrides' },
@@ -69,8 +73,14 @@ export const DLE_COMMANDS = [
     { cmd: '/oq-set-scene', desc: 'Set scene type filter', i18nKey: 'dle_cmd_desc_set_scene' },
     { cmd: '/oq-set-characters', desc: 'Set present characters', i18nKey: 'dle_cmd_desc_set_characters' },
     { cmd: '/oq-set-folder', desc: 'Filter by Obsidian folder path', i18nKey: 'dle_cmd_desc_set_folder' },
+    { cmd: '/oq-clear-folder', desc: 'Clear the folder filter' },
     { cmd: '/oq-context-state', desc: 'Show current gating state (alias: /oq-ctx)', i18nKey: 'dle_cmd_desc_context_state' },
     { cmd: '/oq-branch-run', desc: 'Start this branch as the next run, copying session notes and lore up to here' },   // LOCAL PATCH (Miinthe, 2026-10-03)
+    { sep: true, label: 'Character & Chat' },
+    { cmd: '/oq-char-folders', desc: 'Pick the folders this chat\'s character reads ("run": the folders this run adds)' },
+    { cmd: '/oq-char', desc: 'Onyx Quill on or off for this chat\'s character' },
+    { cmd: '/oq-chat', desc: 'Onyx Quill for this chat only: on, off, or follow its character' },
+    { cmd: '/oq-char-status', desc: 'What this chat reads and whether Onyx Quill is on' },
     // LOCAL PATCH (Miinthe, 2026-10-02): story trackers. English only, like the other local patches.
     { sep: true, label: 'Story Trackers' },
     { cmd: '/oq-tracker', desc: 'List this chat\'s story trackers, or make one: /oq-tracker Relationship = Strangers, Friends, …' },
@@ -80,10 +90,18 @@ export const DLE_COMMANDS = [
     { cmd: '/oq-tracker-aside', desc: 'Set a detour beside a step: /oq-tracker-aside Relationship = Nuisance (empty clears)' },
     { cmd: '/oq-tracker-remove', desc: 'Remove a tracker from this chat' },
     { cmd: '/oq-tracker-rewind', desc: 'Put trackers back to where they were at a message' },
+    { cmd: '/oq-tracker-branch', desc: 'Take a fork\'s branch by hand: /oq-tracker-branch Relationship = Confesses' },
+    { cmd: '/oq-tracker-run', desc: 'Pause, continue, abandon, reactivate or undo a tracker in this chat' },
+    { sep: true, label: 'Storyboards' },
+    { cmd: '/oq-board', desc: 'Open the storyboard window, or apply a board: /oq-board My Story' },
+    { cmd: '/oq-board-saveas', desc: 'Save this chat\'s trackers as a new storyboard and use it here' },
+    { cmd: '/oq-board-character', desc: 'Default storyboard for new chats with this character (off clears it)' },
+    { cmd: '/oq-board-detach', desc: 'Stop using the storyboard in this chat (keeps a copy of the trackers)' },
+    { cmd: '/oq-board-off', desc: 'Switch the board off in this chat or for its character; "on" turns it back on' },
     { sep: true, label: 'Diagnostics', i18nKey: 'dle_cmd_section_diagnostics' },
     { cmd: '/oq-diagnostics', desc: 'Export a diagnostics markdown report', i18nKey: 'dle_cmd_desc_diagnostics' },
     { cmd: '/oq-debug', desc: 'Toggle debug mode on or off', i18nKey: 'dle_cmd_desc_debug' },
-    { cmd: '/oq-logs', desc: 'Show recent DLE console log entries', i18nKey: 'dle_cmd_desc_logs' },
+    { cmd: '/oq-logs', desc: 'Show recent Onyx Quill console log entries', i18nKey: 'dle_cmd_desc_logs' },
 ];
 
 export function registerAdminCommands() {
@@ -103,6 +121,8 @@ export function registerAdminCommands() {
             const subcommand = (value || '').trim().toLowerCase();
             if (subcommand === 'clear') {
                 chat_metadata.deeplore_ai_notepad = '';
+                // The pin list belongs to the notes; clearing the notes clears the pins too.
+                chat_metadata.deeplore_ai_notepad_pins = [];
                 saveMetadataDebounced();
                 toastr.success(tr('dle_cmd_ai_notepad_cleared_toast'), 'Onyx Quill');
                 return '';
@@ -137,7 +157,7 @@ export function registerAdminCommands() {
                 `Never-Insert Tag: ${settings.neverInsertTag ? '#' + settings.neverInsertTag : '(none)'}`,
                 `Seed Tag: ${settings.seedTag ? '#' + settings.seedTag : '(none)'}`,
                 `Bootstrap Tag: ${settings.bootstrapTag ? '#' + settings.bootstrapTag : '(none)'} (threshold: ${settings.newChatThreshold} messages)`,
-                `Entries: ${vaultIndex.length} (${constants} always-send, ${seeds} seed, ${bootstraps} bootstrap, ${guides} for Mero, ~${totalTokens} tokens)`,
+                `Entries: ${vaultIndex.length} (${constants} always-send, ${seeds} seed, ${bootstraps} bootstrap, ${guides} secrets for Mero, ~${totalTokens} tokens)`,
                 `Budget: ${settings.unlimitedBudget ? 'unlimited' : settings.maxTokensBudget + ' tokens'}`,
                 `Max Entries: ${settings.unlimitedEntries ? 'unlimited' : settings.maxEntries}`,
                 `Recursive: ${settings.recursiveScan ? 'on (max ' + settings.maxRecursionSteps + ' steps)' : 'off'}`,
@@ -257,7 +277,7 @@ export function registerAdminCommands() {
 
                 await callGenericPopup(container, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
             } catch (err) {
-                console.error('[DLE] Scribe history error:', err);
+                console.error('[Onyx Quill] Scribe history error:', err);
                 notify.error(classifyError(err), { copyable: true });
             }
             return '';
@@ -344,11 +364,11 @@ export function registerAdminCommands() {
                 toastr.success(tr('dle_cmd_diagnostics_downloaded_toast'), 'Onyx Quill', { timeOut: 8000 });
             } catch (err) {
                 notify.error(`Diagnostic export failed: ${classifyError(err)}`, { copyable: true });
-                console.error('[DLE] /oq-diagnostics failed:', err);
+                console.error('[Onyx Quill] /oq-diagnostics failed:', err);
             }
             return '';
         },
-        helpString: 'Export an anonymized diagnostic report (.md) for support requests. Same as the System tab button.',
+        helpString: 'Export an anonymized diagnostic report (.md) for support requests. Same as Settings › Advanced › Troubleshooting › Export diagnostics.',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
@@ -571,7 +591,7 @@ export function registerAdminCommands() {
             const parsed = Number(value);
             const n = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 500) : 50;
             const all = consoleBuffer.drain();
-            const dleEntries = all.filter(e => e.dle || (e.msg && e.msg.includes('[DLE]')));
+            const dleEntries = all.filter(e => e.dle || (e.msg && e.msg.includes('[Onyx Quill]')));
             const recent = dleEntries.slice(-n);
 
             if (recent.length === 0) {
@@ -597,7 +617,7 @@ export function registerAdminCommands() {
             typeList: [ARGUMENT_TYPE.NUMBER],
             isRequired: false,
         })],
-        helpString: 'Show recent DLE console log entries. Usage: /oq-logs [count]',
+        helpString: 'Show recent Onyx Quill console log entries. Usage: /oq-logs [count]',
         returns: ARGUMENT_TYPE.STRING,
     }));
 

@@ -12,13 +12,13 @@ import { getThumbnailUrl } from '../../../../../../script.js';
 import { user_avatar } from '../../../../../personas.js';
 import { resolveConnectionConfig } from '../../settings.js';
 import { callAI } from '../ai/ai.js';
-import { live, saveLiveState, liveWriterLines } from '../board-live.js';
+import { live, saveLiveState, liveWriterLines, worldChatPaused } from '../board-live.js';
 import { applyCastChanges } from '../cast-pure.js';
 import { storyLinesFor } from '../cast-voice-pure.js';
 import { undoCollections } from '../autotrack.js';
 import { icon as I } from '../kit/icons.js';
 import * as K from '../kit/kit.js';
-import { addRecord, normWorld, neverTalk, togglePin } from './world-pure.js';
+import { addRecord, normWorld, neverTalk, togglePin, worldPaused } from './world-pure.js';
 import { lastTick, tickReason, tickPrompt, parseTick, TICK_SCHEMA } from './alive-pure.js';
 import { duePlans, plannedPrompt } from './planned-pure.js';
 import { newPost, richText, updatePost, photosIn } from './feed-pure.js';
@@ -112,8 +112,8 @@ export function renderMessages(body, w) {
             `<span class="nm">${pins.includes(c.key) ? '<span class="pin" title="Pinned">★</span>' : ''}${esc(nameOf(c.key))}${w.people?.[c.key]?.muted ? '<span class="muted" title="Muted on the board: never writes to you first">🔇</span>' : ''}</span><span class="tm">${c.last ? esc(stampText(c.last.stamp)) : ''}</span>` +
             `<span class="pv">${c.last ? (c.last.from === me ? esc(nameOf(me)) + ': ' : '') + esc(textOf(c.last)) : `<i>${letters ? 'Write the first letter' : 'Start a conversation'}</i>`}</span>` +
             (c.unread ? '<span class="ud" aria-label="unread"></span>' : '') + '</button>';
-        body.innerHTML = asRow + `<div class="dle-wd-list">${newChat}${gr.btn}${gr.pinned}${list.filter(c => pins.includes(c.key)).map(rowOf).join('')}${gr.rest}${list.filter(c => !pins.includes(c.key)).map(rowOf).join('')}<div class="dle-wd-newg"><button type="button" class="dk-btn" data-talk-new title="Two people of the story start talking, now">+ Start a talk between others</button></div>${nOthers ? `<button type="button" class="dle-wd-lgh fold" data-others aria-expanded="${othersOpen}">${I('chev')}<span class="lt">Between others</span><small>${othersOpen ? 'tap one to spy — only you see this' : 'tap to open'}</small><span class="cnt" aria-label="${nOthers} conversation${nOthers === 1 ? '' : 's'}">${nOthers}</span></button>${!othersOpen ? '' : gr.others.map(r => r.html).join('') + others.map(o => `<button type="button" class="dle-wd-row peek" data-peek="${esc(o.conv)}"><span class="av2">${avatar(o.a, 'fa')}${avatar(o.b, 'fa')}</span>` +
-            `<span class="nm">${esc(nameOf(o.a))} ↔ ${esc(nameOf(o.b))}</span><span class="tm">${esc(stampText(o.last.stamp))}</span><span class="pv blur" aria-label="hidden until you open it">${esc(textOf(o.last))}</span></button>`).join('')}` : ''}</div>`;
+        body.innerHTML = asRow + `<div class="dle-wd-list">${newChat || gr.btn ? `<div class="dle-wd-newrow">${newChat}${gr.btn}</div>` : ''}${gr.pinned}${list.filter(c => pins.includes(c.key)).map(rowOf).join('')}${gr.rest}${list.filter(c => !pins.includes(c.key)).map(rowOf).join('')}${`<button type="button" class="dle-wd-lgh fold" data-others aria-expanded="${othersOpen}">${I('chev')}<span class="lt">Between others</span><small>${othersOpen ? (nOthers ? 'tap one to spy — only you see this' : '') : 'tap to open'}</small>${nOthers ? `<span class="cnt" aria-label="${nOthers} conversation${nOthers === 1 ? '' : 's'}">${nOthers}</span>` : ''}</button>${!othersOpen ? '' : '<div class="dle-wd-newg"><button type="button" class="dk-btn" data-talk-new title="Two people of the story start talking, now">+ Start chat</button></div>' + gr.others.map(r => r.html).join('') + others.map(o => `<button type="button" class="dle-wd-row peek" data-peek="${esc(o.conv)}"><span class="av2">${avatar(o.a, 'fa')}${avatar(o.b, 'fa')}</span>` +
+            `<span class="nm">${esc(nameOf(o.a))} ↔ ${esc(nameOf(o.b))}</span><span class="tm">${esc(stampText(o.last.stamp))}</span><span class="pv blur" aria-label="hidden until you open it">${esc(textOf(o.last))}</span></button>`).join('')}`}</div>`;
         return;
     }
     // a conversation: everything that arrived for me is read now
@@ -194,7 +194,7 @@ function picState(m, d) {
 /** The photos of a thread being drawn by themselves: only messages from the first look on (an old thread never starts). */
 function autoPics(th, self, letters) {
     const w = worldNow();
-    if (!H || !w.pics.on || picsDead) return;
+    if (!H || !w.pics.on || picsDead || worldPaused(w.paused, worldChatPaused())) return;   // paused: nothing is drawn by itself
     const st = H.store();
     if (!Number.isInteger(st.picsFrom)) { if (st.records.length) setTimeout(() => { const s2 = H.store(); if (!Number.isInteger(s2.picsFrom)) H.save({ ...s2, picsFrom: nextN(s2) }); }, 0); return; }
     for (const { m, desc } of picsDue(th, { me: self, picsFrom: st.picsFrom, theirs: w.pics.theirs, tried: picTried, photosIn }).slice(0, 3)) {
@@ -214,7 +214,7 @@ function makePic(id, desc, letters, byHand = false) {
         let url = '';
         if (m0) {
             try { url = await cmd.callback({ quiet: 'true' }, picPrompt(desc, { from: nameOf(m0.from), letters })); }
-            catch (err) { console.warn('[DLE] world: picture failed:', err?.message || err); }
+            catch (err) { console.warn('[Onyx Quill] world: picture failed:', err?.message || err); }
         }
         picBusy.delete(key);
         if (typeof url === 'string' && url.trim() && findMsg(id)) {
@@ -380,7 +380,7 @@ async function startTalk(body, w) {
         const m = { ...newMessage({ store: H.store(), from, to, text, clock, i, look: w.look, id: newId('w') }), alts: [text], s: 0 };
         H.save(addRecord(H.store(), m, i)); H.render(); H.changed();
         if (w.look !== 'letters') await answer(m, w);   // the other answers now; later turns follow the threads' rules
-    } catch (err) { console.warn('[DLE] world: start a talk failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: start a talk failed', err?.message || err); }
 }
 
 /** Her newest text to `other` still waiting for an answer (left on read, busy, asleep) — the "Answer now" button. Not while muted. */
@@ -402,6 +402,12 @@ function npcStatus(w, key) {
 /** `m.to` answers `m` (texting at once; letters once they arrive). */
 async function answer(m, w, { alt = false, slow = false } = {}) {
     const L = live(); if (!L) return;
+    // paused in this chat: nobody answers — her text waits and is answered once she wakes the world (deliverLetters)
+    if (w.paused) {
+        if (!alt) H.save(updateMessage(H.store(), m.id, { held: true }));
+        if (!slow) K.notify({ title: 'World', text: alt ? 'The world is paused: wake it first.' : `The world is paused: ${nameOf(m.to)} answers once you wake it.` });
+        return;
+    }
     // muted: a break from the world — they answer once unmuted (deliverLetters picks it up), never meanwhile
     if (w.people?.[m.to]?.muted) {
         if (!alt) H.save(updateMessage(H.store(), m.id, { held: true }));
@@ -440,7 +446,7 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
         let lines = []; try { lines = storyLinesFor(liveWriterLines()); } catch { /* none */ }
         const p = replyPrompt({ discretion: discretionOf(w, m.to), name: who.p.name, card: who.reporter ? reporterCard(who.p.name, look) : who.rumor ? accountCard(who.p.name, look) : who.main ? charText(main.ch, main.name) : cardText(who.p), now, fromName: nameOf(m.from), look, thread, story: chat, storyLines: lines, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', mayPass: slow, quirks: quirksOf(w, m.to), feed: publicFeed(), photos: w.pics?.theirs !== false });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 600), caller: 'world', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
-        if (window.__dleWorldDebug) console.log('[DLE] world answer', who.p.name, JSON.stringify({ system: p.system, user: p.user, raw: r?.text }));
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world answer', who.p.name, JSON.stringify({ system: p.system, user: p.user, raw: r?.text }));
         if (!stay()) return;
         if (slow && isPass(r?.text)) {   // they chose not to answer
             H.save(updateMessage(H.store(), m.id, { answered: true, passed: true }));
@@ -484,7 +490,7 @@ async function answer(m, w, { alt = false, slow = false } = {}) {
             }
         }
     } catch (err) {
-        console.warn('[DLE] world: answer failed', err);
+        console.warn('[Onyx Quill] world: answer failed', err);
         K.notify({ title: 'World', text: `${who.p.name} couldn't answer: ${err?.message || err}`, tone: 'warn' });
     } finally {
         busy.delete(conv); typing.delete(conv); H.changed(); H.render();
@@ -528,13 +534,13 @@ async function extract(who, m, reply, conn) {
     try {
         const p = extractPrompt({ reader: who.p.name, writer: nameOf(m.from), message: textOf(m), reply });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: 300, caller: 'world', skipThrottle: true, jsonSchema: EXTRACT_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0 });
-        if (window.__dleWorldDebug) console.log('[DLE] world extract', who.p.name, r?.text);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world extract', who.p.name, r?.text);
         if (H.chat() !== cid) return;
         const x = parseExtract(r?.text);
         // each on its own: a failing knowledge step must not swallow the meet-up (Miinthe's beach test found no plan)
-        if (x.plan) { try { meetup(m.to, x.plan); } catch (err) { console.warn('[DLE] world: the meet-up failed', err?.message || err); } }
-        try { learn(who, x.learned, m); } catch (err) { console.warn('[DLE] world: what they learned failed', err?.message || err); }
-    } catch (err) { console.warn('[DLE] world: reading the exchange failed', err?.message || err); }
+        if (x.plan) { try { meetup(m.to, x.plan); } catch (err) { console.warn('[Onyx Quill] world: the meet-up failed', err?.message || err); } }
+        try { learn(who, x.learned, m); } catch (err) { console.warn('[Onyx Quill] world: what they learned failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: reading the exchange failed', err?.message || err); }
 }
 
 /** What they learned joins their Cast knowledge — logged at the newest main-chat message, Undo on the notice. */
@@ -671,7 +677,7 @@ function charText(ch, name) {
 
 /** After the story moved on: letters that arrived get answered (each answer is a letter on its way in turn). */
 export function deliverLetters(w) {
-    if (!H || !w) return;
+    if (!H || !w || w.paused) return;   // paused: letters wait, nobody answers
     deliverGroups(w);
     for (const m of repliesDue(H.store(), clockNow(), lastI())) {
         if (w.people?.[m.to]?.muted) continue;   // muted: it waits for them
@@ -727,7 +733,7 @@ export async function maybeTick(w, trigger, moment = null) {
         // no main scene for the writers: people in the scene don't text, and those away never saw it (found live: an away Kettle knew about the tape)
         const p = tickPrompt({ userName: userName(), people: writers, reason, look: w.look, when: clock ? stampText({ day: clock.day, part: clock.part }) : '', story: [], event });
         const r = await callAI(p.system, p.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 800), caller: 'world', skipThrottle: true, jsonSchema: TICK_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
-        if (window.__dleWorldDebug) console.log('[DLE] world tick', reason, r?.text, '\n---\n', p.user);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world tick', reason, r?.text, '\n---\n', p.user);
         if (H.chat() !== cid) return null;   // another chat opened meanwhile: nothing goes there
         const out = parseTick(r?.text, writers.map(x => x.name));
         let st = H.store();
@@ -739,7 +745,7 @@ export async function maybeTick(w, trigger, moment = null) {
         }
         H.save(st);
     } catch (err) {
-        console.warn('[DLE] world: tick failed', err?.message || err);
+        console.warn('[Onyx Quill] world: tick failed', err?.message || err);
     } finally {
         ticking = false; H.changed(); H.render();
     }
@@ -811,7 +817,7 @@ export async function firePlans(w) {
             if (to.key !== USER && conn.profileId) extract(to, { ...m, text: parts.join('\n'), alts: null }, '(not answered yet)', conn);
         }
     } catch (err) {
-        console.warn('[DLE] world: planned message failed', err?.message || err);
+        console.warn('[Onyx Quill] world: planned message failed', err?.message || err);
     } finally {
         firing = false; H.changed(); H.render();
     }
@@ -868,7 +874,7 @@ export async function fireAsks(w) {
             const m = H.store().records.find(r => r.kind === 'msg' && r.id === a.msg);
             if (m && !m.answered) await answer(m, w, { slow: true });
         }
-    } catch (err) { console.warn('[DLE] world: the check with a witness failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: the check with a witness failed', err?.message || err); }
     finally { asking = false; H.changed(); H.render(); }
 }
 

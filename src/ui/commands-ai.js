@@ -11,7 +11,7 @@ import { SlashCommand } from '../../../../../slash-commands/SlashCommand.js';
 import { SlashCommandArgument, ARGUMENT_TYPE } from '../../../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue } from '../../../../../slash-commands/SlashCommandEnumValue.js';
 import { classifyError, NO_ENTRIES_MSG, yamlEscape } from '../../core/utils.js';
-import { getSettings, getPrimaryVault, resolveConnectionConfig } from '../../settings.js';
+import { getSettings, getVaultByName, resolveConnectionConfig } from '../../settings.js';
 import { vaultIndex, scribeInProgress, setIndexTimestamp, tryAcquireHalfOpenProbe, recordAiSuccess, recordAiFailure, releaseHalfOpenProbe } from '../state.js';
 import { buildIndex, ensureIndexFresh } from '../vault/vault.js';
 import { runScribe } from '../ai/scribe.js';
@@ -47,7 +47,7 @@ export function registerAiCommands() {
                 await showOptimizePopup(entry, result);
             } catch (err) {
                 toastr.clear(loadingToast);
-                console.error('[DLE] Optimize keys error:', err);
+                console.error('[Onyx Quill] Optimize keys error:', err);
                 notify.error(classifyError(err), { copyable: true });
             }
             return '';
@@ -74,7 +74,7 @@ export function registerAiCommands() {
             await showSuggestionPopup(suggestions);
         } catch (err) {
             toastr.clear(loadingToast);
-            console.error('[DLE] Auto-suggest error:', err);
+            console.error('[Onyx Quill] Auto-suggest error:', err);
             notify.error(classifyError(err), { copyable: true });
         }
         return '';
@@ -158,7 +158,7 @@ export function registerAiCommands() {
 
             return '';
             } catch (err) {
-                console.warn('[DLE] /oq-review failed:', err);
+                console.warn('[Onyx Quill] /oq-review failed:', err);
                 toastr.error(tr('dle_cmd_review_error_msg'), 'Onyx Quill');
                 return '';
             }
@@ -168,7 +168,7 @@ export function registerAiCommands() {
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: false,
         })],
-        helpString: 'Have Mero review your entire vault in a new talk (nothing goes into the story chat). Usage: /oq-review <question>. Example: /oq-review What inconsistencies do you see?',
+        helpString: 'Have Mero review the lore this story reads in a new talk (nothing goes into the story chat). Usage: /oq-review <question>. Example: /oq-review What inconsistencies do you see?',
         returns: ARGUMENT_TYPE.STRING,
     }));
 
@@ -189,7 +189,7 @@ export function registerAiCommands() {
 
             const confirmed = await callGenericPopup(
                 `<p>Found <b>${missingSummary.length}</b> entries without AI search summaries.</p>
-                <p>This will generate summaries using your AI search connection and present each for review before writing to Obsidian.</p>
+                <p>This will generate summaries using your Optimize keywords connection and present each for review before writing to Obsidian.</p>
                 <p>Continue?</p>`,
                 POPUP_TYPE.CONFIRM, '', {},
             );
@@ -297,7 +297,6 @@ export async function summarizeEntries(entries) {
     const { callAI, isExcludedFromBreaker } = await import('../ai/ai.js');
     const { writeNote, obsidianFetch, encodeVaultPath } = await import('../vault/obsidian-api.js');
     const settings = getSettings();
-    const vault = getPrimaryVault(settings);
     // Wave-B contract: the batch summary path was bypassing BOTH resolveConnectionConfig
     // AND the breaker. Without breaker integration a bad API key here used to bake every
     // per-entry call without ever shedding load; without resolveConnectionConfig the loop
@@ -316,6 +315,8 @@ export async function summarizeEntries(entries) {
         toastr.info(`Generating summary ${i + 1}/${entries.length}: "${entry.title}"...`, 'Onyx Quill', { timeOut: 0, extendedTimeOut: 0 });
 
         try {
+            // Read and write each entry in its own vault (multi-vault setups).
+            const vault = getVaultByName(settings, entry.vaultSource);
             // LOCAL PATCH 2026-08-03 (Miinthe): rewritten. The old prompt said "max 600 chars"
             // (read as a target — real summaries came out at a median of 562) and asked it to
             // answer "What is this?" first, which is exactly what produced the useless
@@ -329,7 +330,7 @@ export async function summarizeEntries(entries) {
             // looping — `failed++` (not aborted), so the toast at the end still reports
             // a useful count.
             if (!tryAcquireHalfOpenProbe()) {
-                console.warn('[DLE] summarizeEntries: circuit breaker open — skipping entry', entry.title);
+                console.warn('[Onyx Quill] summarizeEntries: circuit breaker open — skipping entry', entry.title);
                 failed++;
                 continue;
             }
@@ -409,7 +410,7 @@ export async function summarizeEntries(entries) {
 
             if (fileResult.status !== 200) {
                 failed++;
-                console.warn(`[DLE] Failed to read ${entry.filename}: HTTP ${fileResult.status}`);
+                console.warn(`[Onyx Quill] Failed to read ${entry.filename}: HTTP ${fileResult.status}`);
                 continue;
             }
 
@@ -444,7 +445,7 @@ export async function summarizeEntries(entries) {
                 failed++;
             }
         } catch (err) {
-            console.error(`[DLE] Summary generation error for "${entry.title}":`, err);
+            console.error(`[Onyx Quill] Summary generation error for "${entry.title}":`, err);
             failed++;
         }
     }

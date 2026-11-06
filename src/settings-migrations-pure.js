@@ -1,5 +1,5 @@
 /**
- * DeepLore — settings migration pure helpers.
+ * Onyx Quill — settings migration pure helpers.
  *
  * Extracted so version-to-version transformations can be regression-tested
  * without ST globals. NO imports from ST modules. NO imports from state.js.
@@ -42,7 +42,7 @@ export const PROXY_DEPRECATION_MODE_KEYS = [
 export function runMigrations(settings, fromVersion, _toVersion) {
     if (fromVersion < 1) {
         // 0 → 1: initial versioned settings (no-op).
-        if (settings.debugMode) console.log('[DLE] Migrating settings to version 1');
+        if (settings.debugMode) console.log('[Onyx Quill] Migrating settings to version 1');
     }
     // 1 → 2 and 2 → 3 only touched the retired Librarian's keys; step 6 drops those keys, so both are no-ops now.
     if (fromVersion < 4) {
@@ -63,7 +63,7 @@ export function runMigrations(settings, fromVersion, _toVersion) {
         }
         if (migratedKeys.length > 0) {
             settings._proxyMigrationV2_5_notice = migratedKeys;
-            console.warn('[DLE] v2.5 migration: flipped Custom Proxy mode to Connection Profile for:', migratedKeys);
+            console.warn('[Onyx Quill] v2.5 migration: flipped Custom Proxy mode to Connection Profile for:', migratedKeys);
         }
     }
     if (fromVersion < 5) {
@@ -103,4 +103,20 @@ export function runMigrations(settings, fromVersion, _toVersion) {
         // shows them as "Same as last turn" instead.
         settings.stripDuplicateInjections = false;
     }
+    if (fromVersion < 9 && fromVersion > 0) {
+        // 8 → 9 (2026-11-05): new installs keep their vault files in `Onyx Quill/` instead of `DeepLore/`.
+        // An existing install (settings copied from DeepLore at first start count) keeps reading its old folder.
+        // getSettings() fills the defaults BEFORE migrating, so a value still on the NEW default counts as unset.
+        // A fresh install has no stored settingsVersion (fromVersion 0) and keeps the new defaults.
+        for (const [key, oldPath, newPath] of LEGACY_VAULT_PATHS) {
+            const v = settings[key];
+            if (v == null || (typeof v === 'string' && (v.trim() === '' || v === newPath))) settings[key] = oldPath;
+        }
+    }
 }
+
+/** [settings key, the old DeepLore default, the new Onyx Quill default] — migration 8 → 9. */
+export const LEGACY_VAULT_PATHS = Object.freeze([
+    Object.freeze(['fieldDefinitionsPath', 'DeepLore/field-definitions.yaml', 'Onyx Quill/field-definitions.yaml']),
+    Object.freeze(['promptsFolderPath', 'DeepLore/prompts/', 'Onyx Quill/prompts/']),
+]);

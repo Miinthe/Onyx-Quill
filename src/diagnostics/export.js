@@ -238,15 +238,6 @@ function buildSummarySection(snapshot, scrubbedGenerations) {
         push('');
     }
 
-    if (snapshot.loreGaps && !snapshot.loreGaps.__error) {
-        push('### Lore gaps (Mero\'s Requests)');
-        push(`- Saved in this chat: ${snapshot.loreGaps.count}`);
-        if (snapshot.loreGaps.hiddenCount > 0 || snapshot.loreGaps.dismissedCount > 0) {
-            push(`  - Hidden: ${snapshot.loreGaps.hiddenCount} | Permanently dismissed: ${snapshot.loreGaps.dismissedCount}`);
-        }
-        push('');
-    }
-
     if (snapshot.matching) {
         push('### Entity Matching');
         push(`- Entity names: ${snapshot.matching.entityNameSetSize} | Regexes: ${snapshot.matching.entityRegexCount} (v${snapshot.matching.entityRegexVersion})`);
@@ -381,13 +372,13 @@ This report has been **anonymized** before being written:
   \`<host-2>\`, \`<title-3>\` so a reader can still follow "the same entry was
   selected 12 times" without learning the real value. Aliases are **fresh per
   report** and cannot be correlated across files.
-- **DLE never reads into this report:** your chat message bodies, vault entry
-  contents, or vault entry summaries. DLE does not copy any of those into the export.
+- **Onyx Quill never reads into this report:** your chat message bodies, vault entry
+  contents, or vault entry summaries. Onyx Quill does not copy any of those into the export.
 - **Captured from other components (review before sharing):** the \`consoleLog\` /
   \`globalConsoleLog\` and \`networkLog\` sections include the most recent entries
   logged by SillyTavern core and *other* extensions, for cross-extension debugging.
   These pass through the same scrubber (tokens, keys, IPs, hosts, emails, user
-  paths), but DLE **cannot** redact free-form prose another component chose to log —
+  paths), but Onyx Quill **cannot** redact free-form prose another component chose to log —
   so if a third party \`console.log\`'d chat text or a request body, it can appear
   there. Skim those two sections before sharing a verbose report.
 
@@ -475,8 +466,6 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 
 \`snapshot.obsidianCircuitBreakers\` — Per-vault (keyed by host:port) circuit breaker state: state (closed/open/half-open), failures, backoffRemaining. Null if no vaults have been contacted.
 
-\`snapshot.loreGaps\` — Lore gaps saved in this chat (shown in Mero's Requests). \`hiddenCount\`/\`dismissedCount\` show suppressed gaps.
-
 \`snapshot.staleness.generationLockZombie\` — true if generation lock has been held >60s, indicating a stuck pipeline.
 
 \`snapshot.matching\` — Entity matching state: entity name set size, regex count/version, field definitions, mention weights, fuzzy search index.
@@ -500,7 +489,6 @@ Per-stage timing fields (all in ms, null if stage didn't run):
 - **Zombie generation lock** -> \`staleness.generationLockZombie === true\`. Pipeline hung and lock wasn't released. Subsequent generations are blocked.
 - **Group chat entity confusion** -> \`chatContext.isGroupChat === true\` and entity matching shows unexpected character names. Group chats have multiple characters; entity regex may be matching the wrong character's lore.
 - **AI cache stale after regex rebuild** -> \`ai.cacheRegexVersionMatch === false\`. Cache was written before entity regexes were rebuilt (e.g. after vault re-index). Next generation will use stale entity matching data.
-- **Dismissed lore gaps** -> \`loreGaps.dismissedCount\` > 0. User may have permanently dismissed valid gaps that should be re-examined.
 - **Wizard skipped or incomplete** -> \`setupState.possiblyIncomplete === true\`. User marked wizard complete but no vaults are enabled. Onyx Quill has nothing to work with. Guide them through vault setup.
 - **Vault missing host or API key** -> \`setupState.vaultSummary[].hasHost === false\` or \`hasApiKey === false\`. Vault configured but can't connect. Often caused by partial wizard completion.
 - **Settings version mismatch** -> \`setupState.settingsVersion\` is null or lower than expected (currently 2). Old settings may lack required fields and migrations may not have run.

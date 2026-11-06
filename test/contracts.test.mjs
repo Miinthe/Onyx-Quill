@@ -15,7 +15,7 @@ import {
 import { validateCachedEntry } from '../src/vault/cache-validate.js';
 import { computeEntityDerivedState } from '../src/vault/vault-pure.js';
 import {
-    normalizePinBlock, matchesPinBlock, normalizeLoreGap,
+    normalizePinBlock, matchesPinBlock,
     fuzzyTitleMatch, isForceInjected, convertWiEntry,
     stripObsidianSyntax, tokenBarColor, formatRelativeTime,
     parseMatchReason, computeSourcesDiff, categorizeRejections,
@@ -375,31 +375,6 @@ test('B07: matchesPinBlock title mismatch returns false', () => {
 test('B08: normalizePinBlock structured with empty string vaultSource normalizes to null', () => {
     const result = normalizePinBlock({ title: 'Test', vaultSource: '' });
     assertNull(result.vaultSource, 'empty string vaultSource should normalize to null');
-});
-
-test('B09: normalizeLoreGap structured gap preserved', () => {
-    const gap = { id: 'g1', topic: 'Magic System', status: 'pending', flaggedBy: 'ai' };
-    const result = normalizeLoreGap(gap);
-    assertEqual(result.status, 'pending', 'pending status should be preserved');
-    assertEqual(result.topic, 'Magic System', 'topic should be preserved');
-});
-
-test('B10: normalizeLoreGap legacy status collapses to pending', () => {
-    const gap = { id: 'g2', topic: 'History', status: 'acknowledged' };
-    const result = normalizeLoreGap(gap);
-    assertEqual(result.status, 'pending', 'acknowledged should collapse to pending');
-});
-
-test('B11: normalizeLoreGap written status preserved', () => {
-    const gap = { id: 'g3', topic: 'Geography', status: 'written' };
-    const result = normalizeLoreGap(gap);
-    assertEqual(result.status, 'written', 'written status should be preserved');
-});
-
-test('B12: normalizeLoreGap in_progress collapses to pending', () => {
-    const gap = { id: 'g4', topic: 'Culture', status: 'in_progress' };
-    const result = normalizeLoreGap(gap);
-    assertEqual(result.status, 'pending', 'in_progress should collapse to pending');
 });
 
 test('B13: fuzzyTitleMatch exact match', () => {

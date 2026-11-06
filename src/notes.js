@@ -24,7 +24,8 @@ import * as K from './kit/kit.js';
 
 const I = K.icon;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const FILE = 'deeplore-my-notes.json';
+const FILE = 'onyx-quill-my-notes.json';
+const OLD_FILE = 'deeplore-my-notes.json';   // the name before Onyx Quill: read while the new file isn't there yet, never deleted
 const CSS = new URL('./notes.css', import.meta.url).href;
 const SC = { chat: 'var(--dk-l5)', story: 'var(--dk-l3)', char: 'var(--dk-l1)', all: 'var(--dk-good)' };
 
@@ -44,14 +45,15 @@ async function readFile() {
     // last change lost with the next save (bug hunt 2026-11-03)
     await saving;
     try {
-        const r = await fetch(`/user/files/${FILE}`, { cache: 'no-store' });
+        let r = await fetch(`/user/files/${FILE}`, { cache: 'no-store' });
+        if (r.status === 404) r = await fetch(`/user/files/${OLD_FILE}`, { cache: 'no-store' });
         if (r.status === 404) { data = normNotes(null); readOk = true; return; }
         if (!r.ok) throw new Error(`the server said ${r.status}`);
         data = normNotes(await r.json());
         readOk = true;
     } catch (err) {
         readOk = false;
-        console.warn('[DLE] My notes: could not read them:', err?.message || err);
+        console.warn('[Onyx Quill] My notes: could not read them:', err?.message || err);
     }
 }
 let saveTimer = null, saving = Promise.resolve();
@@ -470,7 +472,7 @@ export function close() {
     document.removeEventListener('pointerdown', outside, true);
     stackWatch?.disconnect(); stackWatch = null;
     keepOpen(false);
-    // closing clears the lock: a click on the bar button opens it unlocked, a right-click locked (Miinthe, 2026-11-03:
+    // closing clears the lock: the bar button opens it unlocked; a right-click locks it only once open (Miinthe, 2026-11-03:
     // "clicking left click on the notes lockes it immedieatly")
     if (getSettings().notesLocked === true) { getSettings().notesLocked = false; saveSettingsDebounced(); }
     win.remove(); win = null;

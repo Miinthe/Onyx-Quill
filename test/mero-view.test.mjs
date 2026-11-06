@@ -6,7 +6,7 @@
  * Run: npm run test:mero-view
  */
 import { assertEqual, test, summary } from './helpers.mjs';
-import { fitHeight, tabDot, railSide, talkLine, talkMenu, showCustom, pitchLine, gapCards } from '../src/panel/mero-view-pure.js';
+import { fitHeight, tabDot, railSide, talkLine, talkMenu, showCustom, pitchLine } from '../src/panel/mero-view-pure.js';
 
 test('the box fills what the scroller has left below it, never less than the minimum', () => {
     assertEqual(fitHeight({ scrollerHeight: 900, top: 0, padBottom: 0 }), 900);
@@ -59,28 +59,6 @@ test('Custom chattiness opens by hand or when it is set', () => {
 test('the folded pitch menu line', () => {
     assertEqual(pitchLine({}), '⚡ one-shot · 👁 3 · SFW');
     assertEqual(pitchLine({ shape: 'multi', vis: 'hide', str: 'turn', tone: 'nsfw', focus: 'Kettle' }), '🪜 multistep · 🙈 hidden · 🔀 turn · NSFW · focus: Kettle');
-});
-
-test('lore gaps in Requests: open ones newest first, hidden and dismissed left out, written ones under Answered', () => {
-    const gaps = [
-        { id: 'a', type: 'flag', subtype: 'gap', query: 'Harbor market', reason: 'Came up, no entry.', frequency: 3, timestamp: 1, status: 'pending' },
-        { id: 'b', type: 'flag', subtype: 'update', entryTitle: 'Apple', query: 'yellow apples', urgency: 'high', timestamp: 5, status: 'pending' },
-        { id: 'c', type: 'flag', query: 'Hidden one', timestamp: 9, status: 'pending' },
-        { id: 'd', type: 'flag', query: 'Gone for good', timestamp: 9, status: 'pending' },
-        { id: 'e', type: 'flag', query: 'Old one', timestamp: 2, status: 'written' },
-        { id: 'f', type: 'search', query: 'a search, not a gap', timestamp: 3 },
-        { id: 'g', type: 'flag', query: '   ', timestamp: 3 },
-    ];
-    const r = gapCards(gaps, { hidden: ['c'], dismissed: ['d'] });
-    assertEqual(r.open.map(x => x.id), ['b', 'a']);
-    assertEqual(r.done.map(x => x.id), ['e']);
-    assertEqual(r.open[0].title, 'Update “Apple”?');
-    assertEqual(r.open[0].update, true);
-    assertEqual(r.open[0].meta, 'yellow apples · urgent');
-    assertEqual(r.open[1].title, 'Write “Harbor market”?');
-    assertEqual(r.open[1].meta, 'came up 3 times');
-    assertEqual(r.open[1].entry, null);
-    assertEqual(gapCards(null), { open: [], done: [] });
 });
 
 summary();

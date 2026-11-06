@@ -1,174 +1,132 @@
-# Troubleshooting
+Fixes for the problems people run into most, from connecting Obsidian to Mero's lookups. Two tools find most problems for you: the side panel's **Diagnostics** view (⋯ › **Diagnostics**, or the **Ready** button at the top of the panel) and `/oq-health`. Both are explained on [[Diagnostics]].
 
-Common issues and how to fix them. Run `/oq-health` first; it catches most problems automatically. For a shareable bug report, run `/oq-diagnostics` (see [[Inspection and Diagnostics#Diagnostics export]]).
+## Connecting Obsidian
 
-## Connection issues
+Onyx Quill reads your lore from Obsidian through the **Local REST API** community plugin. The browser you use for SillyTavern talks to Obsidian directly, so Obsidian must be open and reachable from that browser. Set the connection in **Settings › Vault** (or with the [[Setup Wizard]]) and press **Test**.
 
-### "Connection failed" or "ECONNREFUSED"
-- **Check:** Is Obsidian running?
-- **Check:** Is the Local REST API plugin enabled in Obsidian settings?
-- **Check:** Does the port in DeepLore settings match the REST API plugin port? Default: `27123` for HTTP, `27124` for HTTPS.
-- **Check:** Is another application using the same port?
-- **Try:** Restart Obsidian, then click **Test all** in DeepLore settings (**Vault** → **Vaults**).
+**Test** answers with one of these:
 
-### "Authentication failed" (401/403)
-- **Check:** Your API key matches what is shown in Obsidian → Settings → Local REST API.
-- **Check:** You copied the full key without extra spaces.
-- **Try:** Regenerate the API key in the Local REST API plugin and paste it fresh.
+| It says | What to do |
+| --- | --- |
+| connected | All good. |
+| can't reach Obsidian | Obsidian isn't open, the Local REST API plugin isn't installed or switched on (Obsidian › Settings › Community plugins), or the port is wrong. |
+| the API key was refused, or "failed: Authentication failed …" | Copy the key again from Obsidian › Settings › Local REST API, with no spaces around it. |
+| certificate not trusted | You are on HTTPS. Switch to HTTP (below). |
 
-### "Obsidian connection timed out"
-- **Check:** Obsidian is not frozen or unresponsive.
-- **Check:** No firewall is blocking localhost connections.
-- **Check:** The Local REST API plugin is enabled (not just installed).
-- **Try:** Increase **Keep the index for** (Settings → Vault → Reading, behind More) to reduce connection frequency.
+**HTTP or HTTPS.** Use HTTP. The plugin's HTTP port is `27123`; its HTTPS port is `27124`. In Obsidian › Settings › Local REST API, switch on **Enable Non-Encrypted (HTTP) Server**; in Onyx Quill, switch **HTTPS** off (the port changes to 27123 by itself). HTTPS works only after you install the plugin's certificate in your operating system's trust store; accepting the browser's warning once is not enough. With HTTPS on, the vault's **Trust its certificate** link opens the address, and the guidance window after a failed test walks you through the steps for Windows, macOS, Linux and Firefox.
 
-### HTTPS certificate not trusted
+**CORS.** You don't need to change anything: the Local REST API plugin allows the browser to call it. Onyx Quill does not use SillyTavern's CORS proxy, so `enableCorsProxy` in SillyTavern's `config.yaml` doesn't matter for it.
 
-If you are using HTTPS (port 27124) and seeing "Failed to fetch" or "Certificate not trusted" errors, the browser is blocking the connection because the Local REST API plugin uses a self-signed certificate.
+**Addresses Onyx Quill accepts.** To keep your API key at home, it only connects to addresses on your computer or your own network: `127.0.0.1`, `localhost`, LAN addresses (`192.168.…`, `10.…`, `172.16–31.…`), private IPv6 addresses, and Tailscale names ending in `.ts.net`. A public address is refused with a message saying so.
 
-**Option 1 (recommended): switch to HTTP.**
-1. In Obsidian, open Settings → Local REST API.
-2. Make sure "Enable Non-Encrypted (HTTP) Server" is **ON**.
-3. In DeepLore settings, uncheck HTTPS and set the port to `27123`.
+**"Obsidian connection paused after N failures — retrying in N s."** After three failed calls Onyx Quill waits a few seconds before asking that vault again, so a closed Obsidian doesn't slow every reply. Open Obsidian and press **Test**; that ends the wait at once.
 
-**Option 2: trust the certificate.**
-1. Open `https://127.0.0.1:27124` directly in your browser.
-2. Accept the security warning or add an exception.
-3. See the [Local REST API certificate guide](https://github.com/coddingtonbear/obsidian-web/wiki/Troubleshooting%3A-Certificate-Trust-Issues) for platform-specific steps.
+**"0 entries" although the connection works.** Only notes with the lore tag are lore. Check that your notes have `lorebook` in their frontmatter `tags:` (or whatever **Settings › Vault › Tags › Lore tag** says). `/oq-lint` lists notes that were skipped because their frontmatter couldn't be read. See [[Writing Vault Entries]].
 
-> [!TIP]
-> DeepLore detects certificate failures during a connection test and shows a guidance popup with both options.
+**"Open in Obsidian" links don't work.** The vault's **Name** in **Settings › Vault** must match the vault's name in Obsidian exactly.
 
-## Entries not matching
+## "The original DeepLore is switched on too"
 
-### Keywords not triggering
-- **Run:** `/oq-inspect` after sending a message and check the keyword-matches section.
-- **Check:** **Messages to read** is not 0 (Settings → Lore selection → Keywords).
-- **Check:** Keywords are in the entry's `keys:` frontmatter field, not just in the content body.
-- **Check:** "Whole words only" (Settings → Lore selection → Keywords, behind More). With it on, "ai" will not match "artificial".
-- **Check:** "Case sensitive" (same place). With it on, "Eris" will not match "eris".
-- **Check:** The entry has the configured lorebook tag (default: `lorebook`).
-- **Try:** `/oq-lint` to see if the entry was skipped during the last index build.
+Onyx Quill is built on DeepLore by pixelnull, and the two can't run at the same time: both would hook into every reply and share the chats' data. When the original DeepLore is switched on, Onyx Quill stays off and shows this notice until you close it. Turn one of them off in **Extensions › Manage extensions**, then reload the page. Moving over from DeepLore: [[Coming from DeepLore or World Info]].
 
-### Entries matching but not injecting
-- **Check:** Token budget. The entry may be cut for space. Run `/oq-inspect` to see budget-cut entries.
-- **Check:** Gating rules. The entry may have `requires` or `excludes` that are not met.
-- **Check:** Contextual gating. With era/location/scene filters set, entries may be gated out. Run `/oq-context-state` to see active filters, or `/oq-clear-all-context` to reset.
-- **Check:** Per-chat blocks. Run `/oq-pins` to see if the entry is blocked.
-- **Check:** Per-entry cooldown.
-- **Check:** Re-injection cooldown. The entry may be skipped because it injected recently.
-- **Check:** Folder filter. The entry may live outside the active folder set.
+## Nothing gets sent to the writer
 
-### Too many entries matching (noisy results)
-- **Fix:** Make keywords more specific.
-- **Fix:** Lower the scan depth (fewer messages scanned, fewer matches).
-- **Fix:** Use priority values to make sure important entries win the budget allocation.
-- **Fix:** Enable AI search (two-stage mode) so the AI filters out irrelevant matches.
+Open 📖 on the reply › **Why these entries**. "no lore used" means nothing went out. Then check, in this order:
 
-## AI search issues
+1. **Is Onyx Quill on in this chat?** The side panel's **Filters** tab shows **on** or **off** for this chat, with the reason. In a one-on-one chat, a character with no folders anywhere counts as off ("… has no folders yet"): give the character folders, or the chat its own (**Filters** › **Change folders and fields…** › the character's base folders, the run's folders, or **This chat's own folders…**), or set **Onyx Quill in this chat** to **always on**. A chat or character can also be switched off there.
+2. **Are there entries?** `/oq-status` shows how many entries the vault has. If it is 0, see "0 entries" above.
+3. **Are the entries in this chat's folders?** The **Filters** tab says how many entries are left out by the folders.
+4. **Do the keywords appear?** With **keywords only** (the default), an entry goes out only when one of its `keys` appears in the last **Messages to read** (4 by default; **Settings › Lore selection › Keywords**). **Whole words only** and **Case sensitive** (behind More) make matching stricter. Keywords in the text don't count; they belong in `keys:`.
+5. **Did AI search pick nothing?** With AI search on, **If AI search picks nothing** decides what goes out, and its default is the always-send entries only. `/oq-inspect` shows what AI search was given and what it picked.
+6. **Did a filter take it out?** Field values (era, location, run …), pins and blocks, `requires` / `excludes`, cooldowns. **Why these entries** lists these under **Not Injected** with a **Why?** button for each entry, and `/oq-context-state` shows this chat's field values.
 
-### "AI search failed, using keyword fallback"
-- **Timed out:** increase the AI Search timeout (default: 20s).
-- **Auth error:** check that your connection profile's API key is valid.
-- **Profile not found:** select a profile in Settings → AI & connections, or create one in Connection Manager.
-- **Network error:** verify your connection profile works in SillyTavern's main API panel.
-- **Server error:** the API provider may be down. Try again later.
+## Too much or too little lore
 
-> [!NOTE]
-> If you see **"Custom Proxy mode was removed in v2.5"**, a channel is still set to the removed proxy mode. Open **Settings → AI & connections** and pick a Connection Profile for it. (DeepLore migrates `proxy` settings to `profile` automatically on upgrade, but a manually-edited setting can still hit this.)
+**Too little:**
 
-### AI search returning empty results
-- **Check:** Entries have a `summary:` field. AI search relies on summaries to decide relevance.
-- **Check:** AI search scan depth is not too low. The AI needs enough chat context to judge relevance.
-- **Try:** Run `/oq-status` to verify AI search is enabled and configured.
-- **Try:** Switch from AI-only to two-stage mode. Two-stage uses keywords as a safety net.
+- Raise **Entries per reply** (10 by default) or the **Lore budget** (3,072 tokens by default) in **Settings › Budget & variety**. A character or a chat can have its own budget there; the most specific one wins, so check it isn't set lower for this chat.
+- **Over budget** in **Why these entries** means entries were cut for space. Give the important ones a better priority (a lower number wins, unless **Higher priority number wins** is on).
+- Raise **Messages to read** so keywords further back count.
+- With AI search: lower **Leave out below**, raise **Messages AI search reads**, and write `summary` fields that say *when* to pick the entry. **Write missing summaries** (side panel ⋯ › Tools) writes them for entries that have none.
+- **Rest after sending** above 0 keeps entries out for that many replies after they went out.
 
-### AI search too expensive
-- **Fix:** Use two-stage mode instead of AI-only. Keywords pre-filter, reducing AI workload.
-- **Fix:** Use a cheaper model (Claude Haiku, GPT-4o-mini).
-- **Fix:** Reduce **Entry Description Length** (`aiSearchManifestSummaryLength`) to send less text per entry.
-- **Fix:** Check `/oq-status` for cache hit rate. High cache hits mean fewer API calls.
+**Too much:**
 
-### "AI Search Throttled"
-- AI calls are throttled to a minimum of 500ms between requests. If you regenerate rapidly, the AI call is skipped and keywords are used instead.
-- Not a bug. The throttle prevents request flooding and protects your API budget.
-- The throttle does not count as a failure and does not trip the AI circuit breaker.
+- Make keywords more specific; very short keywords (two letters or fewer) match too often. `/oq-health` lists them, and `/oq-simulate` (**Try matching**) shows which keywords fire early or flicker.
+- Lower **Entries per reply**, the **Lore budget** or **Messages to read**.
+- Switch on AI search (**How lore is picked › keywords, then AI search**): it drops matches that don't matter right now.
+- **Give others a turn** (**Settings › Budget & variety › Variety**) lets entries that went out many times in a row step back.
+- Folders and field filters keep a chat to its own part of the vault; see [[Advanced Gating]] and [[Custom Fields]].
 
-### AI search timing out with local LLMs
-- Local models (e.g. Magistry 24B, Qwen, Mistral) are often much slower than cloud APIs and may need 60-120 seconds to respond, especially on longer chats.
-- The default AI search timeout is 20,000ms (20 seconds), tuned for fast cloud APIs.
-- **Fix:** Increase the **Time limit** for the **Judge** job (the AI that picks lore) in Settings → AI & connections, shown in seconds. 60-120 seconds is common for local models. Scribe and New lore (Auto Lorebook) have their own time limits there too.
+If the lore takes more than 20% of the model's context, a notice warns you.
 
-### AI circuit breaker tripped
-- After 2 consecutive AI failures (timeouts, errors), the circuit breaker trips and AI search is disabled for 30 seconds.
-- During this period, the pipeline falls back to keyword-only matching.
-- After 30 seconds, a single half-open probe is allowed. If it succeeds, the circuit breaker resets and AI search resumes normally.
-- **Fix:** Check that your connection profile works (test it in SillyTavern's main API panel). Run `/oq-status` to see circuit breaker state.
+## AI search is failing
 
-### Per-vault circuit breaker
-- In multi-vault setups, each vault (identified by host:port) has its own independent circuit breaker with exponential backoff (2s → 4s → 8s → 15s max).
-- One vault being unreachable does not block the others. Entries from healthy vaults are still indexed.
-- **Fix:** Check that the Local REST API plugin is running on the affected vault's port.
+When AI search (the AI that picks lore) fails, the reply still goes out, with what **If AI search fails** says (by default the keyword picks). The notice tells you what happened:
 
-## Lore not injecting
+| Notice | What to do |
+| --- | --- |
+| A time-out | Raise the **Time limit** for **AI search** in **Settings › AI & connections › Fine print** (20 seconds by default). Local models often need 60 to 120 seconds on long chats. |
+| "AI search authentication failed …" | The API key in AI search's connection profile is wrong or expired. Test the profile in SillyTavern. |
+| "AI search rate-limited by provider …" | The provider wants you to slow down. Wait, or use another model. |
+| "AI search couldn't read the model's reply …" / "… unexpected reply format …" / "… found no usable entries …" | The model didn't answer in the expected form. A more capable model usually fixes it; also try **Prompt Post-Processing** set to Strict in the connection profile. |
+| "AI search couldn't talk to your provider …" | Set **Prompt Post-Processing** to Semi or Strict in the connection profile, or switch on **Put the system prompt into the user message** (**Fine print**) for providers without a system role. |
+| "AI search is resting after errors — using keywords for now." | The AI pause: two service errors in a row. It tries again after 30 seconds. To end it now: **Reset the AI pause** in the Diagnostics view. |
 
-### Extension enabled but nothing happens
-1. Run `/oq-refresh` to rebuild the index.
-2. Check the header badge. Does it show entries? "0 entries" means your notes are not being indexed.
-3. Run `/oq-health` for a full diagnostic.
-4. Check the browser console (F12) for `[DLE]` error messages, or run `/oq-logs`.
+Also check:
 
-### "No vault entries loaded"
-- **No tagged notes:** make sure at least one note has the lorebook tag in its frontmatter `tags:` field.
-- **Wrong tag:** check that the lorebook tag in settings matches the tag in your notes (default: `lorebook`).
-- **Connection failed:** the vault connection test should be green. Fix the connection first.
+- The **AI search** row in **Settings › AI & connections** has a profile picked. If it says "No connection profiles yet", make one in SillyTavern's API Connections (the plug icon) › Connection Profile. **Test** in **Fine print** sends a one-line message through it.
+- **Its prompt › Preview** (**Settings › Lore selection › AI search**) shows exactly what AI search is sent for this chat.
+- The jobs set to **Same as AI search** (Scribe, New lore, AI notepad, Optimize keywords) fail the same way when AI search's connection does.
 
-### Entries injecting in wrong position
-- **Check:** Settings → Where it goes (before/after the main prompt, or in the chat with a depth).
-- **Check:** Per-entry overrides. Entries can have their own `position`, `depth`, and `role` in frontmatter.
-- **Check:** In `prompt_list` mode, drag the DeepLore entries in Prompt Manager to your preferred position.
+## Story trackers don't move by themselves
 
-## Cache and sync issues
+Trackers follow the story only when the **Story helper** has a connection. Pick a profile for **Story helper** in **Settings › AI & connections**. Without one, you can still move trackers by hand on the board. See [[Storyboards]].
 
-### Stale entries (edits in Obsidian not showing up)
-- **Quick fix:** run `/oq-refresh` to force a full rebuild.
-- **Check:** **Keep the index for** (Settings → Vault → Reading). With it set high (e.g. 300s), changes take up to 5 minutes to appear.
-- **Check:** Sync polling interval. Controls how often DeepLore checks for changes in the background.
-- **Fix:** Lower cache TTL to 60-120s for faster updates during active editing.
+## Mero ☆
 
-### "Index refresh timed out"
-- Obsidian is taking too long to respond. Common with very large vaults (1000+ notes).
-- **Try:** Restart Obsidian and try again.
-- **Check:** No other plugins are hogging Obsidian's resources.
+**"Mero has no connection yet …"** Pick a profile for **Mero ☆** in **Settings › AI & connections**.
 
-## Extension errors
+**"🔎 lookups off" above her answer.** Mero looks things up (lore, the board, the chat, the Cast, the web) through tool calls, and her connection can't do them. She still answers, from the board, the latest replies and the entries that were sent. Lookups need all of these:
 
-### JavaScript errors in console
-1. Open the browser console (F12) and filter for `[DLE]`, or run `/oq-logs`.
-2. Note the exact error message.
-3. Try disabling the extension, refreshing, and re-enabling.
-4. If the error persists, [report it on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with the error message. Attach the output of `/oq-diagnostics` if you can.
+- Mero's connection profile is a **Chat Completion** profile.
+- **Put the system prompt into the user message** (**Settings › AI & connections › Fine print**) is off.
+- The model, and with local models its chat template, accepts tools. Some local models or templates refuse them (for example with some models in LM Studio).
 
-### Extension freezes SillyTavern
-- This can happen if the generation lock gets stuck.
-- **Quick fix:** run `/oq-refresh` in chat to reset the lock.
-- If chat input is frozen, refresh the page. The lock auto-recovers after 30 seconds.
+After a failed try that isn't a passing hiccup, lookups stay off for that profile until you reload the page. Switch to a model that does tool calls, then reload. A vault review (**Review the vault with Mero**) never uses lookups.
 
-### Conflicts with other extensions
-- DeepLore uses `setExtensionPrompt()` for injection, which is standard ST API.
-- If another extension also uses `generate_interceptor`, they may conflict.
-- **Try:** Disable other lorebook/World Info extensions and test.
-- In `prompt_list` mode, conflicts are less likely since entries integrate with Prompt Manager.
+**"🔎 no lookups this time".** The AI service was busy or timed out. She tries again with the next answer.
+
+**She doesn't know an entry.** Mero reads only what this story reads: the chat's folders, the board first. An entry outside the chat's folders is invisible to her too. Secrets for Mero ☆ (the `lorebook-guide` tag) also count only inside the chat's folders. See [[Mero]].
+
+**Web search doesn't happen.** Mero searches the web only when all of these are true: **Settings › Mero › Her job › Searches the web** is on, her lookups work (above), and SillyTavern can search: the **Web Search** extension is installed (whatever search service you pick there is used), or a Tavily key is saved in SillyTavern.
+
+## Pictures for 📷 photos
+
+Real pictures for 📷 photos in [[World]] messages are drawn by SillyTavern's own **Image Generation** extension, with the image source, model and style words you set up there. If you see "SillyTavern's Image Generation isn't switched on (Extensions › Image Generation)", switch it on and choose an image source; test it with `/imagine` in the chat. "No picture came back …" means Image Generation answered with nothing: check its settings, then tap 🎨 on the photo to try again. After a failure, pictures stop being drawn by themselves until one drawn by hand works. The switches are in the board's World tab › **Pictures**. Each picture is one image call.
+
+## Edits in Obsidian don't show up
+
+Onyx Quill keeps a copy of your vault and reads it again after **Keep the index for** (300 seconds by default; **Settings › Vault › Reading**, behind More). For a re-read right away, press **Re-read now** there, or run `/oq-refresh`. **Re-read the vault every** N seconds checks in the background. See [[Under the Hood]].
+
+## "Lore from the last message is taking longer than expected"
+
+A lore selection held on for more than 30 seconds, usually a slow AI call, and the next reply took over. Check the **Time limit** of AI search and the Story helper in **Settings › AI & connections › Fine print**. If the chat seems stuck, reload the page.
+
+## Using Onyx Quill on a phone or tablet
+
+Onyx Quill works in a phone's browser; the bar and the side panel have a phone layout. The one thing to know: **the phone's browser talks to Obsidian itself.** In **Settings › Vault**, an address like `127.0.0.1` means the phone, not your computer. On a phone you need:
+
+- Obsidian open on the computer, with the Local REST API plugin running.
+- The vault's **Address** set to an address the phone can reach: the computer's address on your home network (like `192.168.1.20`), or its Tailscale name (`….ts.net`) when you're away from home.
+- The plugin reachable at that address from other devices, not only from the computer itself (see the plugin's own documentation).
+- If you open SillyTavern itself over `https://`, your browser may refuse plain `http://` calls from that page. Then Obsidian needs to be reached over HTTPS too.
+
+Vault settings are shared by every device that uses the same SillyTavern account, so an address that works on the phone must also work on the computer (a LAN address usually does both).
 
 ## Still stuck?
 
-1. Run `/oq-health` and review all errors and warnings.
-2. Run `/oq-logs` (or check the browser console) for `[DLE]` messages.
-3. Run `/oq-status` to see the full extension state.
-4. Run `/oq-diagnostics` to export an anonymized report.
-5. [Open an issue on GitHub](https://github.com/pixelnull/sillytavern-DeepLore/issues) with:
-   - Your DeepLore version (Settings › Advanced › Reference › **About**)
-   - The error message or unexpected behavior
-   - Steps to reproduce
-   - `/oq-status` output
-   - The diagnostic report from step 4 (verify the privacy section before attaching)
+1. Run `/oq-health` and fix the errors it lists.
+2. Look at `/oq-logs`, or the browser console (F12) filtered for `[Onyx Quill`. Switch on **Debug mode** (**Settings › Advanced**) for more detail, and off again afterwards.
+3. Export diagnostics: **Settings › Advanced › Export diagnostics**, or `/oq-diagnostics`. Read the privacy notes on [[Diagnostics]] before you share the report.
+4. [Open an issue](https://github.com/Miinthe/Onyx-Quill/issues) with your Onyx Quill version (**Settings › Advanced › Reference › About**), what you did, what you expected, what happened, and the anonymized report (not the connections reference file).

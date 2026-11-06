@@ -4547,7 +4547,7 @@ test('V-M5: vault remove DOES NOT mutate vaults when callGenericPopup throws', a
     try {
         confirmed = await fakeCallGenericPopup();
     } catch (err) {
-        fakeConsoleWarn('[DLE] vault-remove confirm popup failed:', err?.message);
+        fakeConsoleWarn('[Onyx Quill] vault-remove confirm popup failed:', err?.message);
         bailed = true;
     }
 
@@ -5151,7 +5151,7 @@ test('L3-9: caller in settings-ui.js still uses truthy-check (null + "" both ren
 // insurance against silent corruption when writer/hydrator evolve apart.
 // ============================================================================
 
-import { normalizeNotepadLine, normalizeLoreGap } from '../src/helpers.js';
+import { normalizeNotepadLine } from '../src/helpers.js';
 
 section('CM-1: deeplore_pins / deeplore_blocks round-trip + legacy normalization');
 
@@ -5469,63 +5469,6 @@ test('CM-7-3: BUG-074 hydration nulls the filter when ALL saved folders are gone
     assertNull(next, 'all-orphan filter collapses to null');
 });
 
-section('CM-8: deeplore_lore_gaps record shape + normalizeLoreGap round-trip');
-
-test('CM-8-1: gap record round-trips through JSON with status preserved', () => {
-    // persistGaps writer (src/lore-gaps.js): meta.deeplore_lore_gaps = capped;
-    // CHAT_CHANGED reader: setLoreGaps(savedGaps.map(normalizeLoreGap)).
-    const gap = {
-        id: 'gap-abc-123',
-        type: 'search',
-        query: 'Who is the king?',
-        urgency: 'high',
-        status: 'pending',
-        createdAt: 1700000000000,
-        generation: 5,
-    };
-    const reloaded = JSON.parse(JSON.stringify({ deeplore_lore_gaps: [gap] }));
-    const hydrated = reloaded.deeplore_lore_gaps.map(normalizeLoreGap);
-    assertEqual(hydrated.length, 1, 'gap survives');
-    assertEqual(hydrated[0].id, 'gap-abc-123', 'id preserved');
-    assertEqual(hydrated[0].query, 'Who is the king?', 'query preserved');
-    assertEqual(hydrated[0].status, 'pending', 'valid status preserved as-is');
-});
-
-test('CM-8-2: legacy v1 statuses (acknowledged / in_progress / rejected) collapse to pending', () => {
-    // normalizeLoreGap contract: v2 statuses are pending <-> written; everything
-    // else collapses to pending. Soft-removal moved to sibling arrays.
-    const legacyGaps = [
-        { id: '1', type: 'search', query: 'q1', status: 'acknowledged' },
-        { id: '2', type: 'search', query: 'q2', status: 'in_progress' },
-        { id: '3', type: 'search', query: 'q3', status: 'rejected' },
-        { id: '4', type: 'search', query: 'q4', status: 'written' }, // valid v2
-        { id: '5', type: 'search', query: 'q5' }, // missing status -> pending
-    ];
-    const reloaded = JSON.parse(JSON.stringify({ deeplore_lore_gaps: legacyGaps }));
-    const hydrated = reloaded.deeplore_lore_gaps.map(normalizeLoreGap);
-    assertEqual(hydrated[0].status, 'pending', 'acknowledged -> pending');
-    assertEqual(hydrated[1].status, 'pending', 'in_progress -> pending');
-    assertEqual(hydrated[2].status, 'pending', 'rejected -> pending');
-    assertEqual(hydrated[3].status, 'written', 'written -> written (valid v2)');
-    assertEqual(hydrated[4].status, 'pending', 'missing status -> pending');
-});
-
-test('CM-8-3: BUG-AUDIT-H09 orphan prune drops hidden/dismissed ids whose gap was evicted', () => {
-    // persistGaps prunes sibling arrays of any id not present in the capped gap
-    // set. Mirror that logic and assert orphans are removed.
-    const activeGaps = [
-        { id: 'g1', type: 'search', query: 'q1', status: 'pending', createdAt: 1 },
-        { id: 'g2', type: 'search', query: 'q2', status: 'pending', createdAt: 2 },
-    ];
-    const hidden = ['g1', 'g-evicted', 'g-also-evicted'];
-    const dismissed = ['g2', 'g-deleted'];
-    const activeIds = new Set(activeGaps.map(g => g.id));
-    const prunedHidden = hidden.filter(id => activeIds.has(id));
-    const prunedDismissed = dismissed.filter(id => activeIds.has(id));
-    assertEqual(prunedHidden, ['g1'], 'hidden prune drops both orphans');
-    assertEqual(prunedDismissed, ['g2'], 'dismissed prune drops orphan');
-});
-
 // ============================================================================
 // PRX-MIG — v2.5 Custom Proxy → Profile migration (settings.js runMigrations,
 // fromVersion < 4 branch). Sentinel `_proxyMigrationV2_5_notice` drives the
@@ -5533,6 +5476,45 @@ test('CM-8-3: BUG-AUDIT-H09 orphan prune drops hidden/dismissed ids whose gap wa
 // ============================================================================
 
 section('PRX-MIG — v2.5 Custom Proxy deprecation migration');
+
+test('MIG-9: existing installs keep DeepLore/ vault paths; fresh installs get Onyx Quill/ (2026-11-05)', async () => {
+    const { runMigrations } = await import('../src/settings-migrations-pure.js');
+    const NEW_F = 'Onyx Quill/field-definitions.yaml', NEW_P = 'Onyx Quill/prompts/';
+    const OLD_F = 'DeepLore/field-definitions.yaml', OLD_P = 'DeepLore/prompts/';
+    // Existing v8 install with no stored paths: getSettings() already filled the NEW defaults before migrating.
+    const a = { fieldDefinitionsPath: NEW_F, promptsFolderPath: NEW_P };
+    runMigrations(a, 8, 9);
+    assertEqual(a.fieldDefinitionsPath, OLD_F, 'existing install: field definitions stay in DeepLore/');
+    assertEqual(a.promptsFolderPath, OLD_P, 'existing install: prompts stay in DeepLore/');
+    // Keys missing / empty entirely (pure call) → old paths too.
+    const b = { promptsFolderPath: '  ' };
+    runMigrations(b, 8, 9);
+    assertEqual(b.fieldDefinitionsPath, OLD_F, 'missing key → old path');
+    assertEqual(b.promptsFolderPath, OLD_P, 'blank value → old path');
+    // Settings copied over from DeepLore at first start (DeepLore's own version, 5) count as existing.
+    const c = { fieldDefinitionsPath: NEW_F, promptsFolderPath: NEW_P };
+    runMigrations(c, 5, 9);
+    assertEqual(c.fieldDefinitionsPath, OLD_F, 'copied DeepLore settings: old field path');
+    assertEqual(c.promptsFolderPath, OLD_P, 'copied DeepLore settings: old prompts path');
+    // Custom paths are left alone.
+    const d = { fieldDefinitionsPath: 'Meta/fields.yaml', promptsFolderPath: 'Meta/prompts/' };
+    runMigrations(d, 8, 9);
+    assertEqual(d.fieldDefinitionsPath, 'Meta/fields.yaml', 'custom field path kept');
+    assertEqual(d.promptsFolderPath, 'Meta/prompts/', 'custom prompts path kept');
+    // Fresh install: nothing stored yet (fromVersion 0) → keeps the new defaults.
+    const e = { fieldDefinitionsPath: NEW_F, promptsFolderPath: NEW_P };
+    runMigrations(e, 0, 9);
+    assertEqual(e.fieldDefinitionsPath, NEW_F, 'fresh install: new field path');
+    assertEqual(e.promptsFolderPath, NEW_P, 'fresh install: new prompts path');
+    // Already on v9: a user who picked the new folder keeps it.
+    const f = { fieldDefinitionsPath: NEW_F, promptsFolderPath: NEW_P };
+    runMigrations(f, 9, 9);
+    assertEqual(f.fieldDefinitionsPath, NEW_F, 'v9: left alone');
+    // Defaults in settings.js match the migration's "new" values.
+    const src = readFileSync(new URL('../settings.js', import.meta.url), 'utf8');
+    assert(src.includes(`fieldDefinitionsPath: '${NEW_F}'`), 'settings.js default field path is the new one');
+    assert(src.includes(`promptsFolderPath: '${NEW_P}'`), 'settings.js default prompts path is the new one');
+});
 
 test('MIG-8: from v7, Skip what was just sent goes off (Miinthe, 2026-11-03)', async () => {
     const { runMigrations } = await import('../src/settings-migrations-pure.js');
@@ -5616,10 +5598,10 @@ test('PRX-MIG-4: idempotent — running v4 migration twice on already-migrated s
     assertEqual(sentinelCopy.length, 2, 'PRX-MIG-4: first-run sentinel captured both keys');
 });
 
-test('PRX-MIG-5: defaultSettings.settingsVersion is 8 (boot triggers migration for v7 users)', async () => {
+test('PRX-MIG-5: defaultSettings.settingsVersion is 9 (boot triggers migration for v8 users)', async () => {
     const src = await import('node:fs').then(fs =>
         fs.promises.readFile('settings.js', 'utf8'));
-    assertMatch(src, /settingsVersion:\s*8\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 8 (6: the Librarian removed; 7: its guide-tag key renamed; 8: Skip what was just sent off)');
+    assertMatch(src, /settingsVersion:\s*9\b/, 'PRX-MIG-5: defaultSettings.settingsVersion is 9 (6: the Librarian removed; 7: its guide-tag key renamed; 8: Skip what was just sent off; 9: old installs keep the DeepLore/ vault folder)');
 });
 
 test('LIB-GONE-1: v5 → v6 drops the old Librarian settings quietly, keeps the writing-guide tag', async () => {

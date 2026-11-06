@@ -1,88 +1,53 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/full-logo-darkmode.png">
-    <source media="(prefers-color-scheme: light)" srcset="images/full-logo-lightmode.png">
-    <img alt="DeepLore" src="images/full-logo-lightmode.png">
-  </picture>
-</p>
+**Onyx Quill** is a SillyTavern extension for long stories with an AI. At its heart is the **storyboard**: you lay out where your story can go (a relationship growing step by step, a mystery with clues to find, a quest with places to reach) and Onyx Quill follows it while you play. A helper AI notices when the story moves on, tells the writing model where things stand, and brings in the lore that belongs to that point of the story. Around the board you get a Cast of NPCs who speak for themselves, a world that keeps living between scenes, and **Mero ☆**, a co-writer you can talk to out of character. Your lore lives as notes in an [Obsidian](https://obsidian.md/) vault.
 
-**Welcome to DeepLore.** It keeps your stories grounded in your worldbuilding by feeding the right lore to the AI exactly when a scene needs it — drawn straight from your [Obsidian](https://obsidian.md/) vault.
+## Start here
 
-If you've used SillyTavern's World Info (lorebooks), you know the pain: keyword matching breaks down as your world grows, and the entry you needed stays cold because nobody typed the magic word. DeepLore fixes that. It runs keyword matching first, then asks an AI to read what survived and pick the entries that actually fit the scene — so the right lore fires *even when the keyword was never typed.*
+- [[What is Onyx Quill]]: what it does and how the parts fit together.
+- [[Installation]]: what you need and how to install it.
+- [[Quick Start]]: from install to your first lore-backed reply, with your own vault or the Duskfrost demo vault.
+- [[First Steps]]: build a small vault, connect the AI helpers, and check what gets sent.
+- [[Storyboards]]: start your first board, from a template or from scratch.
+- [[Coming from DeepLore or World Info]]: what carries over, and how to bring a World Info book along.
 
-It plugs into [SillyTavern](https://github.com/SillyTavern/SillyTavern) and works in the background while you write. As you roleplay, Mero ☆ can read the replies next to the lore that went out with them and suggest what an entry is missing, for you to accept or refuse. Your story builds your world; your world flows back into your story.
+## A short tour
 
-New here? Start with **[[What is DeepLore]]**, then **[[Quick Start]]** to get it running in five minutes.
+### Your story
 
-> [!NOTE]
-> **This fork** adds [[Storyboards]] (a board window with trackers), the [[Cast]] (NPCs who speak in their own messages, with ties: how they feel about each other), [[Mero]] ☆ (your co-writer), the [[DeepLore Bar]] above the message box (with a drawer for other extensions' floating icons), [[My Notes]] (private notes per chat, story or character), and a new [[Drawer|Side Panel]] with the tabs Lore, Filters, Story, Cast and Mero.
+- [[Storyboards]]: the plan of your story, in a board window. Trackers for steps with forks and detours, things found or owned, places, the date, meters and flags. The story helper moves them as the chat goes, every move shows with its quote and **Undo**, and each step can bring its own lore and instructions for the writer.
+- [[Cast]]: the people of your story, on the board. Each has their own character card and speaks in their own messages inside a one-on-one chat, takes turns in a round, and has ties to the others.
+- [[World]]: the world around `{{user}}`, set up per board. People text `{{user}}` and each other, post and gossip in a feed, rumors spread, the news reports what happened, and people send photos: described in words, or drawn by your image generator if you have one.
+- [[Mero]]: Mero ☆, your co-writer in the side panel. She knows your board and your lore and talks the story over with you out of character. Tell her what bothers you in the roleplay ("Roswyn would never say that", "you keep writing *her breath hitched*") and she turns it into an out-of-character note the writer follows. She also keeps your entries up to date.
+  - **💡 Pitches**: ideas for what could happen next, a single twist or a 🪜 plan of several beats the writer works toward. Mero pitches when you ask, or you write your own.
+  - **Requests**: everything waiting for your answer in one place: the board's helper asking whether a step really happened, a plan that stalled, Mero's ideas for your lore.
+  - **🎲 Games**: Wordle and Four in a Row with Mero, for a break.
+- **New runs and branches** ([[Storyboards]]): start a story over as a new run in one click (next letter, folders swapped, trackers back to the start, the old chat kept), or turn any message into a branch that becomes its own run, with that run's notes and lore up to that point copied over and the original left untouched.
+- [[My Notes]]: your own notes for a chat, a story, a character or everywhere. Never sent to the AI.
 
-> [!NOTE]
-> The older standalone [`sillytavern-DeepLore`](https://github.com/pixelnull/sillytavern-DeepLore) extension is deprecated. This repo (formerly DeepLore) is the active project. Do not run both at once. Running both corrupts prompt injection.
+### Around the chat
 
-## Key features
+- [[The Bar]]: the row of buttons above the message box: the board and panels, your **quick replies** (all of them in one row, and your favorites starred right on the bar), the **floating icon drawer** that tidies other extensions' round buttons away, **✓ Fix spelling**, **🧭 Guided swipe**, **Re-evaluate** and **Keep as a draft**, which puts what you typed aside for later (it even follows you to your other devices).
+- [[Side Panel]]: the panel with the tabs Lore, Filters, Story, Cast and Mero. On a PC, the side panel, My notes and World can each sit left or right of the chat; panels on the same side become tabs, and a lock keeps one open.
+- [[AI Notepad]]: notes the AI keeps about the story as it goes.
+- [[Scribe and AI Helpers]]: session notes written into your vault, new-entry ideas, summaries and better keywords.
 
-- **Three pipeline modes:** two-stage (keywords pre-filter, then AI selects), AI-only (full vault sent to AI, no keyword filtering), and keywords-only (no AI). Two-stage is the default.
-- **Any LLM provider:** Anthropic, OpenAI, OpenRouter, Gemini, DeepSeek, local backends (Ooba, KoboldCpp, llama.cpp), and anything else SillyTavern's Connection Manager supports.
-- **Multi-vault support:** connect multiple Obsidian vaults at once with content-hash dedup.
-- **Lore upkeep:** [[Mero]] checks the lore against the latest replies and brings entry changes to her Requests (with your sign-off, or on her own with an Undo).
-- **Storyboards and the Cast:** plan your story on a board; a helper AI moves the trackers as the story goes, and NPCs can speak for themselves. See [[Storyboards]] and [[Cast]].
-- **Mero ☆:** a co-writer to talk with about the story. She looks things up (lore, the board, the whole chat, the Cast), asks with clickable question cards, and turns what you planned together into pitches and plans. Also notes, a phrase list against the writer's repeated phrases (the slop guard), and 🎲 games for a break (Wordle, Four in a Row). See [[Mero]].
-- **Guided swipe:** swipe the newest reply with a direction ("colder, fewer words") that stays for that reply's swipes; compare swipes side by side. See [[DeepLore Bar]].
-- **Run cleanup:** delete a run's last chat and DeepLore offers to move that run's files into a trash folder in your vault (or delete them). See [[Settings Reference]].
-- **Per-chat pin and block:** override entry selection per chat. Force-include or exclude specific entries.
-- **Contextual gating:** filter entries by era, location, scene type, characters present, and any custom field you define in `field-definitions.yaml`. Visual rule builder included.
-- **Context Cartographer:** per-message trace (each message's 📖 → Why these entries) showing which entries fired and why (keyword hit, AI selection, constant, cascade, pin).
-- **Session Scribe:** auto-summarize sessions back to your Obsidian vault as timestamped notes.
-- **Auto Lorebook:** AI suggests new entries from chat content; accept or reject each one.
-- **Author's Notebook and AI Notepad:** per-chat scratchpads (one human-written, one AI-written) injected as context.
-- **World Info import:** `/oq-import` converts SillyTavern World Info JSON exports into vault entries.
-- **Relationship graph:** force-directed layout, 200+ nodes, Louvain clustering, gap analysis, focus mode.
-- **Fine-grained matching:** cooldown, warmup, probability, refine keys, cascade links, per-entry injection overrides, entry decay.
-- **Bootstrap entries:** seed and bootstrap injection for early conversations on new chats.
-- **Persistent infrastructure:** IndexedDB cache, reuse-sync indexing (skips re-parse of unchanged entries), AI search circuit breaker, prompt cache optimization.
-- **Diagnostics:** analytics, health check, pipeline inspector, activation simulation, "Why Not?" tracing, entry browser.
+### Made to fit how you play
 
-## Prerequisites
+- **What you don't use stays out of your way.** The World has no button, panel or AI calls until you switch it on for a board, every action button on the bar can be switched off, and the floating icon drawer only appears if you want it.
+- **Make it yours.** Pick Onyx Quill's accent color (seven ready colors or your own), put each panel on the side you like, and lock the ones you want to stay open.
+- **Works on your phone.** The bar keeps the essentials and folds the rest into **⋯ More**, panels slide over the chat one at a time, the World tab has its own phone layout, and the board window works on a phone too. Playing on a phone works well; setting up a board is easier on a PC.
 
-- **SillyTavern 1.12.14+**
-- **Obsidian** with the **Local REST API** plugin enabled
-- A lore vault. Your existing Obsidian vault works; `/oq-import` converts World Info JSON if you're migrating.
-- For AI search: any LLM provider via a SillyTavern Connection Manager profile. Keywords-only mode runs without any provider.
+### Your lore
 
-## Wiki pages
+- [[How Lore Gets Picked]]: keywords, AI search, the board, and what decides which entries go out with a reply.
+- **Lore that grows as you play** ([[Scribe and AI Helpers]]): the **Session Scribe** writes notes of what happened into your vault. Each note gets keywords and a one-line summary, carries the chat's character and **run** (one play-through, marked by a letter), and is filed into that run's folder, so a later reply finds it when the story comes back to it. New entry ideas from the chat land where they belong too: in the run's folder or the character's own folder, by what they are about.
+- **Move an entry…** (the bar's 📖 menu): moves a note to another folder of your vault safely: it is copied, checked, and only then removed from its old place.
+- [[Writing Vault Entries]] and [[Entry Templates]]: how to write notes Onyx Quill can use.
+- [[Frontmatter Fields]], [[Advanced Gating]] and [[Custom Fields]]: the finer controls.
 
-| Page | Description |
-|------|-------------|
-| [[What is DeepLore]] | What a lorebook is, why DeepLore, and how the pipeline works (start here) |
-| [[Installation]] | Step-by-step setup guide |
-| [[Quick Start]] | 5-minute getting started guide |
-| [[First Steps]] | Building your vault and tuning the extension |
-| [[For World Info Users]] | Field-by-field cheat sheet for migrating from World Info |
-| [[Features]] | Linked catalog of all features |
-| | |
-| **Feature pages** | |
-| [[Drawer\|Side Panel]] | The side panel: Lore, Filters, Story, Cast, Mero tabs and the ⋯ tools |
-| [[DeepLore Bar]] | The bar above the message box, and the 📖 menu on each message |
-| [[Storyboards]] | The board window and its tracker kinds |
-| [[Cast]] | NPCs with their own cards and their own messages |
-| [[Mero]] | Mero ☆, your co-writer: talks, requests, notes, pitches and plans |
-| [[Inspection and Diagnostics]] | Context Cartographer, "Why Not?" tracing, health check, simulation |
-| [[AI-Powered Tools]] | Lore gap tools, Session Scribe, Auto Lorebook, Optimize Keys, Auto-Summary |
-| [[Entry Matching and Behavior]] | Cooldown, warmup, gating, fuzzy search, decay, cascade links |
-| [[Injection and Context Control]] | Injection positions, Prompt Manager integration, pin and block, contextual gating |
-| [[Custom Fields]] | User-defined frontmatter fields for contextual gating |
-| [[AI Notepad]] | AI-written private session notes; tag mode and extract mode |
-| [[Infrastructure]] | Multi-vault, IndexedDB cache, circuit breaker, AI caching |
-| [[Setup and Import]] | Setup wizard, quick actions, World Info import |
-| [[Setup Wizard]] | First-run configuration wizard |
-| | |
-| **Reference** | |
-| [[Writing Vault Entries]] | How to author lorebook entries with copy-paste templates |
-| [[AI Search]] | How AI selection works inside the pipeline |
-| [[Pipeline]] | The full retrieval and gating flow |
-| [[Settings Reference]] | Every setting documented |
-| [[Slash Commands]] | All slash commands |
-| [[Glossary]] | Key terms and definitions |
-| [[Troubleshooting]] | Common issues and fixes |
-| [[FAQ]] | Frequently asked questions |
+### Reference and help
+
+[[Settings Reference]] · [[Slash Commands]] · [[Glossary]] · [[Diagnostics]] · [[Under the Hood]] · [[Troubleshooting]] · [[FAQ]]
+
+## Credit
+
+Built on [DeepLore](https://github.com/pixelnull/sillytavern-DeepLore) by pixelnull. Thank you for the foundation.

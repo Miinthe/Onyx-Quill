@@ -57,9 +57,9 @@ export function derror(template, ...args) { console.error(fmt(template, ...args)
 export function ddebug(template, ...args) { console.debug(fmt(template, ...args)); }
 
 /**
- * [DLE][DIAG] probe helper — prepends the tag, expands format specifiers.
+ * [Onyx Quill][DIAG] probe helper — prepends the tag, expands format specifiers.
  * Example: diag('strip-dedup-log-clear', '— %s, clearing %d stale entries', reason, count);
  */
 export function diag(tag, template, ...args) {
-    console.debug(fmt(`[DLE][DIAG] ${tag} ${template}`, ...args));
+    console.debug(fmt(`[Onyx Quill][DIAG] ${tag} ${template}`, ...args));
 }

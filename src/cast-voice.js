@@ -104,7 +104,7 @@ function wire() {
     es.on(et.CHAT_COMPLETION_PROMPT_READY, data => {
         if (!data || data.dryRun || !Array.isArray(data.chat)) return;
         const chat = getContext()?.chat || [];
-        if (!npcTurn) { try { writerSeesNpcs(data.chat, npcMessagesOf(chat)); } catch (err) { console.warn('[DLE] cast: writer view skipped:', err?.message || err); } return; }
+        if (!npcTurn) { try { writerSeesNpcs(data.chat, npcMessagesOf(chat)); } catch (err) { console.warn('[Onyx Quill] cast: writer view skipped:', err?.message || err); } return; }
         const w = who(npcTurn.cast, npcTurn.person);
         if (!w) return;
         const card = cardOf(w.p) || {};
@@ -191,7 +191,7 @@ export async function speakAs(castId, personId, { exit = null } = {}) {
     const turn = npcTurn = { cast: w.cast.id, person: w.p.id, name: w.p.name, avatar: w.p.card || null, swipe: false, ...(exit ? { exit } : {}) };
     const before = ctx.chat.length;
     const done = generationDone();
-    try { await ctx.generate('normal'); } catch (err) { console.warn('[DLE] cast: speaking failed:', err?.message || err); }
+    try { await ctx.generate('normal'); } catch (err) { console.warn('[Onyx Quill] cast: speaking failed:', err?.message || err); }
     await Promise.race([done, new Promise(r => setTimeout(r, 1500))]);
     if (npcTurn) await Promise.race([done, new Promise(r => setTimeout(r, 120000))]);
     // a generation that never got going (no connection, the server unreachable) ends without GENERATION_ENDED: her turn

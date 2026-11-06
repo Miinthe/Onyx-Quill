@@ -8,7 +8,7 @@
  *
  * Per chat (the world store): posts (`kind: 'post'`; `news: true` + a title for articles), each with its likes and
  * comments; WORLD STORIES (`kind: 'wstory'`) — a seed the world plans into a few phases and tells over several story
- * days, one phase at a time. Everything the world makes by itself is `auto` (a swipe of that reply replaces it).
+ * days, one phase at a time. Everything the world makes by itself is `auto` (swipes never touch the world).
  */
 const arr = v => (Array.isArray(v) ? v : []);
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);

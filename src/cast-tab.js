@@ -46,7 +46,7 @@ export function useCastView(v) { view = v; schedule(); }
 export function renderCastTab() {
     scheduled = false;
     if (view) {
-        try { view.render(); return; } catch (err) { console.warn('[DLE] Cast tab: new view failed, today\'s comes back', err); view.dispose?.(); view = null; }
+        try { view.render(); return; } catch (err) { console.warn('[Onyx Quill] Cast tab: new view failed, today\'s comes back', err); view.dispose?.(); view = null; }
     }
     const el = panel();
     if (!el) return;

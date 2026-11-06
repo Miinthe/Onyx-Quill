@@ -133,7 +133,7 @@ function roundFold(L, q, people, nameOf) {
         const b = K.button({ label: stopping ? 'Stopping after this one…' : 'Stop after this one', icon: 'stop', disabled: stopping, onClick: () => stopQueue() });
         b.classList.add('dle-cv-stop'); foot.append(b);
     } else {
-        const r = K.button({ label: 'Reset', kind: 'quiet', title: 'Back to: You, then the main character', onClick: () => { writing = null; resetRound(); } });
+        const r = K.button({ label: 'Reset', kind: 'quiet', title: `Back to: ${userName()}, then ${mainName()}`, onClick: () => { writing = null; resetRound(); } });
         const g = K.button({ label: 'Go', icon: 'castround', kind: 'primary', disabled: !q.length, title: 'Play this round in this order. Send in the chat box works too.', onClick: () => runQueue() });
         r.classList.add('dle-cv-reset'); g.classList.add('dle-cv-go');
         foot.append(r, g);

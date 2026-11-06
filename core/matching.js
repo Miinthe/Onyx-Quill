@@ -23,11 +23,11 @@ function clampDepth(depth, label) {
     const n = Number(depth);
     if (!Number.isFinite(n)) return 0;
     if (n < 0) {
-        console.warn(`[DLE] injection depth ${n} < 0${label ? ` (${label})` : ''} — clamping to 0`);
+        console.warn(`[Onyx Quill] injection depth ${n} < 0${label ? ` (${label})` : ''} — clamping to 0`);
         return 0;
     }
     if (n > _MAX_DEPTH) {
-        console.warn(`[DLE] injection depth ${n} > MAX_INJECTION_DEPTH (${_MAX_DEPTH})${label ? ` (${label})` : ''} — clamping`);
+        console.warn(`[Onyx Quill] injection depth ${n} > MAX_INJECTION_DEPTH (${_MAX_DEPTH})${label ? ` (${label})` : ''} — clamping`);
         return _MAX_DEPTH;
     }
     return n;
@@ -89,7 +89,7 @@ function getCachedRegexes(entry, settings) {
         // BUG-148: warn (once per build) on overflow so silent truncation doesn't eat
         // the tail of long phrasal triggers.
         if (rawKey.length > MAX_KEYWORD_LENGTH) {
-            console.warn(`[DLE] keyword "${rawKey.slice(0, 40)}..." exceeds MAX_KEYWORD_LENGTH (${MAX_KEYWORD_LENGTH}) on entry "${entry.title}" — truncated`);
+            console.warn(`[Onyx Quill] keyword "${rawKey.slice(0, 40)}..." exceeds MAX_KEYWORD_LENGTH (${MAX_KEYWORD_LENGTH}) on entry "${entry.title}" — truncated`);
         }
         const truncatedKey = rawKey.length > MAX_KEYWORD_LENGTH ? rawKey.substring(0, MAX_KEYWORD_LENGTH) : rawKey;
         const key = settings.caseSensitive ? truncatedKey : truncatedKey.normalize('NFC').toLowerCase();
@@ -425,7 +425,7 @@ export function formatAndGroup(entries, settings, promptTagPrefix) {
 
             if (count > 0) break;
             // First entry exceeds entire budget and remaining is too small to truncate.
-            console.warn(`[DLE] Entry "${entry.title}" (${entry.tokenEstimate} tokens) exceeds entire budget (${settings.maxTokensBudget}) — skipping`);
+            console.warn(`[Onyx Quill] Entry "${entry.title}" (${entry.tokenEstimate} tokens) exceeds entire budget (${settings.maxTokensBudget}) — skipping`);
             continue;
         }
 
@@ -527,7 +527,7 @@ export function formatAndGroup(entries, settings, promptTagPrefix) {
         }));
 
         groups.push(...outletGroups);
-        console.log('[DLE] Format: %d/%d entries, %d/%d tokens%s, %d groups, %d outlet',
+        console.log('[Onyx Quill] Format: %d/%d entries, %d/%d tokens%s, %d groups, %d outlet',
             count, positionalEntries.length, totalTokens, settings.unlimitedBudget ? totalTokens : settings.maxTokensBudget,
             truncatedCount > 0 ? `, ${truncatedCount} truncated` : '', groups.length, outletEntries.length);
         return { groups, count: count + outletEntries.length, totalTokens: totalTokens + outletTokens, acceptedEntries: [...accepted.map(a => a.entry), ...outletEntries] };
@@ -558,7 +558,7 @@ export function formatAndGroup(entries, settings, promptTagPrefix) {
     }));
 
     groups.push(...outletGroups);
-    console.log('[DLE] Format: %d/%d entries, %d/%d tokens%s, %d groups, %d outlet',
+    console.log('[Onyx Quill] Format: %d/%d entries, %d/%d tokens%s, %d groups, %d outlet',
         count, positionalEntries.length, totalTokens, settings.unlimitedBudget ? totalTokens : settings.maxTokensBudget,
         truncatedCount > 0 ? `, ${truncatedCount} truncated` : '', groups.length, outletEntries.length);
     return { groups, count: count + outletEntries.length, totalTokens: totalTokens + outletTokens, acceptedEntries: [...accepted.map(a => a.entry), ...outletEntries] };

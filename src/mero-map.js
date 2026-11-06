@@ -32,7 +32,7 @@ export function refreshMeroMap(name, { force = false } = {}) {
                 const p = mapPrompt(board, entryText);
                 const r = await callAI(p.system, p.user, { ...conn, maxTokens: 1200, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.2 });
                 abouts = parseMapAbouts(r?.text);
-            } catch (err) { console.warn('[DLE] Mero summary: not written this time —', err?.message || err); }
+            } catch (err) { console.warn('[Onyx Quill] Mero summary: not written this time —', err?.message || err); }
         }
         const m = { text: mapText(board, abouts), hash, at: new Date().toISOString() };
         setMeroMap(name, m);

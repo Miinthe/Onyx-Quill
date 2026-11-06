@@ -1,128 +1,91 @@
-# AI Notepad
+The AI notepad lets the writing model keep private notes for one chat: things it should remember but not say out loud, like a character's real motive, a promise made, a secret revealed, or a thread to come back to. The notes are hidden from the chat you see and sent back to the model with every later reply. It is off at first.
 
-The AI Notepad lets the writing AI keep private session notes: things it should remember across messages but not say out loud. Character motivations, unspoken thoughts, plot threads to revisit, relationship shifts, revealed secrets. The notes are hidden from the visible chat and reinjected as context on the next generation.
+It is one of three note features, each for a different job:
 
-> [!NOTE]
-> The settings panel labels this feature **"AI Notebook"**. The wiki uses "AI Notepad" because that matches the setting key prefix (`aiNotepad*`) and the slash command (`/oq-ai-notepad`). Same feature, two names.
+- **AI notepad** (this page): notes the AI keeps for itself, per chat, sent back to the AI.
+- **Author's notebook**: your own notes for one chat, sent to the AI with every reply while it is switched on (**Settings › Story & memory › Notebook and notepad**, off at first). Open it from the side panel's **⋯ › Author's notebook** or with `/oq-notebook`.
+- **[[My Notes]]**: your own notes, never sent to the AI.
 
-This is a different feature from:
-- The **Author's Notebook** (`/oq-notebook`), which is written by you, the author, as a per-chat scratchpad
-- The **Session Scribe** ([[AI Powered Tools|Scribe]]), which writes longer summaries back to your Obsidian vault
+For longer summaries written into your vault, see the Scribe on [[Scribe and AI Helpers]].
 
-All three coexist; they target different writing tasks and have independent settings.
+## Turning it on
 
----
+1. Open **Settings** (the bar's 📖 menu › **Setup and settings**, or the side panel's **⋯ › Settings**).
+2. Go to **Story & memory › Notebook and notepad**.
+3. Switch on **AI notepad**.
+4. Under **How it gets its notes**, choose **tags** or **extract** (see below).
+5. For **extract**, check which AI does it in **Settings › AI & connections**, on the **AI notepad** row.
 
-## How it works
+## Two ways to take notes
 
-Two modes pick which side does the note-taking.
+### Tags (the default)
 
-### Tag mode (default)
+The writing model is told it has a private notebook. At the end of its reply it may add notes inside `<oq-notes>` … `</oq-notes>` tags. When the reply is done, Onyx Quill takes the notes out of the message, so you never see the tags, and adds them to this chat's notepad. No extra AI call.
 
-The writing AI is instructed to write notes inside `<dle-notes>` tags at the end of its response. After generation:
+This works best with models that follow format instructions well. A small model may forget the tags or put them in the wrong place.
 
-1. DLE scans the response for `<dle-notes>...</dle-notes>` blocks
-2. The notes are extracted and stripped from the visible message
-3. Extracted notes are appended to the chat's accumulated note store
-4. On the next generation, all stored notes are injected back as context
+### Extract
 
-The reader never sees the tags. The AI gets its notes back every turn.
+The writing model writes as usual and is told nothing about notes. After each reply, a separate AI call reads the reply (and the notes so far) and writes down what is worth remembering, or nothing if nothing is. This costs one extra AI call per reply; you can give it a cheaper model in **Settings › AI & connections**.
 
-### Extract mode
+In extract mode, Onyx Quill also removes visible note-to-self lines from the reply before the helper reads it: `[Note to self: …]`, `[OOC: …]`, `(OOC: …)`, `[Author's note: …]`, `[Session note: …]` and `[Meta: …]`.
 
-The writing AI writes normally with no special tags. After generation, a separate API call sends the response to a second model that extracts noteworthy details:
+## Seeing and editing the notes
 
-1. DLE sends the latest AI response + previous notes to the extraction model
-2. The extraction model returns bullet points worth remembering, or `NOTHING_TO_NOTE`
-3. Notes are appended to the chat's accumulated note store
+Open the side panel's **⋯ › AI notepad**, or type `/oq-ai-notepad`. The window shows all notes for this chat as text you can edit, with a token count and how many notes there are (out of the most it keeps). **Save** keeps your changes.
 
-Extract mode is useful when your writing model doesn't reliably follow the `<dle-notes>` tag format, or when you don't want to burden it with extra instructions.
+- **Deduplicate** merges notes that say nearly the same thing.
+- **Pinned Entries**: tick a note to pin it. Pinned notes are never dropped when the notepad is full, and never merged away by Deduplicate.
 
----
+`/oq-ai-notepad clear` empties the notepad for this chat.
 
-## Enabling
+The notes taken from one reply also show in that message's 📖 menu › **Why these entries**.
 
-1. Open **Settings** (the bar's 📖 menu → **Setup and settings**, or the side panel's ⋯ → **Settings**)
-2. Go to **Story & memory** → **Notebook and notepad**
-3. Switch on **AI notepad**
-4. Under **How it gets its notes**, choose **tags** or **extract**
-5. For extract, pick its AI in **Settings › AI & connections** (the "AI notepad" job)
+<!-- screenshot: the AI notepad window with a few notes, two of them pinned -->
 
----
+## How it keeps the notepad tidy
+
+- **Per chat:** each chat has its own notepad. Switching chats switches notepads, and notes survive a page reload.
+- **Swipes, deletes and edits:** when you swipe, delete or edit a reply, the notes taken from that reply are removed from the notepad.
+- **A limit:** the notepad keeps the newest notes up to **Notes it keeps** (50 at first). When it is full, the oldest unpinned note drops first. Set it to 0 for no limit; a very large notepad is still trimmed from the oldest end.
 
 ## Settings
 
-| Setting | Default | Description |
+In **Settings › Story & memory › Notebook and notepad**:
+
+| Setting | Default | What it does |
 |---|---|---|
-| Enabled | Off | Master toggle |
-| Mode | Tag | `tag` (writing AI uses `<dle-notes>` tags) or `extract` (post-gen API call) |
-| Position | In Chat | Where notes are injected (same options as injection position) |
-| Depth | 4 | Injection depth in chat context |
-| Role | System | Injection role (system, user, or assistant) |
-| Instruction Prompt | (built-in) | Custom prompt override for tag mode instructions |
-| Extract Prompt | (built-in) | Custom prompt override for extract mode |
-| Connection Mode | Inherit | `inherit` (resolves to AI Search settings) or `profile` (an ST Connection Manager profile) |
-| Profile ID | (none) | Which ST profile to use for extract mode |
-| Model | (none) | Model override for extract mode |
-| Max Tokens | 1024 | Token limit for the extraction API call (256-8192) |
-| Timeout | 30s (30000ms) | API timeout for extraction (5000-999999ms) |
+| **AI notepad** | off | Turns the notepad on. |
+| **How it gets its notes** | tags | **tags**: the writer adds them, no extra call. **extract**: a helper reads each reply. |
+| **Notes it keeps** (behind **More**) | 50 | The most notes kept; the oldest drop first. 0 = no limit. |
+| **Count as the same note from** (behind **More**) | 0.85 | How alike two notes must be (0.1 to 1) for **Deduplicate** to merge them. |
 
----
+In **Settings › Where it goes › Story state and notes** (behind **More**):
 
-## Viewing and editing notes
+| Setting | Default | What it does |
+|---|---|---|
+| **AI notepad** | in the chat | Where the notes go in the prompt: before the main prompt, after it, or in the chat. |
+| **Its depth** | 4 | How far up in the chat, when placed in the chat. |
+| **As** | system | The role the notes are sent as: system, user or assistant. |
 
-`/oq-ai-notepad` opens a popup showing all accumulated notes for the current chat with a live token counter. Edit and save manually.
+If you place Onyx Quill's parts in SillyTavern's prompt list (**Settings › Where it goes › How › Place Onyx Quill's parts**), these three step aside and you drag the notepad's part where you want it in the prompt list instead.
 
-`/oq-ai-notepad clear` clears all notes for the current chat.
+**Settings › Prompts** has both instructions: **AI notepad: tags** (what the writer is told) and **AI notepad: extract** (what the helper is told). Edit them to steer what gets noted, for example only relationship changes. **Settings › AI & connections** picks the AI for extract mode, with its own model, answer length and time limit.
 
-Notes are also visible per-message in the **Context Cartographer** popup (📖 on AI messages → **Why these entries**).
+## What the model sees
 
----
-
-## How notes are stored
-
-Notes live in `chat_metadata.deeplore_ai_notepad` as a plain text string. They persist with the chat: switching chats loads that chat's notes, and notes survive page reloads. The accumulator is capped at 64KB; when it exceeds the cap, oldest blocks are trimmed at paragraph boundaries (`\n\n`).
-
-Each message's extracted notes are also saved on `message.extra.deeplore_ai_notes` for per-message inspection.
-
-### Pinning notes
-
-In the `/oq-ai-notepad` editor you can **pin** individual lines. Pinned lines are protected: they survive the 64KB cap trim and any deduplication pass, so a critical fact you want kept forever won't be evicted as the note store grows. Pins are stored as normalized keys in `chat_metadata.deeplore_ai_notepad_pins` (per chat). If you later edit a pinned line so it no longer matches its stored key, the pin quietly stops applying rather than erroring.
-
-### Swipe and edit rollback
-
-When a message is swiped, deleted, or edited, that message's notes are surgically removed from the accumulated store. The rollback uses `lastIndexOf` anchored on the note block, so an earlier message with identical notes is left alone.
-
----
-
-## How notes are injected
-
-On each generation, stored notes are wrapped in markers and injected at the configured position, depth, and role:
+Each reply, the notes so far are sent like this, followed (in tags mode) by the notebook instructions:
 
 ```
 [Your previous session notes]
-- Eris revealed she knows about the betrayal but hasn't confronted Kael yet
-- The seal on the northern gate is weakening (mentioned twice now)
-- Player character promised to return the artifact by the festival
+- Kell promised to bring the ledger back before the bells ring
+- The mayor knows about the smuggling but has said nothing yet
 [End of session notes]
 ```
 
-In tag mode, the instruction prompt is appended after the notes, telling the AI how to use `<dle-notes>` tags.
-
----
-
 ## Tips
 
-- **Tag mode works best with capable models** (Claude, GPT-4, etc.) that reliably follow formatting instructions. Smaller models may forget the tags or place them wrong.
-- **Extract mode is more reliable but costs an extra API call per generation.** Good fit for local models that don't follow tags well. Route Extract mode to a cheap model via its own connection channel.
-- **Edit notes periodically** with `/oq-ai-notepad` to prune stale information. The store grows every turn and eventually wastes tokens on outdated context.
-- **Custom prompts let you steer what the AI tracks.** For example, instruct it to only track relationship changes and ignore combat details.
+- **Prune now and then.** The notepad grows with every reply. Open it, remove what no longer matters, and pin what must never drop.
+- **Tags or extract?** Try tags first. If your model forgets the tags or leaves them visible, switch to extract.
 
----
-
-## Related pages
-
-- [[Features]]: feature overview
-- [[AI Powered Tools]]: Session Scribe (longer summaries to vault), Auto Lorebook, others
-- [[Injection and Context Control]]: how injection position, depth, and role work
-- [[Slash Commands]]: `/oq-ai-notepad` and `/oq-notebook` reference
+See also: [[Scribe and AI Helpers]], [[Settings Reference]], [[Slash Commands]].

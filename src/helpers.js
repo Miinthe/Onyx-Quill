@@ -787,6 +787,8 @@ export function openObsidianUri(uri) {
  * @param {string} [options.emHandling] - Wave 4: 'append' (default) | 'skip'. Reserved
  *   for future per-call override of the subheader text; current behavior is identical
  *   for both modes (the I/O-layer caller enforces skip via _emPosition).
+ * @param {string} [options.constantTag] - the configured Always-send tag for WI
+ *   `constant` entries (settings.constantTag); defaults to 'lorebook-always'.
  * @returns {{
  *   filename: string,
  *   content: string,
@@ -864,7 +866,7 @@ export function convertWiEntry(wiEntry, lorebookTag, options = {}) {
     fm.push(`priority: ${Math.max(0, Math.min(MAX_PRIORITY_VALUE, Math.round(_orderNum)))}`);
     fm.push(`tags:`);
     fm.push(`  - ${lorebookTag}`);
-    if (wiEntry.constant) fm.push(`  - lorebook-always`);
+    if (wiEntry.constant) fm.push(`  - ${(options.constantTag || '').trim() || 'lorebook-always'}`);
     if (keys.length > 0) {
         fm.push(`keys:`);
         for (const k of keys) {
@@ -947,7 +949,7 @@ export function convertWiEntry(wiEntry, lorebookTag, options = {}) {
     // Sanitize against YAML / control sequence injection.
     let content = wiEntry.content || '';
     content = content.replace(/^---$/gm, '- - -');
-    content = content.replace(/%%deeplore-exclude%%[\s\S]*?%%\/deeplore-exclude%%/g, '');
+    content = content.replace(/%%(oq|deeplore)-exclude%%[\s\S]*?%%\/\1-exclude%%/g, '');
     content = stripObsidianSyntax(content);
     // #18: compression runs at import time only. Stored form is compressed;
     // read-path treats it as the authoritative body.
@@ -956,7 +958,7 @@ export function convertWiEntry(wiEntry, lorebookTag, options = {}) {
     } else if (compressMode && !willApplyCompression) {
         // User asked for a mode we don't know how to apply. Warn instead of
         // silently storing an annotation that lies about transform state.
-        console.warn(`[DLE] convertWiEntry: unknown compress mode "${compressMode}" — body stored uncompressed, no annotation written.`);
+        console.warn(`[Onyx Quill] convertWiEntry: unknown compress mode "${compressMode}" — body stored uncompressed, no annotation written.`);
     }
 
     // Wave 4 (WI parity): for ST Example Messages positions (5 / 6), prepend
@@ -1368,20 +1370,6 @@ export function matchesPinBlock(pinBlock, entry) {
 }
 
 /**
- * Normalize a persisted lore gap. v2 statuses are `pending` ↔ `written` only;
- * legacy `acknowledged` / `in_progress` / `rejected` collapse to `pending`.
- * Soft removal lives in sibling chat_metadata arrays now, not status.
- * @param {object} gap
- * @returns {object}
- */
-export function normalizeLoreGap(gap) {
-    if (!gap || typeof gap !== 'object') return gap;
-    const allowed = new Set(['pending', 'written']);
-    const status = allowed.has(gap.status) ? gap.status : 'pending';
-    return { ...gap, status };
-}
-
-/**
  * Force-injected? Constant, or bootstrap when bootstrap is active for this gen.
  * Caller computes `bootstrapActive` from its own context (chat length, settings).
  *
@@ -1519,18 +1507,18 @@ export function normalizeNotepadLine(line) {
 }
 
 /**
- * Extract <dle-notes> content from a message; returns cleaned message + notes.
+ * Extract <oq-notes> content (older <dle-notes> too) from a message; returns cleaned message + notes.
  * @param {string} messageText
  * @returns {{ notes: string|null, cleanedMessage: string }}
  */
 export function extractAiNotes(messageText) {
     if (!messageText) return { notes: null, cleanedMessage: messageText || '' };
 
-    const noteRegex = /<dle-notes>([\s\S]*?)<\/dle-notes>/g;
+    const noteRegex = /<(oq|dle)-notes>([\s\S]*?)<\/\1-notes>/g;
     const extracted = [];
     let match;
     while ((match = noteRegex.exec(messageText)) !== null) {
-        const content = match[1].trim();
+        const content = match[2].trim();
         if (content) extracted.push(content);
     }
 

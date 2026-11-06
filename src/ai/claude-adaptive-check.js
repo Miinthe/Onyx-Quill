@@ -64,7 +64,7 @@ export function detectClaudeAdaptiveIssue(profileId, modelOverride, opts = {}) {
         return { bad: false };
     } catch (err) {
         // Must never throw — runs from many surfaces.
-        if (typeof console !== 'undefined') console.debug('[DLE] claude-adaptive-check error:', err);
+        if (typeof console !== 'undefined') console.debug('[Onyx Quill] claude-adaptive-check error:', err);
         return { bad: false };
     }
 }

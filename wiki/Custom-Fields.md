@@ -1,190 +1,155 @@
-# Custom Fields
-
-DeepLore lets you define your own frontmatter fields for contextual gating. Beyond the four built-in fields (era, location, scene_type, character_present), you can create any field your world needs: mood, faction, time_of_day, threat_level, whatever fits your setting.
+Filter fields let an entry say *where it belongs*: an era, a place, a kind of scene, who must be present, or anything your story needs (a faction, the time of day, a danger level). You set a value for the chat, and entries whose value doesn't fit stay out. Four fields come built in; you can change them and add your own.
 
 ## How it works
 
-1. **Define fields** in a YAML file in your vault (or use the visual editor)
-2. **Tag entries** with field values in their frontmatter
-3. **Set the active context** with slash commands or the side panel's **Filters** tab
-4. Entries whose field values don't match the active context are filtered out during lore selection
+1. **Define the fields** in the rule builder (or the field definitions file in your vault).
+2. **Give entries values** in their frontmatter, for example `location: Bayside Shushail`.
+3. **Set the chat's value**: side panel **Filters** tab › **Fields**, or a slash command. Values are kept per chat.
+4. Entries whose values don't fit are left out when lore is picked. **Why these entries** lists them under "Filtered by context".
 
-## Built-in fields
+## The four built-in fields
 
-Four fields are included by default. You can modify or remove them.
+| Field | In frontmatter | Set it with | Example values |
+|---|---|---|---|
+| Era | `era` | `/oq-set-era` | `medieval`, `renaissance` |
+| Location | `location` | `/oq-set-location` | `Bayside Shushail`, `Bellsummit` |
+| Scene Type | `scene_type` | `/oq-set-scene` | `social`, `combat` |
+| Characters Present | `character_present` | `/oq-set-characters` | `Gorduin Wynlar` |
 
-| Field | Frontmatter Key | Type | Example Values |
-|-------|----------------|------|----------------|
-| Era | `era` | multi-value string | `medieval`, `renaissance`, `modern` |
-| Location | `location` | multi-value string | `tavern`, `castle`, `forest` |
-| Scene Type | `scene_type` | multi-value string | `combat`, `romance`, `investigation` |
-| Characters Present | `character_present` | multi-value string | `Eris`, `Kael`, `Mira` |
+All four hold one or more text values, use **Match Any** and **Moderate**: an entry goes in when one of its values matches one of the chat's values, and while the chat has no value for the field, nobody is held back. An entry without the field is never filtered by it.
 
-All four use the `match_any` operator and `moderate` tolerance by default.
+The board can set **Location** from where the scene is, and the Cast can fill in **Characters Present**. See [[Storyboards]] and [[Cast]].
 
-## Defining custom fields
+## Adding and changing fields
 
-### Visual editor (recommended)
+Open the rule builder from the side panel's **Filters** tab › **Change folders and fields…** › **Edit the filter fields…**, or from **Settings › Filters**. For each field you set:
 
-Open the rule builder from the side panel's **Filters** tab → **Change folders and fields…** → **Edit the filter fields…**, or from **Settings › Filters** (Edit the filter fields). The rule builder lets you:
+- **Name**: the frontmatter key. Lowercase letters, numbers and underscores, starting with a letter.
+- **Label**: the name shown in the side panel and on AI search's cards.
+- **Type**: Text, Number or Boolean (true/false), and **Multi-value** for a list.
+- **Gating**: **Enabled**, the operator and the tolerance (below).
+- **Context Key**: where the chat's value is kept; linked to the name unless you unlink it.
+- **Allowed Values**: an optional fixed list. A one-value field with a list gets a dropdown in the Filters tab.
 
-- Add, delete, duplicate, and reorder fields
-- Set field name (snake_case), display label, data type, and multi-value toggle
-- Configure gating rules: operator, tolerance, and allowed values
-- Reset to defaults if needed
+You can also delete, duplicate and reorder fields, or reset to the four built-ins (your own fields are then lost). Saving writes the file to your vault and re-reads the vault.
 
-Changes are saved to your Obsidian vault and the index rebuilds automatically.
+These names are taken and can't be used: `keys`, `priority`, `tags`, `requires`, `excludes`, `position`, `depth`, `role`, `scandepth`, `excluderecursion`, `refine_keys`, `selective_logic`, `cascade_links`, `cooldown`, `warmup`, `probability`, `summary`, `graph`, `enabled`, `constant`, `seed`, `bootstrap`, `type`, `fileclass`, `status`, `aliases`.
 
-### YAML file
+## Operators
 
-Field definitions are stored at `DeepLore/field-definitions.yaml` in your primary vault (configurable in settings). You can edit this file directly in Obsidian.
+How the entry's value is compared with the chat's value:
 
-```yaml
-- name: era
-  label: Era
-  type: string
-  multi: true
-  gating:
-    enabled: true
-    operator: match_any
-    tolerance: moderate
-  contextKey: era
-  values: []
+| Operator | The entry passes when… |
+|---|---|
+| **Match Any** (`match_any`) | one of its values is among the chat's values. |
+| **Match All** (`match_all`) | every one of its values is among the chat's values. |
+| **Not Any** (`not_any`) | none of its values is among the chat's values. |
+| **Equals** (`eq`) | its value equals the chat's value. |
+| **Greater Than** (`gt`) | its number is bigger than the chat's number. |
+| **Less Than** (`lt`) | its number is smaller than the chat's number. |
+| **Exists** (`exists`) | it has a value for this field at all. |
+| **Not Exists** (`not_exists`) | it has no value for this field. |
 
-- name: threat_level
-  label: Threat Level
-  type: number
-  multi: false
-  gating:
-    enabled: true
-    operator: gt
-    tolerance: strict
-  contextKey: threat_level
-  values: []
-```
+Text is compared without regard to case. **Exists** and **Not Exists** look only at the entry, never at the chat, and they work even when no value is set anywhere: a field with **Exists** keeps out *every* entry that lacks it. **Not Exists** is handy for a `draft` field: give unfinished entries `draft: true`, and they stay out until you remove it.
 
-### Field definition schema
+## Tolerance
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Frontmatter key (snake_case, no spaces) |
-| `label` | string | Yes | Human-readable display name |
-| `type` | string | Yes | `string`, `number`, or `boolean` |
-| `multi` | boolean | No | Whether the field holds an array of values (default: false) |
-| `gating.enabled` | boolean | No | Enable contextual gating for this field (default: true) |
-| `gating.operator` | string | No | How to compare values (default: `match_any`) |
-| `gating.tolerance` | string | No | How strict the filter is (default: `moderate`) |
-| `contextKey` | string | No | Key in chat context state (default: same as `name`) |
-| `values` | string[] | No | Allowed values list (empty = freeform) |
+What happens when an entry has a value for the field:
 
-Reserved names that cannot be used: `keys`, `priority`, `tags`, `requires`, `excludes`, `position`, `depth`, `role`, `scandepth`, `excluderecursion`, `refine_keys`, `selective_logic`, `cascade_links`, `cooldown`, `warmup`, `probability`, `summary`, `graph`, `enabled`, `constant`, `seed`, `bootstrap`, `type`, `fileclass`, `status`, `aliases`.
+| Tolerance | Chat has no value for the field | Chat has a value, the check fails |
+|---|---|---|
+| **Strict** | left out | left out |
+| **Moderate** | goes in | left out |
+| **Lenient** ("keep even on a mismatch") | goes in | left out only for **Not Any**, **Equals**, **Greater Than**, **Less Than**; goes in for **Match Any** and **Match All** |
 
-## Using fields in frontmatter
+**Moderate** suits most fields. **Strict** is for entries that must only ever appear in their context, but note that a field only filters once the chat has a value for *some* field. **Lenient** with Match Any or Match All never leaves anything out, so it is only useful with the other operators. One exception to the whole table: an entry with the **Not Exists** check on a field is left out whenever the entry has that field, under every tolerance and whatever the chat says.
 
-Add your custom field to any entry's frontmatter:
+## Values in entries
 
 ```yaml
 ---
 tags:
   - lorebook
 keys:
-  - Dragon's Keep
-era: medieval
-location:
-  - mountains
-  - dragon_territory
-threat_level: 8
+  - Highwallow Night Clinic
+location: Highwallow
+danger: 3
 ---
-# Dragon's Keep
-...
 ```
 
-Multi-value fields accept either a scalar or an array:
+A multi-value field takes one value or a list:
+
 ```yaml
-era: medieval           # single value
-era:                    # multiple values
+era: renaissance
+era:
   - medieval
   - renaissance
 ```
 
-## Setting active context
+## Setting the chat's values
 
-Use slash commands to set the current context:
+In the side panel's **Filters** tab, the **Fields** fold shows each field with its value and how many entries it leaves out; **＋** or ✎ sets a value, the ✕ on a value removes it. **Show** lists the fields no entry uses yet. Values set here are for this chat only.
+
+Or with commands:
 
 ```
-/oq-set-field era medieval
-/oq-set-field threat_level 5
-/oq-clear-field era
+/oq-set-field danger 5
+/oq-set-location Highwallow
+/oq-set-characters Gorduin Wynlar, Ayre Waesphyra
+/oq-clear-field danger
 /oq-clear-all-context
+/oq-context-state
 ```
 
-Without a value argument, `/oq-set-field` shows a selection popup listing all values found in your vault with entry counts.
+`/oq-set-field` with only a field name (and `/oq-set-era`, `/oq-set-location`, `/oq-set-scene`, `/oq-set-characters` without a value) opens a list of the values found in your vault. Short forms: `/oq-era`, `/oq-loc`, `/oq-ctx` (for `/oq-context-state`), `/oq-reset-context` (for `/oq-clear-all-context`).
 
-The built-in fields have shorthand aliases:
+## Who is not filtered
+
+Always-send entries, seed entries, pinned entries, and starter entries while the chat is new go in whatever the fields say.
+
+## Where fields show up
+
+- AI search sees each entry's field values on its card. **Settings › Lore selection › Your fields it sees** (under **More**) limits which ones (empty = all).
+- **Lore › All entries** in the side panel has a filter chip for each field.
+- The relationship graph can color entries by a field.
+- **Why these entries** shows an entry's field values when you open it.
+
+## The field definitions file
+
+The rule builder saves to `Onyx Quill/field-definitions.yaml` in your vault (settings that came over from DeepLore keep `DeepLore/field-definitions.yaml`; change the path in **Settings › Vault › Files › Field definitions file**). You can also edit it in Obsidian in normal YAML: the usual indents, lists and comments all work. A line Onyx Quill can't place is skipped with a warning, instead of the whole file being ignored.
+
+```yaml
+fields:
+  - name: era
+    label: Era
+    type: string
+    multi: true
+    gating:
+      enabled: true
+      operator: match_any
+      tolerance: moderate
+    values: []
+    contextKey: era
+  - name: danger
+    label: Danger
+    type: number
+    multi: false
+    gating:
+      enabled: true
+      operator: lt
+      tolerance: moderate
+    values: []
+    contextKey: danger
 ```
-/oq-set-era medieval
-/oq-set-location tavern
-/oq-set-scene combat
-/oq-set-characters Eris, Kael
-```
 
-View all active filters with `/oq-context-state` (alias: `/oq-ctx`).
+With this `danger` field, `/oq-set-field danger 5` lets in entries with a danger below 5 and keeps out the rest; entries without `danger` are not affected.
 
-You can also set context from the side panel's **Filters** tab, in its **Fields** fold (values set there are for this chat only).
+## Folders
 
-## Gating operators
-
-| Operator | Behavior |
-|----------|----------|
-| `match_any` | Entry passes if ANY of its values match ANY active context value |
-| `match_all` | Entry passes if ALL of its values exist in the active context |
-| `not_any` | Entry passes if NONE of its values match the active context |
-| `exists` | Entry passes if the field has any non-empty value |
-| `not_exists` | Entry passes if the field is null or empty |
-| `eq` | Entry value equals active context value (numbers or case-insensitive strings) |
-| `gt` | Entry value is greater than active context value (numeric) |
-| `lt` | Entry value is less than active context value (numeric) |
-
-## Tolerance levels
-
-Tolerance controls what happens when an entry has a field value but the check fails:
-
-| Tolerance | No context set for field | Context set, operator fails |
-|-----------|-------------------------|---------------------------|
-| **Strict** | Entry filtered out | Entry filtered out |
-| **Moderate** | Entry passes through | Entry filtered out |
-| **Lenient** | Entry passes through | Entry passes through (unless explicit conflict like `not_any`, `gt`, `lt`) |
-
-**Strict** means "if this entry cares about era, and no era is set, drop it." Use this when entries should only appear in their specific context.
-
-**Moderate** (default) means "if no era is set, let everything through; if an era IS set, only matching entries pass." This is the most natural behavior for most setups.
-
-**Lenient** means "only filter on clear mismatches." Use this for fields where you want soft suggestions rather than hard gates.
-
-## Exemptions
-
-These entries always bypass contextual gating regardless of field values:
-
-- **Constants** (tagged `lorebook-always`)
-- **Seeds** (tagged `lorebook-seed`)
-- **Bootstrap** entries (tagged `lorebook-bootstrap`)
-- **Pinned** entries (per-chat pins via `/oq-pin`)
-
-## Integration
-
-- **Side panel Filters tab:** the **Fields** fold shows the fields set for this chat, lets you set or clear them, and **Show** lists the unused ones
-- **Lore › All entries:** your own fields appear as filter chips
-- **Graph:** color nodes by any custom field value
-- **AI manifest:** field labels shown in AI search manifests for better selection
-- **`/oq-inspect`:** shows per-field mismatch reasons (e.g., `era: medieval != renaissance`)
-- **`/oq-status`:** shows custom field count and names
-
-## Related: folder filtering
-
-Beyond field-based gating, DLE supports per-chat folder filtering via `/oq-set-folder`. This restricts injection to entries from specific vault folders, complementing custom field gating. See [[Injection and Context Control#Per-Chat Folder Filter]] for details.
+Folders are the other filter: each chat reads only its character's, its run's and its own folders. See [[How Lore Gets Picked]].
 
 ## See also
 
-- [[Injection and Context Control]]: how gating fits into the injection pipeline
-- [[Slash Commands]]: full command reference
-- [[Writing Vault Entries]]: frontmatter field reference
+- [[Advanced Gating]]: the other rules for when an entry goes in
+- [[Frontmatter Fields]]: every field
+- [[Slash Commands]]: all commands

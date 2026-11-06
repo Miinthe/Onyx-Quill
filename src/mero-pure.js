@@ -309,7 +309,7 @@ const VAULT_REVIEW = '{{author}} asked you to review their lore vault (all of it
  * story's style guide stays with that story; notes outside any folder count everywhere).
  */
 export const GUIDE_MAX = 4000;   // characters for all guides together
-export const GUIDE_HEADING = "Notes {{author}} wrote for you only (the writer never sees them) — background, plans and secrets for your ideas, notes and pitches; never spoil them, and they are not story events";
+export const GUIDE_HEADING = "Secrets {{author}} shares with you only (the writer never sees them) — background, plans and secrets for your ideas, notes and pitches; never spoil them, and they are not story events";
 export function guidesIn(entries, folders = null) {
     const fs = Array.isArray(folders) && folders.length ? folders : null;
     return arr(entries).filter(e => e && e.guide && str(e.title).trim() && (!fs || !e.folderPath || fs.some(f => e.folderPath === f || String(e.folderPath).startsWith(f + '/'))));
@@ -356,7 +356,7 @@ export function buildMeroPrompt({ settings = {}, talk, character = '', persona =
         // world layer stage 5 (Miinthe, 2026-10-19: Mero gets "a short summary of the world", can talk about it and pitch from it)
         sec('The world around the story (chatter, rumors, messages — people in the story know only what they heard)', world),
         vault ? N(VAULT_REVIEW) : '',
-        vault ? sec(`{{author}}'s whole lore vault (${vault.length} entries)`, vault.map(e => `### ${e.title}\n${String(e.content || '').trim()}`).join('\n\n')) : '',
+        vault ? sec(`The lore this story reads (${vault.length} entries)`, vault.map(e => `### ${e.title}\n${String(e.content || '').trim()}`).join('\n\n')) : '',
         vault ? '' : sec('Lore the writer was given for the last reply', entries.map(e => `### ${e.title}\n${String(e.content || '').slice(0, 1200)}`).join('\n\n')),
         sec('Character and persona', [cards, persona].filter(Boolean).join('\n\n')),
         sec('The latest replies of the roleplay', replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')),

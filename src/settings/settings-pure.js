@@ -70,9 +70,9 @@ export const SECTIONS = [
             { id: 'v-tag', label: 'Lore tag', tip: 'Notes with this tag are lore', type: 'text', key: 'lorebookTag', fx: 'rebuild', old: 'Lorebook tag' },
             { id: 'v-always', label: 'Always-send tag', tip: 'Sent with every reply', type: 'text', key: 'constantTag', fx: 'rebuild', old: 'Constant tag / constants' },
             { id: 'v-never', label: 'Never-send tag', type: 'text', key: 'neverInsertTag', more: true, fx: 'rebuild', old: 'Never insert tag' },
-            { id: 'v-seed', label: 'Seed tag', tip: 'Sent quietly in the background while a chat is new', type: 'text', key: 'seedTag', more: true, fx: 'rebuild', old: 'Seed tag' },
+            { id: 'v-seed', label: 'Seed tag', tip: 'Background for AI search while a chat is new (does nothing with keywords only)', type: 'text', key: 'seedTag', more: true, fx: 'rebuild', old: 'Seed tag' },
             { id: 'v-boot', label: 'Starter tag', tip: 'Sent openly while a chat is new', type: 'text', key: 'bootstrapTag', more: true, fx: 'rebuild', old: 'Bootstrap tag' },
-            { id: 'v-guide', label: 'Notes-for-Mero tag', tip: 'Notes only Mero ☆ reads — the writer never gets them (unlike 🧭 guidance)', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
+            { id: 'v-guide', label: 'Secrets-for-Mero tag', tip: 'Secrets for Mero ☆: notes only she reads — the writer never gets them (unlike 🧭 guidance)', type: 'text', key: 'guideTag', more: true, fx: 'rebuild', old: 'Guide tag' },
             { id: 'v-newchat', label: 'A chat counts as new for', unit: 'messages', type: 'num', key: 'newChatThreshold', more: true, old: 'New chat threshold' },
         ] },
         { t: 'Files', rows: [
@@ -89,7 +89,7 @@ export const SECTIONS = [
     { id: 'filters', name: 'Filters', icon: 'filter', grp: 'Lore', custom: 'hub' },
     { id: 'select', name: 'Lore selection', icon: 'lore', grp: 'Lore', lead: 'How Onyx Quill finds the lore for a reply.', cards: [
         { t: 'Mode', rows: [
-            { id: 's-mode', label: 'How lore is picked', type: 'seg', opts: [['keywords-only', 'keywords only'], ['two-stage', 'keywords, then the judge'], ['ai-only', 'the judge only']], old: 'Search mode / AI search enabled',
+            { id: 's-mode', label: 'How lore is picked', type: 'seg', opts: [['keywords-only', 'keywords only'], ['two-stage', 'keywords, then AI search'], ['ai-only', 'AI search only']], old: 'Search mode / AI search enabled',
                 read: s => (!s.aiSearchEnabled ? 'keywords-only' : s.aiSearchMode === 'ai-only' ? 'ai-only' : 'two-stage'),
                 write: (s, v) => { s.aiSearchEnabled = v !== 'keywords-only'; s.aiSearchMode = v === 'ai-only' ? 'ai-only' : 'two-stage'; } },
         ] },
@@ -98,23 +98,22 @@ export const SECTIONS = [
             { id: 's-char', label: 'Match the active character', type: 'switch', key: 'characterContextScan', old: 'Auto-match active character / character context scan' },
             { id: 's-fuzzy', label: 'Loose matching', tip: 'Also matches near-misses, not just exact keywords', type: 'switch', key: 'fuzzySearchEnabled', fx: 'reindex', old: 'Fuzzy search / flexible matching' },
             { id: 's-fuzzyn', label: 'How close', hint: 'low = more matches', tip: 'Lowest score that counts (0.1–2). The preview uses sample entries.', type: 'num', key: 'fuzzySearchMinScore', step: 0.1, show: s => !!s.fuzzySearchEnabled, preview: 'fuzzy', old: 'Match sensitivity / fuzzy min score' },
-            { id: 's-case', label: 'Case sensitive', type: 'switch', key: 'caseSensitive', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Case sensitive' },
-            { id: 's-whole', label: 'Whole words only', type: 'switch', key: 'matchWholeWords', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Match whole words' },
-            { id: 's-chain', label: 'Entries can call other entries', hint: 'steps · 0 = off', tip: 'An entry’s text can match more entries, up to this many steps', type: 'num', more: true, dis: aiOnly, disWhy: 'The judge alone picks lore', old: 'Recursive scan / chain matching / max recursion steps',
+            { id: 's-case', label: 'Case sensitive', type: 'switch', key: 'caseSensitive', more: true, dis: aiOnly, disWhy: 'AI search alone picks lore', old: 'Case sensitive' },
+            { id: 's-whole', label: 'Whole words only', type: 'switch', key: 'matchWholeWords', more: true, dis: aiOnly, disWhy: 'AI search alone picks lore', old: 'Match whole words' },
+            { id: 's-chain', label: 'Entries can call other entries', hint: 'steps · 0 = off', tip: 'An entry’s text can match more entries, up to this many steps', type: 'num', more: true, dis: aiOnly, disWhy: 'AI search alone picks lore', old: 'Recursive scan / chain matching / max recursion steps',
                 ...everyN('recursiveScan', 'maxRecursionSteps', 1, 10) },
             { id: 's-weight', label: 'Count how often a keyword appears', tip: 'Can slow down big vaults', type: 'switch', key: 'keywordOccurrenceWeighting', more: true, old: 'Keyword occurrence weighting' },
-            { id: 's-reverse', label: 'Higher priority number wins', tip: 'Off: a lower number wins (as in Obsidian and World Info)', type: 'switch', key: 'priorityReversed', more: true, old: 'Reverse priority / priority order' },
-            { id: 's-strict', label: 'When a chat has no field value set', type: 'select', key: 'contextualGatingTolerance', opts: [['strict', 'strict: block the entry'], ['moderate', 'moderate: block only a mismatch'], ['lenient', 'lenient: allow it']], more: true, old: 'Filter strictness / contextual gating tolerance' },
+            { id: 's-reverse', label: 'Higher priority number wins', tip: 'Off: a lower number wins (World Info’s order works the other way round)', type: 'switch', key: 'priorityReversed', more: true, old: 'Reverse priority / priority order' },
         ] },
-        { t: 'The judge', rows: [
-            { id: 's-conf', label: 'Leave out below', tip: 'How sure the judge must be', type: 'select', key: 'aiConfidenceThreshold', opts: [['low', 'low (keep all)'], ['medium', 'medium'], ['high', 'high']], dis: judgeOff, disWhy: 'The judge is off (Mode: keywords only)', old: 'Confidence threshold' },
-            { id: 's-jmsg', label: 'Messages the judge reads', type: 'num', key: 'aiSearchScanDepth', dis: judgeOff, disWhy: 'The judge is off (Mode: keywords only)', old: 'AI scan depth' },
-            { id: 's-preview', label: 'Its prompt', tip: 'See exactly what the judge is sent for this chat', type: 'btn', btn: 'Preview', act: 'previewJudge', old: 'Preview AI prompt' },
-            { id: 's-err', label: 'If the judge fails', type: 'select', key: 'aiErrorFallback', opts: [['keyword', 'use the keyword picks'], ['constants_only', 'always-send entries only'], ['bootstrap_only', 'starter entries only'], ['none', 'send no lore']], more: true, old: 'AI error fallback' },
-            { id: 's-empty', label: 'If the judge picks nothing', type: 'select', key: 'aiEmptyFallback', opts: [['constants', 'always-send entries only'], ['constants_bootstrap', 'always-send + starter entries'], ['keyword', 'use the keyword picks'], ['none', 'send no lore']], more: true, old: 'AI empty result fallback' },
-            { id: 's-desc', label: 'The judge reads', type: 'select', key: 'manifestSummaryMode', opts: [['prefer_summary', 'the summary, else the text'], ['summary_only', 'summaries only'], ['content_only', 'the text only']], more: true, old: 'Entry description mode / manifest summary mode' },
-            { id: 's-sum', label: 'Longest summary sent', unit: 'characters', type: 'num', key: 'aiSearchManifestSummaryLength', more: true, old: 'Manifest summary length' },
-            { id: 's-jnotes', label: 'Give it the session notes', tip: 'Scribe’s latest notes go to the judge too', type: 'switch', key: 'scribeInformedRetrieval', more: true, old: 'Use session notes as AI context / Scribe informed retrieval' },
+        { t: 'AI search', rows: [
+            { id: 's-conf', label: 'Leave out below', tip: 'How sure AI search must be', type: 'select', key: 'aiConfidenceThreshold', opts: [['low', 'low (keep all)'], ['medium', 'medium'], ['high', 'high']], dis: judgeOff, disWhy: 'AI search is off (Mode: keywords only)', old: 'Confidence threshold' },
+            { id: 's-jmsg', label: 'Messages AI search reads', type: 'num', key: 'aiSearchScanDepth', dis: judgeOff, disWhy: 'AI search is off (Mode: keywords only)', old: 'AI scan depth' },
+            { id: 's-preview', label: 'Its prompt', tip: 'See exactly what AI search is sent for this chat', type: 'btn', btn: 'Preview', act: 'previewJudge', old: 'Preview AI prompt' },
+            { id: 's-err', label: 'If AI search fails', type: 'select', key: 'aiErrorFallback', opts: [['keyword', 'use the keyword picks'], ['constants_only', 'always-send entries only'], ['bootstrap_only', 'starter entries only'], ['none', 'send no lore']], more: true, old: 'AI error fallback' },
+            { id: 's-empty', label: 'If AI search picks nothing', type: 'select', key: 'aiEmptyFallback', opts: [['constants', 'always-send entries only'], ['constants_bootstrap', 'always-send + starter entries'], ['keyword', 'use the keyword picks'], ['none', 'send no lore']], more: true, old: 'AI empty result fallback' },
+            { id: 's-desc', label: 'AI search reads', type: 'select', key: 'manifestSummaryMode', opts: [['prefer_summary', 'the summary, else the text'], ['summary_only', 'summaries only'], ['content_only', 'the text only']], more: true, old: 'Entry description mode / manifest summary mode' },
+            { id: 's-sum', label: 'Entry text it reads, at most', unit: 'characters', tip: 'When it reads an entry’s text instead of a summary. Written summaries go whole.', type: 'num', key: 'aiSearchManifestSummaryLength', more: true, old: 'Manifest summary length / longest summary sent' },
+            { id: 's-jnotes', label: 'Give it the session notes', tip: 'Scribe’s latest notes go to AI search too', type: 'switch', key: 'scribeInformedRetrieval', more: true, old: 'Use session notes as AI context / Scribe informed retrieval' },
             { id: 's-jfields', label: 'Your fields it sees', hint: 'comma list · empty = all', type: 'text', more: true, old: 'Custom fields in manifest',
                 read: s => (Array.isArray(s.aiManifestIncludeFields) ? s.aiManifestIncludeFields.join(', ') : ''),
                 write: (s, v) => { s.aiManifestIncludeFields = String(v || '').split(',').map(x => x.trim()).filter(Boolean); } },
@@ -135,7 +134,7 @@ export const SECTIONS = [
             { id: 'b-toku', label: 'No limit on tokens', type: 'switch', key: 'unlimitedBudget', old: 'Unlimited token budget' },
         ] },
         { t: 'Variety', rows: [
-            { id: 'b-rep', label: 'Give others a turn', tip: 'Overused entries step back; long-skipped ones get a boost', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
+            { id: 'b-rep', label: 'Give others a turn', tip: 'Overused entries step back; long-skipped ones get a boost. Only with AI search on.', type: 'switch', key: 'decayEnabled', old: 'Repetition control / decay' },
             { id: 'b-cool', label: 'Rest after sending', unit: 'replies', tip: 'An entry waits this many replies before it can be sent again', type: 'num', key: 'reinjectionCooldown', old: 'Repeat cooldown / reinjection cooldown' },
             // 'Skip what was just sent' removed (Miinthe, 2026-11-03): entries sent again are shown in 📖 Why as "Same as last turn"
             { id: 'b-boost', label: 'Bring one back after', unit: 'replies skipped', type: 'num', key: 'decayBoostThreshold', more: true, dis: s => !s.decayEnabled, disWhy: 'Give others a turn is off', old: 'Boost after N skips' },
@@ -183,7 +182,7 @@ export const SECTIONS = [
             { id: 'm-brings', label: 'Custom: brings things up herself', type: 'switch', src: 'mero', key: 'bringUp', show: s => s.chatty === 'custom', old: 'Custom: brings up' },
             { id: 'm-glow', label: 'Custom: the glow', tip: 'Her 💬 lights up after a big board moment. Free until clicked.', type: 'seg', src: 'mero', key: 'glow', opts: [['off', 'off'], ['big', 'big moments'], ['quiet', '+ quiet threads']], show: s => s.chatty === 'custom', old: 'Custom: the glow' },
             { id: 'm-reads', label: 'She reads the latest', unit: 'replies', type: 'num', src: 'mero', key: 'replies', min: 2, max: 40, old: 'How many replies Mero reads' },
-            { id: 'm-resetall', label: 'Her settings', tip: 'Everything above back to default; who she is stays', type: 'btn', btn: 'Reset', act: 'meroResetSettings', old: 'Reset her settings' },
+            { id: 'm-resetall', label: 'Her settings', tip: 'All her settings back to default, “She calls you” too. Her description (In your words) stays.', type: 'btn', btn: 'Reset', act: 'meroResetSettings', old: 'Reset her settings' },
         ] },
         { t: 'What the story writer is told', sum: 'Mero passes this to the AI that writes the story', rows: [
             { id: 'm-init', label: 'Who drives the story', tip: 'Told to the story writer, not Mero. Balanced adds nothing.', type: 'select', src: 'mero', key: 'initiative', num: true, opts: [[0, 'follow my lead'], [1, 'mostly follows'], [2, 'balanced'], [3, 'brings events'], [4, 'takes the wheel']], old: 'Initiative' },
@@ -198,7 +197,7 @@ export const SECTIONS = [
             { id: 'n-on', label: 'Notice lore worth writing', hint: 'every N messages · 0 = off', type: 'num', old: 'Auto Lorebook / auto suggest / new lore', ...everyN('autoSuggestEnabled', 'autoSuggestInterval', 3, 50) },
             { id: 'n-file', label: 'Where they go', tip: 'Run notes → run folder · character notes → character folder', type: 'select', key: 'newEntryPlacement', opts: [['about', 'by what they’re about'], ['target', 'always the Target folder']] },
             { id: 'n-target', label: 'Target folder', hint: 'when a chat has no folders yet', tip: 'Empty = the top of the vault', type: 'text', key: 'autoSuggestFolder', old: 'Auto Lorebook folder / target folder' },
-            { id: 'n-mark', label: 'Mark them', tip: 'made_by, from (chat and message), the made-by-mero tag. The date is always written.', type: 'switch', key: 'newEntryMark' },
+            { id: 'n-mark', label: 'Mark them', tip: 'made_by, from (chat and message), and the made-by-mero tag (Mero) or made-by-new-lore (New lore). The date is always written.', type: 'switch', key: 'newEntryMark' },
             { id: 'n-vault', label: 'Write into the vault', type: 'select', key: 'autoSuggestWriteVaultId', optsFrom: 'vaults', more: true, old: 'Auto Lorebook write to vault' },
             { id: 'n-direct', label: 'Write them straight in', tip: 'Off: you review each one first', type: 'switch', key: 'autoSuggestSkipReview', more: true, old: 'Skip review / write directly' },
         ] },
@@ -273,7 +272,7 @@ export const SECTIONS = [
             { id: 'a-about', label: 'About', type: 'btn', btn: 'Show', act: 'about', old: 'About / version' },
         ] },
         { t: 'Start over', sum: 'everything back to the defaults', rows: [
-            { id: 'a-resetall', label: 'Reset all settings', tip: 'All settings to default. Keeps vaults, connections and prompts. Asks first.', type: 'btn', btn: 'Reset all', act: 'resetAll', old: 'Reset to defaults' },
+            { id: 'a-resetall', label: 'Reset all settings', tip: 'All settings to default, except Mero’s. Keeps vaults, connections and prompts. Asks first.', type: 'btn', btn: 'Reset all', act: 'resetAll', old: 'Reset to defaults' },
         ] },
     ] },
 ];
@@ -412,7 +411,7 @@ export function sectionForNav(nav) {
 
 /** AI & connections: one row per job (the settings keys are settings.js TOOL_SETTINGS_KEYS'). */
 export const JOBS = [
-    { tool: 'aiSearch', job: 'Judge', what: 'picks the lore for a reply', modes: ['profile', 'proxy'], root: true },
+    { tool: 'aiSearch', job: 'AI search', what: 'picks the lore for a reply', modes: ['profile', 'proxy'], root: true },
     { tool: 'storyTracker', job: 'Story helper', what: 'moves trackers; the Cast’s director', modes: ['profile'] },
     { tool: 'mero', job: 'Mero ☆', what: 'talks, pitches, entry ideas', modes: ['profile'] },
     { tool: 'world', job: 'World', what: 'chatter, news, messages, rumors', modes: ['profile'] },
@@ -431,12 +430,12 @@ export const JOB_KEYS = {
     aiNotepad: { mode: 'aiNotepadConnectionMode', profileId: 'aiNotepadProfileId', model: 'aiNotepadModel', maxTokens: 'aiNotepadMaxTokens', timeout: 'aiNotepadTimeout' },
     optimizeKeys: { mode: 'optimizeKeysConnectionMode', profileId: 'optimizeKeysProfileId', model: 'optimizeKeysModel', maxTokens: 'optimizeKeysMaxTokens', timeout: 'optimizeKeysTimeout' },
 };
-/** When a job runs, from today's settings (words only — no invented numbers). */
-export function jobRuns(tool, s) {
+/** When a job runs, from today's settings (words only — no invented numbers). `mero`: Mero's own settings (her job). */
+export function jobRuns(tool, s, mero = {}) {
     switch (tool) {
         case 'aiSearch': return s.aiSearchEnabled ? 'every reply' : 'off (keywords only)';
         case 'storyTracker': return 'with the story';
-        case 'mero': return 'when you ask';
+        case 'mero': return mero.job === 'full' ? 'when you ask; checks the lore after every reply' : mero.job === 'part' ? 'when you ask; checks the lore every few replies' : 'when you ask';
         case 'world': return 'in stories with the world layer on';
         case 'scribe': return s.scribeEnabled ? `every ${s.scribeInterval} messages` : 'off';
         case 'autoSuggest': return s.autoSuggestEnabled ? `every ${s.autoSuggestInterval} messages` : 'off';
@@ -459,12 +458,12 @@ export function writeConnChoice(tool, s, v) {
     s[k.mode] = 'profile';
     s[k.profileId] = String(v || '');
 }
-/** Jobs that borrow the judge's connection ("Same as the judge"). */
+/** Jobs that borrow the judge's connection ("Same as AI search"). */
 export const followers = s => JOBS.filter(j => !j.root && s[JOB_KEYS[j.tool].mode] === 'inherit').map(j => j.job);
 
 /** The prompts kept in settings (Prompts section). key = the prompt in src/i18n/prompts (null: no built-in shown). */
 export const PROMPTS = [
-    { tool: 'aiSearch', name: 'The judge', what: 'picks lore', key: 'aiSearchSystemPrompt', prompt: 'AI_SEARCH_SYSTEM_PROMPT' },
+    { tool: 'aiSearch', name: 'AI search', what: 'picks lore', key: 'aiSearchSystemPrompt', prompt: 'AI_SEARCH_SYSTEM_PROMPT' },
     { tool: 'scribe', name: 'Scribe', what: 'session notes', key: 'scribePrompt', prompt: 'SCRIBE_PROMPT' },
     { tool: 'autoSuggest', name: 'New lore', what: 'entry ideas', key: 'autoSuggestPrompt', prompt: 'AUTO_SUGGEST_PROMPT' },
     { tool: 'optimizeKeys', name: 'Optimize keywords', what: 'better keys', key: 'optimizeKeysPrompt', prompt: 'OPTIMIZE_KEYS_PROMPT' },
@@ -488,19 +487,21 @@ export const NOT_DRAWN = {
     aiPromptLocale: 'let go: Onyx Quill is English only (2026-11-03) — an old value falls back to English', enabled: 'the On switch in the header', vaults: 'Vault › Vaults',
     aiForceUserRole: 'AI & connections › Fine print',
     ownPrompts: 'Prompts › + Your own prompt (its own editor)', characterBudgets: 'a character’s page (Budget rows)',
+    contextualGatingTolerance: 'let go (2026-11-05): every field definition carries its own tolerance (rule builder), so this global value was never used',
 };
 
 // ── Reset all (Miinthe, 2026-11-03: "reset should not erase anything … just put everything back to default, it should also
 // warn you") — every setting goes back to its default; what she made or connected stays. ──
 
-/** Kept by Reset all: her connections, her writing, her lists and what DeepLore learned. */
+/** Kept by Reset all: her connections, her vault files, her writing, her lists and what Onyx Quill learned. */
 export const RESET_KEEPS = [
     'enabled', 'settingsVersion', '_wizardCompleted', '_vaultsMigrated',          // on/off stays as it is; no setup again
     'vaults', 'obsidianPort', 'obsidianApiKey',                                   // vault connections
+    'fieldDefinitionsPath', 'promptsFolderPath',                                  // where her vault files are (an older install keeps DeepLore/…)
     'ownPrompts', 'promptPresets', 'aiSearchSystemPrompt', 'scribePrompt', 'autoSuggestPrompt', 'optimizeKeysPrompt',
     'aiNotepadPrompt', 'aiNotepadExtractPrompt', 'summarySystemPrompt', 'responsePrefillSeed',   // her writing
     'spellWords', 'barHot', 'barDraft', 'characterBudgets', 'graphSavedLayout', 'notesLastOpen', // her lists and choices
-    'analyticsData',                                                              // what DeepLore learned
+    'analyticsData',                                                              // what Onyx Quill learned
 ];
 /** AI connections of every job (mode, profile, model, proxy, where it writes). */
 const isConnection = k => /(ConnectionMode|ProfileId|ProxyUrl|Model|WriteVaultId)$/.test(k);
@@ -519,6 +520,6 @@ const clone = v => (typeof v === 'object' && v !== null ? JSON.parse(JSON.string
 
 /** The warning before Reset all (plain HTML for SillyTavern's confirm window). */
 export const RESET_WARNING = '<div style="text-align:left;max-width:460px"><p><strong>Put every Onyx Quill setting back to its default?</strong></p>'
-    + '<p>Every switch, number and choice in these settings goes back to how Onyx Quill comes. This can’t be undone.</p>'
+    + '<p>Every switch, number and choice in these settings goes back to how Onyx Quill comes, except Mero’s (Settings › Mero has her own Reset). This can’t be undone.</p>'
     + '<p><b>Nothing of yours is erased.</b> These stay: your vault and AI connections, your own prompts and edited prompts, your words for Fix spelling, starred Quick Replies, your saved draft, character budgets, the graph layout and usage stats. Onyx Quill stays on or off as it is now.</p>'
     + '<p>Your boards, runs, lore, notes and Mero’s talks are not part of the settings and are never touched.</p></div>';

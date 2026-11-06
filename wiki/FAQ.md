@@ -1,100 +1,111 @@
-# Frequently asked questions
+Short answers to the questions people ask most. For step-by-step fixes, see [[Troubleshooting]].
 
 ## General
 
-### Do I need Obsidian?
-Yes. DeepLore stores lore entries as markdown files in an Obsidian vault. You also need the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed and enabled in Obsidian, so DeepLore can read your vault over HTTP or HTTPS.
+### What is Onyx Quill?
 
-### Do I need AI search? Can I just use keywords?
-AI search is optional. Keyword-only mode matches entries by trigger keywords in the chat and never makes an AI call. Two-stage mode adds a second pass: an AI ranks the keyword matches against entry summaries and picks the best ones. Keyword-only is free; two-stage costs roughly one extra provider call per turn.
+A SillyTavern extension that keeps your lore in an Obsidian vault and sends the right entries with each reply, plus storyboards, a Cast of NPCs, a world layer and Mero ☆, a co-writer. It is built on DeepLore by pixelnull. The full picture: [[What is Onyx Quill]].
 
-### What AI providers work with AI search?
-Any provider SillyTavern's Connection Manager supports: Anthropic, OpenAI, OpenRouter, Google, Cohere, Mistral, DeepSeek, and local backends like Oobabooga, KoboldCpp, and llama.cpp. Create a Connection Manager profile and select it in AI Search settings. (The old "Custom Proxy" mode was removed in v2.5 — Connection Profiles are now the only path.)
+### Is it free?
 
-### What model should I use for AI search?
-A fast, cheap model. AI search reads compact entry summaries and picks which ones to inject; it does not generate creative text. **Claude Haiku** and **GPT-4o-mini** are good defaults. Cost runs to a fraction of a cent per message on Haiku-class models.
+Yes. Onyx Quill is free and open source under the MIT license. What can cost money are the AI calls some features make: they go through your own SillyTavern connections, so you pay whatever your provider charges, or nothing with a local model. Picking lore by keywords alone makes no AI calls at all.
 
-### How big can my vault be?
-DeepLore has been tested on 200+ entry vaults and handles them well. Vaults with 40+ entries automatically use a hierarchical pre-filter: entries cluster by category, the AI picks relevant categories, then individual entries within them. Vaults of 1000+ entries work, with slower index builds.
+### Can I use it without Obsidian?
 
-### Does this cost money?
-Only if you use AI search or another AI feature. Each generation in two-stage mode makes one AI search call (sometimes two for large vaults via the hierarchical pre-filter). On Haiku-class models, that runs to a fraction of a cent per message. Keyword-only mode is free. The sliding window cache reuses recent AI search results when only new chat messages are added, cutting calls further.
+No. Onyx Quill reads its lore from an Obsidian vault through Obsidian's **Local REST API** community plugin, and it needs one vault connected. Obsidian must be open while you play, on a computer your SillyTavern browser can reach. Setup: [[Installation]].
 
-### Can I use this on mobile?
-If SillyTavern runs on a remote server and you access it from a mobile browser, DeepLore works as long as Obsidian is reachable from the ST host (same machine, or accessible over the network). The most common setup is a desktop running both ST and Obsidian locally.
+### What needs an AI and what doesn't?
 
-### What happened to the Librarian (Emma)?
-This fork removed it on 2026-10-27. The co-writer [[Mero]] ☆ took over what was left: the lore gaps saved in a chat show up in her **Requests** (the side panel's Mero tab), and she suggests entry ideas.
+Without any AI (no extra calls):
+
+- Picking lore by keywords (**Settings › Lore selection › Mode › keywords only**, the default), with pins, blocks, folders, field filters, budgets and cooldowns.
+- The board itself: trackers you move by hand, the board's own triggers and odds, links between entries and steps.
+- 📖 **Why these entries**, [[My Notes]], the side panel's views, Browse, the graph, the health check and the other [[Diagnostics]].
+- The slop guard's count of phrases the writer keeps reusing.
+
+With an AI, each from its own row in **Settings › AI & connections**:
+
+- **AI search**: picks the lore for each reply, when the mode includes AI search.
+- **Story helper**: moves trackers by itself as the story goes; also the Cast's director.
+- **Mero ☆**: talks, pitches, entry ideas, ✓ Fix spelling and ✎ Rewrite when you ask; her lore upkeep as often as **Settings › Mero › Her job › How much she does** says (**Off duty** stops it).
+- **World**: chatter, news, messages and rumors in stories with the world layer on.
+- **Scribe**: session notes every N messages, and **Write missing summaries**.
+- **New lore**: notices lore worth writing, every N messages.
+- **AI notepad**: notes from each reply, in extract mode.
+- **Optimize keywords**: better keys for an entry, when you ask.
+
+Each of these is off or idle until you give it a connection or switch it on. The **Runs** column in **Settings › AI & connections** says when each one runs with your settings. Cast members' own messages are written by SillyTavern's normal connection, like any reply; pictures for 📷 photos use SillyTavern's Image Generation.
+
+### Which AI providers work?
+
+Any provider you can save as a SillyTavern **Connection Profile** (API Connections, the plug icon › Connection Profile): cloud APIs and local backends alike. Each job picks its own profile, and **Fine print** lets you pick a different model on the same profile. Mero's lookups need a Chat Completion profile whose model can do tool calls; see [[Troubleshooting]].
+
+### Which model should AI search use?
+
+A fast, inexpensive one is usually enough. AI search doesn't write story text: it reads short descriptions of the candidate entries and the recent chat, and answers with a list. Give local models a longer **Time limit** (**Settings › AI & connections › Fine print**).
+
+### Can I use it on a phone?
+
+Yes, in the phone's browser; the bar and the side panel have a phone layout. Because the phone's browser talks to Obsidian itself, the vault's address must be one the phone can reach (your computer's home-network address, or a Tailscale `….ts.net` name), not `127.0.0.1`. Details: [[Troubleshooting]], "Using Onyx Quill on a phone or tablet".
+
+### I used DeepLore before. What now?
+
+Onyx Quill copies your DeepLore settings over on its first start and keeps your chats' data as it is. You can't run both at the same time: switch the original DeepLore off in **Extensions › Manage extensions**. Everything about moving over: [[Coming from DeepLore or World Info]].
+
+### Can I keep using SillyTavern's World Info too?
+
+You can, but both send lore into the same prompt, so you pay twice in tokens and may get the same facts twice. `/oq-import` turns World Info into vault notes; see [[Coming from DeepLore or World Info]].
 
 ## Writing entries
 
-### How do I make an entry a lorebook entry?
-Add the lorebook tag to the note's frontmatter. The default tag is `lorebook`:
+### How does a note become a lore entry?
+
+Give it the lore tag (default `lorebook`) and some keywords in its frontmatter:
 
 ```yaml
 ---
 tags:
   - lorebook
 keys:
-  - trigger keyword
-  - another keyword
+  - Gorduin
+  - Gorduin Wynlar
+  - Head Archivist
+summary: "Select when the Oracles of Might's archive or its Head Archivist comes up."
 ---
 ```
 
-See [Writing Vault Entries](Writing-Vault-Entries) for the full guide.
+The guide: [[Writing Vault Entries]]. Every field: [[Frontmatter Fields]].
 
-### What is the difference between constants, seed entries, and bootstrap entries?
-- **Constant** (tag: `lorebook-always`): always injected, every message, regardless of keyword matches. Use for critical world rules.
-- **Seed entry** (tag: `lorebook-seed`): force-injected into the writing AI prompt, and prepended as story context in AI search on new chats. Helps the AI understand your world from the start.
-- **Bootstrap entry** (tag: `lorebook-bootstrap`): force-injected during the first few messages of a new chat (configurable threshold), then becomes a regular keyword-triggered entry.
+### Always-send, seed and starter entries: what's the difference?
 
-### What is a guide entry?
-An entry tagged `lorebook-guide` is a writing or style reference, not story lore. Guide entries are indexed but never reach the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins.
+- **Always-send** (`lorebook-always`): goes out with every reply, whatever the chat says. For a few rules the story can never forget.
+- **Seed** (`lorebook-seed`): sent quietly in the background while a chat is new.
+- **Starter** (`lorebook-bootstrap`): sent openly while a chat is new, then behaves like a normal entry with keywords.
 
-### How do summaries work? Do I need them?
-The `summary` frontmatter field is used **only** in AI search. It tells the AI when to pick the entry. It is not injected into the writing AI's prompt; the entry's full content handles that. In keyword-only mode, summaries are unused. In two-stage mode, entries without a summary can still be selected but accuracy is significantly worse. Run `/oq-summarize` to auto-generate summaries for entries that are missing them. Summaries truncate to ~600 characters in the manifest by default (`aiSearchManifestSummaryLength`).
+A chat counts as new for its first 3 messages (**Settings › Vault › Tags › A chat counts as new for**, behind More). The tag names can be changed in the same place.
+
+### What are secrets for Mero ☆?
+
+Notes tagged `lorebook-guide` are for [[Mero]] only: she reads them in her talks and pitches, and the writing model never gets them. Only notes inside the chat's folders count. They are not the same as the board's 🧭 guidance, which does go to the writer.
+
+### Do I need summaries?
+
+Only if AI search picks your lore. The `summary` field tells AI search *when* to pick an entry; it is not sent to the writer. With keywords only, summaries aren't used. **Write missing summaries** (side panel ⋯ › Tools) writes them for entries that have none.
 
 ### Can I organize entries in folders?
-Yes. DeepLore scans your entire vault recursively for notes with the lorebook tag. Folder structure does not affect matching. Folder paths can also be used as a per-chat filter via `/oq-set-folder` to scope a chat to one part of your vault.
 
-## Troubleshooting
+Yes, any way you like. Folders also decide what a chat reads: each character, run and chat can have its own folders, set in the side panel's **Filters** tab. A one-on-one chat whose character has no folders anywhere has Onyx Quill off. See [[Advanced Gating]].
 
-### My entries are not injecting
-Run `/oq-health` first. It catches most problems. Common causes:
-1. Missing lorebook tag on the entry.
-2. Scan depth too low (keywords are not reaching far enough back in chat).
-3. Token budget full (too many entries trying to inject).
-4. Gating rules blocking the entry (requires/excludes/era/location/custom field).
+## Checking what happened
 
-See [Troubleshooting](Troubleshooting) for detailed diagnostics.
+### How do I see what was sent with a reply?
 
-### The AI keeps picking the wrong entries
-- Write better `summary` fields. Describe **when** to select the entry, not what it contains.
-- Increase scan depth so AI search sees more chat context.
-- Switch to two-stage mode if you were in AI-only. Keyword pre-filtering shrinks the candidate set the AI has to choose from.
-- Run `/oq-inspect` after a generation to see what AI search received and what it selected.
+- 📖 on the message › **Why these entries**: what went out, why, and what didn't make it.
+- The side panel's **Lore › Sent**: the entries sent with the last reply.
+- `/oq-inspect`: every step of the last lore selection.
 
-### "Open in Obsidian" links are not working
-The vault connection **Name** in DLE settings must match the Obsidian vault name exactly. If that is correct, restart Obsidian. The deep-link handler can become unresponsive after long sessions or updates. See [Troubleshooting / Deep Links](Troubleshooting#deep-links-open-in-obsidian) for full steps.
+More on [[Diagnostics]].
 
-### How do I see what DeepLore injected?
-Three ways:
-1. **Context Cartographer.** Press the 📖 button on any AI message, then **Why these entries**, to see exactly what was injected, why, and at what token cost.
-2. **`/oq-inspect`.** Shows the full pipeline trace from the last generation.
-3. **The side panel.** **Lore › Sent** shows the entries sent with the last reply.
+### My entries aren't being sent. Where do I start?
 
-## vs. built-in World Info
-
-### How is this different from SillyTavern's World Info?
-SillyTavern's built-in World Info matches keywords from a JSON file. DeepLore reads from your Obsidian vault and adds:
-- AI ranking that catches contextual relevance the keyword pass misses.
-- Obsidian as your editor: backlinks, templates, graph view, your usual workflow.
-- Multi-vault support for separating worlds or campaigns.
-- Per-chat overrides: pin, block, contextual gating on era, location, scene, custom fields.
-- Diagnostics: relationship graph, activation simulator, the live side panel.
-
-### Can I import my existing SillyTavern lorebooks?
-Yes. Run `/oq-import` to convert World Info JSON exports into Obsidian vault notes with proper frontmatter. It handles standard WI exports, V2 character cards, and entry arrays. As of v2.5 the importer reads **every** WI field: most land natively (keys, secondary keys, `constant`, `order`→`priority`, `position`, `depth`, `probability`, `disable`, `role`, `excludeRecursion`, and all four `selectiveLogic` modes), and the rest round-trip into the vault as frontmatter so nothing is silently dropped. After import, DLE offers to AI-generate summaries for the new entries, reusing the `/oq-summarize` pipeline. See [[For World Info Users]] for the full field-by-field cheat sheet.
-
-### Can I use both at the same time?
-You can, but it is not recommended. Both systems inject lore into the prompt, so you pay double in token budget. To migrate, import your World Info with `/oq-import` and then disable the built-in World Info on entries DLE now owns.
+Open 📖 › **Why these entries** on the reply, then run `/oq-health`. The most common causes: Onyx Quill is off in this chat (no folders yet), the note lacks the lore tag, the keywords aren't in the last messages it reads, or the budget is full. [[Troubleshooting]] goes through them in order.

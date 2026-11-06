@@ -58,15 +58,15 @@
 
             <div class="dle-wizard-card">
                 <h3><i class="fa-solid fa-book-open" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_what_is_h3">What is this?</span></h3>
-                <p data-i18n="dle_wizard_what_is_desc">Onyx Quill connects your Obsidian lore vault to SillyTavern, automatically injecting relevant worldbuilding entries into your roleplay context. Your characters, locations, lore, and rules — pulled in when they matter.</p>
+                <p data-i18n="dle_wizard_what_is_desc">Onyx Quill connects your Obsidian lore vault to SillyTavern and sends the relevant worldbuilding entries to the AI as you play. Your characters, locations, lore, and rules — pulled in when they matter.</p>
             </div>
 
             <div class="dle-wizard-card">
                 <h3><i class="fa-solid fa-gears" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_how_works_h3">How does it work?</span></h3>
                 <ol>
                     <li data-i18n-html="dle_setup_wizard_how_works_step_1"><strong data-i18n="dle_col_keywords">Keywords</strong> in chat text match against your vault entries</li>
-                    <li data-i18n-html="dle_setup_wizard_how_works_step_2"><strong>AI refinement</strong> (optional) picks the most relevant matches</li>
-                    <li data-i18n-html="dle_setup_wizard_how_works_step_3">Matched entries <strong>are injected</strong> into the AI's context window</li>
+                    <li data-i18n-html="dle_setup_wizard_how_works_step_2"><strong>AI search</strong> (optional) picks the most relevant matches</li>
+                    <li data-i18n-html="dle_setup_wizard_how_works_step_3">The picked entries <strong>are sent</strong> to the AI with each reply</li>
                 </ol>
             </div>
 
@@ -100,7 +100,8 @@
 
             <div class="dle-wizard-field">
                 <label for="dle-wiz-vault-name" data-i18n="dle_wizard_vault_name_label">Vault Name</label>
-                <input id="dle-wiz-vault-name" class="text_pole" type="text" value="Primary" placeholder="A friendly label for this vault" data-i18n="[placeholder]dle_wizard_vault_name_placeholder">
+                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_vault_name_hint">Must match your Obsidian vault’s name exactly</span>
+                <input id="dle-wiz-vault-name" class="text_pole" type="text" value="Primary" placeholder="Your Obsidian vault’s name" data-i18n="[placeholder]dle_wizard_vault_name_placeholder">
             </div>
             <div class="dle-wizard-field">
                 <label for="dle-wiz-host" data-i18n="dle_placeholder_host">Host</label>
@@ -188,20 +189,20 @@
             </div>
 
             <div class="dle-wizard-field">
-                <label for="dle-wiz-constant-tag" data-i18n="dle_wizard_constant_tag_label">Constant Tag</label>
-                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_constant_tag_hint">Always-inject entries (e.g. world rules, system lore)</span>
+                <label for="dle-wiz-constant-tag" data-i18n="dle_wizard_constant_tag_label">Always-send tag</label>
+                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_constant_tag_hint">Entries sent with every reply (e.g. world rules)</span>
                 <input id="dle-wiz-constant-tag" class="text_pole" type="text" value="lorebook-always" />
             </div>
 
             <div class="dle-wizard-field">
                 <label for="dle-wiz-seed-tag" data-i18n="dle_seed_tag_label">Seed Tag</label>
-                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_seed_tag_hint">Content sent to AI search as story context on new chats</span>
+                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_seed_tag_hint">Background for AI search while a chat is new (does nothing with keywords only)</span>
                 <input id="dle-wiz-seed-tag" class="text_pole" type="text" value="lorebook-seed" />
             </div>
 
             <div class="dle-wizard-field">
-                <label for="dle-wiz-bootstrap-tag" data-i18n="dle_wizard_bootstrap_tag_label">Bootstrap Tag</label>
-                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_bootstrap_tag_hint">Force-inject entries when chat is short (first few messages)</span>
+                <label for="dle-wiz-bootstrap-tag" data-i18n="dle_wizard_bootstrap_tag_label">Starter tag</label>
+                <span class="dle-wizard-field-hint" data-i18n="dle_wizard_bootstrap_tag_hint">Entries sent while a chat is new (the first few messages)</span>
                 <input id="dle-wiz-bootstrap-tag" class="text_pole" type="text" value="lorebook-bootstrap" />
             </div>
 
@@ -213,21 +214,21 @@
                     <label class="dle-wizard-radio">
                         <input type="radio" name="dle-wiz-search-mode" value="keywords" checked />
                         <div>
-                            <strong data-i18n="dle_wizard_search_keywords_title">Keywords Only</strong>
+                            <strong data-i18n="dle_wizard_search_keywords_title">Keywords only</strong>
                             <span class="dle-wizard-field-hint" data-i18n="dle_wizard_search_keywords_desc">Fast and free — matches by keyword triggers in your entries.</span>
                         </div>
                     </label>
                     <label class="dle-wizard-radio">
                         <input type="radio" name="dle-wiz-search-mode" value="two-stage" />
                         <div>
-                            <strong data-i18n="dle_wizard_search_two_stage_title">Two-Stage</strong> <span class="dle-wizard-badge-rec" data-i18n="dle_wizard_recommended_badge">Recommended</span>
-                            <span class="dle-wizard-field-hint" data-i18n="dle_wizard_search_two_stage_desc">Keywords pre-filter, then AI picks the best matches. Best balance.</span>
+                            <strong data-i18n="dle_wizard_search_two_stage_title">Keywords, then AI search</strong> <span class="dle-wizard-badge-rec" data-i18n="dle_wizard_recommended_badge">Recommended</span>
+                            <span class="dle-wizard-field-hint" data-i18n="dle_wizard_search_two_stage_desc">Keywords pre-filter, then AI search picks the best matches. Best balance.</span>
                         </div>
                     </label>
                     <label class="dle-wizard-radio">
                         <input type="radio" name="dle-wiz-search-mode" value="ai-only" />
                         <div>
-                            <strong data-i18n="dle_search_mode_ai_only">AI Only</strong>
+                            <strong data-i18n="dle_wizard_search_ai_only_title">AI search only</strong>
                             <span class="dle-wizard-field-hint" data-i18n="dle_wizard_search_ai_only_desc">Full semantic search — AI sees entire vault manifest. Higher cost, no keywords needed.</span>
                         </div>
                     </label>
@@ -242,7 +243,7 @@
         <!-- ═══ Page 4: Matching Configuration ═══ -->
         <div id="dle-wizard-page-4" class="dle-wizard-page" data-wizard-page="4" role="tabpanel" aria-labelledby="dle-wizard-step-4" tabindex="-1">
             <h2 data-i18n="dle_wizard_matching_heading">Matching Configuration</h2>
-            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_matching_subtitle">How many entries to scan and inject. Pick a preset or customize.</p>
+            <p class="dle-wizard-subtitle" data-i18n="dle_wizard_matching_subtitle">How many messages to read and entries to send. Pick a preset or set your own.</p>
 
             <div class="dle-wizard-field">
                 <label data-i18n="dle_wizard_preset_label">Vault Size Preset</label>
@@ -276,7 +277,7 @@
                 </div>
                 <div class="dle-wizard-field">
                     <label for="dle-wiz-max-entries" data-i18n="dle_max_entries_label">Max Entries</label>
-                    <span class="dle-wizard-field-hint" data-i18n="dle_wizard_max_entries_hint">Maximum entries to inject per message</span>
+                    <span class="dle-wizard-field-hint" data-i18n="dle_wizard_max_entries_hint">Most entries sent with one reply</span>
                     <input id="dle-wiz-max-entries" class="text_pole" type="number" value="15" min="1" max="100" />
                     <label class="checkbox_label dle-wizard-checkbox-inline">
                         <input id="dle-wiz-unlimited-entries" type="checkbox" class="checkbox" />
@@ -285,7 +286,7 @@
                 </div>
                 <div class="dle-wizard-field">
                     <label for="dle-wiz-budget" data-i18n="dle_token_budget_label">Token Budget</label>
-                    <span class="dle-wizard-field-hint" data-i18n="dle_wizard_budget_hint">Max tokens for injected lore</span>
+                    <span class="dle-wizard-field-hint" data-i18n="dle_wizard_budget_hint">Most tokens of lore sent with one reply</span>
                     <input id="dle-wiz-budget" class="text_pole" type="number" value="3072" min="100" max="100000" />
                     <label class="checkbox_label dle-wizard-checkbox-inline">
                         <input id="dle-wiz-unlimited-budget" type="checkbox" class="checkbox" />
@@ -351,7 +352,7 @@
             </div>
 
             <button type="button" id="dle-wiz-test-ai" class="menu_button dle-wizard-action-btn">
-                <i class="fa-solid fa-brain" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_test_ai_btn">Test AI Connection</span>
+                <i class="fa-solid fa-brain" aria-hidden="true"></i> <span data-i18n="dle_setup_wizard_test_ai_btn">Check profile</span>
             </button>
 
             <div id="dle-wiz-ai-result" class="dle-wizard-result-banner" style="display: none;"></div>
@@ -386,7 +387,7 @@
                     </label>
                     <div class="dle-wizard-field">
                         <label data-i18n="dle_wizard_fields_path_label">Path in vault</label>
-                        <input id="dle-wiz-fields-path" type="text" class="text_pole" placeholder="DeepLore/field-definitions.yaml" data-i18n="[placeholder]dle_default_field_definitions_path">
+                        <input id="dle-wiz-fields-path" type="text" class="text_pole" placeholder="Onyx Quill/field-definitions.yaml" data-i18n="[placeholder]dle_default_field_definitions_path">
                     </div>
                     <details class="dle-wizard-template-details">
                         <summary data-i18n="dle_wizard_show_template">Show template</summary>

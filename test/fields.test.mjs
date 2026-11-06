@@ -544,6 +544,67 @@ test('YAML with only fields: [] line returns empty', () => {
     assertEqual(definitions.length, 0, 'fields: [] returns empty');
 });
 
+// LOCAL PATCH (Miinthe, 2026-11-05): normal YAML styles used to parse to zero fields.
+test('normal YAML style: "- name:" at column 0, keys at two spaces, indentless values', () => {
+    const yaml = `fields:
+- name: era
+  label: Era
+  type: string
+  multi: true
+  gating:
+    enabled: true
+    operator: match_all
+    tolerance: strict
+  values:
+  - Ancient
+  - Modern
+  contextKey: era
+- name: mood
+  label: Mood
+`;
+    const { definitions, errors } = parseFieldDefinitionYaml(yaml);
+    assertEqual(definitions.map(d => d.name), ['era', 'mood'], 'both fields read');
+    assertEqual(definitions[0].values, ['Ancient', 'Modern'], 'indentless values list');
+    assertEqual([definitions[0].gating.operator, definitions[0].gating.tolerance, definitions[0].multi], ['match_all', 'strict', true], 'gating + multi');
+    assertEqual(definitions[1].label, 'Mood', 'second label');
+    assertEqual(errors, [], 'no errors');
+});
+
+test('normal YAML style: four-space indents, flow lists and maps, quotes, comments, no "fields:"', () => {
+    const yaml = `# my fields
+-   name: faction   # who
+    label: "Faction #1"
+    gating: { enabled: true, operator: not_any, tolerance: lenient }
+    values: [Rebels, "The Empire", 'Neutral']
+-   name: threat
+    type: number
+    gating:
+        enabled: false
+`;
+    const { definitions, errors } = parseFieldDefinitionYaml(yaml);
+    assertEqual(definitions.map(d => d.name), ['faction', 'threat'], 'bare list read');
+    assertEqual(definitions[0].label, 'Faction #1', 'quoted label keeps its #');
+    assertEqual(definitions[0].values, ['Rebels', 'The Empire', 'Neutral'], 'flow list');
+    assertEqual([definitions[0].gating.operator, definitions[0].gating.tolerance], ['not_any', 'lenient'], 'flow map');
+    assertEqual([definitions[1].type, definitions[1].gating.enabled], ['number', false], 'nested block at four spaces');
+    assertEqual(errors, [], 'no errors');
+});
+
+test('normal YAML style: tabs, CRLF, a value with a colon, "fields: []"', () => {
+    const yaml = 'fields:\r\n\t- name: place\r\n\t  values:\r\n\t\t- Inn: The Rusty Mug\r\n\t\t- 10:30 dock\r\n';
+    const { definitions } = parseFieldDefinitionYaml(yaml);
+    assertEqual(definitions.length, 1, 'tab + CRLF file read');
+    assertEqual(definitions[0].values, ['Inn: The Rusty Mug', '10:30 dock'], 'values kept as written');
+    const empty = parseFieldDefinitionYaml('fields: []');
+    assertEqual([empty.definitions.length, empty.errors.length], [0, 0], 'fields: [] is empty, not an error');
+});
+
+test('YAML that is not a field list says so', () => {
+    const { definitions, errors } = parseFieldDefinitionYaml('something: else\n');
+    assertEqual(definitions.length, 0, 'nothing read');
+    assert(errors.length === 1 && /No field definitions/.test(errors[0]), 'explains why');
+});
+
 // ============================================================================
 //  4. serializeFieldDefinitions
 // ============================================================================

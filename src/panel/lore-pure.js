@@ -76,7 +76,7 @@ export function whyOf(source, aiPick = null) {
 /** The row's lead emoji: writing guide 🧭, character 🎭, place 📍, everything else 📄. */
 export function leadFor(entry) {
     if (!entry) return '📄';
-    if (entry.guide) return '☆';   // a note for Mero (🧭 is the board's guidance, which goes to the writer)
+    if (entry.guide) return '☆';   // a secret for Mero (🧭 is the board's guidance, which goes to the writer)
     const kind = low(entry.customFields?.type ?? entry.customFields?.kind ?? '');
     const tags = (entry.tags || []).map(low);
     const has = (...w) => w.some(x => kind === x || tags.includes(x));

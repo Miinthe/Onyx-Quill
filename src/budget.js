@@ -50,5 +50,5 @@ export function effectiveBudget(settings = getSettings(), layers = null) {
 
 /** The four budget settings that count for the open chat (to lay over a settings snapshot). */
 export function budgetOverlay(settings = getSettings()) {
-    try { return budgetKeys(effectiveBudget(settings)); } catch (err) { console.warn('[DLE] budget: using Everywhere —', err?.message || err); return {}; }
+    try { return budgetKeys(effectiveBudget(settings)); } catch (err) { console.warn('[Onyx Quill] budget: using Everywhere —', err?.message || err); return {}; }
 }

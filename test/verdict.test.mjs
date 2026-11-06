@@ -605,4 +605,114 @@ test('T-L10: clearChatIdb(\'Alice\') deletes ONLY Alice rows — Alice2 and Alic
     }
 });
 
+section('Browser database rename — old history copied once (src/vault/idb-db.js)');
+
+// Minimal multi-database fake: open() of a missing name fires onupgradeneeded with
+// oldVersion 0; aborting that upgrade leaves no database behind (as real IndexedDB does).
+function makeFakeIdbFactory(initial) {
+    const dbs = new Map(Object.entries(initial)); // name -> { version, stores: Map(store -> Map(key -> value)) }
+    function handle(name) {
+        const rec = dbs.get(name);
+        return {
+            objectStoreNames: { contains: (s) => rec.stores.has(s) },
+            createObjectStore: (s) => { rec.stores.set(s, new Map()); },
+            transaction(storeName) {
+                const tx = { oncomplete: null, onerror: null, onabort: null, error: null };
+                const m = rec.stores.get(storeName);
+                tx.objectStore = () => ({
+                    getAllKeys: () => { const r = {}; r.result = [...m.keys()].sort(); return r; },
+                    getAll: () => { const r = {}; r.result = [...m.keys()].sort().map(k => m.get(k)); return r; },
+                    put: (v, k) => { m.set(k, v); return {}; },
+                });
+                setTimeout(() => tx.oncomplete && tx.oncomplete(), 0);
+                return tx;
+            },
+            close() {},
+        };
+    }
+    return {
+        dbs,
+        indexedDB: {
+            open(name, version) {
+                const req = { onsuccess: null, onerror: null, onblocked: null, onupgradeneeded: null };
+                setTimeout(() => {
+                    const existed = dbs.has(name);
+                    const oldVersion = existed ? dbs.get(name).version : 0;
+                    const newVersion = version ?? (existed ? oldVersion : 1);
+                    if (!existed) dbs.set(name, { version: 0, stores: new Map() });
+                    req.result = handle(name);
+                    if (newVersion > oldVersion) {
+                        let aborted = false;
+                        req.transaction = { abort: () => { aborted = true; } };
+                        req.onupgradeneeded && req.onupgradeneeded({ oldVersion, newVersion });
+                        if (aborted) {
+                            if (!existed) dbs.delete(name);
+                            req.error = new Error('AbortError');
+                            req.onerror && req.onerror({ preventDefault() {} });
+                            return;
+                        }
+                        dbs.get(name).version = newVersion;
+                    }
+                    req.onsuccess && req.onsuccess();
+                }, 0);
+                return req;
+            },
+        },
+    };
+}
+
+test('IDB rename: first open of OnyxQuill copies DeepLoreEnhanced verdicts; old DB kept', async () => {
+    const store = await import('../src/verdict/verdict-store.js');
+    store.resetForTests();
+    const oldVerdicts = new Map([
+        ['chat-A:000001:1000', { chatId: 'chat-A', msgIdx: 1, ts: 1000, epoch: 0, injectedSources: [], perEntry: [], trace: null }],
+        ['chat-A:000002:2000', { chatId: 'chat-A', msgIdx: 2, ts: 2000, epoch: 0, injectedSources: [], perEntry: [], trace: null }],
+    ]);
+    const fake = makeFakeIdbFactory({
+        DeepLoreEnhanced: { version: 2, stores: new Map([['vaultCache', new Map([['primaryIndex', { x: 1 }]])], ['verdicts', oldVerdicts]]) },
+    });
+    const prevIdb = globalThis.indexedDB;
+    const prevRange = globalThis.IDBKeyRange;
+    globalThis.indexedDB = fake.indexedDB;
+    globalThis.IDBKeyRange = { bound: (lo, hi) => ({ lo, hi }) };
+    try {
+        const { DB_NAME } = await import('../src/vault/idb-db.js');
+        assertEqual(DB_NAME, 'OnyxQuill', 'new database name');
+        store._setPruneSampleRateForTests(1000); // keep the prune scan out of this fake
+        const mk = (msgIdx, ts) => ({ ...buildVerdict({ trace: null, injectedSources: [], chatId: 'chat-A', msgIdx, epoch: 0, lockEpoch: 0 }), ts });
+        await store.writeVerdict(mk(3, 3000)); // first open → creates OnyxQuill → copies old rows
+        const neu = fake.dbs.get('OnyxQuill');
+        assert(neu, 'OnyxQuill database created');
+        const rows = neu.stores.get('verdicts');
+        assertEqual(rows.size, 3, 'both old verdicts copied + the new write');
+        assertEqual(rows.get('chat-A:000002:2000').ts, 2000, 'row content copied');
+        assertEqual(neu.stores.get('vaultCache').size, 0, 'vault cache not copied (rebuilds)');
+        assert(fake.dbs.has('DeepLoreEnhanced'), 'old database left in place');
+        assertEqual(fake.dbs.get('DeepLoreEnhanced').stores.get('verdicts').size, 2, 'old rows untouched');
+        // Second open: nothing copied again (a row removed from the new DB stays removed).
+        rows.delete('chat-A:000001:1000');
+        await store.writeVerdict(mk(4, 4000));
+        assertEqual(rows.size, 3, 'copy runs only when the new database is first created');
+        assert(!rows.has('chat-A:000001:1000'), 'removed row not re-copied');
+    } finally {
+        globalThis.indexedDB = prevIdb;
+        globalThis.IDBKeyRange = prevRange;
+        store.resetForTests();
+    }
+});
+
+test('IDB rename: no old database → none created, new DB opens empty', async () => {
+    const fake = makeFakeIdbFactory({});
+    const prevIdb = globalThis.indexedDB;
+    globalThis.indexedDB = fake.indexedDB;
+    try {
+        const { copyLegacyVerdicts } = await import('../src/vault/idb-db.js');
+        const n = await copyLegacyVerdicts({});
+        assertEqual(n, 0, 'nothing copied');
+        assert(!fake.dbs.has('DeepLoreEnhanced'), 'probing did not create the old database');
+    } finally {
+        globalThis.indexedDB = prevIdb;
+    }
+});
+
 await summary('Verdict Tests');

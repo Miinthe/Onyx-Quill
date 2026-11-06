@@ -26,7 +26,7 @@ export function runHealthCheck() {
 
     const enabledVaults = (settings.vaults || []).filter(v => v.enabled);
     if (enabledVaults.length === 0) {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'No enabled vaults configured. Go to Onyx Quill settings → Vault Connections and click "Add Vault".' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'No enabled vaults configured. Add one in Settings › Vault.' });
     }
     for (const vault of enabledVaults) {
         if (!vault.apiKey) {
@@ -47,7 +47,7 @@ export function runHealthCheck() {
     // — the old "no proxy URL set" warning is moot since users can no longer
     // pick proxy mode in the UI; the actionable signal is "switch to a profile".
     if (settings.aiSearchEnabled && settings.aiSearchConnectionMode === 'proxy') {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'AI search is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'AI search is set to Custom Proxy mode, which was removed in v2.5. Pick a connection in Settings › AI & connections › AI search.' });
     }
 
     if (settings.scribeEnabled && settings.scribeConnectionMode === 'profile' && !settings.scribeProfileId) {
@@ -55,7 +55,7 @@ export function runHealthCheck() {
     }
 
     if (settings.scribeEnabled && settings.scribeConnectionMode === 'proxy') {
-        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'Scribe is set to Custom Proxy mode, which was removed in v2.5. Pick a Connection Profile in Onyx Quill Settings → Setup → AI Connections.' });
+        issues.push({ type: 'Settings', severity: 'error', entry: '—', detail: 'Scribe is set to Custom Proxy mode, which was removed in v2.5. Pick a connection in Settings › AI & connections › Scribe.' });
     }
 
     if (!settings.unlimitedBudget && settings.maxTokensBudget < 200) {
@@ -440,7 +440,7 @@ export function diagnoseEntry(entry, chatMsgs) {
     // Guide entries never reach the writing AI through any path.
     if (entry.guide) {
         result.stage = 'guide_entry';
-        result.detail = 'This is a note for Mero ☆ (lorebook-guide tag) — Mero reads it; it is never injected into the writing AI prompt.';
+        result.detail = 'This is a secret for Mero ☆ (lorebook-guide tag) — Mero reads it; it is never injected into the writing AI prompt.';
         result.suggestions.push('Remove the lorebook-guide tag if you want this entry to be injected normally.');
         return result;
     }

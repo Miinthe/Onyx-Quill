@@ -46,7 +46,7 @@ const SEVERITY_MAP = {
  * @param {object} cfg
  * @param {'info'|'success'|'warning'|'error'} cfg.severity
  * @param {string} cfg.message            - body text (already i18n'd by caller)
- * @param {string} [cfg.title]            - toast title (defaults to 'DeepLore')
+ * @param {string} [cfg.title]            - toast title (defaults to 'Onyx Quill')
  * @param {string} [cfg.category]         - dedup key; omit to bypass dedup entirely
  * @param {string} [cfg.hint]             - console-only diagnostic; also set as
  *                                          the toast title attr if `title` unset
@@ -71,7 +71,7 @@ function _emit(cfg) {
     } = cfg || {};
 
     if (category && _isDuplicate(category)) return false;
-    if (hint) console.warn('[DLE]', category || severity, '-', hint);
+    if (hint) console.warn('[Onyx Quill]', category || severity, '-', hint);
 
     const sev = SEVERITY_MAP[severity] || SEVERITY_MAP.info;
     const wantsInteraction = copyable || (Array.isArray(actions) && actions.length > 0);
@@ -109,7 +109,7 @@ function _emit(cfg) {
         return true;
     } catch (e) {
         const log = severity === 'error' ? console.error : console.warn;
-        log('[DLE] toastr unavailable:', category || severity, message, e?.message);
+        log('[Onyx Quill] toastr unavailable:', category || severity, message, e?.message);
         return false;
     }
 }
@@ -154,7 +154,7 @@ function _attachActions(el, actions) {
             btn.textContent = a.label;
             btn.addEventListener('click', (ev) => {
                 ev.stopPropagation(); // don't trigger copy/dismiss
-                try { a.onClick?.(ev); } catch (e) { console.warn('[DLE] toast action failed:', e?.message); }
+                try { a.onClick?.(ev); } catch (e) { console.warn('[Onyx Quill] toast action failed:', e?.message); }
             });
             bar.appendChild(btn);
         }

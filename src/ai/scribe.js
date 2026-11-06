@@ -142,7 +142,7 @@ export async function callScribe(systemPrompt, userMessage, _settings) {
         const result = await Promise.race([
             quietPromise.finally(() => clearTimeout(scribeTimer)),
             new Promise((_, reject) => { scribeTimer = setTimeout(() => {
-                console.warn('[DLE] Scribe quiet prompt timed out — orphaned generation may still complete in background');
+                console.warn('[Onyx Quill] Scribe quiet prompt timed out — orphaned generation may still complete in background');
                 const err = new Error(`Scribe quiet prompt timed out (${Math.round(timeout / 1000)}s)`);
                 err.timedOut = true;
                 reject(err);
@@ -159,7 +159,7 @@ export async function callScribe(systemPrompt, userMessage, _settings) {
                 try {
                     eventSource.on(event_types.GENERATION_STOPPED, onStop);
                 } catch (regErr) {
-                    console.warn('[DLE] Scribe stop-listener registration failed:', regErr?.message);
+                    console.warn('[Onyx Quill] Scribe stop-listener registration failed:', regErr?.message);
                     onStop = null;
                 }
             }),
@@ -283,7 +283,7 @@ export async function runScribe(customPrompt) {
         const noteContent = `---\ntags:\n${_tagsYaml}\ndate: ${now.toISOString()}\ncharacter: ${_yamlStr(_charField)}\n${_keysYaml}${_summaryYaml}${dleContextYaml(['instance'])}---\n# Session: ${charName} - ${dateStr} ${timeStr}\n\n${sanitizedSummary.trim()}\n`;
 
         if (epoch !== chatEpoch) {
-            if (getSettings().debugMode) console.log('[DLE] Scribe: chat changed during generation, discarding result');
+            if (getSettings().debugMode) console.log('[Onyx Quill] Scribe: chat changed during generation, discarding result');
             return;
         }
 
@@ -293,7 +293,7 @@ export async function runScribe(customPrompt) {
         if (data.ok) {
             // Re-check epoch after the async write — would otherwise persist to wrong chat's metadata.
             if (epoch !== chatEpoch) {
-                if (getSettings().debugMode) console.log('[DLE] Scribe: chat changed during note write, skipping metadata update');
+                if (getSettings().debugMode) console.log('[Onyx Quill] Scribe: chat changed during note write, skipping metadata update');
                 return;
             }
             const finalSummary = sanitizedSummary.trim();
@@ -313,17 +313,17 @@ export async function runScribe(customPrompt) {
             try {
                 await getContext().saveMetadata();
             } catch (saveErr) {
-                console.warn('[DLE] Scribe: sync saveMetadata failed, falling back to debounced:', saveErr?.message);
+                console.warn('[Onyx Quill] Scribe: sync saveMetadata failed, falling back to debounced:', saveErr?.message);
                 saveMetadataDebounced();
             }
             pushEvent('scribe', { action: 'completed', chatLength: chatLenAtWrite });
             toastr.success(trf('dle_scribe_toast_saved', filename), 'Onyx Quill', { timeOut: 5000 });
             if (epoch !== chatEpoch) {
-                if (getSettings().debugMode) console.log('[DLE] Scribe: chat changed before reindex, skipping buildIndex');
+                if (getSettings().debugMode) console.log('[Onyx Quill] Scribe: chat changed before reindex, skipping buildIndex');
                 return;
             }
             try { await buildIndex(); } catch (reidxErr) {
-                console.warn('[DLE] Scribe reindex after write failed:', reidxErr?.message);
+                console.warn('[Onyx Quill] Scribe reindex after write failed:', reidxErr?.message);
                 // BUG-AUDIT: without surfacing this, the note is on disk but unretrievable
                 // until the next manual refresh.
                 try {
@@ -338,7 +338,7 @@ export async function runScribe(customPrompt) {
             dedupError('Couldn\'t save the session note to your vault.', 'scribe_write_fail', { hint: data && data.error });
         }
     } catch (err) {
-        console.error('[DLE] Session Scribe error:', err);
+        console.error('[Onyx Quill] Session Scribe error:', err);
         pushEvent('scribe', { action: 'error', error: err?.message });
         dedupError('Session Scribe couldn\'t finish — your chat is unchanged.', 'scribe_runtime_error', { hint: err && err.message });
     } finally {

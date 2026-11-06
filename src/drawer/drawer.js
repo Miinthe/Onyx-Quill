@@ -9,10 +9,9 @@ import { applyHtmlI18n } from '../i18n/i18n.js';
 import { EXTENSION_REF } from '../ext-path.js';
 import {
     vaultIndex, generationLock,
-    loreGaps,
     onIndexUpdated, onAiStatsUpdated, onCircuitStateChanged,
     onPipelineComplete, onInjectionSourcesReady, onGatingChanged, onPinBlockChanged, onGenerationLockChanged,
-    onIndexingChanged, onLoreGapsChanged, onClaudeAutoEffortChanged, onPipelinePhaseChanged,
+    onIndexingChanged, onClaudeAutoEffortChanged, onPipelinePhaseChanged,
     onChatInjectionCountsUpdated, onFieldDefinitionsUpdated,
 } from '../state.js';
 import { getCurrentForChat as getCurrentVerdictForChat, onVerdictChanged } from '../verdict/verdict-store.js';
@@ -49,14 +48,6 @@ import { pushEvent } from '../diagnostics/interceptors.js';
 // ════════════════════════════════════════════════════════════════════════════
 let drawerDestroyed = false;
 let drawerListeners = { eventSource: [], timers: [], stateObservers: [], windowEvents: [] };
-// BUG-119: gap-announce debouncer state must be module-scoped. A drawer re-init
-// (HMR / destroyDrawerPanel + createDrawerPanel) would otherwise leave the old
-// subscriber's closure alive with a stale `_lastGapCount`, producing duplicate
-// announcements with stale counts.
-let _gapAnnounceTimer = null;
-let _lastGapCount = 0;
-const GAP_ANNOUNCE_DEBOUNCE_MS = 500;
-
 // ════════════════════════════════════════════════════════════════════════════
 // Public API (consumed by index.js)
 // ════════════════════════════════════════════════════════════════════════════
@@ -175,11 +166,11 @@ export async function createDrawerPanel() {
             <div class="drawer-toggle drawer-header">
                 <div id="deeploreDrawerIcon"
                      class="drawer-icon interactable closedIcon dle-drawer-icon-svg"
-                     title="Open Onyx Quill drawer"
+                     title="Open the Onyx Quill side panel"
                      tabindex="0"
                      role="button"
                      aria-expanded="false"
-                     aria-label="Open Onyx Quill drawer"><i class="fa-solid fa-book-open fa-fw" aria-hidden="true"></i></div>
+                     aria-label="Open the Onyx Quill side panel"><i class="fa-solid fa-book-open fa-fw" aria-hidden="true"></i></div>
             </div>
             <div id="deeplore-panel" class="drawer-content closedDrawer fillRight" role="region" aria-label="Onyx Quill panel">
                 <div id="deeplore-panelheader" class="fa-solid fa-grip drag-grabber" aria-hidden="true"></div>
@@ -493,7 +484,7 @@ export async function createDrawerPanel() {
             }
         }
     } catch (err) {
-        console.warn('[DLE] Could not wire context token tracking:', err.message);
+        console.warn('[Onyx Quill] Could not wire context token tracking:', err.message);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -536,7 +527,7 @@ export async function createDrawerPanel() {
             }
         }
     } catch (err) {
-        console.warn('[DLE] Could not wire generation lifecycle tracking:', err.message);
+        console.warn('[Onyx Quill] Could not wire generation lifecycle tracking:', err.message);
     }
 
     // E10/Q18: switchTab writes 'dle-last-drawer-tab' on every change; restore it here on open.
@@ -665,26 +656,6 @@ export async function createDrawerPanel() {
         scheduleRender(renderBrowseTab);
     }));
 
-    // BUG-119: seed baseline at init so the first announce after a chat reload doesn't fire for pre-existing gaps.
-    _lastGapCount = loreGaps.length;
-    drawerListeners.stateObservers.push(onLoreGapsChanged(() => {
-        if (drawerDestroyed) return;
-        // 500ms debounce smooths bursts during generation.
-        const newCount = loreGaps.length;
-        if (newCount > _lastGapCount) {
-            const added = newCount - _lastGapCount;
-            clearTimeout(_gapAnnounceTimer);
-            _gapAnnounceTimer = setTimeout(() => {
-                const pendingFlags = loreGaps.filter(g => g.status === 'pending' && g.type === 'flag').length;
-                if (pendingFlags > 0) {
-                    announceToScreenReader(`${added} new lore gap${added !== 1 ? 's' : ''} flagged. ${pendingFlags} pending.`);
-                }
-            }, GAP_ANNOUNCE_DEBOUNCE_MS);
-            drawerListeners.timers.push(_gapAnnounceTimer);
-        }
-        _lastGapCount = newCount;
-    }));
-
     // Browse badges + Why? badge use chatInjectionCounts; without this subscriber the
     // UI stays stale between pipeline runs that mutate via direct .set().
     // Why? tab uses surgical badge update (no DOM rebuild → no animation restart).
@@ -780,10 +751,6 @@ export function destroyDrawerPanel() {
         try { clearTimeout(t); } catch { /* ignore */ }
     }
     drawerListeners.timers = [];
-    // BUG-119: clear gap-announce debouncer so re-init starts clean.
-    if (_gapAnnounceTimer) { try { clearTimeout(_gapAnnounceTimer); } catch { /* ignore */ } }
-    _gapAnnounceTimer = null;
-    _lastGapCount = 0;
     if (ds && ds.$drawer) {
         try { ds.$drawer.remove(); } catch { /* ignore */ }
         ds.$drawer = null;

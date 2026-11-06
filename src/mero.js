@@ -27,7 +27,7 @@ import { liveWriterLines, liveStepJudgeSection, live } from './board-live.js';
 import { GLOW_KEY, asGlow, glowNow, recentMoments, momentOpener } from './mero-glow-pure.js';
 import { getCurrentForChat } from './verdict/verdict-store.js';
 import {
-    MERO_KEY, CHAT_NOTES_KEY, asStore, guidesIn, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
+    MERO_KEY, CHAT_NOTES_KEY, asStore, guidesIn, guidesText, normTalk, normNote, notesHere, inForce, hasRunOut, authorNotesBlock,
     splitOoc, buildMeroPrompt, askedForNote, parseMeroAnswer, fallbackTitle, scopeKey, WHERE_ARE_WE, CHATTY_PRESETS,
     askedForPitch, versionsOf, showVersion, addVersion, dropSwipes,
 } from './mero-pure.js';
@@ -165,7 +165,7 @@ export function addWriterSink(fn) { writerSinks.add(fn); return () => writerSink
 /** Only the sinks' lines (guided swipe, slop guard) for the reply being written — an NPC's own voice gets these too (cast-voice.js). */
 export function writerSinkLines(type = 'normal') {
     const out = [];
-    for (const fn of writerSinks) { try { out.push(...(fn(type) || [])); } catch (err) { console.warn('[DLE] writer line skipped:', err?.message || err); } }
+    for (const fn of writerSinks) { try { out.push(...(fn(type) || [])); } catch (err) { console.warn('[Onyx Quill] writer line skipped:', err?.message || err); } }
     return out;
 }
 
@@ -178,9 +178,9 @@ export function authorNotesForGeneration(type = 'normal') {
         if (ini) list.unshift({ id: 'initiative', kind: 'steer', text: ini, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } });
         // 🪜 running plans: the current beat, as the plan says the writer sees it (pitches.js)
         for (const text of pitchSink?.writerLines?.() || []) list.push({ id: 'plan', kind: 'steer', text, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } });
-        for (const fn of writerSinks) { try { for (const x of fn(type) || []) list.push({ id: 'sink', kind: x.kind, text: x.text, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } }); } catch (err) { console.warn('[DLE] writer line skipped:', err?.message || err); } }
+        for (const fn of writerSinks) { try { for (const x of fn(type) || []) list.push({ id: 'sink', kind: x.kind, text: x.text, story: true, last: 'pinned', scope: 'char', on: true, made: { i: -1 } }); } catch (err) { console.warn('[Onyx Quill] writer line skipped:', err?.message || err); } }
         return authorNotesBlock(list, replyCtx(type));
-    } catch (err) { console.warn('[DLE] Mero notes skipped:', err?.message || err); return ''; }
+    } catch (err) { console.warn('[Onyx Quill] Mero notes skipped:', err?.message || err); return ''; }
 }
 /** The initiative dial, as the writer is told it (2 = balanced: nothing). */
 export const INITIATIVE = [
@@ -384,7 +384,7 @@ export function meroLore() {
         try {
             const kept = new Set(applyContextualGating(inFolders, ctx, policy, false, settings, fieldDefinitions.length ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS));
             entries = inFolders.filter(e => kept.has(e) || titles.has(e.title));
-        } catch (err) { console.warn('[DLE] Mero lore: gating skipped:', err?.message || err); }
+        } catch (err) { console.warn('[Onyx Quill] Mero lore: gating skipped:', err?.message || err); }
     }
     return { entries, prefer };
 }
@@ -462,7 +462,7 @@ export async function boardMeroAnswer(build) {
             const r = await answerWithLookups(system, [{ role: 'user', content: user }], conn, steps, () => {}, { web: false });
             if (String(r.text || '').trim()) return { text: r.text, steps: steps.map(x => keptStep(x.label, x.got)) };
         } catch (err) {
-            console.warn('[DLE] Mero on the board: lookups failed, answering without them:', err?.message || err);
+            console.warn('[Onyx Quill] Mero on the board: lookups failed, answering without them:', err?.message || err);
             if (!passingError(err)) noTools.add(conn.profileId);   // can't take tools: the old way for this session
         }
     }
@@ -478,7 +478,7 @@ export async function boardMeroAnswer(build) {
  */
 async function answerFor(t, history, said, { opener = false } = {}) {
     const conn = resolveConnectionConfig('mero');
-    if (!conn.profileId) throw new Error('Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile');
+    if (!conn.profileId) throw new Error('Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆');
     // "Mero is typing…" from the first moment — the board summary below can take up to 20 seconds, and nothing showing
     // then looked like she was broken (Miinthe, 2026-11-02)
     busyOn(t.id); changed();
@@ -514,7 +514,7 @@ async function answerInner(t, history, said, { opener }, conn0) {
                 const { entries: mine, prefer } = meroLore(), sent = new Set(pkg.entries.map(e => e.title)), st = getSettings();
                 const hits = mine.filter(e => !e.constant && !sent.has(e.title) && Array.isArray(e.keys) && e.keys.length && testPrimaryMatchOnly(e, String(said), st));
                 handed = handedLore(hits, prefer);
-            } catch (err) { console.warn('[DLE] Mero: handing the named entries failed:', err?.message || err); }
+            } catch (err) { console.warn('[Onyx Quill] Mero: handing the named entries failed:', err?.message || err); }
             finally { try { clearScanTextCache(); } catch { /* noop */ } }
         }
         const last = messages[messages.length - 1];
@@ -524,7 +524,7 @@ async function answerInner(t, history, said, { opener }, conn0) {
     const steps = [];
     working.set(t.id, steps);
     lastTold.set(t.id, { model: conn.profileId, sections: [
-        ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')],
+        ['☆ Who Mero is', store().settings.persona], ['📝 Notes just for your talks', pkg.talkNotes.map(n => n.text).join('\n')], [`☆ Secrets for Mero (${pkg.guides.length})`, guidesText(pkg.guides)],
         ['📍 Where each tracker stands', pkg.boardMap.filter(l => l.startsWith('Where each stands')).join('\n')], ...(lookedUp.length ? [['🔎 Looked up for this message', lookedUp.join('\n\n')]] : []), ...(handed.titles.length ? [['📖 Entries your message names', handed.titles.join(' · ')]] : []), ['🗺 Where the story stands now', pkg.board.join('\n')], [`📜 The latest replies (${pkg.replies.length})`, pkg.replies.map(m => `#${m.i} ${m.name}: ${m.text}`).join('\n\n')],
         ['✨ Big moments lately', pkg.moments.join('\n')], ['🌍 The world around the story', pkg.world], vault ? [`📚 The lore this story reads (${vault.length} entries)`, vault.map(e => e.title).join(' · ')] : [`📚 Entries Onyx Quill sent the writer (${pkg.entries.length})`, pkg.entries.map(e => e.title).join(' · ')], ['🎭 Character and persona cards', [pkg.cards, pkg.persona].filter(Boolean).join('\n\n')],
         ['💬 This talk', flatten(messages)],
@@ -536,7 +536,7 @@ async function answerInner(t, history, said, { opener }, conn0) {
             try { raw = (await answerWithLookups(system, messages, conn, steps, changed, { web })).text; }
             catch (err) {
                 // a profile that can't do tools: remember it for this session, answer the old way
-                console.warn('[DLE] Mero: lookups failed, answering without them:', err?.message || err);
+                console.warn('[Onyx Quill] Mero: lookups failed, answering without them:', err?.message || err);
                 // e.g. LM Studio: the model's template can't take tools (or, after a few lookups, tool results) — but a
                 // timeout / rate limit / server hiccup is not that: lookups stay on for the next answer
                 if (!passingError(err)) noTools.add(conn.profileId); else lookSkip = true;   // a hiccup: on again next answer
@@ -551,7 +551,7 @@ async function answerInner(t, history, said, { opener }, conn0) {
             // the talk as real turns: her last message, the ones before as history (a pasted script let a model write Miinthe's lines)
             const r = await callAI(system, messages[messages.length - 1].content, { ...callConn, caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true, history: messages.slice(0, -1) });
             raw = r?.text ?? '';
-            if (!raw.trim()) console.warn('[DLE] Mero: the model sent back an empty answer', r);
+            if (!raw.trim()) console.warn('[Onyx Quill] Mero: the model sent back an empty answer', r);
         }
         const told = lastTold.get(t.id); if (told) told.raw = raw;
         const a = parseMeroAnswer(raw, meroNames(store().settings));
@@ -587,7 +587,7 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
     if (!opener) t.msgs.push({ who: 'author', t: said, at: new Date().toISOString(), ...(extra.length ? { ctx: extra } : {}) });
     if (t.state !== 'open') t.state = 'open';
     t.updated = new Date().toISOString(); saveStore();
-    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆' };
     const first = !t.msgs.some(m => m.who === 'mero');
     try {
         const r = await answerFor(t, t.msgs.slice(), said, { opener });
@@ -599,7 +599,7 @@ export async function sendToMero(talkId, text, { opener = false, ctx = [] } = {}
         const pitchError = await pitchIfAsked(t2, r.pitchAsked);
         return { ok: true, talk: findTalk(talkId) || t2, ...(pitchError ? { pitchError } : {}) };
     } catch (err) {
-        console.warn('[DLE] Mero could not answer:', err?.message || err);
+        console.warn('[Onyx Quill] Mero could not answer:', err?.message || err);
         return { ok: false, error: err?.message || String(err) };
     }
 }
@@ -799,7 +799,7 @@ export function setMomentsAside(keys) { const g = glowStore(); putGlow({ ...g, d
 export async function talkAboutMoments(keys) {
     const moments = meroGlow().moments.filter(m => keys.includes(m.key));
     if (!moments.length) return { ok: false, error: 'that moment is gone (its message was deleted?)' };
-    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { ok: false, error: 'Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆' };
     const t = newTalk('yap'); if (!t) return { ok: false, error: 'Open a character chat first.' };
     t.title = moments[0].quiet ? `Quiet: ${moments[0].tracker}` : `Big moment: ${moments[0].text}`.slice(0, 80); t.mine = true;
     setMomentsAside(keys);
@@ -811,15 +811,15 @@ export async function talkAboutMoments(keys) {
 export const reviewEntries = () => meroLore().entries;
 
 /**
- * 📚 Review the vault (/oq-review, ⋯ → Review the vault with Mero): a new talk where the whole vault is in front of
+ * 📚 Review the vault (/oq-review, ⋯ → Review the vault with Mero): a new talk where the lore this story reads is in front of
  * Mero for every answer in it. Miinthe 2026-10-18: it used to go into the story chat as her message and stay there.
  * Returns { talk, done } — `done` resolves like sendToMero — or { error }.
  */
 export function startVaultReview(question = '') {
-    if (!resolveConnectionConfig('mero').profileId) return { error: 'Mero has no connection yet — Onyx Quill settings → AI Connections → Mero ☆ → pick a profile' };
+    if (!resolveConnectionConfig('mero').profileId) return { error: 'Mero has no connection yet — pick one in Settings › AI & connections › Mero ☆' };
     const t = newTalk('yap'); if (!t) return { error: 'Open a character chat first.' };
     t.title = '📚 Vault review'; t.mine = true; t.review = true; saveStore();
-    const ask = String(question || '').trim() || 'Could you look over my whole vault? What doesn\'t fit together, what is missing, which entries could be connected?';
+    const ask = String(question || '').trim() || 'Could you look over my lore for this story? What doesn\'t fit together, what is missing, which entries could be connected?';
     return { talk: t, done: sendToMero(t.id, ask) };
 }
 
@@ -865,7 +865,7 @@ async function gameLine(t, what, extra = {}) {
             const { system, user } = gameOf(game).linePrompt(game, what, { persona: st.persona, names: meroNames(st), before, ...extra });
             const r = await callAI(system, user, { ...conn, maxTokens: Math.min(Number(conn.maxTokens) || 300, 300), caller: 'mero', skipThrottle: true, disableThinkingOnClaude: true });
             line = gameOf(game).safeLine(r?.text, game, what);
-        } catch (err) { console.warn('[DLE] Mero (games): no line, a ready-made one instead:', err?.message || err); }
+        } catch (err) { console.warn('[Onyx Quill] Mero (games): no line, a ready-made one instead:', err?.message || err); }
         finally { busyOff(t.id); }
     }
     // a guess made meanwhile asked for a newer line: this one is old news (the end of a game always speaks)

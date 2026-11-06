@@ -292,7 +292,7 @@ export function showSourcesPopup(sources, opts = {}) {
     const anyVaultNamed = settings.vaults && settings.vaults.some(v => v.name);
     html += anyVaultNamed
         ? `<p class="dle-faint dle-text-xs dle-mt-2">${escapeHtml(tr('dle_carto_footer_named', 'Click entry names to open in Obsidian. Click entries to expand content preview.'))}</p>`
-        : `<p class="dle-faint dle-text-xs dle-mt-2">${escapeHtml(tr('dle_carto_footer_unnamed', 'Set vault names in Vault Connections to enable deep links.'))}</p>`;
+        : `<p class="dle-faint dle-text-xs dle-mt-2">${escapeHtml(tr('dle_carto_footer_unnamed', 'Name your vaults in Settings › Vault to enable deep links.'))}</p>`;
 
     if (opts.aiNotes) {
         html += `<div class="dle-card dle-mt-2">

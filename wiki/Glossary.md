@@ -1,258 +1,192 @@
-# Glossary
+The words Onyx Quill uses, in plain terms, grouped by where you meet them. Labels in **bold** are what the screen says. For every setting see [[Settings Reference]]; for every command see [[Slash Commands]].
 
-Key terms used throughout DeepLore documentation and UI.
+## Your lore
 
-## Core concepts
+**Vault**: a folder of notes in Obsidian. Onyx Quill reads it through Obsidian's Local REST API plugin. You can connect more than one vault. Use a vault for your story, not your private notes: what Onyx Quill sends goes to your AI provider. See [[Installation]].
 
-**Vault**
-Your Obsidian folder of notes. DeepLore reads vault entries from here at index time. Use a dedicated lorebook vault rather than your personal Obsidian vault, since vault content is sent to your configured LLM provider during retrieval and generation.
+**Entry**: a vault note that carries the lore tag (`lorebook` by default). Notes without it are ignored. An entry has frontmatter at the top (keywords, priority, summary and so on) and its text below. See [[Writing Vault Entries]] and [[Frontmatter Fields]].
 
-**Vault index**
-The in-memory collection of all parsed lorebook entries from your connected vaults. Rebuilt on refresh or when the cache expires. See [[Pipeline#Index Refresh]].
+**Keywords** (`keys`): words that make an entry come up when the chat mentions them.
 
-**Entry / vault entry**
-A single Obsidian note that has been parsed into a lorebook entry. Contains frontmatter metadata (`keys`, `priority`, `summary`, etc.) and markdown content. Notes without the lorebook tag stay regular notes; only tagged notes are entries.
+**Summary**: a short description of an entry for AI search. AI search reads summaries to decide what fits. `/oq-summarize` writes missing ones.
 
-**Note**
-Obsidian's term for any markdown file in the vault. A note becomes an entry when it carries the lorebook tag.
+**Priority**: a number on an entry. When the budget is tight, a lower number wins (unless **Higher priority number wins** is on).
 
-**Lorebook tag**
-The Obsidian tag (default: `lorebook`) that marks a note for indexing. Only notes with this tag are included in the vault index. The tag name is configurable in settings.
+**Always-send entry**: an entry with the `lorebook-always` tag. It goes with every reply. It costs budget every time, so use it sparingly.
 
-**Constant**
-An entry tagged with `lorebook-always` that is injected into every generation, regardless of keyword matches. Use sparingly; each constant consumes context budget every turn.
+**Never-send entry**: an entry with the `lorebook-never` tag. It is never sent.
 
-**Seed entry**
-An entry tagged with `lorebook-seed`. Force-injected into the writing AI prompt, and prepended as story context in AI search on new chats. Helps the AI understand your world before keywords have a chance to fire.
+**Starter entry**: an entry with the `lorebook-bootstrap` tag. It is sent while a chat is new (the first 3 messages by default), then picked like any other entry.
 
-**Bootstrap entry**
-An entry tagged with `lorebook-bootstrap` that force-injects when the chat is short (below `newChatThreshold`, default 3), then becomes a regular triggered entry once the chat grows.
+**Seed entry**: an entry with the `lorebook-seed` tag. While a chat is new, AI search reads it as background to the story when it picks lore. It only matters with AI search on.
 
-**Guide entry**
-An entry tagged with `lorebook-guide`. A writing or style reference, not story lore. Indexed but never reaches the writing AI through any injection path. If `lorebook-guide` and `lorebook-seed` or `lorebook-bootstrap` are both present, `guide` wins at runtime.
+**Secrets for Mero ☆**: vault notes with the `lorebook-guide` tag. They are not lore: only Mero ☆ reads them, in her talks and pitches, and only those in the chat's folders. The writing AI never gets them. Not to be confused with the board's 🧭 guidance, which does go to the writer. See [[Mero]].
 
-**`lorebook-never` tag**
-Excludes an entry from the vault index entirely. Notes with this tag are skipped during parsing and never appear in matching, AI search, or any pipeline stage.
+**Folders**: which parts of the vault a chat reads. A character has **base folders**; each run can add its own; a chat can add more (**This chat adds**). A chat reads all of these together. A character chat with no folders anywhere reads nothing, so Onyx Quill stays off there. Set them in **Settings › Filters**, the side panel's Filters tab, or with `/oq-char-folders` and `/oq-set-folder`.
 
-**`enabled` field**
-A frontmatter field (`enabled: false`) that skips an entry entirely during parsing. Disabled entries are excluded from the vault index without removing their lorebook tag.
+**Filter fields**: values a chat can have, such as era, location, scene type and who is present, plus fields of your own. An entry that names a value for a field only goes to chats that match. See [[Advanced Gating]] and [[Custom Fields]].
 
-## Pipeline and matching
+**Pin** / **Block**: per-chat choices for one entry. A pinned entry is always sent in this chat; a blocked one never is. Side panel ⋯ → **Pins and blocks**, or `/oq-pin` and `/oq-block`.
 
-**Pipeline**
-The full sequence DeepLore runs on each generation: index refresh, keyword matching, AI search, gating, formatting, injection. See [[Pipeline]] for the full flow.
+**Index**: Onyx Quill's saved copy of your vault, so it doesn't read Obsidian on every reply. **Re-read** (or `/oq-refresh`) reads the vault again.
 
-**Stage**
-A step in the pipeline (e.g., keyword matching, AI search, gating).
+**New lore**: the helper that notices people, places and things the chat mentions but your vault has no entry for, and suggests entries (**Notice lore worth writing**, or `/oq-newlore`).
 
-**Retrieval**
-What the pipeline does. Selecting which vault entries to inject for the current turn.
+## How lore gets picked
 
-**Scan depth**
-How many recent chat messages DeepLore searches for keywords. Scan depth 4 means the last 4 messages are scanned.
+**AI search**: the AI that picks which entries fit the reply. It is optional. See [[How Lore Gets Picked]].
 
-**Keyword matching**
-The first stage of entry selection. Scans recent chat messages for keywords defined in each entry's `keys` field.
+**Keywords only**: no AI search. Entries come up by their keywords (and filters, pins and budget). Free.
 
-**AI search**
-The second stage (optional). An AI model evaluates keyword-matched candidates (or the full vault in AI-only mode) and selects the most relevant entries. See [[AI Search]].
+**Two-stage** (**keywords, then AI search**): keywords make a short list, then AI search picks from it.
 
-**AI selection**
-The chosen entries returned by AI search.
+**AI search only**: AI search reads every entry's summary each time. Costs the most tokens.
 
-**Two-stage mode**
-The default and recommended search mode: keywords pre-filter candidates, then an AI ranks and picks the best matches. Balances cost and quality.
+**Budget**: how much lore goes with one reply: a number of tokens (**Lore budget**) and of entries (**Entries per reply**). A character or a chat can have its own budget; the most specific wins (this chat, then its character, then Everywhere).
 
-**AI-only mode**
-Sends the entire vault manifest to AI search every turn, skipping the keyword pre-filter. Higher token cost; useful only on small vaults or when keywords are unreliable.
+**Give others a turn**: an entry sent many times in a row steps back, one skipped a long time gets a boost. **Rest after sending** makes an entry wait some replies before it can come again.
 
-**Keywords-only mode**
-Disables AI search entirely. Pure keyword matching with gating and budget rules. Free to run.
+**Why these entries**: in the 📖 menu on each reply. It shows which entries went with that reply and why. An entry sent again shows as "Same as last turn".
 
-**Manifest**
-The compact entry list (titles, token counts, links, summaries) sent to AI search. Summaries truncate to ~600 characters by default (`aiSearchManifestSummaryLength`).
+**Try matching**: replays the chat and shows which entries each message calls up (side panel ⋯, or `/oq-simulate`).
 
-**Keyword occurrence weighting**
-An optional tiebreaker that re-sorts entries within the same priority group by keyword hit count. Entries with more keyword occurrences in the scan text rank higher. Enable in [[Settings Reference|Matching & Budget settings]].
+**Prompt list**: a way of placing Onyx Quill's parts: instead of Onyx Quill's own position settings, you drag each part into place in SillyTavern's prompt list (**Settings › Where it goes**).
 
-**Hierarchical pre-filter**
-For large candidate sets (40+), entries cluster by category and the AI selects relevant categories first, then individual entries within them.
+**Story block**: what the writer is told about the board, the trackers and the Cast, as one part of the prompt (**Story trackers block**).
 
-## Gating and filtering
+## Storyboards
 
-**Gating**
-Rules that prevent entries from being injected even after they match. Includes requires/excludes rules and contextual gating.
+See [[Storyboards]].
 
-**Requires**
-A frontmatter field listing entry titles that must ALL be matched for this entry to inject. Example: `requires: [Dark Council]` means this entry only injects if "Dark Council" is also matched.
+**Board** (storyboard): where your story's structure lives: trackers, linked entries, the Cast and the World. A board is shared by the chats that use it; each chat has its own place on it. A character can have a default board for new chats.
 
-**Excludes**
-A frontmatter field listing entry titles that BLOCK this entry. If any excluded entry is matched, this entry is filtered out.
+**Tracker**: one thing on the board that follows the story. The story helper moves it when the chat plainly shows a change, with a word-for-word quote, and each change comes with an Undo. The kinds are steps, meters, collections (with inventory and flags), places, state and counters.
 
-**Contextual gating**
-Filtering based on narrative context using gating fields. Ships with four default fields (era, location, scene type, present characters); users can define additional custom fields via the **Manage Fields** rule builder. Field definitions are stored in `DeepLore/field-definitions.yaml` in the vault. Set fields via `/oq-set-field <name> [value]` or built-in aliases (`/oq-set-era`, `/oq-set-location`, etc.). See [[Features#Contextual Gating]].
+**Step**: one point on a **Steps** tracker, such as "Strangers → Friends → Partners". A steps tracker stands on one step at a time.
 
-**Pin**
-A per-chat override that forces an entry to always inject, bypassing keyword matching and gating. Set via `/oq-pin <name>`.
+**Fork**: a choice after a step: the story can go one of several ways (branches). In the middle of a tracker it is an interlude, after the last step an ending. The story decides, or a roll does. A tracker waits at a fork until a branch is taken (`/oq-tracker-branch` takes one by hand).
 
-**Block**
-A per-chat override that prevents an entry from ever injecting, even if it matches. Overrides constants. Set via `/oq-block <name>`.
+**Detour**: a side state beside a step, outside the line of steps: the tracker stays on its step while the detour lasts. The story helper starts and ends it, or you set it by hand (`/oq-tracker-aside`).
 
-**Folder filter**
-A per-chat restriction that limits which vault entries are considered, by filtering on folder path. Set via `/oq-set-folder` (or the side panel's Filters tab → **Change folders and fields…**). Only entries whose `folderPath` starts with one of the allowed folders are included in matching.
+**Line**: a rule between parts of the board: needs, starts, blocks, only one, triggers. Some lines can have odds (🎲).
 
-## Injection
+**Collection**: a set of things with states, such as clues (hidden → uncovered → lost) or suspects. **Inventory** is a collection with amounts, and it can have a purse (money). Things still in their first state are not part of the story yet, so the writer doesn't hear of them.
 
-**Prompt**
-The full text sent to the writing AI on each generation.
+**Flags**: a collection of yes / no facts.
 
-**Context**
-Everything the writing AI sees: the prompt plus all built-in system content. "Context window" is the literal token-budget sense.
+**Place**: a **Places** tracker knows the story's places (some inside others, some nearby) and where the scene is now. The writer is told where the scene is and which known places are not here, so it doesn't invent surroundings.
 
-**Injection**
-The act of placing entry content into the prompt.
+**State**: a tracker for time and conditions: a cycle (time of day, weekdays, seasons), the day number, choices (weather, mood) and a calendar of due dates the writer is told not to skip past.
 
-**Inject (verb)**
-DeepLore's term of art for placing entry content in the prompt.
+**Meter**: a value that shifts a little at a time (trust, tension). The story helper reports a slight, clear or big change; the board turns that into points. The writer is told the band ("Trusting, rising"), never the number.
 
-**Injection position**
-Where in the prompt the entry content is placed: `before` (before the main prompt), `after` (after), or `in_chat` (inserted between chat messages at a specific depth).
+**Counter**: a plain number, such as money or days.
 
-**Injection depth**
-For `in_chat` position, how many messages from the bottom the entry is inserted. Depth 0 = right before the last message.
+**Board entries**: entries linked to a step, a detour, a branch, a meter band, an item, a place or a person. Each link has a kind:
 
-**Injection role**
-The message role used for injected content: `system`, `user`, or `assistant`.
+- 📄 **context**: facts for the writer. Ordinary lore, there while the story is at that point; pinned ones are always sent there.
+- 🧭 **guidance**: behavior for the writer ("they are married now: act like it"), sent as guidance in the story block while the story is there.
+- ⚖️ **judge**: only the story helper reads it, as the rule for what counts as reaching that point. It never reaches the writer.
 
-**Token budget**
-The maximum number of tokens DeepLore can inject per generation. Entries are selected by priority until the budget is exhausted.
+**Swipe boards**: each swipe of the newest reply keeps its own board. Flipping back to a swipe brings back its board and its changes.
 
-**Prompt list mode**
-An alternative injection mode where entries register as Prompt Manager entries (`deeplore_constants`, `deeplore_lore`). Users drag them to any position in the prompt order.
+## Cast
 
-**Outlet**
-A frontmatter field (`outlet`) that names an injection slot. Outlet entries are reachable via the `{{outlet::name}}` macro instead of being placed positionally.
+See [[Cast]].
 
-## AI features
+**Cast**: the people (NPCs) of your story, on the board. Each has their own character card and entries, and speaks in their own messages inside a one-on-one chat. Only people in the scene are updated and told to the writer, so a big Cast costs no more than a small one.
 
-**Provider**
-A company, API, or backend that hosts an LLM (Anthropic, OpenAI, OpenRouter, llama.cpp, etc.).
+**In the scene**: whether a Cast person is here now. The story helper reports someone coming or leaving, with a quote; you can set it by hand.
 
-**Model**
-A specific model from a provider (Claude Haiku, GPT-4o-mini, Llama-3-70B).
+**Knows**: what a Cast person has learned, and how. Knowledge is earned: only someone in the scene learns something, and only with a quote.
 
-**Connection profile**
-A saved SillyTavern Connection Manager profile DLE can route an AI feature to. Configures provider, model, and API key.
+**Wants** and **plans**: a person's long goal, and up to three intentions the director keeps up to date. The writer gets the plans of people in the scene, never their wants or private thoughts.
 
-**Connection mode**
-The choice of how a DLE feature reaches its AI. As of v2.5 the modes are: `profile` (use a saved Connection Manager profile), `inherit` (reuse the AI Search connection), and `st` (use SillyTavern's own active connection — Session Scribe and Auto Lorebook only). The old `proxy` mode was removed in v2.5; see [[Settings Reference]] for the migration. AI Search itself is profile-only.
+**Director**: the part of the story helper that, before each reply, updates the inner life of the Cast people in the scene: their thoughts, plans and what they know.
 
-**Connection channel**
-A per-feature connection. Settings › AI & connections lists one row per job: Judge (AI search), Story helper, Mero ☆, Scribe, New lore (Auto Lorebook), AI notepad, and Optimize keywords. They do not share settings — each can override mode, profile, model, max tokens, and timeout.
+**Ties**: how a Cast person feels about someone (another Cast person, the main character or `{{user}}`), in a few words, with a trend (warming, cooling). The director suggests them for you to ✓ or ✕, or writes them, or leaves them; a tie you set yourself stays.
 
-**Flag**
-A saved record of a gap in the chat's lore. In upstream DeepLore the Librarian's writing-AI tools recorded these; this fork removed the Librarian (2026-10-27), so nothing flags new gaps, but saved ones still show up in [[Mero]]'s **Requests** under **📚 Lore gaps**, with **Write it** (or **Open it** for an entry that needs an update), **Done**, **Hide** (until it is flagged again), and **No** (gone for good).
+**Round**: one turn of the conversation with the Cast. **▶ Go** plays one round: `{{user}}`'s half first (your message and the NPC lines you write, in your order), then the AI's half (the NPCs the AI writes and the main character, in their order).
 
-**Gap**
-The missing lore the flag records. It waits in Mero › Requests › 📚 Lore gaps.
+## World
 
-**Session Scribe**
-An AI feature that periodically summarizes the chat and writes the summary to an Obsidian note. Useful for maintaining session continuity. See [[Features#Session Scribe]].
+See [[World]].
 
-**Author's Notebook**
-A per-chat user scratchpad whose contents are injected into every generation as a system message. Use for character notes, plot reminders, or writing instructions.
+**World**: the world layer around your story, set up on the board's World tab. It runs on the **World** connection.
 
-**AI Notepad**
-A per-chat feature for AI-extracted session notes. The writing AI emits notes inside `<dle-notes>` tags; DLE strips them from the visible chat, accumulates them per-chat in `chat_metadata`, and reinjects them into future messages as context. Two modes: tag mode (user manually tags notes) and extract mode (AI extracts automatically). Has its own connection channel and injection settings. See [[AI-Notepad]].
+**Messages**: text messages between `{{user}}`, the main character and the Cast, outside the main chat. Group chats are possible. Pictures (📷 photos) use SillyTavern's Image Generation extension.
 
-**Auto Lorebook**
-An AI feature that analyzes the chat and suggests new lorebook entries to create in your vault.
+**Feed**: the world's posts. **Chatter** is people posting and commenting; **News** is articles from the story's news account.
 
-**Context Cartographer**
-A UI feature that shows which entries were injected into each AI response and why. Open it from a message's DeepLore ⋯ button → **Why these entries**. See [[Features#Context Cartographer]].
+**Voices** and **regulars**: who else posts besides the Cast. A voice is an account of the story (a newspaper, a shop); a regular is a recurring commenter with a personality.
 
-## UI
+**Rumor**: a post in Chatter from the story's rumor account, so nobody's name is on it. A rumor can be true, twisted or made up. It spreads by word of mouth and can change as it is retold.
 
-**Drawer**
-DLE's side panel (the code still calls it the drawer). Shows live feedback during chat: which entries were sent, why, and what was left out. Tabs: Lore, Filters, Story, Cast, Mero, plus a ⋯ menu for tools. See [[Drawer|Side Panel]].
+**Planned messages**: messages the board holds ready, sent once when their condition is met (a story day, a step, a place, someone in the scene).
 
-**Drawer tab**
-One of the side panel's tabs: Lore, Filters, Story, Cast, Mero. The tools that used to sit in a Tools tab are in the ⋯ menu at the end of the tab row.
+## Mero ☆
 
-**Temperature heatmap**
-Color-coded count (for example `3×`) on entries in the Lore tab's All entries list, showing how often an entry was sent in this chat. Hot entries are sent more often than most; cold entries less often.
+See [[Mero]].
 
-**Show more**
-Long lists in the Lore tab draw 100 rows at a time; the **Show … more** button at the bottom draws the next ones. This keeps big vaults smooth.
+**Mero ☆**: your co-writer in the side panel's Mero tab. She talks with you out of character about the story, pitches ideas, keeps notes for the writer, looks after your lore, can look things up and search the web, and plays games with you. She reads only what this story reads. She is not the writer of the story replies.
 
-**On a phone**
-On a phone, the side panel slides over the chat and has no lock; close it with its ✕.
+**Talk**: a conversation with Mero. Talks belong to the character, so every chat and run of that character sees them. What is said in a talk stays there; only notes you keep reach the story.
 
-## Infrastructure
+**Pitch** (💡): a story idea from Mero, made when you ask, always from your story. You can send it with the next reply, keep it, have Mero draft your next line from it, give it to a Cast person as a plan, or hide it until its moment comes.
 
-**Circuit breaker**
-Automatic backoff that stops calls after repeated failures. DLE uses two: one per Obsidian vault (keyed by host:port, 2s-15s exponential backoff) and one for AI search (2 failures to trip, 30s cooldown).
+**Plan** (🪜): a pitch in several steps (beats) toward a goal. The writer works toward the current beat gently, over several replies; the story helper ticks a beat off only with a quote, and never before its "not before N replies" floor.
 
-**IndexedDB cache**
-Browser-side persistent storage used to cache the vault index. Enables instant page load: the index hydrates from cache, then validates in the background.
+**Beat**: one step of a plan.
 
-**Reuse sync**
-An optimization where all files are fetched from Obsidian, but unchanged entries (detected by content hash) skip re-parsing and tokenization. The savings come from avoiding the expensive parse/tokenize step, not from reducing network calls. Token counts are also remembered by entry text in the browser (the same in every chat), so an entry is counted again only when its text changes; what is left is counted a few at a time so the page stays responsive.
+**Notes for the writer**: notes you keep from a talk that go to the writer: 🚫 don't, 🧭 steer, 📄 fact, 💡 idea. Each lasts ⚡ for the next reply only, 📌 for N replies, or 📍 until you remove it, and applies to this chat, this run, the character or the board.
 
-**Cache TTL**
-Time-to-live for the vault index cache, in seconds. After this period, the index refreshes from Obsidian on the next generation.
+**Requests**: questions waiting for your answer in Mero's tab, grouped by who asks: 🤖 the story helper (a move it isn't sure about, an item it found), 🪜 a plan, ☆ Mero (for example an entry change she suggests). Answered ones stay listed.
 
-**Chat epoch**
-An internal counter that increments on every chat switch. Prevents stale data from one chat being written to another.
+**Her job**: Mero's lore upkeep: how often she checks your entries against the story (Off duty, Freelancer, Part-timer, Full-timer). With **Needs my sign-off** on, nothing is written without your yes.
 
-**Generation lock**
-An exclusive lock acquired before each pipeline run, preventing concurrent pipelines from executing. Has a 30-second stale timeout for auto-recovery if a pipeline crashes.
+**The glow**: Mero's 💬 lights up after a big moment on the board, an invitation to talk about it. It costs nothing until you click it.
 
-**Epoch guard**
-A race-condition guard using two epoch counters (`chatEpoch` and `generationLockEpoch`). If either changes mid-pipeline, the pipeline discards its results; they belong to a stale context.
+## Around the chat
 
-**AI throttle**
-A rate limiter enforcing a 500ms minimum delay between consecutive AI search API calls. Prevents request flooding during rapid regenerations. Throttled calls fall back to keyword results without tripping the circuit breaker.
+**The bar**: Onyx Quill's row above the message box: the 📖 menu, the side panel button, starred Quick Replies and buttons such as **Re-evaluate and swipe**, **Guided swipe**, **Fix spelling**, **Simple send** and **Keep as a draft**. See [[The Bar]].
 
-**Sliding window cache**
-A caching strategy for AI search results. Reuses cached results when the vault manifest is unchanged and new chat messages do not mention any vault entity names or keys. Regenerations and swipes always reuse cached results.
+**Side panel**: Onyx Quill's panel beside the chat, with the tabs **Lore**, **Filters**, **Story**, **Cast** and **Mero**, and a ⋯ menu with tools. It can sit left or right, and be locked open on a computer. See [[Side Panel]].
 
-## Entry metadata
+**📖 menu on a reply**: Onyx Quill's menu on each reply: **Why these entries**, **What this changed**, **Pitch from here**, **Ask Mero about this**, **Branch here as a new run**, **Guided swipe…**, **Re-evaluate and swipe** and more.
 
-**Priority**
-A number controlling injection order. Lower = higher priority. Suggested ranges: 20 (inner circle), 35 (core lore), 50 (standard), 60+ (secondary/flavor).
+**Re-evaluate and swipe**: a new swipe of the newest reply with a fresh look at that turn: the story helper and AI search are asked again.
 
-**Cooldown**
-Generations to skip after an entry is injected. The writing AI does NOT remember lore from prior generations; during cooldown, the AI has no access to this entry's content. Use for rotating flavor entries, not for entries the AI needs consistently.
+**Guided swipe**: a new swipe of the newest reply with a direction you give.
 
-**Warmup**
-Minimum keyword hit count required before an entry triggers. Checked every generation: the keyword must meet the hit count each time, not just the first. Prevents entries from activating on a single casual mention.
+**My notes**: your own notes, behind a button on the bar. They are never sent to the AI. See [[My Notes]].
 
-**Probability**
-Chance (0.0 to 1.0) that a matched entry actually triggers. Use for variety; e.g., 0.5 means the entry injects ~50% of the time it matches.
+**Author's notebook**: your own notes for one chat that are sent to the writer with every reply.
 
-**Entry decay**
-Tracks how many generations pass since each entry was last injected. Stale entries get a freshness boost in the AI manifest; frequently injected entries get a penalty. Helps rotate lore naturally. See [[Features#Entry Decay & Freshness]].
+**AI notepad**: the writer's own notes. It writes them in a hidden `<oq-notes>` block (or a helper pulls them out of each reply), and they go back to it with later replies. See [[AI Notepad]].
 
-**Refine keys**
-A secondary AND filter (`refine_keys` in frontmatter) that requires at least one refine key to also appear in the scan text before the entry triggers. Reduces false positives for entries with common primary keywords. See [[Features#Refine Keys]].
+**Scribe**: the helper that writes session notes, summaries of the chat, into your vault (the `Sessions` folder by default). See [[Scribe and AI Helpers]].
 
-**Cascade links**
-Unconditional entry links (`cascade_links` in frontmatter). When an entry matches, all entries listed in its cascade links are pulled in without any keyword check. See [[Features#Cascade Links]].
+## AI jobs and runs
 
-**Fuzzy search (BM25)**
-An optional supplement to keyword matching. Uses BM25/TF-IDF scoring with an inverted index to find entries with partial or approximate keyword matches. Enable in [[Settings Reference|Matching & Budget settings]].
+**Job**: one AI task, each with its own connection in **Settings › AI & connections**: AI search, the story helper, Mero ☆, the World, Scribe, New lore, the AI notepad and Optimize keywords.
 
-**Wikilinks**
-Obsidian-style `[[links]]` in entry content that reference other entries. DeepLore resolves these to actual entry titles for wiki-link candidate expansion in two-stage mode.
+**Story helper**: the AI job that moves the trackers and acts as the Cast's director.
 
-**`trackerKey`**
-Internal `vaultSource:title` key used to dedupe entries across vaults. Bare titles collide in multi-vault setups; the trackerKey form does not. Surfaced only in advanced docs and diagnostics.
+**Connection profile**: a saved SillyTavern connection (provider, model, key) that a job uses. Some jobs can use **Same as AI search** or SillyTavern's own connection instead.
 
-## Related concepts (not DLE features)
+**The AI pause**: after repeated AI errors, Onyx Quill pauses its AI calls for a short while. **Settings › Advanced › The AI pause** clears it.
 
-**RAG (Retrieval-Augmented Generation)**
-A class of systems that uses vector embeddings to retrieve relevant documents and feed them to an LLM. DeepLore is not a vector RAG system: AI search reads compact summaries, not embeddings. The result is similar (relevant lore reaches the model) without the embedding-store infrastructure.
+**Run**: one play-through with a character, marked by a letter (run A, run B…). A new chat gets the character's next free letter. A run can add its own folders, and Mero's notes can apply to one run. **Branch here as a new run** (or `/oq-branch-run`) starts the next run from a point in the chat. The letter is kept in the chat's `instance` field, so older notes may say "instance" for a run.
 
-**World Info**
-SillyTavern's built-in lorebook system. Stores entries in a JSON file and matches by exact keywords. DeepLore is an alternative lorebook that reads from your Obsidian vault and adds AI ranking; it does not require World Info to be off, but running both means double the token cost on overlapping entries.
+**Cleaning up a run**: when you delete a run's last chat, Onyx Quill offers to move that run's files in your vault to a trash folder (or delete them). It always asks first.
+
+## Coming from DeepLore
+
+Onyx Quill is built on DeepLore by pixelnull. Some things have new names:
+
+- DeepLore's commands `/dle-…` are `/oq-…`, and the palette is `/oq`.
+- Auto Lorebook is **New lore**; Session Scribe is **Scribe**; the Context Cartographer is **Why these entries**; the drawer is the **side panel**.
+- `%%deeplore-exclude%%` is `%%oq-exclude%%`, and the writer's notes tag `<dle-notes>` is `<oq-notes>`; the old ones still work.
+- Constants are **always-send** entries; bootstrap entries are **starter** entries; guide entries are **Secrets for Mero ☆**.
+
+See [[Coming from DeepLore or World Info]].

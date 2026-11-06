@@ -119,7 +119,7 @@ export function setupSyncPolling(buildIndexFn, buildIndexWithReuseFn) {
                 if (indexing) {
                     if (!_indexingSeenSince) _indexingSeenSince = Date.now();
                     if (Date.now() - _indexingSeenSince > 120_000) {
-                        console.warn('[DLE] Sync: indexing flag stuck for >120s, force-releasing');
+                        console.warn('[Onyx Quill] Sync: indexing flag stuck for >120s, force-releasing');
                         setIndexing(false);
                         setBuildPromise(null); // BUG-034: clear stale buildPromise
                         setBuildEpoch(buildEpoch + 1); // BUG-015: invalidate stuck coroutine
@@ -138,7 +138,7 @@ export function setupSyncPolling(buildIndexFn, buildIndexWithReuseFn) {
                 const keys = Object.keys(allStates);
                 if (keys.length > 0 && keys.every(k => allStates[k].state === 'open')) {
                     if (current.debugMode) {
-                        console.debug('[DLE] Sync: all vault circuits open — skipping this tick');
+                        console.debug('[Onyx Quill] Sync: all vault circuits open — skipping this tick');
                     }
                     scheduleNext();
                     return;
@@ -151,7 +151,7 @@ export function setupSyncPolling(buildIndexFn, buildIndexWithReuseFn) {
                     }
                     await buildIndexFn();
                 } catch (err) {
-                    console.warn('[DLE] Sync polling error:', err.message);
+                    console.warn('[Onyx Quill] Sync polling error:', err.message);
                 }
                 scheduleNext();
             }, currentInterval * 1000));

@@ -202,6 +202,7 @@ button { cursor: pointer; }
 .dh { display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px; border-bottom: 1px solid var(--dk-line); min-width: 0; }
 .dh h3 { flex: 1; min-width: 0; margin: 0; font: 700 var(--dk-fs-l)/1.2 var(--dk-f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+#d-sess .db, #d-req .db, #d-notes .db { scrollbar-gutter: stable; }   /* scroll-bar room reserved: a fold opening no longer makes the cards above jump (Pitches keeps its edge-to-edge action bar) */
 .stack { display: flex; flex-direction: column; gap: 8px; }
 .db h4 { margin: 4px 0 0; font: 700 var(--dk-fs-xs)/1.2 var(--dk-f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--dk-muted); }
 @media (prefers-reduced-motion: no-preference) { .drawer { animation: slide .16s ease-out; } @keyframes slide { from { transform: translateX(14px); opacity: .6; } } }
@@ -268,6 +269,7 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 .note .n1 { display: flex; gap: 6px; align-items: flex-start; }
 .note .n1 > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .note .n2 { font-size: var(--dk-fs-s); color: var(--dk-muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.note .n1 .btn.nrm { flex: none; height: 24px; min-width: 24px; padding: 0 6px; border-radius: 6px; justify-content: center; margin: -3px -4px -3px 0; }   /* the trash at the top row's end (Miinthe, 2026-11-05: not a row of its own) */
 .note .n2 .btn { height: 24px; min-width: 24px; padding: 0 6px; border-radius: 6px; font-size: var(--dk-fs-s); justify-content: center; }   /* 4 the small row buttons: 24 px, corners 6 (coherence) */
 /* 🚫 phrases to avoid — the slop guard (Miinthe, 2026-11-02; mock-up https://claude.ai/artifact/ByQff64nfdyDB4acfqYm7N view 2) */
 .slop-add { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -279,7 +281,10 @@ body.wide .mero:not(:has(> .drawer:not([hidden]))) > .rail { grid-column: 2; }
 .note .hot { color: var(--dk-wait); }
 .slop-pre { font-size: var(--dk-fs-s); color: var(--dk-muted); background: var(--dk-desk); border: 1px solid var(--dk-line); border-radius: 8px; padding: 6px 8px; overflow-wrap: anywhere; }
 .ntext { cursor: text; }
-.ntext textarea { width: 100%; font: inherit; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 2px 4px; background: var(--dk-page); }
+/* editing: the kind icon and the box side by side, where the text was (Miinthe, 2026-11-05: it jumped down) */
+.note .n1 > span:first-child:has(textarea) { display: flex; gap: 4px; align-items: flex-start; }
+.ntext:has(textarea) { flex: 1; min-width: 0; }
+.ntext textarea { display: block; box-sizing: border-box; resize: none; overflow: hidden; width: 100%; font: inherit; border: 1px solid var(--dk-accent); border-radius: 6px; padding: 2px 4px; background: var(--dk-page); }
 .blur { filter: blur(5px); user-select: none; }
 .sw { display: inline-flex; gap: 6px; align-items: center; font-size: var(--dk-fs-s); }
 .sw input { accent-color: var(--dk-mero); margin: 0; }
@@ -615,7 +620,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   const TAG = { yap: ['💭 Yapping', 'yap'], plan: ['🗺 Planning', 'plan'], fb: ['✋ Feedback', 'fb'], game: ['🎲 Games', 'game'] };
   const KIND = { dont: ['🚫', 'Don\'t', 'var(--dk-bad)'], steer: ['🧭', 'Steer', 'var(--dk-l5)'], idea: ['💡', 'Idea', 'var(--dk-l1)'], fact: ['📄', 'Fact', 'var(--dk-good)'] };
   const LAST = { flash: '⚡ the next reply', sticky: '📌 for a few replies', pinned: '📍 until removed' };
-  const SCOPE = { chat: 'this chat', run: 'this run', char: 'the character — every chat', board: 'the board' };
+  const SCOPE = { chat: 'this chat', run: 'this run', char: 'the character', board: 'the board' };
   let D = HOST.load(), cur = null, sessFilter = 'all', sessQ = '';
   const OPEN = { 'sess-archived': false, 'notes-ended': false, 'req-done': false }, MORE = {};
 
@@ -656,7 +661,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       <div>${KIND[c.kind][0]} <b>${esc(c.text)}</b></div>
       ${c.state ? '' : `<div class="row"><select aria-label="Kind" data-ck="${k}:${j}">${Object.entries(KIND).map(([v, x]) => `<option value="${v}"${v === c.kind ? ' selected' : ''}>${x[0]} ${x[1]}</option>`).join('')}</select>
         <select aria-label="How long" data-cl="${k}:${j}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === c.last ? ' selected' : ''}>${x}</option>`).join('')}</select>
-        <select aria-label="Where it applies" data-cs="${k}:${j}">${Object.entries(SCOPE).filter(([v]) => v !== 'run' || D.where.run).filter(([v]) => v !== 'board' || D.where.board).map(([v, x]) => `<option value="${v}"${v === c.scope ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+        <select aria-label="Where it applies" title="Where it applies. The character: every chat with them. All that apply are in force together." data-cs="${k}:${j}">${Object.entries(SCOPE).filter(([v]) => v !== 'run' || D.where.run).filter(([v]) => v !== 'board' || D.where.board).map(([v, x]) => `<option value="${v}"${v === c.scope ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
       <div class="row"><button class="btn p" data-keep="${k}:${j}">${I('keep')}Keep</button><button class="btn ghost" data-no="${k}:${j}">No</button>${c.kind === 'dont' || c.kind === 'steer' ? `<button class="btn m2" data-redo="${k}:${j}" title="Keep it and swipe the last reply with it in force. The board's rolls and moves stay">${I('refresh')}Redo the last reply with this note</button>` : ''}</div>`}</div>`;
   // ── one message: its header (name, 🔎 lookups, ◀ ▶ swipes, ↻ ✏ 🗑), its text, the 💡 cards made from it ──
   const lookOpen = new Set();   // "talkid:k" — lookups unfolded
@@ -676,6 +681,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   function msgHtml(m, k) {
     const mine = m.who === 'author', key = cur.id + ':' + k, busyNow = talkBusy() || !!PV().busy, armed = sure === key;
     const steps = m.steps || [], nsw = (m.sw || []).length;
+    const nLook = steps.filter(x => !/^📖 Handed to her/.test(x.label || '')).length;   // "📖 Handed to her" is not a lookup
     // ↻ only on an answer to her message — a write-up, Pitch's questions or "nothing to pitch" follow Mero's own words
     const redoable = k === lastMero() && cur.msgs[k - 1]?.who === 'author' && !(m.pitchIds || []).length && !m.pcheck && !cur.msgs.slice(k + 1).some(x => x.who === 'author') && !busyNow;
     const del = armed
@@ -689,7 +695,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
       : `<span class="mact${armed ? ' sure' : ''}">${redoable ? `<button data-mredo="${k}" title="Answer again — this answer stays as a swipe until you write again" aria-label="Answer again">${I('refresh')}</button>` : ''}${del}</span>`;
     // her name on her messages (Miinthe, 2026-11-03: the header was empty) — what Mero calls her, else her persona's name
     const head = mine ? `<div class="mh"><span class="me">${esc(myName())}</span><span class="sp"></span>${acts}</div>`
-      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="What she looked up for this answer">🔎 ${steps.length} lookup${steps.length > 1 ? 's' : ''}</button>` : m.lookskip ? '<span class="nolook" title="The service was busy; she tries again next time">🔎 no lookups this time</span>' : m.nolook ? '<span class="nolook" title="Mero\'s connection can\'t look things up; she still sees the board and replies">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
+      : `<div class="mh"><span>Mero ☆</span>${steps.length ? `<button class="look" data-mlook="${k}" aria-expanded="${lookOpen.has(key)}" title="${nLook ? 'What she looked up for this answer' : 'The entries your message names, handed to her'}">${nLook ? `🔎 ${nLook} lookup${nLook > 1 ? 's' : ''}` : '📖 Handed to her'}</button>` : m.lookskip ? '<span class="nolook" title="The service was busy; she tries again next time">🔎 no lookups this time</span>' : m.nolook ? '<span class="nolook" title="Mero\'s connection can\'t look things up; she still sees the board and replies">🔎 lookups off</span>' : ''}<span class="sp"></span>${nsw > 1 ? `<span class="swp"><button data-mswp="${k}:-1"${m.swi ? '' : ' disabled'} aria-label="Previous answer">◀</button>${(m.swi || 0) + 1}/${nsw}<button data-mswp="${k}:1"${(m.swi || 0) < nsw - 1 ? '' : ' disabled'} aria-label="Next answer">▶</button></span>` : ''}${acts}</div>`;
     const looks = !mine && steps.length && lookOpen.has(key) ? `<div class="steps">${steps.map(x => `<span>${esc(x.label)}${x.got ? ` <span class="got">— ${esc(x.got)}</span>` : ''}</span>`).join('')}</div>` : '';
     const body = mine && editing?.k === k
       ? `<div class="edit"><textarea data-meditin aria-label="Your message">${esc(editing.text ?? m.t)}</textarea><div class="row"><button class="btn p" data-msave="0">Save</button>${k === lastAuthor() ? `<button class="btn m2" data-msave="1"${busyNow ? ' disabled' : ''} title="Mero answers the new words — her answers after it go">Save &amp; ask again</button>` : ''}<button class="btn ghost" data-mcancel>Cancel</button></div></div>`
@@ -1093,8 +1099,8 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
   // notes drawer
   function drawNotes() {
     const notes = D.notes || [];
-    const row = n => `<div class="note${n.on ? '' : ' off'}" style="--kc:${KIND[n.kind][2]}"><div class="n1"><span>${KIND[n.kind][0]} <span class="ntext${n.hidden ? ' blur' : ''}" data-ned="${n.id}" title="Click to edit">${esc(n.text)}</span></span><label class="sw"><input type="checkbox" data-on="${n.id}"${n.on ? ' checked' : ''}> on</label></div>
-      <div class="n2"><select aria-label="How long" data-nl="${n.id}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === n.last ? ' selected' : ''}>${x}</option>`).join('')}</select><select aria-label="Where it applies" title="Where it applies. All that apply are in force together." data-sc="${n.id}">${Object.entries(SCOPE).filter(([v]) => v === n.scope || ((v !== 'run' || D.where.run) && (v !== 'board' || D.where.board))).map(([v, x]) => `<option value="${v}"${v === n.scope ? ' selected' : ''}>${x}</option>`).join('')}</select>${n.inForce ? '<span>● in force</span>' : n.runOut ? '<span>time is up</span>' : ''}${n.from ? `<button class="btn ghost" data-from="${n.from}">from: ${esc((D.talks || []).find(t => t.id === n.from)?.title || 'a talk')}</button>` : ''}<button class="btn ghost" data-nrm="${n.id}" title="Remove" aria-label="Remove">${I('trash')}</button></div></div>`;
+    const row = n => `<div class="note${n.on ? '' : ' off'}" style="--kc:${KIND[n.kind][2]}"><div class="n1"><span>${KIND[n.kind][0]} <span class="ntext${n.hidden ? ' blur' : ''}" data-ned="${n.id}" title="Click to edit">${esc(n.text)}</span></span><label class="sw"><input type="checkbox" data-on="${n.id}"${n.on ? ' checked' : ''}> on</label><button class="btn ghost nrm" data-nrm="${n.id}" title="Remove" aria-label="Remove">${I('trash')}</button></div>
+      <div class="n2"><select aria-label="How long" data-nl="${n.id}">${Object.entries(LAST).map(([v, x]) => `<option value="${v}"${v === n.last ? ' selected' : ''}>${x}</option>`).join('')}</select><select aria-label="Where it applies" title="Where it applies. The character: every chat with them. All that apply are in force together." data-sc="${n.id}">${Object.entries(SCOPE).filter(([v]) => v === n.scope || ((v !== 'run' || D.where.run) && (v !== 'board' || D.where.board))).map(([v, x]) => `<option value="${v}"${v === n.scope ? ' selected' : ''}>${x}</option>`).join('')}</select>${n.inForce ? '<span>● in force</span>' : n.runOut ? '<span>time is up</span>' : ''}${n.from ? `<button class="btn ghost" data-from="${n.from}">from: ${esc((D.talks || []).find(t => t.id === n.from)?.title || 'a talk')}</button>` : ''}</div></div>`;
     const live = notes.filter(n => !n.ended && !n.runOut), done = notes.filter(n => n.ended || n.runOut);
     $('#notes-list').innerHTML = fold('notes-story', 'For the story', live.filter(n => n.story).map(row), { empty: 'None yet.' })
       + fold('notes-talks', 'Only for our talks', live.filter(n => !n.story).map(row))
@@ -1104,7 +1110,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     $$('[data-sc]').forEach(s => s.onchange = () => { HOST.updateNote(s.dataset.sc, { scope: s.value }); toast(`Now applies to ${SCOPE[s.value]}.`); });
     $$('[data-nrm]').forEach(b => b.onclick = () => HOST.removeNote(b.dataset.nrm));
     $$('[data-from]').forEach(b => b.onclick = () => { cur = (D.talks || []).find(t => t.id === b.dataset.from) || cur; drawTalk(); drawSessions(); openD('d-sess'); });
-    $$('[data-ned]').forEach(el => el.onclick = () => { if (el.classList.contains('blur')) return; const n = notes.find(x => x.id === el.dataset.ned); el.innerHTML = `<textarea rows="2" aria-label="Note text">${esc(n.text)}</textarea>`; const ta = el.querySelector('textarea'); ta.focus(); let fin = false; const done2 = ok => { if (fin) return; fin = true; if (ok && ta.value.trim() && ta.value.trim() !== n.text) HOST.updateNote(n.id, { text: ta.value.trim() }); else drawNotes(); }; ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done2(true); } if (e.key === 'Escape') done2(false); }; ta.onblur = () => done2(true); el.onclick = null; });
+    $$('[data-ned]').forEach(el => el.onclick = () => { if (el.classList.contains('blur')) return; const n = notes.find(x => x.id === el.dataset.ned); el.innerHTML = `<textarea rows="1" aria-label="Note text">${esc(n.text)}</textarea>`; const ta = el.querySelector('textarea'); autogrow(ta); ta.oninput = () => autogrow(ta); ta.focus(); let fin = false; const done2 = ok => { if (fin) return; fin = true; if (ok && ta.value.trim() && ta.value.trim() !== n.text) HOST.updateNote(n.id, { text: ta.value.trim() }); else drawNotes(); }; ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done2(true); } if (e.key === 'Escape') done2(false); }; ta.onblur = () => done2(true); el.onclick = null; });
     drawNotesline();
     drawSlop();
   }
@@ -1331,7 +1337,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     const R = D.requests || { waiting: [], answered: [] };
     $('#look-lore').disabled = !!D.looking || D.settings.job === 'off';
     lbl($('#look-lore'), 'search', D.looking ? 'Mero is looking…' : 'Check the lore');
-    $('#look-lore').title = D.settings.job === 'off' ? 'Mero is off duty (☆ settings → Mero\'s job)' : 'Mero checks the latest replies against the entries sent';
+    $('#look-lore').title = D.settings.job === 'off' ? 'Mero is off duty (Settings › Mero › Her job › How much she does)' : 'Mero checks the latest replies against the entries sent';
     const one = r => r.done ? `<div class="card done"${r.kind === 'entry' ? ` data-rdone="${esc(r.id)}"` : ''}><div class="ch">${esc(r.title)} <span class="pill">${esc(r.done)}</span></div><div class="mini">${RQ_SRC[r.from] || ''}</div>${r.kind === 'entry' && r.applied ? `${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${baBox(r)}${entryWhere(r)}${r.undone ? '' : `<div class="row"><button class="btn" data-rundo>${I('undo')}Undo</button></div>`}` : ''}</div>`
       : `<div class="card${r.from === 'board' ? ' helper' : ''}" data-req="${esc(r.id)}" style="--kc:${r.from === 'mero' ? 'var(--dk-mero)' : r.from === 'plan' ? 'var(--dk-good)' : 'var(--dk-accent)'}"><div class="ch">${esc(r.title)}${r.now ? ' <span class="pill now">⏸ the reply waits for this</span>' : ''}</div><div class="mini">${RQ_SRC[r.from] || ''}${r.conf ? ` · ${esc(r.conf)} confidence` : ''}</div>
         ${r.q ? `<div class="q">“${esc(r.q)}”</div>` : ''}${r.why ? `<div class="mini">${esc(r.why)}</div>` : ''}${r.kind === 'entry' ? baBox(r) + entryWhere(r) : ''}
@@ -1343,19 +1349,7 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
           : r.kind === 'entry' ? `<button class="btn m2" data-ra="apply">${r.change?.find ? 'Change the entry' : 'Add to the entry'}</button><button class="btn" data-redit-btn>Edit first</button><button class="btn" data-ra="notcanon" title="A one-off — Mero won't ask about this line again">Not canon</button>` : ''}<button class="btn ghost" data-rask>${I('talks')}Ask</button></div>
         ${r.recheckWhy ? `<div class="mini">The helper suggests re-checking in ${r.recheck}: ${esc(r.recheckWhy)}</div>` : ''}</div>`;
     const groups = RQ_GROUP.map(([k, h, sub]) => { const l = R.waiting.filter(r => r.from === k); return l.length ? `<h4 class="rg rg-${k}"${sub ? ` title="${esc(sub)}"` : ''}>${h}</h4>` + l.map(one).join('') : ''; }).join('');
-    // overhaul 2026-10-17: lore gaps (flagged while replies were written) — the old helper's list, at home here now
-    const G = D.gaps || { open: [], done: [] };
-    const gapCard = g => `<div class="card" data-gap="${esc(g.id)}" style="--kc:var(--dk-mero)"><div class="ch">${esc(g.title)}</div>${g.meta ? `<div class="mini">${esc(g.meta)}</div>` : ''}${g.why ? `<div class="mini">${esc(g.why)}</div>` : ''}
-      <div class="row">${g.update ? `<button class="btn m2" data-ga="open" title="Open “${esc(g.entry)}” in Obsidian">Open it</button>` : `<button class="btn m2" data-ga="write" title="Opens Write a new entry with this filled in. Mero can draft it there.">Write it</button>`}<button class="btn" data-ga="done" title="Mark it as taken care of">Done</button><button class="btn" data-ga="hide" title="Hidden until it is flagged again">Hide</button><button class="btn ghost" data-ga="no" title="Gone for good, even if it is flagged again">No</button></div></div>`;
-    const gapDone = g => `<div class="card done"><div class="ch">${esc(g.title)} <span class="pill">✓ taken care of</span></div><div class="mini">📚 a lore gap</div></div>`;
-    const gaps = G.open.length ? `<h4 class="rg rg-mero" title="Missing or outdated entries, found while replies were written">📚 Lore gaps</h4>` + G.open.map(gapCard).join('') : '';
-    $('#req-list').innerHTML = ((groups + gaps) || '<div class="dk-empty"><b>Nothing open.</b><span>When Mero needs you, it shows here.</span></div>') + fold('req-done', 'Answered', [...R.answered.map(one), ...G.done.map(gapDone)]);
-    $$('#req-list [data-gap]').forEach(card => card.querySelectorAll('[data-ga]').forEach(b => b.onclick = () => {
-      const what = b.dataset.ga, r = HOST.gap(card.dataset.gap, what);
-      if (r && r.ok === false) toast(r.msg || 'Not done.');
-      else if (what === 'hide') toast('Hidden. It comes back if it is flagged again.');
-      else if (what === 'no') toast('Gone for good.');
-    }));
+    $('#req-list').innerHTML = (groups || '<div class="dk-empty"><b>Nothing open.</b><span>When Mero needs you, it shows here.</span></div>') + fold('req-done', 'Answered', R.answered.map(one));
     $$('#req-list [data-req]').forEach(card => {
       const r = R.waiting.find(x => x.id === card.dataset.req);
       card.querySelectorAll('[data-ra]').forEach(b => b.onclick = async () => {

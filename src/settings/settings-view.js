@@ -66,7 +66,7 @@ const keep = (key, v) => { try { accountStorage.setItem(key, v); } catch { /* no
 function save() { invalidateSettingsCache(); saveSettingsDebounced(); }
 function runCommand(cmd) {
     const ctx = typeof SillyTavern !== 'undefined' && SillyTavern.getContext ? SillyTavern.getContext() : null;
-    return ctx?.executeSlashCommands?.(cmd)?.catch?.(err => console.warn('[DLE] settings:', cmd, err));
+    return ctx?.executeSlashCommands?.(cmd)?.catch?.(err => console.warn('[Onyx Quill] settings:', cmd, err));
 }
 function ensureCss() {
     if (document.querySelector(`link[href="${SETTINGS_CSS}"]`)) return;
@@ -113,7 +113,7 @@ const fx = {
 /** Text rows: today's rules for empty / tidy values. → the value to store, or undefined to refuse. */
 function tidyText(row, raw) {
     const v = String(raw ?? '');
-    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', guideTag: 'lorebook-guide', fieldDefinitionsPath: 'DeepLore/field-definitions.yaml', scribeFolder: 'Sessions', runTrashFolder: 'zz Deleted runs' };
+    const fallback = { lorebookTag: 'lorebook', constantTag: 'lorebook-always', neverInsertTag: 'lorebook-never', seedTag: 'lorebook-seed', bootstrapTag: 'lorebook-bootstrap', guideTag: 'lorebook-guide', fieldDefinitionsPath: 'Onyx Quill/field-definitions.yaml', scribeFolder: 'Sessions', runTrashFolder: 'zz Deleted runs' };
     if (row.key in fallback) return v.trim() || fallback[row.key];
     if (row.key === 'autoSuggestFolder') return v.trim();
     if (row.key === 'promptsFolderPath') {
@@ -140,7 +140,7 @@ async function commit(row, value) {
             if (promptManager) drainPendingPromptListCleanup(); else s._pendingPromptListCleanup = true;
         }
         save();
-        try { fx[row.fx]?.(); } catch (err) { console.warn('[DLE] settings: after-change step failed', err); }
+        try { fx[row.fx]?.(); } catch (err) { console.warn('[Onyx Quill] settings: after-change step failed', err); }
     }
     redraw();
 }
@@ -419,7 +419,7 @@ function connSelect(job, s) {
     sel.setAttribute('aria-label', `${job.job}: connection`);
     const cur = connChoice(job.tool, s);
     const list = profiles();
-    if (job.modes.includes('inherit')) sel.append(new Option(`Same as the judge → ${judgeAiName(s)}`, 'inherit'));
+    if (job.modes.includes('inherit')) sel.append(new Option(`Same as AI search → ${judgeAiName(s)}`, 'inherit'));
     if (job.modes.includes('st')) sel.append(new Option('SillyTavern’s own connection', 'st'));
     if (cur === 'proxy') sel.append(new Option('Custom proxy (old)', 'proxy'));
     if (!cur) sel.append(new Option('— pick a profile —', ''));
@@ -432,7 +432,7 @@ function connSelect(job, s) {
         save();
         if (job.root) {
             const f = followers(s);
-            K.notify({ text: f.length ? `The judge now uses ${judgeAiName(s)}. ${f.join(', ')} ${f.length > 1 ? 'follow' : 'follows'} it.` : `The judge now uses ${judgeAiName(s)}.` });
+            K.notify({ text: f.length ? `AI search now uses ${judgeAiName(s)}. ${f.join(', ')} ${f.length > 1 ? 'follow' : 'follows'} it.` : `AI search now uses ${judgeAiName(s)}.` });
         }
         redraw();
     });
@@ -453,7 +453,7 @@ function jobsPane() {
     if (realCalls > 0 && aiSearchStats.totalInputTokens + aiSearchStats.totalOutputTokens > 0) {
         const per = Math.round((aiSearchStats.totalInputTokens + aiSearchStats.totalOutputTokens) / realCalls);
         const t = el('div', 'dle-st-total');
-        t.append(el('span', '', `This session the judge ran ${aiSearchStats.calls} time${aiSearchStats.calls === 1 ? '' : 's'}`), el('b', '', `about ${per.toLocaleString()} tokens each`));
+        t.append(el('span', '', `This session AI search ran ${aiSearchStats.calls} time${aiSearchStats.calls === 1 ? '' : 's'}`), el('b', '', `about ${per.toLocaleString()} tokens each`));
         t.title = 'Counted from your replies since SillyTavern was opened';
         box.append(t);
     }
@@ -468,13 +468,13 @@ function jobsPane() {
         if (ui.flashJob === j.tool) tr.classList.add('flash');
         const a = el('td'); a.append(el('b', '', j.job), el('small', '', j.what));
         const b = el('td'); b.append(connSelect(j, s));
-        const c = el('td', '', jobRuns(j.tool, s));
+        const c = el('td', '', jobRuns(j.tool, s, j.tool === 'mero' ? meroSettings() : {}));
         const d = el('td', 'n'); d.append(el('span', '', `${caps[n].toLocaleString()}`));
         const bar = el('span', 'dle-st-bar'); const i = el('i'); i.style.width = Math.round(caps[n] / max * 100) + '%'; bar.append(i); d.append(bar);
         tr.append(a, b, c, d); tb.append(tr);
     });
     tbl.append(tb); wrap.append(tbl); box.append(wrap);
-    box.append(el('p', 'dle-st-note', '“Same as the judge” uses the judge’s connection.'));
+    box.append(el('p', 'dle-st-note', '“Same as AI search” uses AI search’s connection.'));
     // fine print: per job model, answer length, time limit, Test; and one switch for providers without a system role
     const fb = el('div', 'dle-st-fb');
     for (const j of JOBS) {
@@ -483,7 +483,7 @@ function jobsPane() {
         g.append(el('b', 'dle-st-fine-t', j.job));
         const mode = s[k.mode];
         const model = el('input', 'dk-field'); model.value = s[k.model] || ''; model.setAttribute('aria-label', `${j.job}: model`);
-        const hint = mode === 'inherit' ? 'empty = the judge’s' : mode === 'st' ? '' : 'empty = the profile’s';
+        const hint = mode === 'inherit' ? 'empty = AI search’s' : mode === 'st' ? '' : 'empty = the profile’s';
         model.placeholder = hint;
         model.disabled = mode === 'st';
         model.addEventListener('change', () => { s[k.model] = model.value.trim(); save(); });
@@ -581,7 +581,7 @@ function promptsPane() {
     const ff = K.fold({ title: 'Prompt files in your vault', summary: s.promptsFolderPath || DLE_PROMPTS_DEFAULT_DIR, open: !!ui.open.promptFiles, body: files, onToggle: v => { ui.open.promptFiles = v; } });
     ff.classList.add('dle-st-card');
     box.append(ff);
-    try { bindPromptsTabHandlers($(box), s); } catch (err) { console.warn('[DLE] settings: prompt files not wired', err); }
+    try { bindPromptsTabHandlers($(box), s); } catch (err) { console.warn('[Onyx Quill] settings: prompt files not wired', err); }
     return box;
 }
 
@@ -925,7 +925,7 @@ function chatPane() {
             row(r.label, r.values.length ? r.values.join(', ') : 'not set', badge(r.values.length ? 'this chat' : 'not set', r.values.length ? 'chat' : ''),
                 K.button({ label: 'Set', title: `Set ${r.label} for this chat`, onClick: async () => { await runCommand(r.cmd); redraw(); } }));
         }
-    } catch (err) { console.warn('[DLE] settings: field values not shown', err); }
+    } catch (err) { console.warn('[Onyx Quill] settings: field values not shown', err); }
     box.append(d);
     return box;
 }
@@ -937,7 +937,7 @@ async function act(name, btn) {
     switch (name) {
         case 'reindex': return busy(async () => {
             try { setVaultIndex([]); setIndexTimestamp(0); await buildIndex(); K.notify({ text: `Read ${vaultIndex.length} entries.`, tone: 'good' }); }
-            catch (err) { console.warn('[DLE] Refresh index failed:', err); K.notify({ text: 'Couldn’t read your lore. Check the Obsidian connection.', tone: 'bad' }); }
+            catch (err) { console.warn('[Onyx Quill] Refresh index failed:', err); K.notify({ text: 'Couldn’t read your lore. Check the Obsidian connection.', tone: 'bad' }); }
             redraw();
         });
         case 'previewJudge': return previewJudgePrompt();
@@ -955,12 +955,12 @@ async function act(name, btn) {
         case 'resetBreaker': return resetAiBreakerFlow();
         case 'tryMatching': W?.close(); return runCommand('/oq-simulate');
         case 'commands': return showCommands();
-        case 'wizard': { W?.close(); const { showSetupWizard } = await import('../ui/setup-wizard.js'); return showSetupWizard(); }
+        case 'wizard': { W?.close(); const { showSetupWizard, getWizardResumeStep } = await import('../ui/setup-wizard.js'); return showSetupWizard(getWizardResumeStep()); }   // resume like /oq-setup
         case 'about': return showAbout();
         case 'resetAll': if (await resetAllSettingsFlow()) redraw(); return;
         case 'meroPersona': return editPersona();
         case 'meroResetSettings':
-            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'All her settings go back to default. Who she is stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
+            if (await K.ask({ title: 'Reset Mero’s settings?', text: 'All her settings go back to default, “She calls you” too. Her description (In your words) stays.', yes: 'Reset' })) { meroSettings(null, { reset: 'settings' }); redraw(); }
             return;
         default: return undefined;
     }
@@ -1134,7 +1134,7 @@ function drawBody() {
             for (const sec of SECTIONS) if (!sec.custom) pane.append(sectionEl(sec));
         } else pane.append(sectionEl(SECTIONS.find(s => s.id === ui.sec) || SECTIONS[0]));
     } catch (err) {
-        console.warn('[DLE] settings: this section could not be drawn', err);
+        console.warn('[Onyx Quill] settings: this section could not be drawn', err);
         pane.append(el('div', 'dk-state dk-bad', `This part could not be drawn: ${err?.message || err}`));
     }
     let side;

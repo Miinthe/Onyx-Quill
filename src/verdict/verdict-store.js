@@ -11,7 +11,7 @@
  * Storage contract:
  *  - Ring buffer in memory: last RING_CAP verdicts across all chats this session.
  *    Used for fast read of getCurrent() / getPrevious() / getByMessageSync().
- *  - IDB store `verdicts` (in DB `DeepLoreEnhanced`, schema v2): per-chat persisted
+ *  - IDB store `verdicts` (in DB `OnyxQuill`, schema v2 — see src/vault/idb-db.js): per-chat persisted
  *    verdicts. Each chat's rows survive chat switches so resume-after-reload of
  *    any prior chat works. Per-chat cap (IDB_PER_CHAT_CAP) is enforced after each
  *    write via pruneCurrentChat(). NEVER written to chat_metadata (chat files
@@ -38,13 +38,9 @@ import {
     validateVerdict,
 } from './verdict-pure.js';
 import { pushEvent } from '../diagnostics/interceptors.js';
+import { DB_NAME, DB_VERSION, VAULT_STORE, VERDICT_STORE, isFreshDatabase, finishOpen } from '../vault/idb-db.js';
 
 export { emptyVerdict, buildVerdict, diffVerdicts };
-
-const DB_NAME = 'DeepLoreEnhanced';
-const DB_VERSION = 2; // bumped from 1 (vault cache) to add verdicts store
-const VAULT_STORE = 'vaultCache';
-const VERDICT_STORE = 'verdicts';
 
 /** In-memory ring buffer cap. */
 const RING_CAP = 50;
@@ -92,7 +88,7 @@ function assertNoColonChatId(chatId) {
     if (!colonChatIdWarned && typeof chatId === 'string' && chatId.includes(':')) {
         colonChatIdWarned = true;
         console.warn(
-            '[DLE] Verdict store: chatId contains \':\' — violates the no-colon IDB-key invariant ' +
+            '[Onyx Quill] Verdict store: chatId contains \':\' — violates the no-colon IDB-key invariant ' +
             '(see verdict-store pruneCurrentChat). Range-scoped prune/hydrate may misbehave for this chat.',
             { chatId },
         );
@@ -115,7 +111,7 @@ export function onVerdictChanged(cb) {
 
 function notify() {
     for (const cb of [...observers]) {
-        try { cb(); } catch (err) { console.warn('[DLE] Verdict observer callback error:', err?.message); }
+        try { cb(); } catch (err) { console.warn('[Onyx Quill] Verdict observer callback error:', err?.message); }
     }
 }
 
@@ -123,7 +119,9 @@ function notify() {
 function openDBOnce() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
+        let fresh = false;
+        request.onupgradeneeded = (event) => {
+            fresh = isFreshDatabase(event);
             const db = request.result;
             // BUG-379 lineage: keep vaultCache store on schema bump.
             if (!db.objectStoreNames.contains(VAULT_STORE)) {
@@ -135,10 +133,11 @@ function openDBOnce() {
                 db.createObjectStore(VERDICT_STORE);
             }
         };
-        request.onsuccess = () => resolve(request.result);
+        // A fresh database first copies the old one's history (src/vault/idb-db.js).
+        request.onsuccess = () => finishOpen(request.result, fresh).then(resolve);
         request.onerror = () => reject(request.error);
         request.onblocked = () => {
-            console.warn('[DLE] Verdict IndexedDB open blocked — another tab may have an older version open');
+            console.warn('[Onyx Quill] Verdict IndexedDB open blocked — another tab may have an older version open');
             reject(Object.assign(new Error('IndexedDB open blocked by another connection'), { code: 'BLOCKED' }));
         };
     });
@@ -148,7 +147,7 @@ function openDBOnce() {
 function openDB() {
     return openDBOnce().catch(async (err) => {
         if (err && err.code === 'BLOCKED') {
-            console.warn('[DLE] Verdict IndexedDB blocked — retrying in 250ms');
+            console.warn('[Onyx Quill] Verdict IndexedDB blocked — retrying in 250ms');
             await new Promise(r => setTimeout(r, 250));
             return openDBOnce();
         }
@@ -174,7 +173,7 @@ function buildIdbKey(v) {
  */
 export async function writeVerdict(verdict) {
     if (!validateVerdict(verdict)) {
-        console.warn('[DLE] writeVerdict: invalid verdict rejected', { msgIdx: verdict?.msgIdx, epoch: verdict?.epoch });
+        console.warn('[Onyx Quill] writeVerdict: invalid verdict rejected', { msgIdx: verdict?.msgIdx, epoch: verdict?.epoch });
         return;
     }
     ring.push(verdict);
@@ -197,10 +196,10 @@ export async function writeVerdict(verdict) {
         // verdict's OWN chatId (deterministic, captured before any later CHAT_CHANGED)
         // rather than letting the fire-and-forget prune read the mutable currentChatId
         // global — so a chat switch racing the async prune can't retarget it.
-        pruneCurrentChat(verdict.chatId).catch(err => console.warn('[DLE] Verdict prune failed:', err?.message));
+        pruneCurrentChat(verdict.chatId).catch(err => console.warn('[Onyx Quill] Verdict prune failed:', err?.message));
         pushEvent('verdict_write', { msgIdx: verdict.msgIdx, injected: verdict.injectedSources.length });
     } catch (err) {
-        console.warn('[DLE] Verdict IDB write failed:', err?.message);
+        console.warn('[Onyx Quill] Verdict IDB write failed:', err?.message);
         pushEvent('verdict_write', { ok: false, error: err?.name || err?.message });
     }
 }
@@ -343,7 +342,7 @@ export async function clearChatIdb(chatId) {
             await txDone(tx);
         } finally { db.close(); }
     } catch (err) {
-        console.warn('[DLE] Verdict clearChatIdb failed:', err?.message);
+        console.warn('[Onyx Quill] Verdict clearChatIdb failed:', err?.message);
     }
 }
 
@@ -394,7 +393,7 @@ export async function hydrateChat(chatId) {
         pushEvent('verdict_hydrate', { chatId, count: slice.length, preservedFresh: preservedFresh.length });
         return slice.length;
     } catch (err) {
-        console.warn('[DLE] Verdict hydrateChat failed:', err?.message);
+        console.warn('[Onyx Quill] Verdict hydrateChat failed:', err?.message);
         return 0;
     }
 }

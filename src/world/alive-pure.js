@@ -5,7 +5,7 @@
  * exchanges · when nothing is happening — plus Pause. "Big" and "quiet" come from the story helper's reading it already
  * does each turn ("moment"); the rest from the chat and the story clock. When the world ticks, ONE call decides who, if
  * anyone, writes to {{user}} now (from their wants, plans, what they know, whether they're away) and what they write.
- * Each tick is a world record of its own; what it makes is marked `auto`, so a swipe of that reply replaces it.
+ * Each tick is a world record of its own; what it makes is marked `auto`, but swipes never touch the world.
  */
 import { GOSSIP_RULE } from './feed-pure.js';   // who people never gossip about (Miinthe 2026-10-26)
 const arr = v => (Array.isArray(v) ? v : []);

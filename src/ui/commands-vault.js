@@ -53,7 +53,7 @@ export function registerVaultCommands() {
                 toastr.success(msg, 'Onyx Quill');
                 return msg;
             } catch (err) {
-                console.warn('[DLE] /oq-refresh failed:', err);
+                console.warn('[Onyx Quill] /oq-refresh failed:', err);
                 notify.error(trf('dle_cmd_refresh_error_toast', classifyError(err)), { category: 'obsidian_connect', copyable: true });
                 return '';
             }
@@ -152,7 +152,7 @@ export function registerVaultCommands() {
                                 if (textarea) textarea.value = json;
                                 capturedJson = json;
                             } catch (err) {
-                                console.error('[DLE] loadWorldInfo error:', err);
+                                console.error('[Onyx Quill] loadWorldInfo error:', err);
                                 notify.error(classifyError(err), { copyable: true });
                             }
                         });
@@ -199,7 +199,7 @@ export function registerVaultCommands() {
             try {
                 JSON.parse(jsonText);
             } catch (parseErr) {
-                console.warn('[DLE] /oq-import JSON parse failed:', parseErr);
+                console.warn('[Onyx Quill] /oq-import JSON parse failed:', parseErr);
                 toastr.error(tr('dle_cmd_import_invalidjson_toast'), 'Onyx Quill');
                 return '';
             }
@@ -236,7 +236,7 @@ export function registerVaultCommands() {
                 // Wave 1/2/3 native + round-trip handling, the EM section with
                 // the friendly explainer, and a "Skip EM on future imports"
                 // button that flips settings.wiImportEmHandling.
-                if (result.failed > 0) console.warn('[DLE] Import errors:', result.errors);
+                if (result.failed > 0) console.warn('[Onyx Quill] Import errors:', result.errors);
                 const { showImportReport } = await import('./wi-import-report.js');
                 // v2.6 #14: each failure row carries its source WI entry directly —
                 // import.js pushes { …, entry } into result.failures and
@@ -320,7 +320,7 @@ export function registerVaultCommands() {
                     await buildIndex();
                 }
             } catch (err) {
-                console.error('[DLE] Import error:', err);
+                console.error('[Onyx Quill] Import error:', err);
                 notify.error(classifyError(err), { copyable: true });
             }
             return '';

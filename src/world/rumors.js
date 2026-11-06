@@ -118,14 +118,14 @@ export async function rumorTick(w, { scene = false } = {}) {
     try {
         const pr = rumorPrompt({ userName: nameOf(USER), accountName: rumorName(w), people: ppl.map(p => ({ ...p, here: p.here && sceneMsgs.length > 0 })), scene: sceneMsgs, rumors: rumors.map(p => ({ n: p.n, text: p.text, by: nameOf(p.by), heard: normRumor(p.rumor).heard.map(nameOf) })), trackers, look: w.look, when: c ? stampText({ day: c.day, part: c.part }) : '', newOk: sceneMsgs.length > 0 });
         const r = await callAI(pr.system, pr.user, { ...conn, maxTokens: Math.max(Number(conn.maxTokens) || 0, 900), caller: 'world', skipThrottle: true, jsonSchema: RUMOR_SCHEMA, disableThinkingOnClaude: true, noReasoning: true, temperature: 0.9 });
-        if (window.__dleWorldDebug) console.log('[DLE] world rumors', r?.text, '\n---\n', pr.user);
+        if (window.__dleWorldDebug) console.log('[Onyx Quill] world rumors', r?.text, '\n---\n', pr.user);
         if (H.chat() !== cid) return;
         const a = parseRumor(r?.text, ppl, rumors.map(p => p.n), trackers, [{ key: RUMOR, name: rumorName(w) }], Object.fromEntries(rumors.map(p => [p.n, p.text])));
         if (a.newRumor) startRumor(w, a.newRumor);
         // only someone in the know passes it on (or whoever posted it — readers notice the post)
         for (const s of a.spread) { const p = postsOf(H.store()).find(x => x.n === s.rumor); if (p && (s.by.key === p.by || normRumor(p.rumor).heard.includes(s.by.key))) passOn(s); }
         for (const m of a.moves) moveBy(trackers, m);
-    } catch (err) { console.warn('[DLE] world: rumors failed', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: rumors failed', err?.message || err); }
     finally { busy = false; H.changed(); H.render(); }
 }
 
@@ -251,6 +251,6 @@ export async function spreadTip(w, tipper, tip, { leak = false, talk = [], mayAs
         push(facts, tipper, clip(`Tipped off ${rumorName(w)}; it now spreads: "${clip(t.text, 100)}"`, 160));
         const undo = give(facts);
         K.notify({ title: 'World', text: `${rumorName(w)} is spreading it: "${clip(t.text, 90)}"`, undo: H.here(() => { ungive(undo); H.save({ ...H.store(), records: H.store().records.filter(r2 => r2.id !== id) }); H.render(); }) });
-    } catch (err) { console.warn('[DLE] world: the tip went nowhere', err?.message || err); }
+    } catch (err) { console.warn('[Onyx Quill] world: the tip went nowhere', err?.message || err); }
     finally { H.changed(); H.render(); }
 }

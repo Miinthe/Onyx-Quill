@@ -81,7 +81,7 @@ export function leftOutByFolders(entries, folders) {
 
 /**
  * The card on top, from characters.js chatStatus(): who, which run, the three folder lines, the chat switch.
- * Group chats (no character) show only the chat's own folders, as today.
+ * Group chats (no character) show only the chat's own folders, and an on / off switch (they follow only their own).
  */
 export function cardModel(st) {
     const s = st || {};
@@ -100,10 +100,11 @@ export function cardModel(st) {
         title: ch ? ch.name : 'Group chat',
         run: runL,
         on: !!s.on,
-        why: ch ? s.why || '' : 'Group chat: this chat’s own folders apply.',
+        why: ch ? s.why || '' : s.chatSwitch === 'off' ? 'switched off for this chat' : 'Group chat: this chat’s own folders apply.',
         rows,
-        chatSwitch: s.chatSwitch === 'on' || s.chatSwitch === 'off' ? s.chatSwitch : 'follow',
-        switchOptions: ch ? [['follow', `like ${ch.name}`], ['on', 'always on'], ['off', 'off']] : null,
+        // A group chat has no character to follow: its own switch is all there is (on = the default), so two options.
+        chatSwitch: ch ? (s.chatSwitch === 'on' || s.chatSwitch === 'off' ? s.chatSwitch : 'follow') : (s.chatSwitch === 'off' ? 'off' : 'on'),
+        switchOptions: ch ? [['follow', `like ${ch.name}`], ['on', 'always on'], ['off', 'off']] : [['on', 'on'], ['off', 'off']],
         charOn: s.setup?.on !== false,
         folders: Array.isArray(s.folders) ? s.folders : [],
     };

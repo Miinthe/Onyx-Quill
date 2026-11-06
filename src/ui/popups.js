@@ -7,17 +7,18 @@ import { saveMetadataDebounced } from '../../../../../extensions.js';
 import { escapeHtml } from '../../../../../utils.js';
 import { callGenericPopup, POPUP_TYPE } from '../../../../../popup.js';
 import { getTokenCountAsync } from '../../../../../tokenizers.js';
-import { parseFrontmatter, simpleHash, buildScanText, classifyError, NO_ENTRIES_MSG } from '../../core/utils.js';
-import { testEntryMatch } from '../../core/matching.js';
-import { getSettings, getVaultByName } from '../../settings.js';
+import { parseFrontmatter, simpleHash, classifyError, NO_ENTRIES_MSG } from '../../core/utils.js';
+import { getSettings, getVaultByName, PROMPT_TAG_PREFIX } from '../../settings.js';
 import { writeNote, obsidianFetch, encodeVaultPath } from '../vault/obsidian-api.js';
 import { resolvePromptOrOverride } from '../prompts/prompt-store.js';
 import {
     vaultIndex, trackerKey, chatEpoch,
-    setVaultIndex, setIndexTimestamp,
+    setVaultIndex, setIndexTimestamp, getWriterVisibleEntries, fieldDefinitions,
     notifyPinBlockChanged,
 } from '../state.js';
 import { buildIndex } from '../vault/vault.js';
+import { simulateTimeline } from '../pipeline/simulate-pure.js';
+import { DEFAULT_FIELD_DEFINITIONS } from '../fields.js';
 import { callAutoSuggest } from '../ai/auto-suggest.js';
 import { extractAiResponseClient, buildObsidianURI, STAGE_COLORS, normalizePinBlock, normalizeNotepadLine, bigramDiceSimilarity, comparePriority } from '../helpers.js';
 import { diagnoseEntry } from './diagnostics.js';
@@ -75,7 +76,7 @@ export function attachCopyHandler(container) {
                 btn.disabled = false;
             }, 1500);
         } catch (err) {
-            console.error('[DLE] Clipboard copy failed:', err);
+            console.error('[Onyx Quill] Clipboard copy failed:', err);
             btn.textContent = 'Copy failed';
             if (btn._dleCopyResetTimer) clearTimeout(btn._dleCopyResetTimer);
             btn._dleCopyResetTimer = setTimeout(() => {
@@ -158,19 +159,19 @@ export async function showAiNotepadPopup() {
     const container = document.createElement('div');
     container.classList.add('dle-popup');
     container.innerHTML = `
-        <h3>AI Notepad</h3>
-        <p class="dle-muted dle-text-sm">Session notes written by the AI using &lt;dle-notes&gt; tags. These are stripped from visible chat and reinjected into future messages.</p>
+        <h3>AI notepad</h3>
+        <p class="dle-muted dle-text-sm">Session notes the AI keeps from its replies. They are sent again with later messages.</p>
         <textarea id="dle-ai-notepad-textarea" class="text_pole dle-w-full" rows="15" placeholder="No AI notes yet for this chat.">${escapeHtml(currentNotes)}</textarea>
         <div class="flex-container" style="align-items: center; gap: 8px; margin-top: 4px;">
             <span id="dle-ai-notepad-token-count" class="dle-text-xs dle-faint"></span>
             <span id="dle-ai-notepad-entry-count" class="dle-text-xs dle-faint"></span>
             <span style="flex: 1;"></span>
-            <button type="button" id="dle-ai-notepad-dedup" class="menu_button menu_button_icon" title="Merge near-duplicate entries (deterministic fuzzy match, pins protected)">
+            <button type="button" id="dle-ai-notepad-dedup" class="menu_button menu_button_icon" title="Merge near-duplicate notes (pinned ones stay)">
                 <i class="fa-solid fa-broom" aria-hidden="true"></i><span>Deduplicate</span>
             </button>
         </div>
         <div style="margin-top: 10px;">
-            <label><small>Pinned Entries (exempt from FIFO cap and dedup)</small></label>
+            <label><small>Pinned notes (never dropped or merged)</small></label>
             <div id="dle-ai-notepad-pin-list" class="dle-preview dle-preview--short"></div>
         </div>
     `;
@@ -196,7 +197,7 @@ export async function showAiNotepadPopup() {
                 if (!pinListEl) return;
                 const lines = splitLines(textarea.value);
                 if (lines.length === 0) {
-                    pinListEl.innerHTML = '<div class="dle-text-xs dle-muted"><em>No entries yet.</em></div>';
+                    pinListEl.innerHTML = '<div class="dle-text-xs dle-muted"><em>No notes yet.</em></div>';
                     return;
                 }
                 const seen = new Set();
@@ -213,7 +214,7 @@ export async function showAiNotepadPopup() {
                         </label>
                     `);
                 }
-                pinListEl.innerHTML = rows.join('') || '<div class="dle-text-xs dle-muted"><em>No valid entries to pin.</em></div>';
+                pinListEl.innerHTML = rows.join('') || '<div class="dle-text-xs dle-muted"><em>No notes to pin.</em></div>';
                 pinListEl.querySelectorAll('.dle-ai-notepad-pin-toggle').forEach(el => {
                     el.addEventListener('change', () => {
                         const key = el.getAttribute('data-pin-key');
@@ -229,7 +230,7 @@ export async function showAiNotepadPopup() {
                 const lines = splitLines(textarea.value);
                 if (entryCountEl) {
                     const capStr = maxEntries > 0 ? ` / ${maxEntries}` : '';
-                    entryCountEl.textContent = `${lines.length} entries${capStr}`;
+                    entryCountEl.textContent = `${lines.length} note${lines.length === 1 ? '' : 's'}${capStr}`;
                 }
                 if (countEl) {
                     try {
@@ -288,7 +289,7 @@ export async function showAiNotepadPopup() {
                     textarea.value = kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
                     await updateCounts();
                     renderPinList();
-                    toastr.success(trf('dle_toast_duplicates_merged', dropped, dropped === 1 ? 'entry' : 'entries'), 'Onyx Quill');
+                    toastr.success(trf('dle_toast_duplicates_merged', dropped, dropped === 1 ? 'note' : 'notes'), 'Onyx Quill');
                 });
             }
 
@@ -614,54 +615,20 @@ export async function showBrowsePopup() {
     });
 }
 
-/** Step-by-step replay; skips probability/warmup/cooldown for clean visualisation. */
-export function runSimulation(chatMsgs) {
+/**
+ * Step-by-step replay (keyword matching). LOCAL PATCH (Miinthe, 2026-11-05): replays from what a real reply starts from —
+ * `inputs` from pipeline/generation-inputs.js ({ board: false }): no Secrets for Mero, the chat's folders, and today's
+ * pins / field values / budget (src/pipeline/simulate-pure.js). Without `inputs`: the writer-visible entries only.
+ */
+export function runSimulation(chatMsgs, inputs = null) {
     const settings = getSettings();
-    const timeline = [];
-    let previousActive = new Set();
-
-    for (let i = 1; i <= chatMsgs.length; i++) {
-        const slicedChat = chatMsgs.slice(0, i);
-        const scanText = buildScanText(slicedChat, settings.scanDepth);
-        const currentActive = new Set();
-
-        for (const entry of vaultIndex) {
-            if (entry.constant) currentActive.add(entry.title);
-        }
-
-        if (i <= settings.newChatThreshold) {
-            for (const entry of vaultIndex) {
-                if (entry.bootstrap) currentActive.add(entry.title);
-            }
-        }
-
-        if (settings.scanDepth > 0) {
-            for (const entry of vaultIndex) {
-                if (entry.constant) continue;
-                const entryText = entry.scanDepth !== null
-                    ? buildScanText(slicedChat, entry.scanDepth)
-                    : scanText;
-                const key = testEntryMatch(entry, entryText, settings);
-                if (key) currentActive.add(entry.title);
-            }
-        }
-
-        const newlyActivated = [...currentActive].filter(t => !previousActive.has(t));
-        const deactivated = [...previousActive].filter(t => !currentActive.has(t));
-
-        const msg = chatMsgs[i - 1];
-        timeline.push({
-            messageIndex: i - 1,
-            speaker: msg.is_user ? 'User' : (msg.name || 'AI'),
-            active: [...currentActive],
-            newlyActivated,
-            deactivated,
-        });
-
-        previousActive = currentActive;
-    }
-
-    return timeline;
+    const inp = inputs || { snapshot: getWriterVisibleEntries() };
+    return simulateTimeline(chatMsgs, {
+        ...inp,
+        settings,
+        fieldDefs: fieldDefinitions.length > 0 ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS,
+        promptTagPrefix: PROMPT_TAG_PREFIX,
+    });
 }
 
 export function showSimulationPopup(timeline) {
@@ -676,7 +643,7 @@ export function showSimulationPopup(timeline) {
 
     let html = '<div class="dle-popup">';
     html += `<h3>Activation Simulation (${timeline.length} messages)</h3>`;
-    html += '<p class="dle-text-xs dle-muted dle-mb-2">Note: This simulation uses keyword matching only. AI search, gating filters, cooldown/warmup timers, probability, and pin/block overrides are not included. Actual injection results during generation may differ.</p>';
+    html += '<p class="dle-text-xs dle-muted dle-mb-2">Keyword matching only, with this chat’s folders, field values, pins and budget as they are now (Secrets for Mero left out). Not replayed: AI search, the board at the time (steps, branches, items, places, its pins), cooldown, warmup and probability. Real replies may differ.</p>';
     html += buildCopyButton(plainText);
     html += '<div class="dle-scroll-region">';
 
@@ -711,7 +678,8 @@ export function showSimulationPopup(timeline) {
 export async function optimizeEntryKeys(entry) {
     const settings = getSettings();
     const mode = settings.optimizeKeysMode;
-    const modeHint = mode === 'keyword-only'
+    // Stored values are 'keyword' / 'two-stage'; 'keyword-only' kept for old saves.
+    const modeHint = (mode === 'keyword' || mode === 'keyword-only')
         ? 'This system uses KEYWORD-ONLY matching (no AI filter). Be precise — avoid generic words.'
         : 'This system uses TWO-STAGE matching (keywords → AI filter). Be broader — the AI will refine.';
 
@@ -795,7 +763,7 @@ export async function showOptimizePopup(entry, result) {
                 setIndexTimestamp(0);
                 await buildIndex();
             } else {
-                console.warn('[DLE] Optimize keys write failed:', data && data.error);
+                console.warn('[Onyx Quill] Optimize keys write failed:', data && data.error);
                 toastr.error(tr('dle_toast_keywords_save_failed'), 'Onyx Quill');
             }
         } catch (err) {
@@ -885,7 +853,7 @@ export async function runBatchOptimize(trackerKeys) {
             await showOptimizePopup(entry, result);
             accepted++;
         } catch (err) {
-            console.error('[DLE] Batch optimize entry failed:', entry.title, err);
+            console.error('[Onyx Quill] Batch optimize entry failed:', entry.title, err);
             errored++;
         }
     }

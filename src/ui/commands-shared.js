@@ -31,7 +31,7 @@ export async function ensureFreshOrToast(cmdName) {
         return true;
     } catch (err) {
         toastr.error(trf('dle_cmd_refresh_error_toast', classifyError(err)), 'Onyx Quill');
-        console.error(`[DLE] ensureIndexFresh failed in ${cmdName}:`, err);
+        console.error(`[Onyx Quill] ensureIndexFresh failed in ${cmdName}:`, err);
         return false;
     }
 }

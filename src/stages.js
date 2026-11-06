@@ -160,7 +160,7 @@ export function applyPinBlock(entries, vaultSnapshot, policy, matchedKeys) {
     }
 
     if ((addedCount > 0 || upgradedCount > 0 || blockedCount > 0) && _isDebug()) {
-        console.debug('[DLE] Pin/Block: +%d pinned, %d upgraded, -%d blocked', addedCount, upgradedCount, blockedCount);
+        console.debug('[Onyx Quill] Pin/Block: +%d pinned, %d upgraded, -%d blocked', addedCount, upgradedCount, blockedCount);
     }
 
     return result;
@@ -181,6 +181,8 @@ export function applyPinBlock(entries, vaultSnapshot, policy, matchedKeys) {
 export function applyContextualGating(entries, context, policy, debugMode, settings, fieldDefs) {
     if (!fieldDefs || fieldDefs.length === 0) return entries;
 
+    // Only for hand-built definitions without a tolerance: parsed / default ones always carry their own (fields.js),
+    // which is why the settings row for this global value was removed (2026-11-05).
     const fallbackTolerance = (settings && settings.contextualGatingTolerance) || 'strict';
 
     // Only apply gating if at least one context dimension is set, OR any enabled
@@ -242,7 +244,7 @@ export function applyContextualGating(entries, context, policy, debugMode, setti
             .filter(fd => fd.gating?.enabled && context[fd.contextKey])
             .map(fd => `${fd.name}: ${context[fd.contextKey]}`)
             .join(', ');
-        console.log(`[DLE] Contextual gating removed ${before - result.length} entries (${activeFields || 'none'})`);
+        console.log(`[Onyx Quill] Contextual gating removed ${before - result.length} entries (${activeFields || 'none'})`);
     }
 
     return result;
@@ -251,26 +253,29 @@ export function applyContextualGating(entries, context, policy, debugMode, setti
 /**
  * Filter entries by active folder selection. Includes entries in selected
  * folders + their subfolders. Root-level entries (no folder) always pass.
- * ForceInject is exempt.
+ * Only per-chat pins are exempt (policy.pinnedKeys). LOCAL PATCH (Miinthe, 2026-11-05): always-send, seed and starter
+ * entries follow the folders like any other entry — before, they were exempt (policy.forceInject), so one story's
+ * always-send entries reached every other story. Entries at the top of the vault (no folder) still count everywhere.
  *
  * @param {Array} entries
  * @param {string[]|null} selectedFolders - null/empty = no filter
- * @param {{ forceInject: Set }} policy
+ * @param {{ forceInject: Set, pinnedKeys?: Set }} policy
  * @param {boolean} debugMode
  * @returns {Array}
  */
 export function applyFolderFilter(entries, selectedFolders, policy, debugMode) {
     if (!selectedFolders || selectedFolders.length === 0) return entries;
 
+    const pinned = policy?.pinnedKeys;
     const before = entries.length;
     const result = entries.filter(e => {
-        if (policy.forceInject.has(trackerKey(e))) return true;
+        if (pinned && pinned.has(trackerKey(e))) return true;
         if (!e.folderPath) return true; // root always passes
         return selectedFolders.some(f => e.folderPath === f || e.folderPath.startsWith(f + '/'));
     });
 
     if (debugMode && result.length < before) {
-        console.log(`[DLE] Folder filter removed ${before - result.length} entries (folders: ${selectedFolders.join(', ')})`);
+        console.log(`[Onyx Quill] Folder filter removed ${before - result.length} entries (folders: ${selectedFolders.join(', ')})`);
     }
 
     return result;
@@ -296,7 +301,7 @@ export function applyReinjectionCooldown(entries, policy, injectionHistory, gene
         const lastGen = injectionHistory.get(trackerKey(e));
         if (lastGen !== undefined && (generationCount - lastGen) < reinjectionCooldown) {
             if (debugMode) {
-                console.debug(`[DLE] Re-injection cooldown: "${e.title}" was injected ${generationCount - lastGen} gens ago (cooldown: ${reinjectionCooldown}) — skipping`);
+                console.debug(`[Onyx Quill] Re-injection cooldown: "${e.title}" was injected ${generationCount - lastGen} gens ago (cooldown: ${reinjectionCooldown}) — skipping`);
             }
             return false;
         }
@@ -304,7 +309,7 @@ export function applyReinjectionCooldown(entries, policy, injectionHistory, gene
     });
 
     if (debugMode && result.length < before) {
-        console.log(`[DLE] Re-injection cooldown removed ${before - result.length} entries`);
+        console.log(`[Onyx Quill] Re-injection cooldown removed ${before - result.length} entries`);
     }
 
     return result;
@@ -406,7 +411,7 @@ export function applyRequiresExcludesGating(entries, policy, debugMode, priority
                 for (const req of r.requires) {
                     const reqEntry = entryMap.get(req.toLowerCase());
                     if (reqEntry && reqEntry.excludes && reqEntry.excludes.some(exc => exc.toLowerCase() === r.title.toLowerCase())) {
-                        console.warn(`[DLE] Contradictory gating: "${r.title}" requires "${reqEntry.title}" but "${reqEntry.title}" excludes "${r.title}" — both dropped`);
+                        console.warn(`[Onyx Quill] Contradictory gating: "${r.title}" requires "${reqEntry.title}" but "${reqEntry.title}" excludes "${r.title}" — both dropped`);
                     }
                 }
             }
@@ -414,11 +419,11 @@ export function applyRequiresExcludesGating(entries, policy, debugMode, priority
     }
 
     if (iterations >= MAX_ITERATIONS && changed) {
-        console.warn('[DLE] Gating did not stabilize after', MAX_ITERATIONS, 'iterations');
+        console.warn('[Onyx Quill] Gating did not stabilize after', MAX_ITERATIONS, 'iterations');
     }
 
     if (debugMode && removed.length > 0) {
-        console.log(`[DLE] Gating removed ${removed.length} entries:`,
+        console.log(`[Onyx Quill] Gating removed ${removed.length} entries:`,
             removed.map(e => ({ title: e.title, requires: e.requires, excludes: e.excludes })));
     }
 
@@ -448,7 +453,7 @@ export function applyRequiresExcludesGating(entries, policy, debugMode, priority
  */
 export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, defaultSettings, debugMode) {
     if (debugMode) {
-        console.debug('[DLE][DIAG] strip-dedup-fn-entry', {
+        console.debug('[Onyx Quill][DIAG] strip-dedup-fn-entry', {
             logExists: !!injectionLog,
             logIsArray: Array.isArray(injectionLog),
             logLength: injectionLog?.length ?? 0,
@@ -463,11 +468,11 @@ export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, de
     // command, and external callers that may not respect the UI minimum. Treat
     // `<= 0` as "dedup disabled" to match the semantic the name implies.
     if (lookbackDepth <= 0) {
-        if (debugMode) console.debug('[DLE][DIAG] strip-dedup-fn-early-return — lookbackDepth <= 0, dedup disabled');
+        if (debugMode) console.debug('[Onyx Quill][DIAG] strip-dedup-fn-early-return — lookbackDepth <= 0, dedup disabled');
         return entries;
     }
     if (!injectionLog || injectionLog.length === 0) {
-        if (debugMode) console.debug('[DLE][DIAG] strip-dedup-fn-early-return — log empty or missing, returning all entries');
+        if (debugMode) console.debug('[Onyx Quill][DIAG] strip-dedup-fn-early-return — log empty or missing, returning all entries');
         return entries;
     }
 
@@ -482,7 +487,7 @@ export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, de
     }
 
     if (debugMode) {
-        console.debug('[DLE][DIAG] strip-dedup-set', {
+        console.debug('[Onyx Quill][DIAG] strip-dedup-set', {
             recentLogCount: recentLogs.length,
             recentLogGens: recentLogs.map(l => l.gen),
             dedupSetSize: recentEntries.size,
@@ -494,7 +499,7 @@ export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, de
     const result = entries.filter(e => {
         const forceExempt = policy.forceInject.has(trackerKey(e));
         if (forceExempt) {
-            if (debugMode) console.debug(`[DLE][DIAG] strip-dedup-entry-check EXEMPT "${e.title}" (forceInject)`);
+            if (debugMode) console.debug(`[Onyx Quill][DIAG] strip-dedup-entry-check EXEMPT "${e.title}" (forceInject)`);
             return true;
         }
         // Audit S3-3: defaultSettings is optional — null-guard the fallback reads.
@@ -521,13 +526,13 @@ export function applyStripDedup(entries, policy, injectionLog, lookbackDepth, de
         const key = `${e.vaultSource || ''}:${e.title}|${e.injectionPosition ?? ds.injectionPosition}|${e.injectionDepth ?? ds.injectionDepth}|${e.injectionRole ?? ds.injectionRole}|${e._contentHash || ''}`;
         const matched = recentEntries.has(key);
         if (debugMode) {
-            console.debug(`[DLE][DIAG] strip-dedup-entry-check "${e.title}" — ${matched ? 'STRIPPED' : 'KEPT'}`, { key });
+            console.debug(`[Onyx Quill][DIAG] strip-dedup-entry-check "${e.title}" — ${matched ? 'STRIPPED' : 'KEPT'}`, { key });
         }
         return !matched;
     });
 
     if (debugMode && result.length < before) {
-        console.debug(`[DLE][DIAG] strip-dedup-summary: removed ${before - result.length}/${before} entries`);
+        console.debug(`[Onyx Quill][DIAG] strip-dedup-summary: removed ${before - result.length}/${before} entries`);
     }
 
     return result;
@@ -560,7 +565,7 @@ export function trackGeneration(injectedEntries, generationCount, cooldownTracke
 
     if (_isDebug() && injectedEntries.length > 0) {
         const cooldownCount = injectedEntries.filter(e => e.cooldown !== null && e.cooldown > 0).length;
-        console.debug('[DLE] Track: %d injected, %d cooldowns set, reinjection=%s', injectedEntries.length, cooldownCount, settings.reinjectionCooldown > 0);
+        console.debug('[Onyx Quill] Track: %d injected, %d cooldowns set, reinjection=%s', injectedEntries.length, cooldownCount, settings.reinjectionCooldown > 0);
     }
 }
 
@@ -622,7 +627,7 @@ export function decrementTrackers(cooldownTracker, decayTracker, injectedEntries
     }
 
     if (_isDebug() && (expiredCooldowns > 0 || decayPruned > 0 || streaksBroken > 0)) {
-        console.debug('[DLE] Decrement: %d cooldowns expired, %d decay pruned, %d streaks broken', expiredCooldowns, decayPruned, streaksBroken);
+        console.debug('[Onyx Quill] Decrement: %d cooldowns expired, %d decay pruned, %d streaks broken', expiredCooldowns, decayPruned, streaksBroken);
     }
 }
 
@@ -675,6 +680,6 @@ export function recordAnalytics(matchedEntries, injectedEntries, analyticsData) 
     }
 
     if (_isDebug() && (stalePruned > 0 || capEvicted > 0)) {
-        console.debug('[DLE] Analytics: %d stale pruned, %d cap evicted', stalePruned, capEvicted);
+        console.debug('[Onyx Quill] Analytics: %d stale pruned, %d cap evicted', stalePruned, capEvicted);
     }
 }

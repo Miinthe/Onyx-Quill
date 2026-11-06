@@ -208,7 +208,7 @@ const RETIRED_PROMPT = /^(EMMA_|LIBRARIAN_|AGENTIC_)/;
 
 /** Plain names for the prompts that are listed. */
 const PROMPT_NAMES = {
-    AI_SEARCH_SYSTEM_PROMPT: 'The judge — picks the lore for each reply',
+    AI_SEARCH_SYSTEM_PROMPT: 'AI search — picks the lore for each reply',
     AI_NOTEPAD_PROMPT: 'AI notepad',
     SCRIBE_PROMPT: 'Scribe — session notes',
     AUTO_SUGGEST_PROMPT: 'New lore ideas',
@@ -473,11 +473,11 @@ export function bindPromptsTabHandlers($container, settings) {
             } else {
                 setPromptsStatus($status, `Exported ${written}, failed ${failed.length}. See console.`, 'warn');
                 toastr.warning(`Exported ${written}, ${failed.length} failed. Check console.`, 'Onyx Quill');
-                console.warn('[DLE prompts] export failures:', failed);
+                console.warn('[Onyx Quill prompts] export failures:', failed);
             }
         } catch (err) {
             setPromptsStatus($status, `Export error: ${err.message}`, 'err');
-            console.error('[DLE prompts] export error:', err);
+            console.error('[Onyx Quill prompts] export error:', err);
         } finally {
             $(this).removeClass('disabled');
         }
@@ -535,7 +535,7 @@ export function bindPromptsTabHandlers($container, settings) {
         } else {
             setPromptsStatus($status, `Deleted ${deleted}, ${failures.length} failed. See console.`, 'warn');
             toastr.warning(`Deleted ${deleted}, ${failures.length} failed. Check console.`, 'Onyx Quill');
-            console.warn('[DLE prompts] reset failures:', failures);
+            console.warn('[Onyx Quill prompts] reset failures:', failures);
         }
     });
 

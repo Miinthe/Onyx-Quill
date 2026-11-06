@@ -182,11 +182,11 @@ export async function offerBranchRun({ fromCommand }) {
         notifyGatingChanged();
 
         const msg = `Run ${L} started — ${written.length} file${written.length === 1 ? '' : 's'} copied${skipped.length ? `, ${skipped.length} skipped` : ''}.`;
-        if (skipped.length) console.warn('[DLE] branch run skipped:', skipped);
+        if (skipped.length) console.warn('[Onyx Quill] branch run skipped:', skipped);
         toastr[skipped.length ? 'warning' : 'success'](msg, 'Onyx Quill', { timeOut: 8000 });
         return msg + (skipped.length ? '\nSkipped:\n' + skipped.join('\n') : '');
     } catch (err) {
-        console.error('[DLE] branch run failed:', err);
+        console.error('[Onyx Quill] branch run failed:', err);
         toastr.error('Starting the branch as a new run failed: ' + (err?.message || err), 'Onyx Quill');
         return 'Failed.';
     } finally {

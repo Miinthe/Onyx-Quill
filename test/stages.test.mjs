@@ -18,6 +18,7 @@ import {
 } from '../src/stages.js';
 
 import { DEFAULT_FIELD_DEFINITIONS } from '../src/fields.js';
+import { simulateTimeline } from '../src/pipeline/simulate-pure.js';
 import { trackerKey } from '../src/state.js';
 
 // ============================================================================
@@ -1116,12 +1117,28 @@ test('H3: Subfolder matching — nested path', () => {
     assertEqual(result.length, 1, 'H3: nested subfolder should match parent');
 });
 
-test('H4: ForceInject entries pass regardless of folder', () => {
-    const constant = makeEntry('World Constant', { constant: true });
-    constant.folderPath = 'Hidden/Folder';
-    const policy = buildExemptionPolicy([constant], [], []);
-    const result = applyFolderFilter([constant], ['Characters'], policy, false);
-    assertEqual(result.length, 1, 'H4: forceInject entry should pass folder filter');
+test('H4: Pinned entries pass regardless of folder', () => {
+    const pinnedEntry = makeEntry('Pinned One');
+    pinnedEntry.folderPath = 'Hidden/Folder';
+    const policy = buildExemptionPolicy([pinnedEntry], ['Pinned One'], []);
+    const result = applyFolderFilter([pinnedEntry], ['Characters'], policy, false);
+    assertEqual(result.length, 1, 'H4: pinned entry should pass folder filter');
+});
+
+test('H4b: Always-send / seed / starter entries follow the folders (2026-11-05)', () => {
+    const constant = makeEntry('Other Story Constant', { constant: true });
+    constant.folderPath = 'Other Story';
+    const seed = makeEntry('Other Story Seed', { seed: true });
+    seed.folderPath = 'Other Story/Setting';
+    const starter = makeEntry('Other Story Starter', { bootstrap: true });
+    starter.folderPath = 'Other Story';
+    const mine = makeEntry('My Constant', { constant: true });
+    mine.folderPath = 'Characters/Hero';
+    const rootConstant = makeEntry('Root Constant', { constant: true });
+    const all = [constant, seed, starter, mine, rootConstant];
+    const policy = buildExemptionPolicy(all, [], [], true);
+    const result = applyFolderFilter(all, ['Characters'], policy, false).map(e => e.title).sort();
+    assertEqual(result, ['My Constant', 'Root Constant'], 'H4b: only in-folder and root always-send entries stay');
 });
 
 test('H5: Null/empty selectedFolders → no filtering', () => {
@@ -1151,6 +1168,23 @@ test('H7: Folder filter does not match partial folder names', () => {
     // 'Characters' should NOT match 'Characters-old' (startsWith 'Characters/' would fail)
     const result = applyFolderFilter([entry], ['Characters'], policy, false);
     assertEqual(result.length, 0, 'H7: partial folder name should not match');
+});
+
+test('H8: /oq-simulate replays from what a real reply starts from (2026-11-05)', () => {
+    const chatMsgs = [{ is_user: true, mes: 'The dragon and the castle and the secret' }];
+    const mine = makeEntry('Castle', { keys: ['castle'], folderPath: 'Story A' });
+    const other = makeEntry('Dragon', { keys: ['dragon'], folderPath: 'Story B' });
+    const otherConst = makeEntry('B Always', { constant: true, folderPath: 'Story B' });
+    const guide = makeEntry('Secret Guide', { keys: ['secret'], guide: true });
+    const pinned = makeEntry('Pinned Far', { folderPath: 'Story C' });
+    const blocked = makeEntry('Blocked', { keys: ['castle'], folderPath: 'Story A' });
+    const big = makeEntry('Later', { keys: ['castle'], folderPath: 'Story A', priority: 200 });
+    const tl = simulateTimeline(chatMsgs, {
+        snapshot: [mine, other, otherConst, guide, pinned, blocked, big],
+        pins: ['Pinned Far'], blocks: ['Blocked'], folderFilter: ['Story A'], budget: { maxEntries: 2 },
+        ctx: {}, settings: makeSettings({ newChatThreshold: 0 }), fieldDefs: DEFAULT_FIELD_DEFINITIONS,
+    });
+    assertEqual(tl[0].active.sort(), ['Castle', 'Pinned Far'], 'H8: folders, no guide, pins, blocks and budget applied');
 });
 
 // ============================================================================

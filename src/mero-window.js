@@ -6,11 +6,7 @@
 import { eventSource, event_types, saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings, getContext } from '../../../../extensions.js';
 import { getSettings } from '../settings.js';
-import { stIsDark, openBoardWindow } from './board-window.js';
-// overhaul (2026-10-17): the old helper's lore gaps live in her Requests now (their one home)
-import { loreGaps, onLoreGapsChanged, vaultIndex } from './state.js';
-import { hideGap, dismissGap, getHiddenGapIds, getDismissedGapIds, persistGaps } from './lore-gaps.js';
-import { resolveEntryVault, openObsidianUri } from './helpers.js';
+import { stIsDark } from './board-window.js';
 import { getTrackers } from './trackers.js';
 import { live } from './board-live.js';
 import {
@@ -26,7 +22,7 @@ import * as P from './pitches.js';   // 💡 pitches (step 4, 2026-10-14)
 import { replay as fourBoard } from './games/four-pure.js';
 /** Four in a Row: the window gets the board worked out (cells, whose turn, the end, the winning four) — it only draws. */
 const withBoard = t => (t?.game?.kind === 'four' ? { ...t, game: { ...t.game, ...fourBoard(t.game) } } : t);
-import { fitHeight, gapCards } from './panel/mero-view-pure.js';   // overhaul (side panel v13)
+import { fitHeight } from './panel/mero-view-pure.js';   // overhaul (side panel v13)
 import { slopList, addPhrase, updatePhrase, removePhrase, unFine, onSlopChanged } from './slop.js';
 
 let frame = null, popped = false, float = null;
@@ -43,36 +39,10 @@ function load() {
         requests: requestsHere(), holding: replyWaits(), looking: meroLooking(), glow: meroGlow(), pitches: P.pitchesView(),
         profiles: (extension_settings?.connectionManager?.profiles || []).map(p => ({ id: p.id, name: p.name || p.id })), profileId: getSettings().meroProfileId || '',
         side: getSettings().drawerSide === 'left' ? 'left' : 'right',   // her rail follows the panel's side (v13)
-        gaps: gapsView(),
         slop: slopList(),   // the slop guard's phrase list, with her notes (2026-11-02)
         // who a pitch may focus on besides the Cast: the main character and Miinthe's persona (Miinthe 2026-10-18)
         people: { main: getContext()?.groupId ? '' : (getContext()?.name2 || ''), user: getContext()?.name1 || '' },
     });
-}
-
-/** The lore gaps for her Requests (hidden and dismissed ones left out). */
-function gapsView() {
-    try { return gapCards(loreGaps, { hidden: [...getHiddenGapIds()], dismissed: [...getDismissedGapIds()] }); } catch { return { open: [], done: [] }; }
-}
-/**
- * A lore gap's buttons: 'write' — "Write a new entry…" with its words filled in (Create marks it written) · 'open' — the
- * entry it is about, in Obsidian · 'done' — mark it written · 'hide' — until it is flagged again · 'no' — for good.
- */
-function gapAction(id, what) {
-    const g = loreGaps.find(x => x.id === id);
-    if (!g) return { ok: false, msg: 'That gap is gone.' };
-    if (what === 'write') { openBoardWindow({ entry: { title: String(g.query || '').trim(), ask: String(g.reason || '').trim(), gapId: id } }); return { ok: true }; }
-    if (what === 'open') {
-        const e = (vaultIndex || []).find(x => x.title === g.entryTitle);
-        const uri = e ? resolveEntryVault(e, getSettings().vaults).uri : null;
-        if (!uri) return { ok: false, msg: `“${g.entryTitle || g.query}” isn't in the vault index.` };
-        openObsidianUri(uri);
-        return { ok: true };
-    }
-    if (what === 'done') { g.status = 'written'; persistGaps([...loreGaps]); return { ok: true }; }
-    if (what === 'hide') { hideGap(id); return { ok: true }; }
-    if (what === 'no') { dismissGap(id); return { ok: true }; }
-    return { ok: false, msg: 'Not done.' };
 }
 
 /** A tracker Mero named: the side panel's Story tab, that tracker in view. */
@@ -198,12 +168,11 @@ window.__dleMeroHost = {
     // your notebooks in her Notes (v13): the same tools as the side panel's ⋯ → Notebooks
     tool: action => { const b = document.querySelector(`#deeplore-panel #dle-panel-tools .dle-tool-btn[data-action="${action}"]`); if (!b) return false; b.click(); return true; },
     // Mero's connection, right in her tab (Miinthe, 2026-10-14: the settings window's AI Connections were too hard to find)
-    openSettings: async section => { try { const { openSettingsView } = await import('./settings/settings-view.js'); openSettingsView({ section }); } catch (err) { console.warn('[DLE] settings did not open', err); } },
+    openSettings: async section => { try { const { openSettingsView } = await import('./settings/settings-view.js'); openSettingsView({ section }); } catch (err) { console.warn('[Onyx Quill] settings did not open', err); } },
     setConnection: id => { const s = getSettings(); s.meroConnectionMode = 'profile'; s.meroProfileId = String(id || ''); saveSettingsDebounced(); refresh(); },
     answer: (id, choice, n, extra) => answerRequest(id, choice, n, extra),
     // 🚫 phrases to avoid (the slop guard, 2026-11-02)
     slopAdd: (t, o) => addPhrase(t, o), slopUpdate: (id, patch) => updatePhrase(id, patch), slopRemove: id => removePhrase(id), slopUnfine: t => unFine(t),
-    gap: (id, what) => { const r = gapAction(id, what); refresh(); return r; },
     lookLore: () => lookAtLore({ force: true }),
     undoEntry: id => undoEntry(id),
     resetSettings: what => meroSettings(null, { reset: what }),
@@ -288,7 +257,6 @@ export function initMeroTab() {
     initRequests();
     initMeroLore();
     onLookChanged(refresh);
-    onLoreGapsChanged(refresh);
     onRequestsChanged(() => { refresh(); updateMailSignal(); });
     try { eventSource.on(event_types.CHAT_CHANGED, () => setTimeout(updateMailSignal, 300)); } catch { /* noop */ }
     setTimeout(updateMailSignal, 1000);

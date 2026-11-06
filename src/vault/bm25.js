@@ -138,7 +138,7 @@ export function queryBM25(index, queryText, topK = 20, minScore = 0.5) {
     const results = scores.slice(0, topK);
     const _bm25Ms = Math.round(performance.now() - _bm25Start);
     if (_debugMode) {
-        console.debug('[DLE] BM25: query "%s" → %d hits in %dms (threshold: %s)', queryText?.slice(0, 40), results.length, _bm25Ms, minScore);
+        console.debug('[Onyx Quill] BM25: query "%s" → %d hits in %dms (threshold: %s)', queryText?.slice(0, 40), results.length, _bm25Ms, minScore);
     }
     return results;
 }

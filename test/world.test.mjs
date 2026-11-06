@@ -7,7 +7,7 @@
  * Run: npm run test:world
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
-import { isMuted, neverTalk, togglePin, normWorld, worldOf, railSections, sectionTitle, openingSection, panelSide, emptyStore, normStore, addRecord, rewindFrom, pruneTo } from '../src/world/world-pure.js';
+import { isMuted, neverTalk, togglePin, normWorld, worldOf, worldPaused, railSections, sectionTitle, openingSection, panelSide, emptyStore, normStore, addRecord, rewindFrom, pruneTo } from '../src/world/world-pure.js';
 import { normalizeBoard, BOARD_VERSION } from '../src/board-model-pure.js';
 import { toWindowBoard, fromWindowBoard } from '../src/board-window-pure.js';
 
@@ -20,6 +20,16 @@ test('world settings: off unless switched on, all sections on, phone look', () =
     assertEqual(normWorld({ look: 'carrier pigeon' }).look, 'phone');
 });
 
+test('worldOf: the pause is per chat; a chat that never set its own follows the old board flag', () => {
+    assertEqual(worldPaused(false, undefined), false);
+    assertEqual(worldPaused(true, undefined), true);   // paused before the change: stays paused
+    assertEqual(worldPaused(true, false), false);      // woken in this chat
+    assertEqual(worldPaused(false, true), true);       // paused in this chat only
+    assertEqual(worldOf({ world: { on: true } }, true).paused, true);
+    assertEqual(worldOf({ world: { on: true, paused: true } }).paused, true);
+    assertEqual(worldOf({ world: { on: true, paused: true } }, false).paused, false);
+    assertEqual(worldOf({ world: { on: false } }, false), null);
+});
 test('worldOf: null for a board without the world layer', () => {
     assertEqual(worldOf(null), null);
     assertEqual(worldOf({ world: { on: false } }), null);

@@ -2,7 +2,7 @@
  * DeepLore Core — Pipeline Helpers
  */
 
-import { parseFrontmatter, extractWikiLinks, cleanContent, extractTitle } from './utils.js';
+import { parseFrontmatter, extractWikiLinks, cleanContent, extractTitle, stripHiddenText } from './utils.js';
 import { extractCustomFields } from '../src/fields.js';
 // BUG-094: use ST's canonical role-name → enum mapper. Resolved lazily so cold-start
 // / Node tests don't crash if ST isn't loaded.
@@ -283,7 +283,8 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
         if (onSkip) onSkip('SKIP_EMPTY_TITLE');
         return null;
     }
-    const links = extractWikiLinks(body);
+    // Links in %% comments / oq-exclude blocks don't count (they never reach the writer).
+    const links = extractWikiLinks(stripHiddenText(body));
     const content = cleanContent(body);
     const priorityCoerced = coerceNumber(frontmatter.priority, 'priority', warnings, lenient);
     const priority = priorityCoerced.value !== null ? priorityCoerced.value : DEFAULT_PRIORITY;
@@ -330,10 +331,10 @@ export function parseVaultFile(file, tagConfig, fieldDefinitions, options = {}) 
     if (typeof frontmatter.depth === 'number' && Number.isFinite(frontmatter.depth)) {
         const d = frontmatter.depth;
         if (d < 0) {
-            console.warn(`[DLE] entry "${file.filename}": depth ${d} < 0 — clamping to 0`);
+            console.warn(`[Onyx Quill] entry "${file.filename}": depth ${d} < 0 — clamping to 0`);
             injectionDepth = 0;
         } else if (d > 10000) {
-            console.warn(`[DLE] entry "${file.filename}": depth ${d} exceeds MAX_INJECTION_DEPTH (10000) — clamping`);
+            console.warn(`[Onyx Quill] entry "${file.filename}": depth ${d} exceeds MAX_INJECTION_DEPTH (10000) — clamping`);
             injectionDepth = 10000;
         } else {
             injectionDepth = d;

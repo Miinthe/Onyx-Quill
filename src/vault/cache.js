@@ -11,12 +11,10 @@ import { simpleHash } from '../../core/utils.js';
 import { validateCachedEntry } from './cache-validate.js';
 export { validateCachedEntry };
 
-const DB_NAME = 'DeepLoreEnhanced';
-// v2 (2026-05-22): added `verdicts` object store for VerdictStore. Both modules must
-// use the same version so neither throws VersionError when the other has upgraded.
-const DB_VERSION = 2;
-const STORE_NAME = 'vaultCache';
-const VERDICT_STORE_NAME = 'verdicts'; // owned by src/verdict/verdict-store.js, created here too for coexistence on upgrade.
+import { DB_NAME, DB_VERSION, VAULT_STORE, VERDICT_STORE, isFreshDatabase, finishOpen } from './idb-db.js';
+
+const STORE_NAME = VAULT_STORE;
+const VERDICT_STORE_NAME = VERDICT_STORE; // owned by src/verdict/verdict-store.js, created here too for coexistence on upgrade.
 const CACHE_SCHEMA_VERSION = 4; // H-06: key includes lorebookTag + conflictResolution
 
 /**
@@ -45,7 +43,7 @@ function getCacheKey() {
         const conflict = settings.multiVaultConflictResolution || 'all';
         return fp ? `index_${tag}_${conflict}_${fp}` : 'primaryIndex';
     } catch (err) {
-        console.warn('[DLE] getCacheKey failed, using fallback key:', err?.message);
+        console.warn('[Onyx Quill] getCacheKey failed, using fallback key:', err?.message);
         return 'primaryIndex';
     }
 }
@@ -54,7 +52,9 @@ function getCacheKey() {
 function openDBOnce() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
+        let fresh = false;
+        request.onupgradeneeded = (event) => {
+            fresh = isFreshDatabase(event);
             const db = request.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME);
@@ -65,10 +65,11 @@ function openDBOnce() {
                 db.createObjectStore(VERDICT_STORE_NAME);
             }
         };
-        request.onsuccess = () => resolve(request.result);
+        // A fresh database first copies the old one's "Why these entries" history (idb-db.js).
+        request.onsuccess = () => finishOpen(request.result, fresh).then(resolve);
         request.onerror = () => reject(request.error);
         request.onblocked = () => {
-            console.warn('[DLE] IndexedDB open blocked — another tab may have an older version open');
+            console.warn('[Onyx Quill] IndexedDB open blocked — another tab may have an older version open');
             reject(Object.assign(new Error('IndexedDB open blocked by another connection'), { code: 'BLOCKED' }));
         };
     });
@@ -78,7 +79,7 @@ function openDBOnce() {
 function openDB() {
     return openDBOnce().catch(async (err) => {
         if (err && err.code === 'BLOCKED') {
-            console.warn('[DLE] IndexedDB blocked — retrying in 250ms');
+            console.warn('[Onyx Quill] IndexedDB blocked — retrying in 250ms');
             try {
                 dedupWarning(
                     'Vault cache database is blocked by another tab. Close other SillyTavern tabs if lore fails to load.',
@@ -114,7 +115,7 @@ export async function saveIndexToCache(entries, isStale = null) {
         if (typeof isStale === 'function' && isStale()) {
             _lastSaveSucceeded = false; // honest: this call did not persist; prune stays guarded
             pushEvent('cache_save', { entryCount: entries.length, ok: false, skipped: 'stale_epoch' });
-            if (getSettings().debugMode) console.debug('[DLE] Cache save skipped — buildEpoch changed since the build started (clear/force-release intervened)');
+            if (getSettings().debugMode) console.debug('[Onyx Quill] Cache save skipped — buildEpoch changed since the build started (clear/force-release intervened)');
             return false;
         }
         const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -143,7 +144,7 @@ export async function saveIndexToCache(entries, isStale = null) {
         _lastSaveSucceeded = false;
         pushEvent('cache_save', { entryCount: entries.length, ok: false, error: err?.name || err?.message });
         if (err.name === 'QuotaExceededError' || (err.message && err.message.includes('quota'))) {
-            console.warn('[DLE] IndexedDB storage quota exceeded — vault cache could not be saved. Consider clearing browser data.');
+            console.warn('[Onyx Quill] IndexedDB storage quota exceeded — vault cache could not be saved. Consider clearing browser data.');
             try {
                 dedupWarning(
                     'Browser storage full — vault cache could not be saved. Free space by clearing this site\'s data in your browser settings (Settings > Privacy > Site Data).',
@@ -153,7 +154,7 @@ export async function saveIndexToCache(entries, isStale = null) {
                 // toastr may not be available in all contexts
             }
         } else {
-            console.warn('[DLE] Failed to save index to IndexedDB:', err.message);
+            console.warn('[Onyx Quill] Failed to save index to IndexedDB:', err.message);
         }
         return false;
     } finally {
@@ -186,7 +187,7 @@ export async function loadIndexFromCache() {
         }
 
         if (result.schemaVersion !== CACHE_SCHEMA_VERSION) {
-            if (getSettings().debugMode) console.log(`[DLE] Cache schema version mismatch (have ${result.schemaVersion}, want ${CACHE_SCHEMA_VERSION}) — rebuilding`);
+            if (getSettings().debugMode) console.log(`[Onyx Quill] Cache schema version mismatch (have ${result.schemaVersion}, want ${CACHE_SCHEMA_VERSION}) — rebuilding`);
             try { dedupWarning('Refreshing your lore cache after an update — back in a moment.', 'cache_schema'); } catch { /* toastr may not be ready */ }
             return null;
         }
@@ -194,7 +195,7 @@ export async function loadIndexFromCache() {
         // Discard corrupt entries from browser crashes / quota pressure.
         const validEntries = result.entries.filter(e => {
             const ok = validateCachedEntry(e);
-            if (!ok) console.warn(`[DLE] Discarding corrupt cached entry: ${e?.title || '(no title)'}`);
+            if (!ok) console.warn(`[Onyx Quill] Discarding corrupt cached entry: ${e?.title || '(no title)'}`);
             return ok;
         });
         if (validEntries.length === 0) return null;
@@ -206,7 +207,7 @@ export async function loadIndexFromCache() {
             timestamp: result.timestamp || 0,
         };
     } catch (err) {
-        console.warn('[DLE] Failed to load index from IndexedDB:', err.message);
+        console.warn('[Onyx Quill] Failed to load index from IndexedDB:', err.message);
         pushEvent('cache_load', { hit: false, error: err?.message });
         return null;
     } finally {
@@ -227,7 +228,7 @@ export async function loadIndexFromCache() {
 export async function pruneOrphanedCacheKeys(saveSucceeded) {
     const effective = (saveSucceeded === undefined) ? _lastSaveSucceeded : saveSucceeded;
     if (effective === false) {
-        console.warn('[DLE] Skipping orphan prune — prior saveIndexToCache did not succeed (would have wiped valid cache)');
+        console.warn('[Onyx Quill] Skipping orphan prune — prior saveIndexToCache did not succeed (would have wiped valid cache)');
         return 0;
     }
     let db;
@@ -259,10 +260,10 @@ export async function pruneOrphanedCacheKeys(saveSucceeded) {
             tx.onerror = () => reject(tx.error);
             tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
         });
-        if (pruned > 0 && getSettings().debugMode) console.log(`[DLE] Pruned ${pruned} orphaned cache key(s)`);
+        if (pruned > 0 && getSettings().debugMode) console.log(`[Onyx Quill] Pruned ${pruned} orphaned cache key(s)`);
         return pruned;
     } catch (err) {
-        console.warn('[DLE] Failed to prune orphaned cache keys:', err.message);
+        console.warn('[Onyx Quill] Failed to prune orphaned cache keys:', err.message);
         return 0;
     } finally {
         if (db) db.close();
@@ -301,7 +302,7 @@ export async function clearIndexCache() {
         });
         return true;
     } catch (err) {
-        console.warn('[DLE] Failed to clear IndexedDB cache:', err.message);
+        console.warn('[Onyx Quill] Failed to clear IndexedDB cache:', err.message);
         return false;
     } finally {
         if (db) db.close();

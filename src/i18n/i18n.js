@@ -51,7 +51,7 @@ async function loadLocaleFile(locale) {
     try {
         const res = await fetch(url);
         if (!res.ok) {
-            console.warn(`[DLE i18n] Locale file not found: ${locale} (${res.status})`);
+            console.warn(`[Onyx Quill i18n] Locale file not found: ${locale} (${res.status})`);
             return {};
         }
         const data = await res.json();
@@ -59,7 +59,7 @@ async function loadLocaleFile(locale) {
         if (data.__meta) delete data.__meta;
         return data;
     } catch (e) {
-        console.warn(`[DLE i18n] Failed to load locale ${locale}:`, e);
+        console.warn(`[Onyx Quill i18n] Failed to load locale ${locale}:`, e);
         return {};
     }
 }
@@ -110,7 +110,7 @@ export function initDleI18n() {
             });
         } catch { /* eventSource/APP_READY unavailable (e.g. tests) — initial call stands */ }
 
-        console.log(`[DLE i18n] Loaded ${Object.keys(activeDict).length} keys for locale "${activeLocale}" (ST locale: "${stLocale}")`);
+        console.log(`[Onyx Quill i18n] Loaded ${Object.keys(activeDict).length} keys for locale "${activeLocale}" (ST locale: "${stLocale}")`);
     })();
     return _initPromise;
 }
@@ -260,7 +260,7 @@ export async function getAiPromptDict(locale) {
         const mod = await import(`./prompts/${target}.js`);
         return mod;
     } catch (e) {
-        console.warn(`[DLE i18n] AI prompt dict for "${target}" missing, falling back to en:`, e);
+        console.warn(`[Onyx Quill i18n] AI prompt dict for "${target}" missing, falling back to en:`, e);
         const enMod = await import('./prompts/en.js');
         return enMod;
     }

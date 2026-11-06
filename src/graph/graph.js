@@ -21,7 +21,7 @@ import { initHealth } from './graph-health.js';
 import { computeDisparityFilter, computeLouvainCommunities } from './graph-analysis.js';
 import { escapeHtml } from './graph-util.js';
 
-const TAG = '[DLE Graph]';
+const TAG = '[Onyx Quill graph]';
 function dbg(...args) {
     const s = getSettings();
     if (s?.debugMode) console.debug(TAG, ...args);

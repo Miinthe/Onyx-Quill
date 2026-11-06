@@ -190,12 +190,12 @@ export function initEvents(gs, dbg) {
         try {
             const dataUrl = canvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `dle-graph-${new Date().toISOString().slice(0, 10)}.png`;
+            link.download = `onyx-quill-graph-${new Date().toISOString().slice(0, 10)}.png`;
             link.href = dataUrl;
             link.click();
             toastr.success(tr('dle_graph_toast_export_png_success'), 'Onyx Quill');
         } catch (e) {
-            console.warn('[DLE] PNG export failed:', e); toastr.error(tr('dle_graph_toast_export_png_fail'), 'Onyx Quill');
+            console.warn('[Onyx Quill] PNG export failed:', e); toastr.error(tr('dle_graph_toast_export_png_fail'), 'Onyx Quill');
         }
     }
 
@@ -225,7 +225,7 @@ export function initEvents(gs, dbg) {
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const link = document.createElement('a');
-            link.download = `dle-graph-${new Date().toISOString().slice(0, 10)}.json`;
+            link.download = `onyx-quill-graph-${new Date().toISOString().slice(0, 10)}.json`;
             objectUrl = URL.createObjectURL(blob);
             link.href = objectUrl;
             link.click();
@@ -233,7 +233,7 @@ export function initEvents(gs, dbg) {
             toastr.success(tr('dle_graph_toast_export_json_success'), 'Onyx Quill');
         } catch (e) {
             dbg('JSON export failed:', e.message);
-            console.warn('[DLE] JSON export failed:', e); toastr.error(tr('dle_graph_toast_export_json_fail'), 'Onyx Quill');
+            console.warn('[Onyx Quill] JSON export failed:', e); toastr.error(tr('dle_graph_toast_export_json_fail'), 'Onyx Quill');
         } finally {
             if (objectUrl) URL.revokeObjectURL(objectUrl);
         }

@@ -50,7 +50,7 @@ function announceAiCircuitRecovery(detail) {
     try {
         toastr.success(tr('dle_ai_toast_circuit_recovered'), 'Onyx Quill', { timeOut: 5000 });
     } catch (e) {
-        console.warn('[DLE] toastr unavailable: ai_circuit_recovered', e?.message);
+        console.warn('[Onyx Quill] toastr unavailable: ai_circuit_recovered', e?.message);
     }
 }
 // Register once at module load — callbacks persist for page lifetime by design
@@ -96,11 +96,11 @@ export function getProfileModelHint() {
     try {
         profile = ConnectionManagerRequestService.getProfile(settings.aiSearchProfileId);
     } catch (err) {
-        console.warn('[DLE] getProfileModelHint: Connection Manager threw while resolving profile id', settings.aiSearchProfileId, '—', err?.message || err);
+        console.warn('[Onyx Quill] getProfileModelHint: Connection Manager threw while resolving profile id', settings.aiSearchProfileId, '—', err?.message || err);
         return null;
     }
     if (!profile) {
-        console.warn('[DLE] getProfileModelHint: profile id', settings.aiSearchProfileId, 'not found in Connection Manager (deleted or renamed?)');
+        console.warn('[Onyx Quill] getProfileModelHint: profile id', settings.aiSearchProfileId, 'not found in Connection Manager (deleted or renamed?)');
         return null;
     }
     return profile.model || '';
@@ -301,7 +301,7 @@ export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeo
         }
         const msg = (err.message || '').toLowerCase();
         if (/incorrect.?role|invalid.?role|system.*not.?supported|unsupported.*role|role.*not.?allow/i.test(msg)) {
-            console.warn('[DLE] Role-related API error detected:', err.message);
+            console.warn('[Onyx Quill] Role-related API error detected:', err.message);
             dedupWarning(
                 'AI search couldn\'t talk to your provider. Try switching Prompt Post-Processing to Semi or Strict in your Connection profile.',
                 'callViaProfile_role_error',
@@ -322,7 +322,7 @@ export async function callViaProfile(systemPrompt, userMessage, maxTokens, timeo
             try {
                 ({ detectClaudeAdaptiveIssue, buildClaudeAdaptiveMessage } = await import('./claude-adaptive-check.js'));
             } catch (importErr) {
-                console.warn('[DLE] Could not load claude-adaptive-check.js:', importErr.message);
+                console.warn('[Onyx Quill] Could not load claude-adaptive-check.js:', importErr.message);
             }
             if (detectClaudeAdaptiveIssue && buildClaudeAdaptiveMessage) {
                 const detail = detectClaudeAdaptiveIssue(resolvedProfileId, resolvedModel);
@@ -596,7 +596,7 @@ Example: ["Characters - Inner Circle", "Locations - Districts", "Lore - Magic Sy
             if (Array.isArray(arrayValue)) {
                 parsed = arrayValue;
             } else {
-                if (settings.debugMode) console.warn('[DLE] Hierarchical response: unexpected object format, skipping');
+                if (settings.debugMode) console.warn('[Onyx Quill] Hierarchical response: unexpected object format, skipping');
                 _releaseProbeOnce();
                 return null;
             }
@@ -647,7 +647,7 @@ Example: ["Characters - Inner Circle", "Locations - Districts", "Lore - Magic Sy
         const filteredResult = [...forceInjected, ...filtered, ...rescued];
 
         if (settings.debugMode) {
-            console.log(`[DLE] Hierarchical pre-filter: ${clusters.size} categories → ${selectedCategories.size} selected, ${selectable.length} → ${filtered.length} entries` + (rescued.length > 0 ? ` (+${rescued.length} keyword-rescued: ${rescued.map(e => e.title).join(', ')})` : ''));
+            console.log(`[Onyx Quill] Hierarchical pre-filter: ${clusters.size} categories → ${selectedCategories.size} selected, ${selectable.length} → ${filtered.length} entries` + (rescued.length > 0 ? ` (+${rescued.length} keyword-rescued: ${rescued.map(e => e.title).join(', ')})` : ''));
         }
 
         // BUG-396: Use category + rescued for retention check. Above threshold = too aggressive,
@@ -655,14 +655,14 @@ Example: ["Characters - Inner Circle", "Locations - Districts", "Lore - Magic Sy
         const effectiveFiltered = filtered.length + rescued.length;
         const minRetention = 1 - (settings.hierarchicalAggressiveness ?? 0.8);
         if (effectiveFiltered < selectable.length * minRetention) {
-            if (settings.debugMode) console.log('[DLE] Hierarchical pre-filter too aggressive, using full manifest');
+            if (settings.debugMode) console.log('[Onyx Quill] Hierarchical pre-filter too aggressive, using full manifest');
             _releaseProbeOnce();
             return null;
         }
 
         // BUG-H3: Warn when >50% dropped even within threshold.
         if (effectiveFiltered < selectable.length * 0.5 && settings.debugMode) {
-            console.warn(`[DLE] Hierarchical pre-filter dropped ${selectable.length - effectiveFiltered}/${selectable.length} candidates — consider lowering aggressiveness`);
+            console.warn(`[Onyx Quill] Hierarchical pre-filter dropped ${selectable.length - effectiveFiltered}/${selectable.length} candidates — consider lowering aggressiveness`);
         }
 
         // Release without recording — aiSearch() probes independently.
@@ -673,7 +673,7 @@ Example: ["Characters - Inner Circle", "Locations - Districts", "Lore - Magic Sy
         // Release without record — pre-filter is optional and shouldn't cascade to the breaker.
         // Throttled errors keep the slot for the real owner (we never actually held it).
         if (!err.throttled) _releaseProbeOnce();
-        if (settings.debugMode) console.warn('[DLE] Hierarchical pre-filter failed:', err.message);
+        if (settings.debugMode) console.warn('[Onyx Quill] Hierarchical pre-filter failed:', err.message);
         return null;
     }
 }
@@ -723,7 +723,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
             const seedContext = seedEntries.map(e => e.content).join('\n\n');
             chatContext = `[STORY CONTEXT — use this to understand the setting and make better selections]\n${seedContext}\n\n[RECENT CHAT]\n${chatContext}`;
             if (settings.debugMode) {
-                console.log(`[DLE] New chat: injecting ${seedEntries.length} seed entries as AI context`);
+                console.log(`[Onyx Quill] New chat: injecting ${seedEntries.length} seed entries as AI context`);
             }
         }
     }
@@ -731,7 +731,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
     if (settings.scribeInformedRetrieval && lastScribeSummary && lastScribeSummary.trim()) {
         chatContext += `\n\n[SESSION SUMMARY — broader context beyond the recent chat window]\n${lastScribeSummary.trim()}`;
         if (settings.debugMode) {
-            console.log('[DLE] Scribe summary injected into AI search context');
+            console.log('[Onyx Quill] Scribe summary injected into AI search context');
         }
     }
 
@@ -775,7 +775,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
     };
 
     if (settings.debugMode) {
-        console.debug('[DLE] AI search entry:', {
+        console.debug('[Onyx Quill] AI search entry:', {
             manifestEntries: candidateEntries?.length ?? 0,
             chatContextLen: chatContext.length,
             chatForCacheLen: chatForCache.length,
@@ -788,7 +788,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
     }
 
     if (settings.debugMode) {
-        console.debug('[DLE][DIAG] ai-cache-pre-check', {
+        console.debug('[Onyx Quill][DIAG] ai-cache-pre-check', {
             chatHash: chatHash?.substring(0, 12),
             manifestHash: manifestHash?.substring(0, 12),
             cachedHash: aiSearchCache.hash?.substring(0, 12) || 'EMPTY',
@@ -805,10 +805,10 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         // Exact match — includes cached empty results.
         aiSearchStats.cachedHits++;
         notifyAiStatsUpdated();
-        if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-exact HIT — returning %d cached results', aiSearchCache.results?.length);
+        if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-exact HIT — returning %d cached results', aiSearchCache.results?.length);
         return { results: resolveCachedResults(aiSearchCache.results), error: false, cached: true };
     }
-    if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-exact MISS');
+    if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-exact MISS');
 
     // Keyword-set stability: manifest unchanged + current candidates ⊆ cached set.
     // Catches typo fixes, prose edits, "ok continue", reaction messages — anything
@@ -827,10 +827,10 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         if (isSubset) {
             aiSearchStats.cachedHits++;
             notifyAiStatsUpdated();
-            if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-keyword-stable HIT');
+            if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-keyword-stable HIT');
             return { results: resolveCachedResults(aiSearchCache.results), error: false, cached: true };
         }
-        if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-keyword-stable MISS — new candidates not subset of cached set');
+        if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-keyword-stable MISS — new candidates not subset of cached set');
     }
 
     // Degenerate sliding-window: manifest unchanged + chat ≤ cached count (deleted
@@ -852,16 +852,16 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         && getChatLines().length <= aiSearchCache.chatLineCount) {
         const currentContentHash = simpleHash(getChatLines().join('\n'));
         if (aiSearchCache.prefixHash && currentContentHash !== aiSearchCache.prefixHash) {
-            if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-swipe-regen MISS — content changed (edit detected)');
+            if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-swipe-regen MISS — content changed (edit detected)');
         } else {
             aiSearchStats.cachedHits++;
             notifyAiStatsUpdated();
-            if (settings.debugMode) console.debug(`[DLE][DIAG] ai-cache-swipe-regen HIT (${getChatLines().length} lines vs cached ${aiSearchCache.chatLineCount})`);
+            if (settings.debugMode) console.debug(`[Onyx Quill][DIAG] ai-cache-swipe-regen HIT (${getChatLines().length} lines vs cached ${aiSearchCache.chatLineCount})`);
             return { results: resolveCachedResults(aiSearchCache.results), error: false, cached: true };
         }
     }
     if (settings.debugMode && !(aiSearchCache.manifestHash === manifestHash && aiSearchCache.chatLineCount > 0 && getChatLines().length <= aiSearchCache.chatLineCount)) {
-        console.debug('[DLE][DIAG] ai-cache-swipe-regen MISS');
+        console.debug('[Onyx Quill][DIAG] ai-cache-swipe-regen MISS');
     }
 
     // Sliding window: manifest unchanged + only newest line(s) differ.
@@ -876,7 +876,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         const prefixLines = getChatLines().slice(0, aiSearchCache.chatLineCount);
         const prefixHash = simpleHash(prefixLines.join('\n'));
         if (aiSearchCache.prefixHash && prefixHash !== aiSearchCache.prefixHash) {
-            if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-sliding-window MISS — prefix content changed (edit detected)');
+            if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-sliding-window MISS — prefix content changed (edit detected)');
             // Fall through to full AI call.
         } else {
         const newLines = getChatLines().slice(aiSearchCache.chatLineCount);
@@ -896,20 +896,20 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         if (!hasNewEntityMention) {
             aiSearchStats.cachedHits++;
             notifyAiStatsUpdated();
-            if (settings.debugMode) console.debug(`[DLE][DIAG] ai-cache-sliding-window HIT (${newLines.length} new lines, no entity mentions)`);
+            if (settings.debugMode) console.debug(`[Onyx Quill][DIAG] ai-cache-sliding-window HIT (${newLines.length} new lines, no entity mentions)`);
             return { results: resolveCachedResults(aiSearchCache.results), error: false, cached: true };
         }
-        if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-sliding-window MISS — new entity mention found in new lines');
+        if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-sliding-window MISS — new entity mention found in new lines');
         } // end prefix-intact else
     }
 
-    if (settings.debugMode) console.debug('[DLE][DIAG] ai-cache-full-miss — all 4 tiers missed, calling AI');
+    if (settings.debugMode) console.debug('[Onyx Quill][DIAG] ai-cache-full-miss — all 4 tiers missed, calling AI');
 
     // BUG-AUDIT-1: Mutation gate — tryAcquireHalfOpenProbe, not isAiCircuitOpen.
     // Acquired AFTER cache checks: hits never hold the probe, so a half-open
     // circuit doesn't get pinned by cached returns (probe-leak fix).
     if (!tryAcquireHalfOpenProbe()) {
-        if (settings.debugMode) console.debug('[DLE] AI circuit breaker open — skipping AI search');
+        if (settings.debugMode) console.debug('[Onyx Quill] AI circuit breaker open — skipping AI search');
         // SYNC-AI-2: only surface the trip if the toast actually rendered.
         const shown = dedupWarning(tr('dle_ai_toast_circuit_open_search'), 'ai_circuit', { timeOut: 8000, hint: 'Circuit breaker tripped after 2 consecutive failures; retrying in ~30s.' });
         if (shown) markAiCircuitTripSurfaced();
@@ -939,7 +939,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
             const selectCount = Math.max(1, settings.maxEntries - constantCount);
             systemPrompt += '\n\nIMPORTANT: The conversation just started. You have story context above to help you understand the setting. Select exactly ' + selectCount + ' entries from the manifest — always fill to this count. The user needs rich context for the conversation start. Do not return fewer entries or an empty array.';
             if (settings.debugMode) {
-                console.log(`[DLE] New chat: requesting ${selectCount} AI selections (${settings.maxEntries} max - ${constantCount} constants)`);
+                console.log(`[Onyx Quill] New chat: requesting ${selectCount} AI selections (${settings.maxEntries} max - ${constantCount} constants)`);
             }
         }
 
@@ -1054,7 +1054,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
             if (Array.isArray(arrayValue)) {
                 parsed = arrayValue;
             } else {
-                if (settings.debugMode) console.warn('[DLE] AI search: unrecognized object-shaped response, treating as failure');
+                if (settings.debugMode) console.warn('[Onyx Quill] AI search: unrecognized object-shaped response, treating as failure');
                 recordAiFailure();
                 dedupWarning(tr('dle_ai_toast_shape_failure'), 'aiSearch_shape_failure', { hint: 'extractAiResponseClient returned a non-array object with no known wrapper key.' });
                 return { results: [], error: true, errorMessage: 'AI response shape unrecognized' };
@@ -1063,7 +1063,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         if (!parsed) {
             if (settings.debugMode) {
                 const preview = (aiResult.text || '').slice(0, 300);
-                console.warn(`[DLE] AI search: could not parse response as JSON array. Response preview: ${preview}`);
+                console.warn(`[Onyx Quill] AI search: could not parse response as JSON array. Response preview: ${preview}`);
             }
             recordAiFailure(); // BUG-010: parse failures must trip the breaker.
             dedupWarning(tr('dle_ai_toast_parse_failure'), 'aiSearch_parse_failure', { hint: 'extractAiResponseClient returned null; see debug log for response preview.' });
@@ -1074,7 +1074,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         // BUG-383: parsed had items but normalize zeroed them out → array of unrecognized
         // shapes. Treat as format drift so the breaker can trip.
         if (Array.isArray(parsed) && parsed.length > 0 && aiResults.length === 0) {
-            if (settings.debugMode) console.warn('[DLE] AI search: normalizeResults produced zero items from non-empty response');
+            if (settings.debugMode) console.warn('[Onyx Quill] AI search: normalizeResults produced zero items from non-empty response');
             recordAiFailure();
             dedupWarning(tr('dle_ai_toast_normalize_empty'), 'aiSearch_normalize_empty', { hint: 'normalizeResults returned empty from a non-empty parsed array (format drift).' });
             return { results: [], error: true, errorMessage: 'AI response had no usable entries' };
@@ -1121,10 +1121,10 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
                         reason: r.reason || 'AI search (fuzzy)',
                     });
                     matchedAiTitles.add(fuzzy.title.toLowerCase());
-                    if (settings.debugMode) console.debug(`[DLE] AI fuzzy match: "${r.title}" → "${fuzzy.title}" (${(fuzzy.similarity * 100).toFixed(0)}%)`);
+                    if (settings.debugMode) console.debug(`[Onyx Quill] AI fuzzy match: "${r.title}" → "${fuzzy.title}" (${(fuzzy.similarity * 100).toFixed(0)}%)`);
                 }
             } else if (settings.debugMode) {
-                console.debug(`[DLE] AI title unmatched: "${r.title}" — no entry found in vault`);
+                console.debug(`[Onyx Quill] AI title unmatched: "${r.title}" — no entry found in vault`);
             }
         }
 
@@ -1170,7 +1170,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         };
         setAiSearchCache(_cachePayload);
         if (settings.debugMode) {
-            console.debug('[DLE][DIAG] ai-cache-write', {
+            console.debug('[Onyx Quill][DIAG] ai-cache-write', {
                 hash: chatHash?.substring(0, 12),
                 manifestHash: manifestHash?.substring(0, 12),
                 chatLineCount: _cachePayload.chatLineCount,
@@ -1180,7 +1180,7 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         }
 
         if (settings.debugMode) {
-            console.log(`[DLE] AI search found ${aiResults.length} titles, matched ${results.length} entries${threshold !== 'low' ? `, ${filteredResults.length} after confidence threshold (${threshold})` : ''}`);
+            console.log(`[Onyx Quill] AI search found ${aiResults.length} titles, matched ${results.length} entries${threshold !== 'low' ? `, ${filteredResults.length} after confidence threshold (${threshold})` : ''}`);
             console.table(filteredResults.map(r => ({
                 title: r.entry.title,
                 confidence: r.confidence,
@@ -1211,19 +1211,19 @@ export async function aiSearch(chat, candidateManifest, candidateHeader, snapsho
         // timeout — blocking AI recovery. releaseHalfOpenProbe is a no-op on the closed path.
         if (!isExcludedFromBreaker(err)) recordAiFailure(); else releaseHalfOpenProbe();
         if (isUserAbort) {
-            if (settings.debugMode) console.debug('[DLE] AI search aborted by user');
+            if (settings.debugMode) console.debug('[Onyx Quill] AI search aborted by user');
         } else if (isTimeout) {
-            console.warn('[DLE] AI search timed out');
+            console.warn('[Onyx Quill] AI search timed out');
         } else if (err.throttled) {
-            if (settings.debugMode) console.debug('[DLE] AI search throttled — using cache/keywords');
+            if (settings.debugMode) console.debug('[Onyx Quill] AI search throttled — using cache/keywords');
         } else if (isAuthError) {
-            console.error('[DLE] AI search auth error:', err);
+            console.error('[Onyx Quill] AI search auth error:', err);
             dedupError(`AI search authentication failed (${status || 'check API key'}). Verify your profile credentials.`, 'aiSearch_auth_error', { hint: err.message || String(err), timeOut: 15000 });
         } else if (isRateLimit) {
-            console.warn('[DLE] AI search rate-limited:', err.message);
+            console.warn('[Onyx Quill] AI search rate-limited:', err.message);
             dedupWarning(tr('dle_ai_toast_rate_limit'), 'aiSearch_rate_limit', { hint: err.message || String(err) });
         } else {
-            console.error('[DLE] AI search error:', err);
+            console.error('[Onyx Quill] AI search error:', err);
         }
         // BUG-004: errorMessage feeds pipeline-trace enrichment.
         return { results: [], error: true, cached: false, errorMessage: err.message || String(err) };

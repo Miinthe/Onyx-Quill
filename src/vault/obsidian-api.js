@@ -303,7 +303,7 @@ export async function obsidianFetch({ host = '127.0.0.1', port, apiKey, path, ht
             recordFailure(circuitKey);
             const cs = getCircuitState(circuitKey);
             pushEvent('obsidian_fetch', { result: 'http_err', status: response.status, durationMs: _durMs, circuit: cs.state, failures: cs.failures, vault: circuitKey });
-            console.warn('[DLE] obsidianFetch: HTTP %d after %dms — circuit=%s failures=%d vault=%s', response.status, _durMs, cs.state, cs.failures, circuitKey);
+            console.warn('[Onyx Quill] obsidianFetch: HTTP %d after %dms — circuit=%s failures=%d vault=%s', response.status, _durMs, cs.state, cs.failures, circuitKey);
         } else if (response.status >= 200 && response.status < 300) {
             recordSuccess(circuitKey);
         }
@@ -321,7 +321,7 @@ export async function obsidianFetch({ host = '127.0.0.1', port, apiKey, path, ht
                 throw abortErr;
             }
             pushEvent('obsidian_fetch', { result: 'timeout', durationMs: _durMs, timeoutMs: timeout, vault: circuitKey });
-            console.warn('[DLE] obsidianFetch: timeout after %dms (limit %dms) vault=%s', _durMs, timeout, circuitKey);
+            console.warn('[Onyx Quill] obsidianFetch: timeout after %dms (limit %dms) vault=%s', _durMs, timeout, circuitKey);
             const timeoutErr = new Error('Request timed out', { cause: err });
             timeoutErr.name = 'AbortError';
             timeoutErr.timedOut = true;
@@ -330,7 +330,7 @@ export async function obsidianFetch({ host = '127.0.0.1', port, apiKey, path, ht
         recordFailure(circuitKey);
         const cs = getCircuitState(circuitKey);
         pushEvent('obsidian_fetch', { result: 'error', durationMs: _durMs, circuit: cs.state, failures: cs.failures, vault: circuitKey, errName: err.name, errMsg: (err.message || '').slice(0, 160) });
-        console.warn('[DLE] obsidianFetch: %s after %dms — circuit=%s failures=%d vault=%s msg=%s', err.name || 'Error', _durMs, cs.state, cs.failures, circuitKey, (err.message || '').slice(0, 160));
+        console.warn('[Onyx Quill] obsidianFetch: %s after %dms — circuit=%s failures=%d vault=%s msg=%s', err.name || 'Error', _durMs, cs.state, cs.failures, circuitKey, (err.message || '').slice(0, 160));
         throw err;
     } finally {
         clearTimeout(timer);
@@ -396,7 +396,7 @@ export async function listAllFiles(host, port, apiKey, directory = '', depth = 0
                     if (result.value.partial) partial = true;
                 } else {
                     partial = true;
-                    console.warn(`[DLE] Failed to list directory: ${result.reason?.message || result.reason}`);
+                    console.warn(`[Onyx Quill] Failed to list directory: ${result.reason?.message || result.reason}`);
                 }
             }
         }
@@ -643,11 +643,11 @@ export async function fetchAllMdFiles(host, port, apiKey, useHttps = false, { sk
                     if (result.status === 200) {
                         return { filename, content: result.data };
                     }
-                    console.warn(`[DLE] Failed to fetch "${filename}": HTTP ${result.status}`);
+                    console.warn(`[Onyx Quill] Failed to fetch "${filename}": HTTP ${result.status}`);
                     failed++;
                     return null;
                 } catch (err) {
-                    console.warn(`[DLE] Failed to fetch "${filename}": ${err.message}`);
+                    console.warn(`[Onyx Quill] Failed to fetch "${filename}": ${err.message}`);
                     failed++;
                     return null;
                 }
@@ -655,7 +655,7 @@ export async function fetchAllMdFiles(host, port, apiKey, useHttps = false, { sk
         );
         for (const r of batchSettled) {
             if (r.status === 'fulfilled' && r.value) results.push(r.value);
-            else if (r.status === 'rejected') { failed++; console.warn(`[DLE] Batch file fetch rejected: ${r.reason?.message || r.reason}`); }
+            else if (r.status === 'rejected') { failed++; console.warn(`[Onyx Quill] Batch file fetch rejected: ${r.reason?.message || r.reason}`); }
         }
     }
 
@@ -785,7 +785,7 @@ export async function updateEntryFields(host, port, apiKey, filename, updates, u
  * @param {string} host
  * @param {number} port
  * @param {string} apiKey
- * @param {string} filePath - Vault-relative path (e.g., 'DeepLore/field-definitions.yaml')
+ * @param {string} filePath - Vault-relative path (e.g., 'Onyx Quill/field-definitions.yaml')
  * @returns {Promise<{ok: boolean, content?: string, error?: string}>}
  */
 export async function fetchFieldDefinitions(host, port, apiKey, filePath, useHttps = false) {
@@ -817,7 +817,7 @@ export async function fetchFieldDefinitions(host, port, apiKey, filePath, useHtt
  * @param {string} host
  * @param {number} port
  * @param {string} apiKey
- * @param {string} filePath - Vault-relative path (e.g., 'DeepLore/field-definitions.yaml')
+ * @param {string} filePath - Vault-relative path (e.g., 'Onyx Quill/field-definitions.yaml')
  * @param {string} content - Serialized YAML string
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
@@ -874,18 +874,18 @@ export async function fetchScribeNotes(host, port, apiKey, folder, useHttps = fa
                         accept: 'text/markdown',
                     });
                     if (result.status !== 200) {
-                        console.warn(`[DLE] Failed to fetch scribe note ${filepath}: HTTP ${result.status}`);
+                        console.warn(`[Onyx Quill] Failed to fetch scribe note ${filepath}: HTTP ${result.status}`);
                         return null;
                     }
                     return { filename: filepath, content: result.data };
                 } catch (err) {
-                    console.warn(`[DLE] Failed to fetch scribe note ${filepath}:`, err.message);
+                    console.warn(`[Onyx Quill] Failed to fetch scribe note ${filepath}:`, err.message);
                     return null;
                 }
             }));
             for (const r of batchSettled) {
                 if (r.status === 'fulfilled' && r.value) notes.push(r.value);
-                else if (r.status === 'rejected') console.warn(`[DLE] Batch scribe note fetch rejected: ${r.reason?.message || r.reason}`);
+                else if (r.status === 'rejected') console.warn(`[Onyx Quill] Batch scribe note fetch rejected: ${r.reason?.message || r.reason}`);
             }
         }
 
