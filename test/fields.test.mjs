@@ -1056,12 +1056,13 @@ test('single item: no duplicates', () => {
 
 section('Constants');
 
-test('DEFAULT_FIELD_DEFINITIONS has exactly 4 entries', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 4, 'four default fields');
+test('DEFAULT_FIELD_DEFINITIONS has exactly 6 entries (the two run fields first)', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 6, 'six default fields');
+    assertEqual(DEFAULT_FIELD_DEFINITIONS.slice(0, 2).map(f => f.name), ['character', 'instance'], 'runs need character + instance');
 });
 
-test('DEFAULT_FIELD_DEFINITIONS[0] is era', () => {
-    const f = DEFAULT_FIELD_DEFINITIONS[0];
+test('DEFAULT_FIELD_DEFINITIONS[2] is era', () => {
+    const f = DEFAULT_FIELD_DEFINITIONS[2];
     assertEqual(f.name, 'era', 'first is era');
     assertEqual(f.label, 'Era', 'label is Era');
     assertEqual(f.type, 'string', 'type is string');
@@ -1071,19 +1072,19 @@ test('DEFAULT_FIELD_DEFINITIONS[0] is era', () => {
     assertEqual(f.contextKey, 'era', 'contextKey is era');
 });
 
-test('DEFAULT_FIELD_DEFINITIONS[1] is location', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[1].name, 'location', 'second is location');
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[1].label, 'Location', 'label is Location');
+test('DEFAULT_FIELD_DEFINITIONS[3] is location', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[3].name, 'location', 'second is location');
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[3].label, 'Location', 'label is Location');
 });
 
-test('DEFAULT_FIELD_DEFINITIONS[2] is scene_type', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[2].name, 'scene_type', 'third is scene_type');
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[2].label, 'Scene Type', 'label is Scene Type');
+test('DEFAULT_FIELD_DEFINITIONS[4] is scene_type', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[4].name, 'scene_type', 'third is scene_type');
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[4].label, 'Scene Type', 'label is Scene Type');
 });
 
-test('DEFAULT_FIELD_DEFINITIONS[3] is character_present', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[3].name, 'character_present', 'fourth is character_present');
-    assertEqual(DEFAULT_FIELD_DEFINITIONS[3].label, 'Characters Present', 'label is Characters Present');
+test('DEFAULT_FIELD_DEFINITIONS[5] is character_present', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[5].name, 'character_present', 'fourth is character_present');
+    assertEqual(DEFAULT_FIELD_DEFINITIONS[5].label, 'Characters Present', 'label is Characters Present');
 });
 
 test('all defaults have correct structure', () => {
@@ -1133,5 +1134,15 @@ test('VALID_OPERATORS contains all 8 operators', () => {
 // ============================================================================
 //  Summary
 // ============================================================================
+
+test('withRunFields: a definitions file without the run fields gets them; one with them stays as it is', async () => {
+    const { withRunFields, RUN_FIELD_NAMES } = await import('../src/run-fields-pure.js');
+    const mine = [{ name: 'era', label: 'Era', type: 'string', multi: true, gating: { enabled: true, operator: 'match_any', tolerance: 'moderate' }, values: [], contextKey: 'era' }];
+    assertEqual(withRunFields(mine).map(f => f.name), ['character', 'instance', 'era'], 'added in front');
+    const hers = [{ name: 'character', label: 'Character (session owner)', multi: false }, { name: 'instance', label: 'Instance (playthrough)' }, ...mine];
+    assertEqual(withRunFields(hers), hers, 'her own definitions untouched');
+    assertEqual(withRunFields([]), [], 'empty stays empty (the defaults have them)');
+    assert(RUN_FIELD_NAMES.has('character') && RUN_FIELD_NAMES.has('instance'), 'the locked names');
+});
 
 await summary('Fields Tests');

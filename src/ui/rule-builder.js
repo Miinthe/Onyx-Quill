@@ -1,4 +1,5 @@
 /** DeepLore — Rule Builder Popup. Custom frontmatter gating field editor. */
+import { RUN_FIELD_NAMES } from '../run-fields-pure.js';
 import { escapeHtml } from '../../../../../utils.js';
 import { callGenericPopup, POPUP_TYPE, POPUP_RESULT } from '../../../../../popup.js';
 import { getSettings, getPrimaryVault, invalidateSettingsCache } from '../../settings.js';
@@ -68,17 +69,20 @@ function buildFieldRowHtml(field, index) {
     const linkIconStyle = linked ? '' : ' style="opacity:var(--dle-opacity-disabled,0.4)"';
     const ctxManualAttr = linked ? '' : ' data-manual="true"';
 
+    const locked = RUN_FIELD_NAMES.has(field.name);   // character + instance: runs depend on them (run-fields-pure.js)
     return `
     <div class="dle-rb-field" data-idx="${index}">
         <div class="dle-rb-field-header">
             <span class="dle-rb-field-num">#${index + 1}</span>
-            <input class="dle-rb-name text_pole" data-prop="name" value="${nameVal}" placeholder="field_name" title="Frontmatter field name (snake_case)" />
+            <input class="dle-rb-name text_pole" data-prop="name" value="${nameVal}" placeholder="field_name" title="${locked ? 'Runs need this field under this name' : 'Frontmatter field name (snake_case)'}"${locked ? ' readonly' : ''} />
             <input class="dle-rb-label text_pole" data-prop="label" value="${labelVal}" placeholder="Display Label" title="Human-readable label" />
             <div class="dle-rb-field-tools">
                 <button type="button" class="dle-rb-move-up menu_button" title="Move up" aria-label="Move field up"><i class="fa-solid fa-chevron-up"></i></button>
                 <button type="button" class="dle-rb-move-down menu_button" title="Move down" aria-label="Move field down"><i class="fa-solid fa-chevron-down"></i></button>
                 <button type="button" class="dle-rb-dupe menu_button" title="Duplicate field" aria-label="Duplicate field"><i class="fa-solid fa-copy"></i></button>
-                <button type="button" class="dle-rb-delete menu_button" title="Remove field" aria-label="Remove field #${index + 1}"><i class="fa-solid fa-trash"></i></button>
+                ${locked
+        ? `<button type="button" class="dle-rb-delete menu_button" disabled title="Runs need this field" aria-label="Field #${index + 1} can't be removed: runs need it" style="opacity:var(--dle-opacity-disabled,0.4)"><i class="fa-solid fa-lock"></i></button>`
+        : `<button type="button" class="dle-rb-delete menu_button" title="Remove field" aria-label="Remove field #${index + 1}"><i class="fa-solid fa-trash"></i></button>`}
             </div>
         </div>
         <div class="dle-rb-field-body">
@@ -303,7 +307,7 @@ export async function openRuleBuilder() {
 
     $container.on('click', '.dle-rb-reset', async () => {
         const confirm = await callGenericPopup(
-            'Reset all fields to the 4 built-in defaults? Custom fields will be lost.',
+            'Reset all fields to the built-in defaults? Custom fields will be lost.',
             POPUP_TYPE.CONFIRM,
         );
         if (confirm !== POPUP_RESULT.AFFIRMATIVE) return;
@@ -398,8 +402,10 @@ export async function openRuleBuilder() {
         }
     });
 
+    // Cancel closes the window (asking first when something changed). SillyTavern 1.19's popup is a <dialog class="popup">
+    // with .popup-button-ok — the old .dialogue_popup classes are gone, so Cancel did nothing (Miinthe, 2026-11-06).
     $container.on('click', '.dle-rb-cancel', () => {
-        $container.closest('.dialogue_popup').find('.dialogue_popup_ok').trigger('click');
+        $container.closest('.popup, .dialogue_popup').find('.popup-button-ok, .dialogue_popup_ok').first().trigger('click');
     });
 
     await callGenericPopup($container, POPUP_TYPE.TEXT, '', {

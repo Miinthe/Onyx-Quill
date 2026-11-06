@@ -320,3 +320,27 @@ export function capRows(rows, limit) {
     const list = rows || [];
     return { shown: list.slice(0, limit), more: Math.max(0, list.length - limit) };
 }
+
+/**
+ * What the Lore tab's Sent list shows (Miinthe, 2026-11-06: "when I zip through the swipes, the lore tab does not reflect
+ * what has been injected"). The newest reply's swipe on screen keeps its own list in `extra.deeplore_sources`; the last
+ * verdict (with its matched › picked › sent trace) is used only while it belongs to that swipe.
+ * @param {object|null} verdict  the chat's last verdict ({ msgIdx, genId, ts, injectedSources })
+ * @param {object|null} msg      the chat's last message
+ * @param {number} n             its index
+ * @returns {{ verdict: object|null, sources: object[]|null, ofSwipe: boolean }}
+ */
+export function sentShown(verdict, msg, n) {
+    const fromVerdict = { verdict, sources: verdict?.injectedSources?.length ? verdict.injectedSources : null, ofSwipe: false };
+    if (!msg || msg.is_user || msg.is_system) return fromVerdict;
+    const own = Array.isArray(msg.extra?.deeplore_sources) && msg.extra.deeplore_sources.length ? msg.extra.deeplore_sources : null;
+    const tag = msg.extra?._deeplore_sources_tag || null;
+    const mine = !!verdict && verdict.msgIdx === n;
+    if (mine && tag && tag === `${verdict.genId || ''}:${verdict.ts}`) return fromVerdict;
+    // the verdict of this message, not attached to any swipe yet: the swipe just generated (it attaches when it renders)
+    const swipes = Array.isArray(msg.swipes) ? msg.swipes.length : 1;
+    const newest = typeof msg.swipe_id !== 'number' || msg.swipe_id >= swipes - 1;
+    if (mine && !tag && !own && newest) return fromVerdict;
+    if (!mine && !own) return fromVerdict.sources ? { verdict: null, sources: null, ofSwipe: true } : fromVerdict;
+    return { verdict: null, sources: own, ofSwipe: true };
+}

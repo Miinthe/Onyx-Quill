@@ -1,218 +1,162 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/icon-dark.svg">
-    <img src="docs/icon-light.svg" alt="DeepLore" width="96">
-  </picture>
+  <img src=".github/readme/quill.svg" width="96" height="96" alt="">
 </p>
 
-<h1 align="center">DeepLore</h1>
+<h1 align="center">Onyx Quill</h1>
 
-> [!NOTE]
-> **This fork** (branch `dev/board-model`) is a private, heavily changed DeepLore based on upstream 2.6.2. It adds [Storyboards](wiki/Storyboards.md) (a board window with trackers: steps, collections, places, state and dates, meters and flags), a [Cast](wiki/Cast.md) of NPCs who speak in their own messages, [Mero ☆](wiki/Mero.md), a co-writer in the side panel, the [DeepLore bar](wiki/DeepLore-Bar.md) above the message box, a new [side panel](wiki/Drawer.md) (Lore · Filters · Story · Cast · Mero), a new settings window, and a 📖 menu on each message with "Why these entries". The rest of this README describes upstream DeepLore. Where it mentions the drawer's tabs, the [wiki](wiki/Home.md) pages describe how this fork shows them today. The fork removed upstream's Librarian (Emma) on 2026-10-27; Mero ☆ took over the saved lore gaps (her Requests) and suggests entry ideas.
+<p align="center"><b>A storyboard with AI retrieval for your long story.</b></p>
 
-**World Info keyword matching breaks at scale. DeepLore reads your Obsidian vault instead: keywords plus AI retrieval, so the right lore fires even when the word wasn't typed.**
-
-![Version](https://img.shields.io/badge/version-2.6.2-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![SillyTavern](https://img.shields.io/badge/SillyTavern-1.12.14+-orange)
-[![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20ES%20%7C%20FR%20%7C%20DE%20%7C%20JA%20%7C%20ZH%20%7C%20RU-purple)](https://github.com/pixelnull/sillytavern-DeepLore/wiki/Contributing-Translations)
-
-[**Live demo →**](https://pixelnull.github.io/sillytavern-DeepLore/) · [Wiki](https://github.com/pixelnull/sillytavern-DeepLore/wiki)
-
----
+<p align="center">Built on <a href="https://github.com/pixelnull/sillytavern-DeepLore">DeepLore</a> by pixelnull. Thank you for the foundation.</p>
 
 <p align="center">
-  <img src="https://i.imgur.com/vx4EJeD.png" alt="DeepLore drawer with injection list and graph" width="800">
+  <img src="https://img.shields.io/badge/version-1.0.0-ff6fa8" alt="version 1.0.0">
+  <img src="https://img.shields.io/badge/license-MIT-4c8bf5" alt="license MIT">
+  <img src="https://img.shields.io/badge/SillyTavern-1.12.14%2B-7a5cff" alt="SillyTavern 1.12.14+">
 </p>
 
-<p align="center"><em>What 200 lorebook entries looks like when retrieval actually works.</em></p>
+<p align="center"><a href="https://github.com/Miinthe/Onyx-Quill/wiki">Wiki</a> · <a href="https://github.com/Miinthe/Onyx-Quill/wiki/Quick-Start">Quick Start</a> · <a href="https://github.com/Miinthe/Onyx-Quill/issues">Report a bug</a></p>
 
----
+![A chat in SillyTavern with Onyx Quill's side panel beside it: the story's trackers, Relationship at Acquaintances and The Voss debt under way](.github/readme/storyboard-beside-chat.jpg)
 
-## The problem
+Onyx Quill is a SillyTavern extension for long stories with an AI. At its heart is the **storyboard**: you lay out where your story can go, like a relationship growing step by step, a mystery with clues to find or a quest with places to reach, and Onyx Quill follows it while you play. A helper AI notices when the story moves on, tells the writing model where things stand, and brings in the lore that belongs to that point of the story.
 
-World Info's keyword matching breaks down around 80-100 entries. You write a scene about the consequences of breaking an oath. Your Bloodchain entry stays cold. The word was never typed.
+**Contents:** [Storyboards](#storyboards) · [Cast](#cast) · [World](#world) · [Mero](#mero) · [Lore retrieval](#lore-retrieval) · [The small things](#the-small-things) · [What it costs](#what-it-costs) · [Install](#install)
 
-Meanwhile the AI invents details you already wrote, and gets them wrong.
+## What it does
 
-And your lore lives in two places: half in an Obsidian vault, half in ST's JSON. They drift.
+<a id="storyboards"></a>
+### 🗺️ Storyboards: the plan your story follows
 
-## Two-stage retrieval
+The heart of Onyx Quill: a board window where you lay out where your story can go, and a story helper that follows it while you play.
 
-**Keywords cast a wide net. An AI narrows it down by reading entry summaries.** The AI reads your summaries and picks Bloodchain. No keyword needed.
+- **Trackers for everything:** steps (Strangers › Acquaintances › Friends), things found or owned, places, the date, counters and meters, and flags.
+- **Forks and detours:** a fork splits the story, decided by the story or by a 🎲 roll. A detour is a side state, like "Not speaking" while still at Friends.
+- **Connections:** "starts when the innkeeper is in the scene", "needs the key", with 🎲 odds if you like.
+- **The story helper** reads each new message and moves the trackers. Every move quotes the messages word for word and shows with **Undo**, and when it isn't sure, it asks you.
+- **Lore and 🧭 guidance per step:** each step brings its own entries, and guidance that tells the writer how to write this stage of the story.
+- **Swipes keep their own board**, and **Re-evaluate** gives the newest reply a fresh look as a new swipe.
+- **Four starter boards:** slow-burn romance, mystery, fantasy quest and slice of life.
+- **New runs and branches:** start a story over in one click, or turn any message into a branch of its own.
 
-```
-Chat → matchEntries (keywords + BM25 fuzzy)
-     → hierarchicalPreFilter (40+ entries cluster first)
-     → aiSearch (reasoning model selects from summaries)
-     → gating (era / location / scene / character)
-     → cooldown / dedup / budget
-     → inject → generate
-```
+![The board window: trackers in rows (Relationship, The Voss debt with a fork, Trust, Where, Cast), with the story helper's move notice: Trust +2, the quote it came from, and Undo](.github/readme/board-helper-notice.png)
 
-<p align="center">
-  <a href="https://youtu.be/tiq0dfD6-RU?si=pTBw4r-RNCkHsoYZ">
-    <img src="https://img.youtube.com/vi/tiq0dfD6-RU/maxresdefault.jpg" alt="Watch: Drawer, Search, and Flagging" width="720">
-  </a>
-  <br>
-  <a href="https://youtu.be/tiq0dfD6-RU?si=pTBw4r-RNCkHsoYZ">
-    <img src="https://img.shields.io/badge/%E2%96%B6_Watch_on_YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube">
-  </a>
-</p>
+<a id="cast"></a>
+### 🎭 Cast: the people of your story
 
-## What an entry looks like
+Your NPCs live on the board. Each has their own character card and speaks in **their own messages**, with their own name and picture, instead of the main character speaking for them.
 
-```yaml
----
-tags: [lorebook]
-keys: [Bloodchain, oath, vow]
-priority: 100
-summary: |
-  When to select: scenes involving oaths, vows, sworn debts, or consequences
-  of breaking trust. Select when loyalty, betrayal, or magical binding is at
-  stake, even without the word "Bloodchain" appearing.
-era: [post-Schism]
-requires: []
----
+- **Wants, plans and what they know.** Every person has them, and you can edit them in place. Each thing they know remembers how they learned it: saw it, overheard it, was told, or found it out.
+- **A director** keeps their plans and thoughts up to date before each reply. The writer acts on their plans but never gives them away.
+- **Rounds:** pick who speaks, press **Go**, and they take turns after `{{user}}` and the main character. Write someone's lines yourself with ✍️, or let one person **Speak now**.
+- **Ties:** how they feel about each other, noticed from the story as it goes, each with the line it came from and how it changed over time.
+- **They come and go:** people turn up at the places they're often found or when a plan says so, and anyone who was away can tell what they've been up to.
+- **Hidden** people keep their wants, plans and thoughts blurred, so your NPCs can surprise you too.
 
-A Bloodchain is a blood-magic oath. Breaking one doesn't kill you outright.
-It hollows you. The chain pulls at everything you used to love until there's
-nothing left to pull at.
-```
+<p align="center"><img src=".github/readme/cast-round.png" width="400" alt="The Cast tab: a round in progress (your message, then Bram Solvik, then the main character) and everyone in the scene below"></p>
 
-<p align="center">
-  <img src="https://i.imgur.com/QA75e7J.png" alt="Entry open in Obsidian" width="640">
-</p>
+<a id="world"></a>
+### 🌍 World: the world keeps living around your story
 
-Write it in Obsidian. DeepLore reads it. The AI writes as if it always knew how Bloodchains work, even if the word "Bloodchain" was never said.
+Set up per board, and it lives in its own panel next to the chat. Your story's people have lives of their own between scenes, and everything they do flows back into the story.
 
-## Obsidian connection: HTTPS or HTTP
+- **📱 Messages:** people text `{{user}}` and each other, or write letters if your story has no phones. Group chats, conversations between others you can read along, meet-ups that become real plans, and **Leak…** to pass a conversation on to someone.
+- **💬 Chatter:** people post and comment in a feed.
+- **📰 News:** the local news reports what happened. Start a world story ("twenty sheep stolen overnight") and the news follows it over several parts.
+- **🗣️ Rumors** spread from person to person, and you see who heard them. **👁 Who posted?** shows who is behind an anonymous one.
+- **📷 Photos** in messages: described in words, or drawn by your image generator if you have one.
+- **📅 Planned:** set up a message, post, news or rumor that goes out when something happens in the story: a story day, a step on the board, a place.
+- **People, voices and regulars:** dials for how much each person gossips, messages and posts, voices like a local paper or a guild board, and regulars like the town gossip.
+- **It flows back:** what someone learns joins what they know in the Cast, meet-ups become their plans, and the writer knows what `{{user}}` has heard.
 
-The Local REST API plugin ships with a self-signed HTTPS cert. Browsers block it unless you install the cert to your OS trust store, and SillyTavern's cross-origin `fetch()` path ignores per-site browser exceptions. Previously: silent failure with no error telling you why.
+Off until you switch it on for a board (no button, no panel, no AI calls until then). Mero ☆ can set it up with you, and **⏸ Pause** rests it in one chat whenever you want quiet.
 
-**v2 handles both:**
-- Auto-diagnoses connection failures: distinguishes cert error vs unreachable vs auth
-- Falls back to HTTP (port 27123) with a one-click suggestion if HTTPS fails
-- Full OS-level trust-store walkthrough for Windows / macOS / Linux if you want HTTPS
-- Scans localhost for responding vault instances
+![The World tab: Lately with posts and messages between the story's people, Rumors, Coming up, and everyone's gossip, message and post dials](.github/readme/world-tab.png)
 
-<p align="center">
-  <img src="https://i.imgur.com/x74FYZV.png" alt="HTTPS diagnostic panel" width="640">
-</p>
+<a id="mero"></a>
+### ☆ Mero: your co-writer
 
-## Relationship Graph
+Mero ☆ sits in the side panel, knows your board and your lore, and talks the story over with you out of character.
 
-<p align="center">
-  <a href="https://youtu.be/5oU1nFPh_m8?si=DcHkV0XeQJj3bk50">
-    <img src="https://img.youtube.com/vi/5oU1nFPh_m8/maxresdefault.jpg" alt="Watch: Relationship Graph" width="720">
-  </a>
-  <br>
-  <a href="https://youtu.be/5oU1nFPh_m8?si=DcHkV0XeQJj3bk50">
-    <img src="https://img.shields.io/badge/%E2%96%B6_Watch_on_YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch on YouTube">
-  </a>
-</p>
+- **Notes for the writer:** tell her what bothers you ("you keep writing her breath hitched") and she turns it into a 🚫 Don't or 🧭 Steer note the writer follows, for as long as you choose. `[OOC: …]` in the story box reaches her too.
+- **💡 Pitches:** ideas for what could happen next, shown to you or 🙈 hidden so they surprise you too, waiting for the right moment. Write your own as well; she learns your taste from 👍 and 👎.
+- **🪜 Plans:** a goal with beats in order. The writer is led toward the next beat gently, over several replies.
+- **She looks things up** in your lore, the board and the chat, and on the web if you allow it.
+- **The glow:** after a big moment on the board, her Talks icon lights up as an invitation to talk about it.
+- **Requests:** everything waiting for your answer, in one place.
+- **Lore upkeep:** she suggests new entries and changes to existing ones.
+- **🚫 Slop guard:** phrases the writer keeps repeating get caught.
+- **🎲 Games:** Wordle and Four in a Row, for a break.
 
-Force-directed layout, 200+ nodes, Louvain clustering, gap analysis, focus mode. See which entries cluster together, where orphans live, what chains hang off `requires` and `cascade_links`.
+<p align="center"><img src=".github/readme/mero-pitch.png" width="400" alt="A talk with Mero in the side panel, ending in a pitch card: a plan with two beats and a Start the plan button"></p>
 
-## Cost
+<a id="lore-retrieval"></a>
+### 📚 Lore retrieval from Obsidian
 
-Keyword-only mode: free. AI search adds ~1 extra provider call per turn. Fraction of a cent per message on Haiku-class models; more on Sonnet / Opus.
+The lore engine comes from pixelnull's [DeepLore](https://github.com/pixelnull/sillytavern-DeepLore). Your lore lives as notes in an [Obsidian](https://obsidian.md/) vault, and for every reply Onyx Quill picks the handful of entries the scene needs.
 
-Each feature has an independent connection channel. Run free keyword retrieval and pay only for Mero ☆, or vice versa. Works with local providers (Ooba, KoboldCpp, llama.cpp) for the AI search stage.
+- **Keywords, AI search, or both.** Keywords find the candidates, then AI search (a small, fast model reading your entry summaries) keeps the ones that really fit. The right lore comes in even when nobody typed its name.
+- **The story decides what's in play.** Each chat reads its own folders, and the board brings in the lore of the step you're at.
+- **Your rules:** entries that need or exclude others, field values for where and when an entry applies, rests, pins and blocks, and a budget so the prompt never overflows.
+- **See exactly why.** 📖 **Why these entries** on every reply shows what went in, what matched it, and what came close but stayed out. `/oq-why` previews the next reply.
+- **Lore that grows as you play:** the Session Scribe writes notes of what happened into your vault, so later replies remember them.
+- Bring your own vault (notes tagged `lorebook` become entries) or import a World Info book.
 
-## Privacy
+<p align="center"><img src=".github/readme/why-these-entries.png" width="700" alt="Why these entries for one reply: each entry that went in, with its size and why it came in: always-send, or a keyword the AI search kept with its reason"></p>
 
-Vault content goes to your configured LLM provider during retrieval and generation. Use a dedicated lorebook vault rather than your personal Obsidian vault.
+<a id="the-small-things"></a>
+## The small things
 
-Diagnostics exports for bug reports are pseudonymized before they leave your machine: IPs, hostnames, API keys, profile names, vault names, character names all masked. Readable format, auditable before you share:
+- **The bar** above the message box: all your quick replies in one row, your favorites starred right on it.
+- The **floating icon drawer** tidies other extensions' round buttons away.
+- **✓ Fix spelling**, **🧭 Guided swipe**, and **Keep as a draft** for what you typed but aren't ready to send.
+- **What you don't use stays out of your way.** Every action button on the bar can be switched off.
+- **Make it yours:** your accent color, and each panel on the side you like.
+- **Works on your phone.** Setting up a board is easier on a PC.
 
-<p align="center">
-  <img src="https://i.imgur.com/OhOUjLw.png" alt="Diagnostics export with anonymization summary" width="640">
-</p>
+<p align="center"><img src=".github/readme/quick-replies-bar.png" width="800" alt="The bar with quick replies: starred ones sit right on the bar, in the order you choose"></p>
 
-## What people are saying
+And on a phone:
 
-> *"[I've] been using it all day and still amazed by it."*
-> - /u/chaeriixo ([reddit](https://www.reddit.com/r/SillyTavernAI/comments/1s07i8f/deeplore_enhanced_v020_your_obsidian_vault_is_now/obxd24v/))
+<p align="center"><img src=".github/readme/phone.jpg" width="560" alt="Onyx Quill on a phone: the chat with the bar and its ⋯ More button, and the side panel open over the chat"></p>
 
-> *"I just installed this and this has all the features that I've been doing manually! This is freaking amazing and also dangerous, because I love world building as well."*
-> - /u/realedazed ([reddit](https://www.reddit.com/r/SillyTavernAI/comments/1s07i8f/deeplore_enhanced_v020_your_obsidian_vault_is_now/obxwj40/))
+<a id="what-it-costs"></a>
+## What it costs
 
-> *"I figured [how to import SillyTavern lore] out! This seems really cool! I have imported my lorebooks into an Obsidian vault and my brain is exploding a bit because I have a HUGE chat with naturally HUGE lorebooks and there are so many things floating around my graphs. It was very easy to set up once I got past the newness of Obsidian. The wizard was easy to follow and clear. I can easily see myself spending hours curating my vaults this weekend."*
-> - /u/morty_morty ([reddit](https://www.reddit.com/r/SillyTavernAI/comments/1sayvas/announcing_deeplore_enhanced_10beta_your_obsidian/oe4edb8/))
+Every AI helper is optional, and each runs on its own connection, so the small jobs can use a small, fast model.
 
-> *"While SillyTavern's built-in Lorebook system is fine at what it does, I found that sometimes... keywords weren't either enough or fired too often. After trying to wrap my slimy meat around the spider web of keywords, cases, whole-words, ect, I found that I work better within Obsidian and the [DLE] extension using Two-Stage retrieval."*
-> - /u/SnowingDandruff ([reddit](https://www.reddit.com/r/SillyTavernAI/comments/1svwvd7/best_memory_management_extensions/oiciipy/))
+- **Free:** picking lore by keywords, the board window, moving trackers by hand, and flipping between swipes.
+- **Story helper:** one call per message you send while a board is running. Swipes, regenerates and continues don't call it.
+- **AI search:** one call per reply, if you choose it over keywords alone.
+- **Cast:** the director adds one call per reply while Cast people are in the scene, and each NPC message is one reply on your main connection.
+- **World:** a few calls as the story goes while it is on, never while it is paused or off. It waits until your reply is written, so it never slows the chat down.
+- **Mero ☆:** mostly only when you ask her. Lore upkeep looks every 5 replies by default (you can set it to only when you ask, or off), and a few small checks follow your pitches and plans.
 
-## Prerequisites
+The wiki lists every call for each part.
 
-- **SillyTavern 1.12.14+**
-- **Obsidian** with the **Local REST API** plugin enabled
-- A lore vault (your existing one works; `/oq-import` converts World Info JSON into vault entries)
-- Optional: any LLM provider for AI search; keywords-only mode works without one
-
+<a id="install"></a>
 ## Install
 
-1. SillyTavern → Extensions → **Install Extension**
-2. Paste: `https://github.com/pixelnull/sillytavern-DeepLore`
-3. Run `/oq-setup`. It opens with a welcome screen that lets you pick a path — try the demo, connect a vault, or import existing World Info — then walks through vault connection (with a localhost vault scanner), tags, search mode, and provider. Skip steps and resume later if you want.
+**You need:** SillyTavern 1.12.14 or newer, and the Obsidian app with its [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin. **Obsidian has to be open while you play:** Onyx Quill reads your vault through it. The AI helpers are optional at first.
 
-<p align="center">
-  <img src="https://i.imgur.com/8Mktt2y.png" alt="Setup wizard first page" width="640">
-</p>
+1. In SillyTavern, open **Extensions** → **Install extension**.
+2. Paste `https://github.com/Miinthe/Onyx-Quill` and install.
+3. The setup wizard opens by itself. To just look around first, pick the **Duskfrost** demo vault.
 
-## What's in the box
+> [!IMPORTANT]
+> Onyx Quill and the original DeepLore can't run at the same time. Switch DeepLore off first.
 
-<p align="center">
-  <img src="https://i.imgur.com/vzqxpr5.png" alt="Entry browser" width="640">
-</p>
+Step by step: [Installation](https://github.com/Miinthe/Onyx-Quill/wiki/Installation) · [Quick Start](https://github.com/Miinthe/Onyx-Quill/wiki/Quick-Start) · [Coming from DeepLore or World Info](https://github.com/Miinthe/Onyx-Quill/wiki/Coming-from-DeepLore-or-World-Info)
 
-- **Two-stage AI retrieval** - keywords + AI selection
-- **Relationship Graph** - 200+ node vault view, clustering, gap analysis
-- **Session Scribe** - auto-summaries written back to the vault
-- **Context Cartographer** - per-message "why did this entry fire?" trace
-- **Contextual Gating** - era / location / scene / character + user-defined fields
-- **Diagnostics** - pipeline inspector, health check, activation simulation, status
+## How it was made
 
-<table>
-  <tr>
-    <td align="center" width="50%"><a href="https://i.imgur.com/rqEeOVX.png"><img src="https://i.imgur.com/rqEeOVX.png" height="180"></a><br><sub>Health Check - 30+ automated audits</sub></td>
-    <td align="center" width="50%"><a href="https://i.imgur.com/MD6ILH8.png"><img src="https://i.imgur.com/MD6ILH8.png" height="180"></a><br><sub>Activation Simulation - replay chat, see entry timeline</sub></td>
-  </tr>
-  <tr>
-    <td align="center" width="50%"><a href="https://i.imgur.com/0yX5UHC.png"><img src="https://i.imgur.com/0yX5UHC.png" height="180"></a><br><sub>Custom Gating - visual rule builder for user-defined fields</sub></td>
-    <td align="center" width="50%"><a href="https://i.imgur.com/RwCNQca.png"><img src="https://i.imgur.com/RwCNQca.png" height="180"></a><br><sub>Status - connection & index info at a glance</sub></td>
-  </tr>
-</table>
+I made Onyx Quill with the help of Claude Code (Opus 5.5). The ideas and design, the decision making and the professionally unprofessional bug testing were all mine. :D
 
-Full feature docs: [**Wiki →**](https://github.com/pixelnull/sillytavern-DeepLore/wiki)
+## Bugs and ideas
 
-## Known rough edges
+Found a bug? [Open an issue](https://github.com/Miinthe/Onyx-Quill/issues). I'm one person making this for fun, so answers are best effort.
 
-- **Still beta.** Hundreds of bugs fixed across the 2.x line, but the surface is big.
-- **World Info parity gaps:** no regex keys, and `sticky`/`delay`/`group` scoring is preserved on import but not acted on (round-tripped, not enforced). Case-sensitivity, whole-word matching, and all four `selective_logic` modes (`and_any`/`and_all`/`not_all`/`not_any`) are supported. Import handles the rest; a few advanced WI behaviors downgrade and are flagged by `/oq-lint`.
-- **Obsidian API keys stored plaintext** in ST's extension settings JSON (platform limitation). Use a dedicated lorebook vault, not your personal one.
+## Credits and license
 
-See [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) for the complete list.
-
-## Upgrading
-
-> **v2.5 note**: Custom Proxy connection mode for AI features (claude-code-proxy direct routing via ST's CORS bridge) was removed in v2.5. All AI features now use SillyTavern Connection Profiles. If you were using Custom Proxy, DLE will show a migration popup on first boot of v2.5 and automatically switch each affected feature (AI Search, Scribe, Auto Lorebook, AI Notepad, Optimize Keys) to its corresponding Connection Profile. `enableCorsProxy: true` in ST's `config.yaml` is no longer required for DLE AI features (it remains required only for ST's own raw-URL AI requests if you use those, and for Obsidian vault fetching when using HTTPS with a self-signed cert).
-
-If you had **DeepLore Enhanced** (the previous name of this extension), update in place; same repo. No reindex needed; 1.0-beta vaults work as-is.
-
-If you had the older standalone `sillytavern-DeepLore` extension, uninstall it first. Running both at once corrupts prompt injection.
-
-## Star History
-
-<a href="https://www.star-history.com/?type=date&repos=pixelnull%2Fsillytavern-deeplore">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=pixelnull/sillytavern-deeplore&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=pixelnull/sillytavern-deeplore&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=pixelnull/sillytavern-deeplore&type=date&legend=top-left" />
-  </picture>
-</a>
-
-## License
-
-MIT. Made by [pixelnull](https://infosec.exchange/@pixelnull).
+- Built on [DeepLore](https://github.com/pixelnull/sillytavern-DeepLore) by **pixelnull**: the lore engine underneath Onyx Quill started as theirs. Thank you for the foundation.
+- Icons by Flaticon. The quill is Font Awesome's feather (CC BY 4.0).
+- MIT license: see [LICENSE](LICENSE). Copyright pixelnull and Miinthe.

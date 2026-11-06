@@ -1,19 +1,14 @@
 ---
-name: Feature Request
-about: Suggest a feature for DeepLore
-title: "[Feature] "
+name: Idea
+about: Suggest something for Onyx Quill
+title: "[Idea] "
 labels: enhancement
 ---
 
-> Before submitting, please check the [Roadmap](https://github.com/pixelnull/sillytavern-DeepLore/wiki/Roadmap) — your idea may already be planned.
-
-## What problem does this solve?
+## What would it help with?
 
 
-## Proposed solution
+## How could it work?
 
 
-## Alternatives considered
-
-
-## Additional context
+## Anything else

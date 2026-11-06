@@ -171,9 +171,9 @@ export function initRender(gs) {
         switch (gs.colorMode) {
             case 'type': {
                 const items = [
-                    [T('dle_graph_legend_constant', 'Constant'), toPastel(gs.nodeColors.constant)],
+                    [T('dle_graph_legend_constant', 'Always-send'), toPastel(gs.nodeColors.constant)],
                     [T('dle_graph_legend_seed', 'Seed'), toPastel(gs.nodeColors.seed)],
-                    [T('dle_graph_legend_bootstrap', 'Bootstrap'), toPastel(gs.nodeColors.bootstrap)],
+                    [T('dle_graph_legend_bootstrap', 'Starter'), toPastel(gs.nodeColors.bootstrap)],
                     [T('dle_graph_legend_regular', 'Regular'), toPastel(gs.nodeColors.regular)],
                 ];
                 return items.map(([label, color]) =>
@@ -267,7 +267,7 @@ export function initRender(gs) {
         const connections = gs.edgeCountByNode.get(n.id) || 0;
         const injections = gs.injectionCounts.get(n.id) || 0;
         const vaultLabel = gs.multiVault && n.vaultSource ? `<span class="dle-dimmed">[${escapeHtml(n.vaultSource)}]</span>` : '';
-        const TYPE_FALLBACK = { constant: 'Constant', seed: 'Seed', bootstrap: 'Bootstrap', regular: 'Regular' };
+        const TYPE_FALLBACK = { constant: 'Always-send', seed: 'Seed', bootstrap: 'Starter', regular: 'Regular' };
         const TYPE_KEYS = { constant: 'dle_graph_type_constant', seed: 'dle_graph_type_seed', bootstrap: 'dle_graph_type_bootstrap', regular: 'dle_graph_type_regular' };
         const typeText = T(TYPE_KEYS[n.type] || 'dle_graph_type_regular', TYPE_FALLBACK[n.type] || 'Regular');
         const typeBadge = `<span class="dle-graph-tooltip-badge dle-graph-tooltip-badge--${n.type}">${escapeHtml(typeText)}</span>`;

@@ -14,6 +14,7 @@ import {
     generationLock, trackerKey, buildPromise, fieldDefinitions,
 } from '../state.js';
 import { getCurrentForChat as getCurrentVerdictForChat } from '../verdict/verdict-store.js';
+import { shownMatchedBy } from '../helpers.js';   // always-send / starter, as the UI names them
 
 // Local helper — UI consumers must read the CURRENT CHAT's verdict, not the
 // ring-global newest. See docs/gotchas.md #46 ("UI consumer rule").
@@ -219,8 +220,8 @@ export function registerPipelineCommands() {
                     plainHeading: () => `Keyword Matched (${t.keywordMatched.length}):`,
                     htmlOk: true,
                     htmlHeading: () => `Keyword Matched (${t.keywordMatched.length})`,
-                    plainItem: (m) => `${m.title} — ${m.matchedBy}`,
-                    htmlItem: (m) => `${escapeHtml(m.title)} — ${escapeHtml(m.matchedBy)}`,
+                    plainItem: (m) => `${m.title} — ${shownMatchedBy(m.matchedBy)}`,
+                    htmlItem: (m) => `${escapeHtml(m.title)} — ${escapeHtml(shownMatchedBy(m.matchedBy))}`,
                 },
                 {
                     items: t.aiSelected,

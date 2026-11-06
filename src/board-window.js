@@ -181,8 +181,8 @@ function load() {
                 posts: posts.length, msgs: msgs.length, unread: msgs.filter(m => m.to === 'user' && !m.read).length,
                 // posts AND messages, newest first, up to 15 — the card shows 3 and folds out the rest (Miinthe, 2026-11-04: "should show more than just 3 messages, maybe make it expandable")
                 recent: recs.filter(r => r?.kind === 'post' || r?.kind === 'msg').slice(-15).reverse().map(r => r.kind === 'msg'
-                    ? { kind: 'msg', by: r.from, to: r.to, you: r.to === 'user', unread: r.to === 'user' && !r.read, text: String(r.text || '').slice(0, 140) }
-                    : { kind: 'post', by: r.by, text: (r.title ? r.title + ': ' : '') + String(r.text || '').slice(0, 140) }),
+                    ? { kind: 'msg', by: r.from, to: r.to, you: r.to === 'user', unread: r.to === 'user' && !r.read, text: cut140(r.text) }
+                    : { kind: 'post', by: r.by, text: cut140((r.title ? r.title + ': ' : '') + String(r.text || '')) }),
                 counts: by,   // posts + messages per person — the activity bar on each person (World tab v2, 2026-11-04)
                 busiest: Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 4),
                 // stage 5: the rumors going around and who heard them (the poster behind the account stays hidden)
@@ -451,6 +451,9 @@ window.__dleBoardHost = { load, save, rename, remove, apply: (name, picked) => {
  * Open the board window over SillyTavern; `select` opens it at that row (a tracker or collection id), `add` straight
  * into its Add window, `entry` (true or { title, ask }) on its entries window alone: "Write a new entry…".
  */
+/** The World tab's Lately preview: at most 140 characters, ending on a whole word with … (it used to stop mid-word). */
+const cut140 = t => { const s = String(t || ''); return s.length <= 140 ? s : s.slice(0, 139).replace(/\s+\S*$/, '') + '…'; };
+
 export async function openBoardWindow({ select = null, add = false, view = null, entry = null } = {}) {
     if (frame) return;
     pendingSelect = select;

@@ -1114,7 +1114,23 @@ followTheme(document);   // SillyTavern's live theme → the --dk-* colors (over
     drawNotesline();
     drawSlop();
   }
-  $('#new-note').onclick = () => { const n = HOST.addNote({ kind: 'steer', text: 'A new note — click to edit', last: 'pinned', scope: 'chat', on: false }); if (n) { toast('A new note, switched off — write it, then switch it on.'); } };
+  // ＋ Note: an empty box with a hint, not a note pre-filled with text you had to delete (Miinthe, 2026-11-06). The note is
+  // made only when something was written: Enter or clicking away keeps it, Esc (or leaving it empty) drops it.
+  $('#new-note').onclick = () => {
+    const open = $('#note-draft textarea'); if (open) { open.focus(); return; }
+    const d = document.createElement('div'); d.className = 'note'; d.id = 'note-draft'; d.style.setProperty('--kc', KIND.steer[2]);
+    d.innerHTML = `<div class="n1"><span>${KIND.steer[0]} <span class="ntext"><textarea rows="1" placeholder="Write the note… (Enter keeps it, Esc drops it)" aria-label="New note"></textarea></span></span></div>`;
+    $('#notes-list').prepend(d);
+    const ta = d.querySelector('textarea'); autogrow(ta); ta.oninput = () => autogrow(ta); ta.focus();
+    let fin = false;
+    const finish = keep => {
+      if (fin) return; fin = true;
+      const text = ta.value.trim(); d.remove();
+      if (keep && text && HOST.addNote({ kind: 'steer', text, last: 'pinned', scope: 'chat', on: false })) toast('A new note, switched off: switch it on when it should count.');
+    };
+    ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(true); } if (e.key === 'Escape') { e.stopPropagation(); finish(false); } };
+    ta.onblur = () => finish(true);
+  };
 
   // 🚫 phrases to avoid — the slop guard (Miinthe, 2026-11-02): with her notes, because that's how they reach the writer
   function drawSlop() {

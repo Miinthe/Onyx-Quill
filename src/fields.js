@@ -23,11 +23,14 @@ export const VALID_OPERATORS = new Set([
     'match_any', 'match_all', 'not_any', 'exists', 'not_exists', 'gt', 'lt', 'eq',
 ]);
 
+import { runFieldCopies } from './run-fields-pure.js';
+
 const VALID_TOLERANCES = new Set(['strict', 'moderate', 'lenient']);
 
-// Built-in default field definitions.
+// Built-in default field definitions. The run fields (character, instance) come first: runs depend on them.
 /** @type {FieldDefinition[]} */
 export const DEFAULT_FIELD_DEFINITIONS = [
+    ...runFieldCopies(),
     {
         name: 'era',
         label: 'Era',

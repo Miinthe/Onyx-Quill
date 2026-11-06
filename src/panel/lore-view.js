@@ -19,7 +19,7 @@
  * filter here is today's own `ds` state, so remembered choices (sort, "this chat's folders") keep working.
  * Pure rules: lore-pure.js (tested in test/lore-view.test.mjs). Looks: lore.css.
  */
-import { chat_metadata, getCurrentChatId } from '../../../../../../script.js';
+import { chat, chat_metadata, getCurrentChatId, eventSource, event_types } from '../../../../../../script.js';
 import { saveMetadataDebounced } from '../../../../../extensions.js';
 import { accountStorage } from '../../../../../util/AccountStorage.js';
 import { getSettings } from '../../settings.js';
@@ -359,19 +359,20 @@ export function mountLoreView(panel) {
 
     // ── Sent ──
     function drawSent() {
-        const v = verdict();
-        const sources = v?.injectedSources?.length ? v.injectedSources : null;
+        // the swipe on screen (a swipe keeps its own list; the last verdict only while it is that swipe's)
+        const shown = P.sentShown(verdict(), chat?.[(chat?.length || 0) - 1] || null, (chat?.length || 0) - 1);
+        const v = shown.verdict, sources = shown.sources;
         const trace = v?.trace ?? null;
-        if (!sources) { body.append(emptySent()); drawTimers(); return; }
-        const diff = diffVerdicts(v, getPrevious());
+        if (!sources) { body.append(emptySent(shown.ofSwipe)); drawTimers(); return; }
+        const diff = v ? diffVerdicts(v, getPrevious()) : { added: [], removed: [], same: [] };
         const added = new Set((diff.added || []).map(s => P.pbKey(s.title, s.vaultSource)));
-        const f = P.funnelOf(trace, sources.length, diff, v.msgIdx);
+        const f = P.funnelOf(trace, sources.length, diff, v?.msgIdx ?? -1);
         const fl = h('div', 'dle-lv-vtools');
         const fun = h('div', 'dle-lv-funnel');
         if (f) {
             fun.innerHTML = `<b>${f.matched}</b> matched › ${f.picked != null ? `<b>${f.picked}</b> picked › ` : ''}<b>${f.sent}</b> sent${f.msg != null ? ` with #${f.msg}` : ''}`
                 + (f.added ? ` · <span class="dle-lv-good">+${f.added} new</span>` : '') + (f.removed ? ` · <span class="dle-lv-muted">${f.removed} dropped</span>` : '');
-        } else fun.innerHTML = `<b>${sources.length}</b> sent with the last reply`;
+        } else fun.innerHTML = `<b>${sources.length}</b> sent with ${shown.ofSwipe ? 'this swipe' : 'the last reply'}`;
         fl.append(fun, K.iconButton({ icon: 'copy', title: `Copy the ${sources.length} titles`, onClick: () => copyTitles(sources) }));
         body.append(fl);
         const aiBy = new Map((trace?.aiSelected || []).map(a => [P.pbKey(a.title, a.vaultSource), a]));
@@ -406,13 +407,13 @@ export function mountLoreView(panel) {
             body.append(selbar(selSrc.s.title, [...pinButtons([t]), moveB([selSrc.entry], [selSrc.s]), obsidianB(selSrc.entry || selSrc.s)]));
         }
     }
-    function emptySent() {
+    function emptySent(ofSwipe = false) {
         const e = h('div', 'dle-lv-empty');
         if (generationLock) e.innerHTML = '<p>Choosing lore…</p>';
         else if (!vaultIndex.length) {
             e.innerHTML = indexing ? '<p>Loading your entries…</p>' : '<p>No entries yet.</p>';
             if (!indexing) { e.title = 'Connect your Obsidian vault and tag notes with lorebook, or bring in a SillyTavern lorebook'; e.append(setupButtons()); }
-        } else { e.innerHTML = '<p>Nothing was sent with the last reply.</p>'; e.title = 'After a reply, the entries that went in show here, with why'; }
+        } else { e.innerHTML = `<p>Nothing was sent with ${ofSwipe ? 'this swipe' : 'the last reply'}.</p>`; e.title = 'After a reply, the entries that went in show here, with why'; }
         return e;
     }
     function setupButtons() {
@@ -786,6 +787,8 @@ export function mountLoreView(panel) {
     new MutationObserver(() => { if (panel.classList.contains('openDrawer')) later(); }).observe(panel, { attributes: true, attributeFilter: ['class'] });
     const inboxBtn = panel.querySelector('.dle-browse-inbox-btn');
     if (inboxBtn) new MutationObserver(later).observe(inboxBtn, { attributes: true, attributeFilter: ['data-inbox-folder', 'style'] });
+    // Sent follows the swipe on screen (2026-11-06)
+    try { const onSwipe = () => later(); eventSource.on(event_types.MESSAGE_SWIPED, onSwipe); offs.push(() => eventSource.removeListener(event_types.MESSAGE_SWIPED, onSwipe)); } catch { /* no swipe events: Sent redraws on the next reply */ }
     for (const on of [onIndexUpdated, onPipelineComplete, onInjectionSourcesReady, onPinBlockChanged, onGenerationLockChanged, onIndexingChanged, onChatInjectionCountsUpdated, onFieldDefinitionsUpdated, onVerdictChanged]) {
         try { offs.push(on(() => later())); } catch { /* an observer that is not there just means one less reason to redraw */ }
     }

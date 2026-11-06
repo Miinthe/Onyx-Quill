@@ -296,7 +296,7 @@ function ensurePmEntriesRegistered() {
         'deeplore_author_notes',     // LOCAL PATCH (Miinthe, 2026-10-05): Mero's notes
     ];
     const displayNames = {
-        [`${PROMPT_TAG_PREFIX}constants`]: 'Onyx Quill Constants',
+        [`${PROMPT_TAG_PREFIX}constants`]: 'Onyx Quill Always-send',
         [`${PROMPT_TAG_PREFIX}lore`]: 'Onyx Quill Lore Entries',
         ...PM_DISPLAY_NAMES_BASE,
     };

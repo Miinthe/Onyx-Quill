@@ -1,6 +1,6 @@
 The side panel is Onyx Quill's home next to the chat. It shows which lore went out with the last reply, which folders and fields this chat reads, where your story trackers stand, your Cast, and Mero ☆, your co-writer. Open it with the side-panel button on [[The Bar]], or with the open-book icon in SillyTavern's top bar. Press the same bar button again to close it.
 
-<!-- screenshot: the side panel open on the right, header with Ready, the five tabs, the Lore tab on Sent -->
+![The side panel open on the right, header with Ready, the five tabs, the Lore tab on Sent](images/side-panel-lore-sent.png)
 
 ## The header
 
@@ -25,7 +25,7 @@ Tapping **Ready** opens a small window with two parts:
 
 See [[Diagnostics]] for what each check means.
 
-<!-- screenshot: the Ready pop-up with the three meters and the five health rows -->
+![The Ready pop-up with the three meters and the five health rows](images/ready-popup.png)
 
 ## The tabs
 
@@ -45,7 +45,7 @@ Three lists, switched at the top: **Sent**, **Left out** and **All entries**.
 
 ### Filters
 
-A card for what this chat is: the character (and run letter), the folders it reads, how many entries sit outside them, and **Onyx Quill in this chat** (follow the character, always on, or off). Below it, the **Fields** fold lets you set a field (like era or location) for this chat only. **Show** lists the unused fields too.
+A card for what this chat is: the character (and run letter), the folders it reads, how many entries sit outside them, and **Onyx Quill in this chat** (follow the character, always on, or off). Below it, the **Fields** fold shows the fields this chat is filtered by (like era or location), for this chat only. **＋ Add a filter** picks another field to set; fields this chat doesn't set stay out of the way.
 
 **Change folders and fields…** holds the rest: **Filters in settings…** (every character and run), the character's base folders, the run's folders, **This chat's own folders…**, the on/off switch for the character, **Clear all field values**, **Edit the filter fields…** and **All field values in a window**. See [[Advanced Gating]] and [[Custom Fields]].
 
@@ -88,7 +88,7 @@ The side panel, [[My Notes]] and [[World]] (where the board's world layer is on)
 
 On a phone, and in a very narrow window, there are no panel tabs: one panel at a time slides over the chat.
 
-<!-- screenshot: the right side with the side panel and My notes as two tabs at the bottom, one locked -->
+![The right side with the side panel and My notes as two tabs at the bottom, one locked](images/my-notes.png)
 
 ## Good to know
 

@@ -8,7 +8,7 @@
  */
 import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { normalizeBoard, freshState, setRun } from '../src/board-model-pure.js';
-import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, judgeTitles, stepLinks, steerLines } from '../src/board-links-pure.js';
+import { filterByBoardLinks, boardLinkPins, guidanceLines, stepJudgeSection, judgeTitles, stepLinks, steerLines, linkedTitles } from '../src/board-links-pure.js';
 
 const board = () => normalizeBoard({ v: 2, name: 'B', trackers: [
     { id: 'rel', name: 'Relationship', steps: [
@@ -99,6 +99,19 @@ test('steering: with the board switch on, the writer hears the next step gently;
     assert(/don't rush it/i.test(s[0]), 'tells it not to rush');
     assertEqual(steerLines(on, at(on, 'mar')), [], 'waiting at an open fork: no way is named');
     assertEqual(steerLines(on, at(on, 'fr', { run: 'paused' })), [], 'a paused tracker: nothing');
+});
+
+test('linkedTitles: every title a board links in, anywhere on it (health check: no keywords needed)', () => {
+    const b = { trackers: [
+        { kind: 'steps', steps: [{ entries: ['Roswyn · Strangers'], fork: { branches: [{ entries: ['A Branch Note'] }] } }] },
+        { kind: 'counter', meter: { bands: [{ entries: ['Band Note'] }] } },
+        { kind: 'collection', items: [{ name: 'Key', entry: 'The Key' }] },
+        { kind: 'place', places: [{ entries: ['The Hidden Dragonfruit Tavern'] }] },
+        { kind: 'cast', people: [{ entries: ['Mivi'] }], keep: { entries: ['Kept'] } } ] };
+    const s = linkedTitles([b, null]);
+    for (const t of ['roswyn · strangers', 'a branch note', 'band note', 'the key', 'the hidden dragonfruit tavern', 'mivi', 'kept']) assert(s.has(t), t);
+    assertEqual(s.size, 7, 'nothing else');
+    assertEqual(linkedTitles(undefined).size, 0, 'no boards');
 });
 
 summary('board-links');

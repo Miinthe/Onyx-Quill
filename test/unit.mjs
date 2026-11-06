@@ -5365,10 +5365,10 @@ import {
     evaluateOperator, extractCustomFields, findDuplicateFieldNames,
 } from '../src/fields.js';
 
-test('DEFAULT_FIELD_DEFINITIONS: contains exactly 4 built-in fields', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 4, 'should have 4 default fields');
+test('DEFAULT_FIELD_DEFINITIONS: contains exactly 6 built-in fields', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 6, 'should have 6 default fields');
     const names = DEFAULT_FIELD_DEFINITIONS.map(f => f.name);
-    assertEqual(names, ['era', 'location', 'scene_type', 'character_present'], 'should have correct names in order');
+    assertEqual(names, ['character', 'instance', 'era', 'location', 'scene_type', 'character_present'], 'should have correct names in order');
 });
 
 test('DEFAULT_FIELD_DEFINITIONS: all gating fields are multi (string|string[] in frontmatter)', () => {
@@ -5692,8 +5692,8 @@ test('REGRESSION: DEFAULT_FIELD_DEFINITIONS has multi:true for era/location/scen
     assert(scene.multi === true, 'scene_type should be multi:true');
 });
 
-test('REGRESSION: DEFAULT_FIELD_DEFINITIONS has correct shapes for all 4 built-in fields', () => {
-    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 4, 'should have 4 built-in fields');
+test('REGRESSION: DEFAULT_FIELD_DEFINITIONS has correct shapes for all 6 built-in fields', () => {
+    assertEqual(DEFAULT_FIELD_DEFINITIONS.length, 6, 'should have 6 built-in fields');
     for (const fd of DEFAULT_FIELD_DEFINITIONS) {
         assert(fd.name, 'field must have name');
         assert(fd.label, 'field must have label');

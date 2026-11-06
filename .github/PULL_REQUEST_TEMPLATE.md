@@ -5,10 +5,8 @@
 -
 
 ## Testing
-- [ ] `npm test` passes
-- [ ] `npm run test:integration` passes
-- [ ] `npm run test:imports` passes
+- [ ] `npm run test:all` passes
 - [ ] `npm run lint` passes
-- [ ] Tested in SillyTavern (drawer, settings, pipeline)
+- [ ] Tried in SillyTavern
 
 ## Related issues

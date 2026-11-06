@@ -31,7 +31,7 @@ The Cast itself has **Options**:
 
 Open the side panel and choose **Cast**. It has three folds: **This round**, **People** and **Ties**.
 
-<!-- screenshot: the Cast tab with a round of three, the People grid and one person opened -->
+![The Cast tab with a round of three, the People grid and one person opened](images/cast-round.png)
 
 ### This round
 

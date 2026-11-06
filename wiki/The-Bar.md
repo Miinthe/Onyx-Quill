@@ -2,7 +2,7 @@ The bar is the row of buttons just above SillyTavern's message box. It holds Ony
 
 To hide the whole bar, switch off **Settings › Interface › The bar › Show the Onyx Quill bar**.
 
-<!-- screenshot: the bar on a PC, with two starred Quick Replies and the action buttons after the divider -->
+![The bar on a PC, with two starred Quick Replies and the action buttons after the divider](images/bar-starred-quick-replies.png)
 
 ## The buttons (PC)
 
@@ -98,6 +98,6 @@ Every message gets one Onyx Quill button (📖) next to SillyTavern's own messag
 - **Compare swipes**: when a message has more than one swipe. They show side by side, each marked with the direction it was written with; **Use this one** picks it.
 - **Re-evaluate and swipe**: only on the newest reply; a fresh look, as a new swipe.
 
-<!-- screenshot: the 📖 menu open on the newest reply -->
+![The 📖 menu open on the newest reply](images/reply-menu.png)
 
 See also: [[Side Panel]], [[Storyboards]], [[Mero]], [[Scribe and AI Helpers]].

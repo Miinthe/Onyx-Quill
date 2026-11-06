@@ -1,6 +1,6 @@
 My notes is a place for your own notes: OOC prompts you reuse, plot notes, names you made up, anything you want at hand while you write. **They are never sent to any AI**, wherever they show. Open it with the **My notes** button on [[The Bar]]; press it again to close.
 
-<!-- screenshot: My notes open beside the chat, the This chat and This story groups, the library folded underneath -->
+![My notes open beside the chat, the This chat and This story groups, the library folded underneath](images/my-notes.png)
 
 This is not the same as Mero's notes (which steer the writer, see [[Mero]]) or SillyTavern's author's notebook (which the writer gets). My notes is only for you.
 

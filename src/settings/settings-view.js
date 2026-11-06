@@ -920,7 +920,7 @@ function chatPane() {
     // "Trackers follow the story" has one home: the side panel's Story ⋯ (Miinthe, 2026-10-17: no setting in two places)
     budgetRowsInto(d, 'chat', { name: who || 'the character' });
     try {
-        const { rows } = fieldRows(fieldDefinitions.length ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS, vaultIndex, chat_metadata?.deeplore_context || null, false);
+        const { rows } = fieldRows(fieldDefinitions.length ? fieldDefinitions : DEFAULT_FIELD_DEFINITIONS, vaultIndex, chat_metadata?.deeplore_context || null, true);   // the full view: every field
         for (const r of rows) {
             row(r.label, r.values.length ? r.values.join(', ') : 'not set', badge(r.values.length ? 'this chat' : 'not set', r.values.length ? 'chat' : ''),
                 K.button({ label: 'Set', title: `Set ${r.label} for this chat`, onClick: async () => { await runCommand(r.cmd); redraw(); } }));

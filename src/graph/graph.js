@@ -255,9 +255,9 @@ export async function showGraphPopup() {
             <select id="dle-graph-type-filter" class="text_pole dle-graph-toolbar-select">
                 <option value="" data-i18n="dle_graph_filter_all_types">All Types</option>
                 <option value="regular" data-i18n="dle_graph_filter_type_regular">Regular</option>
-                <option value="constant" data-i18n="dle_graph_filter_type_constant">Constant</option>
+                <option value="constant" data-i18n="dle_graph_filter_type_constant">Always-send</option>
                 <option value="seed" data-i18n="dle_graph_filter_type_seed">Seed</option>
-                <option value="bootstrap" data-i18n="dle_graph_filter_type_bootstrap">Bootstrap</option>
+                <option value="bootstrap" data-i18n="dle_graph_filter_type_bootstrap">Starter</option>
             </select>
             <select id="dle-graph-tag-filter" class="text_pole dle-graph-toolbar-select">
                 <option value="" data-i18n="dle_graph_filter_all_tags">All Tags</option>

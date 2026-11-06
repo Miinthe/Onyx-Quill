@@ -2,7 +2,6 @@
  * Overhaul — the side panel's Filters tab: the parts with no SillyTavern in them (tested by test/filters-view.test.mjs).
  * What a chat reads (its character's folders, its run's, its own) and its field values, shaped for the view.
  */
-import { splitGatingFields } from '../drawer/gating-visibility-pure.js';
 
 /** Today's "Set" button runs these for the four built-in fields; any other field uses /oq-set-field <name>. */
 export const FIELD_COMMANDS = { era: '/oq-set-era', location: '/oq-set-location', scene_type: '/oq-set-scene', character_present: '/oq-set-characters' };
@@ -38,13 +37,17 @@ export function leftOutByField(fd, ctx, entries) {
  */
 export function fieldRows(defs, entries, ctx, showAll = false) {
     const enabled = (Array.isArray(defs) ? defs : []).filter(fd => fd?.gating?.enabled);
-    const { visible, hidden } = splitGatingFields(enabled, entries, ctx, !!showAll);
+    // only the fields this chat sets (Miinthe, 2026-11-06: "if you want to apply a filter you can add a field" — before,
+    // every field some entry used showed as "not set"); the others wait behind ＋ Add a filter (`addable`)
+    const visible = enabled.filter(fd => showAll || valuesOf(fd, ctx).length);
+    const hidden = enabled.filter(fd => !visible.includes(fd));
     const rows = visible.map(fd => ({
         name: fd.name, label: fd.label || fd.name, multi: !!fd.multi, values: valuesOf(fd, ctx),
         choices: !fd.multi && Array.isArray(fd.values) && fd.values.length ? fd.values.map(String) : null,
         leftOut: leftOutByField(fd, ctx, entries), cmd: setCommandFor(fd.name),
     }));
-    return { rows, hidden: hidden.length, set: enabled.filter(fd => valuesOf(fd, ctx).length).length };
+    const addable = hidden.map(fd => ({ name: fd.name, label: fd.label || fd.name, cmd: setCommandFor(fd.name) }));
+    return { rows, hidden: hidden.length, addable, set: enabled.filter(fd => valuesOf(fd, ctx).length).length };
 }
 
 /** The fold's one-line summary: "Character: Kettle · Instance: A", or "nothing set". */

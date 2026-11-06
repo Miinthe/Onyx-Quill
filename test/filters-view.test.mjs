@@ -4,7 +4,7 @@
  * removing the last chat folder leaving [] instead of null; a group chat offering character switches.
  * Run: npm run test:filters-view
  */
-import { assertEqual, test, summary } from './helpers.mjs';
+import { assert, assertEqual, test, summary } from './helpers.mjs';
 import { setCommandFor, valuesOf, leftOutByField, fieldRows, fieldsSummary, withoutValue, withoutFolder, folderLeaf, leftOutByFolders, cardModel } from '../src/panel/filters-pure.js';
 
 const on = { enabled: true };
@@ -37,17 +37,18 @@ test('leaves out: same rule as today', () => {
     assertEqual(leftOutByField(DEFS[2], {}, ENTRIES), 0, 'nothing set');
 });
 
-test('field rows: unused hidden unless set or asked', () => {
-    const r = fieldRows(DEFS, ENTRIES, { era: ['past'] }, false);
-    assertEqual(r.rows.map(x => x.name), ['era', 'character', 'instance', 'mood'], 'era shown because it is set; disabled field never');
-    assertEqual(r.hidden, 0, 'nothing hidden');
+test('field rows: only the fields this chat sets; the rest behind + Add a filter', () => {
+    const r = fieldRows(DEFS, ENTRIES, { era: ['past'], mood: 'calm' }, false);
+    assertEqual(r.rows.map(x => x.name), ['era', 'mood'], 'set ones only; disabled field never');
+    assertEqual(r.addable.map(x => x.name), ['character', 'instance'], 'the unset ones can be added');
+    assert(r.addable.every(a => a.cmd), 'each opens its set window');
     const r2 = fieldRows(DEFS, ENTRIES, {}, false);
-    assertEqual(r2.rows.map(x => x.name), ['character', 'instance', 'mood'], 'unused era hidden');
-    assertEqual(r2.hidden, 1, 'one hidden');
-    assertEqual(fieldRows(DEFS, ENTRIES, {}, true).rows.length, 4, 'show all');
+    assertEqual(r2.rows.length, 0, 'nothing set: no rows, even for fields the vault uses');
+    assertEqual(r2.hidden, 4, 'all four waiting');
+    assertEqual(fieldRows(DEFS, ENTRIES, {}, true).rows.length, 4, 'show every field');
     assertEqual(r.rows.find(x => x.name === 'mood').choices, ['calm', 'tense'], 'fixed single field gets a dropdown');
     assertEqual(r.rows.find(x => x.name === 'era').choices, null, 'list field: today’s window');
-    assertEqual(r.set, 1, 'count set');
+    assertEqual(r.set, 2, 'count set');
 });
 
 test('summary', () => {

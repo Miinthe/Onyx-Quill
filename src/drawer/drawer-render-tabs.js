@@ -1206,7 +1206,7 @@ export function renderBrowseWindow() {
 
         // Dot-join (f035) so the muted keys run reads as a distinct tier below the title
         // rather than a comma list that visually blurs into it.
-        const keysStr = e.constant ? '(constant)' : (e.keys ? e.keys.slice(0, 4).join(' · ') : '');
+        const keysStr = e.constant ? '(always-send)' : (e.keys ? e.keys.slice(0, 4).join(' · ') : '');
         const prioLabel = e.constant ? 'CONST' : `P${e.priority ?? 50}`;
         const prioClass = e.constant ? ' dle-browse-constant' : '';
 

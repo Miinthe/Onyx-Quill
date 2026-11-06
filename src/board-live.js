@@ -179,7 +179,7 @@ export function syncLiveLocation() {
     const v = locationValue(L.board, L.state);
     if (!v) return null;
     const ctx = (chat_metadata.deeplore_context ||= {});
-    if (String(ctx.location ?? '') !== v) { ctx.location = v; saveMetadataDebounced(); }
+    if (JSON.stringify(ctx.location ?? '') !== JSON.stringify(v)) { ctx.location = v; saveMetadataDebounced(); }
     return v;
 }
 

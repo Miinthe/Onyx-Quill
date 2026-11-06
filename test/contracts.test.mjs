@@ -18,7 +18,7 @@ import {
     normalizePinBlock, matchesPinBlock,
     fuzzyTitleMatch, isForceInjected, convertWiEntry,
     stripObsidianSyntax, tokenBarColor, formatRelativeTime,
-    parseMatchReason, computeSourcesDiff, categorizeRejections,
+    parseMatchReason, shownMatchedBy, computeSourcesDiff, categorizeRejections,
     resolveEntryVault,
 } from '../src/helpers.js';
 import { trackerKey } from '../src/state.js';
@@ -947,6 +947,13 @@ test('F14: formatRelativeTime produces expected strings', () => {
 test('F15: formatRelativeTime with zero/null returns empty string', () => {
     assertEqual(formatRelativeTime(0), '', 'zero timestamp should return empty string');
     assertEqual(formatRelativeTime(null), '', 'null timestamp should return empty string');
+});
+
+test('shownMatchedBy: the UI names always-send and starter; everything else as it is', () => {
+    assertEqual(shownMatchedBy('(constant)'), '(always-send)', 'constant');
+    assertEqual(shownMatchedBy('(bootstrap)'), '(starter)', 'bootstrap');
+    assertEqual(shownMatchedBy('Bram → AI: named'), 'Bram → AI: named', 'a keyword reason');
+    assertEqual(shownMatchedBy(undefined), '', 'nothing');
 });
 
 test('F16: parseMatchReason: constant', () => {

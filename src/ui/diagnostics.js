@@ -1,6 +1,8 @@
 /** DeepLore — Self-Healing Diagnostics & Why Not? */
 import { getCurrentChatId } from '../../../../../../script.js';
 import { getSettings } from '../../settings.js';
+import { boardStore } from '../board-store.js';
+import { linkedTitles } from '../board-links-pure.js';
 import { buildScanText } from '../../core/utils.js';
 import { testEntryMatch, countKeywordOccurrences, applySelectiveLogic } from '../../core/matching.js';
 import {
@@ -92,6 +94,9 @@ export function runHealthCheck() {
     const inVaultDupes = new Map();      // title → Set<vaultSource> (cross-vault)
     const keywordMap = new Map();
     let constantTokenTotal = 0;
+    // notes a storyboard links in come with the board, not by keyword (a step's guidance, a judge, a place's note)
+    let boardLinked = new Set();
+    try { boardLinked = linkedTitles(Object.values(boardStore().boards || {}).map(r => r?.board)); } catch { /* no boards */ }
 
     for (const entry of vaultIndex) {
         // the same title in different runs (instance a / b / c) is a run's own copy, not a duplicate — a branch carries
@@ -103,7 +108,8 @@ export function runHealthCheck() {
         if (!inVaultDupes.has(entry.title)) inVaultDupes.set(entry.title, new Set());
         inVaultDupes.get(entry.title).add(entry.vaultSource || '');
 
-        if (!entry.constant && !entry.bootstrap && entry.keys.length === 0) {
+        // Secrets for Mero ☆ (guide) only Mero reads — keywords and the AI search summary mean nothing for them
+        if (!entry.constant && !entry.bootstrap && !entry.guide && entry.keys.length === 0 && !boardLinked.has(String(entry.title || '').trim().toLowerCase())) {
             issues.push({ type: 'Entry Config', severity: 'warning', entry: entry.title, detail: 'No trigger keywords defined' });
         }
 
@@ -164,7 +170,7 @@ export function runHealthCheck() {
             issues.push({ type: 'Size', severity: 'warning', entry: entry.title, detail: `~${entry.tokenEstimate} tokens (>1500)` });
         }
 
-        if (settings.aiSearchEnabled && !entry.summary) {
+        if (settings.aiSearchEnabled && !entry.summary && !entry.guide) {
             issues.push({ type: 'AI Search', severity: 'warning', entry: entry.title, detail: 'No AI selection summary defined' });
         }
 
@@ -178,7 +184,7 @@ export function runHealthCheck() {
         }
 
         if (entry.constant && entry.cooldown !== null) {
-            issues.push({ type: 'Entry Config', severity: 'info', entry: entry.title, detail: 'Cooldown on constant entry has no effect' });
+            issues.push({ type: 'Entry Config', severity: 'info', entry: entry.title, detail: 'Cooldown has no effect on an always-send entry' });
         }
 
         if (entry.warmup !== null && entry.warmup > 1 && entry.keys.length > 0 && entry.keys.every(k => k.length <= 3)) {
@@ -186,7 +192,7 @@ export function runHealthCheck() {
         }
 
         if (entry.bootstrap && !entry.constant && entry.keys.length === 0) {
-            issues.push({ type: 'Entry Config', severity: 'warning', entry: entry.title, detail: 'Bootstrap entry has no keywords — only active during cold start' });
+            issues.push({ type: 'Entry Config', severity: 'warning', entry: entry.title, detail: 'Starter entry has no keywords — it only goes out at the start of a chat' });
         }
 
         if (entry.seed && entry.tokenEstimate > 2000) {

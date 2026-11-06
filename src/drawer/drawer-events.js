@@ -297,7 +297,7 @@ export function wireStatusActions($drawer) {
                 const ok = await pop(
                     `<h3>Start a new run?</h3>
                      <p><b>${escapeHtml(character)}</b></p>
-                     <p>Instance <b>${escapeHtml(current || '(none)')}</b> → <b>${escapeHtml(next)}</b></p>
+                     <p>Run <b>${escapeHtml((current || '–').toUpperCase())}</b> → <b>${escapeHtml(next.toUpperCase())}</b></p>
                      ${swapped.length ? `<p style="opacity:.8">Folder changes:</p><pre style="white-space:pre-wrap;font-size:.85em;opacity:.8">${escapeHtml(swapped.map(x => `${x.from}  →  ${x.to}`).join('\n'))}</pre>` : '<p style="opacity:.7">No folder in the filter encodes the run letter — folders carry over unchanged.</p>'}
                      ${missing.length ? `<p style="opacity:.8">These don't exist yet and will be created on first write:</p><pre style="white-space:pre-wrap;font-size:.85em;opacity:.8">${escapeHtml(missing.join('\n'))}</pre>` : ''}
                      ${trackerResets.length ? `<p style="opacity:.8">Story trackers start again at step 1:</p><pre style="white-space:pre-wrap;font-size:.85em;opacity:.8">${escapeHtml(trackerResets.join('\n'))}</pre>` : ''}
@@ -316,7 +316,7 @@ export function wireStatusActions($drawer) {
                     if (nextFolders.length) chat_metadata.deeplore_folder_filter = nextFolders;
                     saveMetadataDebounced();
                     notifyGatingChanged();
-                    toastr.success(`Run ${next.toUpperCase()} open — instance and folders carried over.`, 'Onyx Quill', { timeOut: 6000 });
+                    toastr.success(`Run ${next.toUpperCase()} open — the setup and folders carried over.`, 'Onyx Quill', { timeOut: 6000 });
                     announceToScreenReader(`New run ${next} started`);
                 } catch (err) {
                     console.error('[Onyx Quill] New run failed:', err);

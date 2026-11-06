@@ -740,7 +740,8 @@ export async function reconcileTrackers({ prune = false, confirm = false, keep =
 
 /** New Run, before the switch: what will be reset, for the confirmation dialog. */
 export function describeNewRunReset(list) {
-    return list.map(t => `${t.name}: ${describe(t)} → ${t.steps[0]}`);
+    // only trackers that actually go back ("Strangers → Strangers" said nothing; Miinthe's shot list, 2026-11-06)
+    return list.filter(t => describe(t) !== t.steps[0]).map(t => `${t.name}: ${describe(t)} → ${t.steps[0]}`);
 }
 
 /** New Run, after the new chat is open: same board, every tracker back at step 1. */

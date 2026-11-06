@@ -24,7 +24,7 @@ The rail on the side of the panel holds the sections, then two buttons at the bo
 
 Chatter and Messages have a **Writing as** row at the top. You can write as `{{user}}`, the main character, anyone in the Cast, the story's voices and regulars, or anonymously through the rumor account.
 
-<!-- screenshot: the World panel open beside the chat, on Messages, with one conversation open -->
+![The World panel beside the chat, with a post from the Harbor Crier](images/world-panel.png)
 
 ## The sections
 

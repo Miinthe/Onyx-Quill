@@ -37,6 +37,25 @@ export function stepLinks(board) {
     return out;
 }
 
+/**
+ * Every entry title linked anywhere on these boards (steps, branches, detours, meter bands, items, places, people,
+ * keeps), lowercased. The health check uses it: a note the board brings in needs no keywords of its own.
+ */
+export function linkedTitles(boards) {
+    const out = new Set();
+    const walk = (v, depth) => {
+        if (!v || typeof v !== 'object' || depth > 12) return;
+        if (Array.isArray(v)) { for (const x of v) walk(x, depth + 1); return; }
+        for (const [k, x] of Object.entries(v)) {
+            if (k === 'entries' && Array.isArray(x)) { for (const t of x) if (typeof t === 'string' && t.trim()) out.add(low(t)); }
+            else if (k === 'entry' && typeof x === 'string' && x.trim()) out.add(low(x));
+            else walk(x, depth + 1);
+        }
+    };
+    for (const b of arr(boards)) walk(b, 0);
+    return out;
+}
+
 /** Every judge link on the board — steps, detours, branches, items, places, a collection's or place tracker's rules. */
 export function judgeTitles(board) {
     const out = new Set();

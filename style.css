@@ -4618,8 +4618,9 @@ dialog:has(.dle-graph-popup) .popup-button-close { top: calc(env(safe-area-inset
 .dle-graph-detail-close:hover { opacity: 1; }
 
 /* Graph search clear button */
-.dle-graph-search-wrap { position: relative; display: inline-block; }
-.dle-graph-search-wrap .dle-graph-toolbar-input { padding-right: 24px; }
+.dle-graph-search-wrap { position: relative; display: inline-flex; align-items: center; flex: 1 1 200px; min-width: 160px; max-width: 260px; }
+/* the search box fills its wrap (2026-11-06: it was cut off — the toolbar's width:auto + max-width squeezed it) */
+.dle-graph-toolbar.dle-graph-toolbar .dle-graph-search-wrap input.text_pole { width: 100%; max-width: none; min-width: 0; flex: 1 1 auto; margin: 0; padding-right: 24px; }
 .dle-graph-search-clear {
     position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
     background: none; border: none; cursor: pointer; opacity: 0.5;
@@ -6721,3 +6722,18 @@ body.dle-board-open { overflow: hidden; }
 .dle-cmp-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .dle-cmp-tag { font-size: var(--dk-fs-s); padding: 1px 8px; border-radius: 999px; background: var(--dk-accent-soft); color: var(--dk-accent-ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dle-cmp-text { font-size: var(--dk-fs); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 40vh; overflow-y: auto; }
+
+/* AI notepad › pin list (2026-11-06): tight rows, ★ to pin, pinned first and tinted */
+.dle-np-pins { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.dle-np-pins-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: var(--dle-text-sm); font-weight: 600; }
+.dle-np-pins-head small { font-weight: 400; }
+.dle-np-list { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; border: 1px solid var(--dle-border); border-radius: var(--dle-radius-md, 8px); background: var(--dle-bg-surface); }
+.dle-np-row { all: unset; box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 5px 10px; cursor: pointer; font-size: var(--dle-text-sm); line-height: 1.4; color: inherit; border-top: 1px solid color-mix(in srgb, var(--dle-border) 55%, transparent); }
+.dle-np-row:first-child { border-top: 0; }
+.dle-np-row:hover { background: var(--dle-bg-hover); }
+.dle-np-row:focus-visible { outline: 2px solid var(--dle-accent); outline-offset: -2px; }
+.dle-np-row.on { background: color-mix(in srgb, var(--dle-accent) 14%, transparent); }
+.dle-np-star { flex: 0 0 auto; width: 1.1em; text-align: center; opacity: .45; }
+.dle-np-row.on .dle-np-star { opacity: 1; color: var(--dle-accent-fg); }
+.dle-np-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dle-np-empty { padding: 8px 10px; font-size: var(--dle-text-xs); opacity: .7; font-style: italic; }

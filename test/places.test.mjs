@@ -63,11 +63,11 @@ test('apply → here moves, logged; Undo and a delete put it back', () => {
     assertEqual(again.rejected[0].reason, 'undone before from this line');
 });
 
-test('DeepLore\'s location filter follows here (unless paused or switched off)', () => {
+test('The location filter follows here (unless paused or switched off)', () => {
     const b = board(), st = freshState(b);
-    assertEqual(locationValue(b, st), 'kitchen');
+    assertEqual(locationValue(b, st), 'Kitchen', 'the place\'s name, as entries write it — not its id');
     st.places.where = 'counter';
-    assertEqual(locationValue(b, st), 'counter');
+    assertEqual(locationValue(b, st), ['Counter', 'Kitchen'], 'a place inside another brings that one\'s name too');
     assertEqual(locationValue(b, { ...st, runs: { where: 'paused' } }), null);
     const off = normalizeBoard({ ...b, trackers: [{ ...b.trackers[0], setsLocation: false }] });
     assertEqual(locationValue(off, st), null);

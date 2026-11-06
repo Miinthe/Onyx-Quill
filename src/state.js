@@ -1,7 +1,9 @@
 /**
- * DeepLore — Shared mutable state
+ * Onyx Quill — shared mutable state
  * All globals live here; modules import and read/write directly.
  */
+import { withRunFields } from './run-fields-pure.js';   // the run fields are always defined (2026-11-06)
+
 // Late-bound pushEvent — avoids circular import at module eval. Lazy on first use.
 let _pushEventRef = null;
 function pushEventSafe(kind, data) {
@@ -409,7 +411,7 @@ export function resetVaultIndexState() {
 /** @type {import('./fields.js').FieldDefinition[]} */
 export let fieldDefinitions = [];
 export let fieldDefinitionsLoaded = false;
-export function setFieldDefinitions(v) { fieldDefinitions = v; fieldDefinitionsLoaded = true; notifyFieldDefinitionsUpdated(); }
+export function setFieldDefinitions(v) { fieldDefinitions = withRunFields(v); fieldDefinitionsLoaded = true; notifyFieldDefinitionsUpdated(); }
 export function setFieldDefinitionsLoaded(v) { fieldDefinitionsLoaded = v; }
 
 /** Cross-entry mention weights: Map<"sourceTitle\0targetTitle", count>

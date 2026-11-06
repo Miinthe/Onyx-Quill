@@ -1,17 +1,14 @@
 ---
-name: Bug Report
-about: Report a bug in DeepLore
+name: Bug report
+about: Something in Onyx Quill doesn't work as it should
 title: "[Bug] "
 labels: bug
 ---
 
-**DLE version**: (e.g., v1.0.0-beta)
-**SillyTavern version**: (e.g., 1.12.x)
-**Browser**: (e.g., Chrome 125, Firefox 128)
-**Connection mode**: (profile / proxy / keywords-only)
-**Obsidian REST API version**: (if applicable)
-**Multi-vault configuration**: (single vault / multi-vault — if multi, how many?)
-**AI features enabled**: (Librarian / Scribe / Auto-Suggest / AI Notepad — list all that are on)
+**Onyx Quill version**: (Extensions › Manage extensions, e.g. 1.0.0)
+**SillyTavern version**: (e.g. 1.13.x)
+**Browser / device**: (e.g. Chrome on Windows, Safari on iPhone)
+**What was on**: (storyboard, Cast, World, Mero, AI search, keywords only…)
 
 ## What happened?
 
@@ -24,20 +21,19 @@ labels: bug
 2.
 3.
 
-## Diagnostic report (recommended)
+## Diagnostic report (helps a lot)
 <!--
-The fastest way to get help is to attach a DLE diagnostic export.
-- DLE settings → About tab → Diagnostics → "Export Diagnostics".
-- File is anonymized (API keys, IPs, hostnames, user paths pseudonymized).
-- Drag the .json file into this issue, or paste the contents in a code block.
+Settings › Advanced › Export diagnostics, or type /oq-diagnostics.
+It downloads onyx-quill-diagnostics-<time>.md, made anonymous for sharing.
+Drag the .md file into this issue.
 -->
 
 ## Console errors
-<!-- Open browser DevTools (F12) → Console tab. Copy any red errors. -->
+<!-- Press F12 → Console. Copy any red errors. -->
 
 ```
 
 ```
 
-## Additional context
-<!-- Screenshots, vault entry examples, settings, etc. -->
+## Anything else
+<!-- Screenshots, an example entry, your settings… -->

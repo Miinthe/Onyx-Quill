@@ -21,7 +21,7 @@ The story helper is one AI call per reply, on its own connection: **Settings ›
 
 The board opens as a large window over SillyTavern. **Close** (top right) takes you back to the chat. It works on a phone too.
 
-<!-- screenshot: the board window with three trackers, one waiting at a fork -->
+![A tracker waiting at its fork: The Voss debt at The courier, with its two branches](images/board-fork.png)
 
 ## The board window
 
@@ -158,7 +158,7 @@ A **run** is one play-through of a story with a character, marked by a letter: r
 - Nothing is written until you press **Start run B** (with the new letter).
 - The trackers go back to where the story stood at that message.
 
-<!-- screenshot: the "Start a new run?" window with A → B, the folder changes and the trackers that restart -->
+![The "Start a new run?" window with A → B, the folder changes and the trackers that restart](images/new-run.png)
 
 ## In the chat
 

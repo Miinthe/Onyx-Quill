@@ -170,9 +170,9 @@ export async function showAiNotepadPopup() {
                 <i class="fa-solid fa-broom" aria-hidden="true"></i><span>Deduplicate</span>
             </button>
         </div>
-        <div style="margin-top: 10px;">
-            <label><small>Pinned notes (never dropped or merged)</small></label>
-            <div id="dle-ai-notepad-pin-list" class="dle-preview dle-preview--short"></div>
+        <div class="dle-np-pins">
+            <div class="dle-np-pins-head"><span>Pin the ones to keep</span><small id="dle-ai-notepad-pin-count" class="dle-faint">★ pinned notes are never dropped or merged</small></div>
+            <div id="dle-ai-notepad-pin-list" class="dle-np-list" role="list"></div>
         </div>
     `;
 
@@ -193,34 +193,35 @@ export async function showAiNotepadPopup() {
 
             const maxEntries = Number(settings.aiNotepadMaxEntries) || 0;
 
+            // the pin list (Miinthe, 2026-11-06: "way too much room between the points"): one tight row per note, ★ to pin,
+            // pinned ones first and tinted. (The old list sat in a pre-wrap box, so the template's own line breaks and
+            // indents showed up as blank space between the rows.)
             const renderPinList = () => {
                 if (!pinListEl) return;
                 const lines = splitLines(textarea.value);
-                if (lines.length === 0) {
-                    pinListEl.innerHTML = '<div class="dle-text-xs dle-muted"><em>No notes yet.</em></div>';
-                    return;
-                }
+                const countEl2 = document.getElementById('dle-ai-notepad-pin-count');
                 const seen = new Set();
-                const rows = [];
+                const items = [];
                 for (const line of lines) {
                     const key = normalizeNotepadLine(line);
                     if (!key || seen.has(key)) continue;
                     seen.add(key);
-                    const checked = pinnedKeys.has(key) ? 'checked' : '';
-                    rows.push(`
-                        <label class="checkbox_label" style="display: flex; gap: 8px; align-items: flex-start; margin: 2px 0;">
-                            <input type="checkbox" class="checkbox dle-ai-notepad-pin-toggle" data-pin-key="${escapeHtml(key)}" ${checked}>
-                            <span>${escapeHtml(line)}</span>
-                        </label>
-                    `);
+                    items.push({ key, text: line.replace(/^\s*[-*•]\s+/, ''), on: pinnedKeys.has(key) });
                 }
-                pinListEl.innerHTML = rows.join('') || '<div class="dle-text-xs dle-muted"><em>No notes to pin.</em></div>';
-                pinListEl.querySelectorAll('.dle-ai-notepad-pin-toggle').forEach(el => {
-                    el.addEventListener('change', () => {
+                if (!items.length) { pinListEl.innerHTML = '<div class="dle-np-empty">No notes yet.</div>'; if (countEl2) countEl2.textContent = ''; return; }
+                items.sort((a, b) => Number(b.on) - Number(a.on));
+                pinListEl.innerHTML = items.map(it => `<button type="button" role="listitem" class="dle-np-row${it.on ? ' on' : ''}" data-pin-key="${escapeHtml(it.key)}" aria-pressed="${it.on}" title="${it.on ? 'Unpin' : 'Pin: never dropped or merged'}"><span class="dle-np-star" aria-hidden="true">${it.on ? '★' : '☆'}</span><span class="dle-np-text">${escapeHtml(it.text)}</span></button>`).join('');
+                const count = () => { const n = pinListEl.querySelectorAll('.dle-np-row.on').length; if (countEl2) countEl2.textContent = n ? `${n} pinned · never dropped or merged` : '★ pinned notes are never dropped or merged'; };
+                count();
+                pinListEl.querySelectorAll('.dle-np-row').forEach(el => {
+                    el.addEventListener('click', () => {   // flips in place (no re-sort under the pointer)
                         const key = el.getAttribute('data-pin-key');
                         if (!key) return;
-                        if (el.checked) pinnedKeys.add(key);
-                        else pinnedKeys.delete(key);
+                        const on = !pinnedKeys.has(key);
+                        if (on) pinnedKeys.add(key); else pinnedKeys.delete(key);
+                        el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); el.title = on ? 'Unpin' : 'Pin: never dropped or merged';
+                        el.querySelector('.dle-np-star').textContent = on ? '★' : '☆';
+                        count();
                     });
                 });
             };
@@ -338,9 +339,9 @@ export async function showBrowsePopup() {
                 <option value="all">All Status</option>
                 <option value="pinned">Pinned</option>
                 <option value="blocked">Blocked</option>
-                <option value="constant">Constants</option>
+                <option value="constant">Always-send</option>
                 <option value="seed">Seeds</option>
-                <option value="bootstrap">Bootstrap</option>
+                <option value="bootstrap">Starter</option>
                 <option value="regular">Regular</option>
                 <option value="never_injected">Never Injected</option>
             </select>

@@ -467,13 +467,13 @@
                 <div class="dle-injection-row">
                     <div class="dle-injection-type">
                         <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
-                        <span data-i18n="dle_browse_filter_constants">Constants</span>
+                        <span data-i18n="dle_browse_filter_constants">Always-send</span>
                     </div>
                     <div class="dle-injection-controls">
                         <div class="dle-injection-ext-controls">
                             <span class="dle-text-xs dle-muted" data-i18n="dle_injection_constants_same">Same position as Lore Entries</span>
                         </div>
-                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_constants">Onyx Quill Constants</code></span>
+                        <span class="dle-injection-pm-name" style="display:none"><code data-i18n="dle_injection_pm_constants">Onyx Quill Always-send</code></span>
                     </div>
                     <div class="dle-injection-status">
                         <span id="dle-sp-inj-constants-status" class="dle-text-xs dle-muted"></span>
@@ -663,16 +663,16 @@
                         <label for="dle-sp-ai-error-fallback"><small data-i18n="dle_ai_error_fallback_label">AI Error Fallback</small></label>
                         <select id="dle-sp-ai-error-fallback" class="text_pole">
                             <option value="keyword" data-i18n="dle_ai_fallback_keyword">Keyword matching</option>
-                            <option value="constants_only" data-i18n="dle_ai_fallback_constants">Constants only</option>
-                            <option value="bootstrap_only" data-i18n="dle_ai_fallback_bootstrap">Bootstrap entries only</option>
+                            <option value="constants_only" data-i18n="dle_ai_fallback_constants">Always-send entries only</option>
+                            <option value="bootstrap_only" data-i18n="dle_ai_fallback_bootstrap">Starter entries only</option>
                             <option value="none" data-i18n="dle_ai_fallback_none">Nothing (skip injection)</option>
                         </select>
                     </div>
                     <div class="flex1" title="What to inject when AI search returns no results (AI decided nothing is relevant)." data-i18n="[title]dle_ai_empty_fallback_tooltip">
                         <label for="dle-sp-ai-empty-fallback"><small data-i18n="dle_ai_empty_fallback_label">AI Empty Result Fallback</small></label>
                         <select id="dle-sp-ai-empty-fallback" class="text_pole">
-                            <option value="constants" data-i18n="dle_ai_fallback_constants">Constants only</option>
-                            <option value="constants_bootstrap" data-i18n="dle_ai_fallback_constants_bootstrap">Constants + Bootstrap</option>
+                            <option value="constants" data-i18n="dle_ai_fallback_constants">Always-send entries only</option>
+                            <option value="constants_bootstrap" data-i18n="dle_ai_fallback_constants_bootstrap">Always-send + starter</option>
                             <option value="keyword" data-i18n="dle_ai_fallback_keyword">Keyword matching</option>
                             <option value="none" data-i18n="dle_ai_fallback_none">Nothing (skip injection)</option>
                         </select>

@@ -1085,6 +1085,12 @@ export function checkHealthPure(vaultIndex, settings = {}) {
  * @param {string|null} matchedBy
  * @returns {{ type: 'constant'|'pinned'|'bootstrap'|'seed'|'keyword_ai'|'keyword'|'ai'|'unknown', keyword: string|null }}
  */
+/** A match reason as people read it: the pipeline's internal "(constant)" / "(bootstrap)" are called always-send / starter in the UI. */
+export function shownMatchedBy(matchedBy) {
+    const s = String(matchedBy ?? '');
+    return s === '(constant)' ? '(always-send)' : s === '(bootstrap)' ? '(starter)' : s;
+}
+
 export function parseMatchReason(matchedBy) {
     if (!matchedBy) return { type: 'unknown', keyword: null };
     const m = matchedBy.toLowerCase();

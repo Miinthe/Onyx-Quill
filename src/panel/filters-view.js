@@ -95,7 +95,7 @@ export function mountFiltersView(panel) {
             items.push({ label: `Onyx Quill for ${m.title}`, sub: 'all chats with this character', checked: m.charOn, onClick: () => setCharacterSwitch(!m.charOn) });
         }
         items.push({ heading: 'Fields' });
-        items.push({ icon: 'eye', label: ui.showAll ? 'Hide the unused fields' : 'Show the unused fields', onClick: () => { ui.showAll = !ui.showAll; ui.fieldsOpen = true; draw(); } });
+        items.push({ icon: 'eye', label: ui.showAll ? 'Show only the set fields' : 'Show every field', onClick: () => { ui.showAll = !ui.showAll; ui.fieldsOpen = true; draw(); } });
         items.push({ icon: 'undo', label: 'Clear all field values', sub: 'for this chat', onClick: () => proxy('.dle-clear-all-gating-btn') });
         items.push({ icon: 'edit', label: 'Edit the filter fields…', onClick: () => proxy('.dle-manage-fields-btn') });
         items.push('sep');
@@ -143,7 +143,7 @@ export function mountFiltersView(panel) {
 
     function fieldsFold() {
         const ctx = chat_metadata?.deeplore_context || null;
-        const { rows, hidden } = fieldRows(defs(), vaultIndex, ctx, ui.showAll);
+        const { rows, addable } = fieldRows(defs(), vaultIndex, ctx, ui.showAll);
         const body = el('div', 'dle-fv-fields');
         const kv = el('div', 'dle-fv-kv');
         for (const r of rows) {
@@ -169,15 +169,16 @@ export function mountFiltersView(panel) {
             if (r.leftOut) { const n = el('span', 'dle-fv-mini dle-fv-out', `leaves out ${r.leftOut}`); n.title = `${r.leftOut} entries don’t match this value and are left out`; val.append(n); }
             kv.append(lab, val);
         }
-        if (!rows.length) body.append(el('p', 'dle-fv-mini', 'No fields to filter by.'));
+        if (!rows.length) body.append(el('p', 'dle-fv-mini', 'No filters set for this chat.'));
         else body.append(kv);
         const note = el('p', 'dle-fv-mini');
-        if (hidden || ui.showAll) {
-            note.append(ui.showAll ? '' : `${hidden} unused field${hidden === 1 ? '' : 's'} hidden. `);
-            const t = el('button', 'dle-fv-link', ui.showAll ? 'Hide unused' : 'Show');
-            t.type = 'button';
-            t.addEventListener('click', () => { ui.showAll = !ui.showAll; draw(); });
-            note.append(t);
+        // ＋ Add a filter: the fields this chat doesn't set yet, one tap opens today's set window (2026-11-06)
+        if (addable.length && !ui.showAll) {
+            const add = el('button', 'dle-fv-link', '＋ Add a filter');
+            add.type = 'button';
+            add.title = 'Filter this chat by another field';
+            add.addEventListener('click', () => K.openMenu(add, [{ heading: 'Filter this chat by' }, ...addable.map(a => ({ label: a.label, icon: 'plus', onClick: () => runCommand(a.cmd) }))]));
+            note.append(add);
         }
         if (note.childNodes.length) body.append(note);
         body.title = 'Values set here are for this chat only';

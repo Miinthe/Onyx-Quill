@@ -8,7 +8,7 @@ Every row in Onyx Quill's settings window, in the order the window shows it: the
 
 ## The window
 
-<!-- screenshot: the settings window header with the scope buttons and Simple / Sandbox -->
+![The settings window header with the scope buttons and Simple / Sandbox](images/settings-header.png)
 
 The header holds, from left to right:
 

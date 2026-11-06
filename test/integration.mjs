@@ -1846,4 +1846,17 @@ test('Sync Integration: key changes detected separately', () => {
 // Summary
 // ============================================================================
 
+test('Stage: the built-in run fields do not hide notes while the chat sets no run', () => {
+    // a fresh vault (built-in fields): a board sets Characters Present, the chat has no Character / Run yet — a note
+    // that says whose story it is must still go out (it used to be left out: the run fields were strict)
+    const entries = [makeEntry('AliceNote', { customFields: { character: ['Alice'], instance: ['a'] } }), makeEntry('Plain')];
+    const policy = buildExemptionPolicy(entries, [], []);
+    const open = applyContextualGating(entries, { character_present: ['Roswyn'] }, policy, false, {}, DEFAULT_FIELD_DEFINITIONS);
+    assert(open.some(e => e.title === 'AliceNote'), 'no run set: the note goes out');
+    const other = applyContextualGating(entries, { character: ['Bob'], instance: ['a'] }, policy, false, {}, DEFAULT_FIELD_DEFINITIONS);
+    assert(!other.some(e => e.title === 'AliceNote'), "another character's run: the note stays out");
+    const runB = applyContextualGating(entries, { character: ['Alice'], instance: ['b'] }, policy, false, {}, DEFAULT_FIELD_DEFINITIONS);
+    assert(!runB.some(e => e.title === 'AliceNote'), "run B: run A's note stays out");
+});
+
 await summary('Integration Tests');

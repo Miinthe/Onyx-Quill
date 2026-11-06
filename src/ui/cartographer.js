@@ -13,7 +13,7 @@ import {
 } from '../verdict/verdict-store.js';
 import { diffVerdicts } from '../verdict/verdict-pure.js';
 import { diagnoseEntry } from './diagnostics.js';
-import { STAGE_COLORS, categorizeRejections, resolveEntryVault, parseMatchReason, tokenBarColor, formatRelativeTime, comparePriority, openObsidianUri } from '../helpers.js';
+import { STAGE_COLORS, categorizeRejections, resolveEntryVault, parseMatchReason, shownMatchedBy, tokenBarColor, formatRelativeTime, comparePriority, openObsidianUri } from '../helpers.js';
 import { navigateToBrowseEntry } from '../drawer/drawer.js';
 import { tr, trf, trPlural } from '../i18n/i18n.js';
 /**
@@ -41,9 +41,9 @@ function formatMatchReason(matchedBy) {
     if (!matchedBy) return '';
     const { type, keyword } = parseMatchReason(matchedBy);
     const labels = {
-        constant: tr('dle_carto_match_constant', '(Constant)'),
+        constant: tr('dle_carto_match_constant', '(always-send)'),
         pinned: tr('dle_carto_match_pinned', '(Pinned)'),
-        bootstrap: tr('dle_carto_match_bootstrap', '(Bootstrap)'),
+        bootstrap: tr('dle_carto_match_bootstrap', '(starter)'),
         seed: tr('dle_carto_match_seed', '(Seed)'),
         ai: tr('dle_carto_match_ai', '(AI)'),
         unknown: '',
@@ -119,7 +119,7 @@ export function showSourcesPopup(sources, opts = {}) {
         const cc = chatInjectionCounts.get(ek) || 0;
         const at = settings.analyticsData?.[ek];
         const folder = resolveEntry(src.title, src.vaultSource)?.folderPath || '';
-        plainLines.push(`${src.title}\t${src.tokens}\t${src.matchedBy}\t${folder}\t${cc}\t${at?.injected || 0}\t${at?.matched || 0}\t${at?.lastTriggered ? new Date(at.lastTriggered).toLocaleString() : tr('dle_carto_never', 'Never')}`);
+        plainLines.push(`${src.title}\t${src.tokens}\t${shownMatchedBy(src.matchedBy)}\t${folder}\t${cc}\t${at?.injected || 0}\t${at?.matched || 0}\t${at?.lastTriggered ? new Date(at.lastTriggered).toLocaleString() : tr('dle_carto_never', 'Never')}`);
     }
 
     // Per-render regex cache: large vaults share matchedBy keywords across hundreds
@@ -185,7 +185,7 @@ export function showSourcesPopup(sources, opts = {}) {
             html += `</div>`;
             const vaultLabel = src.vaultSource && (settings.vaults || []).length > 1 ? ` · <em>${escapeHtml(src.vaultSource)}</em>` : '';
             const folderLabel = src.entry?.folderPath ? ` · <span class="dle-entry-folder">${escapeHtml(src.entry.folderPath)}</span>` : '';
-            html += `<span class="dle-text-xs dle-muted">${escapeHtml(src.matchedBy)}${vaultLabel}${folderLabel}</span>`;
+            html += `<span class="dle-text-xs dle-muted">${escapeHtml(shownMatchedBy(src.matchedBy))}${vaultLabel}${folderLabel}</span>`;
 
             const entryKey = src.entry ? trackerKey(src.entry) : `${src.vaultSource || ''}:${src.title}`;
             const chatCount = chatInjectionCounts.get(entryKey) || 0;

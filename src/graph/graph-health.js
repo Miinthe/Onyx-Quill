@@ -227,7 +227,7 @@ export function computeHealthFindings(gs) {
     }
     // 🟡 quality / budget
     if (overConst.count) {
-        findings.push({ sev: SEV.INFO, key: 'over-constant', title: T('dle_graph_health_over_constant', 'Always-injected (constant)'), count: overConst.count,
+        findings.push({ sev: SEV.INFO, key: 'over-constant', title: T('dle_graph_health_over_constant', 'Always sent'), count: overConst.count,
             detail: TF('dle_graph_health_over_constant_detail', '${0}k tokens every turn: ${1}', (overConst.tokens / 1000).toFixed(1), names(overConst.items)), nodeIds: overConst.items.map(i => i.idx) });
     }
     if (thin.length) {

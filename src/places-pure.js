@@ -129,7 +129,12 @@ export function describePlaceChange(board, ch) {
 /** The value for DeepLore's location filter: the id of "here" of the first running place tracker that sets it, or null. */
 export function locationValue(board, st) {
     const t = runningPlaces(board, st).find(x => x.setsLocation !== false);
-    return t ? hereOf(st, t) : null;
+    if (!t) return null;
+    // the place's NAME, as entries write it (location: Bayside Shushail) — not its id, which matched nothing and left
+    // out every entry with a location (2026-11-06: the demo showed "Location: p1"); a place inside others brings their
+    // names too, so a scene at the inn still counts as the district it is in
+    const names = chainOf(t, hereOf(st, t)).map(p => String(p.name || '').trim()).filter(Boolean);
+    return names.length > 1 ? names : (names[0] || null);
 }
 
 /** Entries pinned while the scene is here: the place's own entries (role 'place' or none). */

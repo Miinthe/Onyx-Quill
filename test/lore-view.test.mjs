@@ -5,7 +5,7 @@
  * not lifting a block; an empty folder missing from "Browse any folder"; "This chat's folders" counted as a filter.
  * Run: npm run test:lore-view
  */
-import { assertEqual, test, summary } from './helpers.mjs';
+import { assert, assertEqual, test, summary } from './helpers.mjs';
 import * as P from '../src/panel/lore-pure.js';
 
 test('how sure: the AI’s own confidence wins; a key, a pin or "always" is sure', () => {
@@ -121,6 +121,24 @@ test('pins and blocks: stored as { title, vaultSource }, a pin lifts a block, se
 test('long lists: a page at a time', () => {
     assertEqual(P.capRows([1, 2, 3], 2), { shown: [1, 2], more: 1 });
     assertEqual(P.capRows(null, 5), { shown: [], more: 0 });
+});
+
+test('sentShown: Sent follows the swipe on screen (her swipes: 10 entries, then 1)', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => ({ title: 'E' + i })), one = [{ title: 'World Rules' }];
+    const v = { msgIdx: 2, genId: 'b', ts: 2, injectedSources: one };   // the last generation: swipe 4 with one entry
+    const msg = (id, extra) => ({ is_user: false, swipe_id: id, swipes: ['a', 'b', 'c', 'd', 'e'], extra });
+    let r = P.sentShown(v, msg(4, { deeplore_sources: one, _deeplore_sources_tag: 'b:2' }), 2);
+    assertEqual(r.verdict, v, 'the swipe the verdict belongs to: the verdict, with its trace'); assertEqual(r.sources.length, 1, '1');
+    r = P.sentShown(v, msg(3, { deeplore_sources: ten, _deeplore_sources_tag: 'a:1' }), 2);
+    assertEqual(r.verdict, null, 'an older swipe: not the newest verdict'); assertEqual(r.sources.length, 10, 'its own 10'); assert(r.ofSwipe, 'said of this swipe');
+    r = P.sentShown(v, msg(0, {}), 2);
+    assertEqual(r.sources, null, 'a swipe that had no lore shows none'); assert(r.ofSwipe, 'nothing with this swipe');
+    r = P.sentShown(v, msg(4, {}), 2);
+    assertEqual(r.verdict, v, 'just generated, not attached yet: the verdict');
+    r = P.sentShown(null, msg(3, { deeplore_sources: ten }), 2);
+    assertEqual(r.sources.length, 10, 'after a reload (no verdict yet): the swipe\'s own list');
+    r = P.sentShown(v, { is_user: true }, 3);
+    assertEqual(r.verdict, v, 'your message last: the last verdict as before');
 });
 
 summary();

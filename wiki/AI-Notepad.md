@@ -41,7 +41,7 @@ Open the side panel's **⋯ › AI notepad**, or type `/oq-ai-notepad`. The wind
 
 The notes taken from one reply also show in that message's 📖 menu › **Why these entries**.
 
-<!-- screenshot: the AI notepad window with a few notes, two of them pinned -->
+![The AI notepad window with a few notes, two of them pinned](images/ai-notepad.png)
 
 ## How it keeps the notepad tidy
 
