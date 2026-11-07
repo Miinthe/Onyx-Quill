@@ -192,8 +192,8 @@ Mero can read the latest replies next to the entries that were sent with them, a
 
 Phrases the writer leans on too much ("her breath hitched", "a testament to"). The list is in Mero's **Notes**, under **🚫 Phrases to avoid**.
 
-- **Add a phrase** and choose where it applies: **Everywhere**, **This story** (the board) or **This character**.
-- Each phrase is **banned** (don't use it) or **use less** (allowed, but only where it really fits). Tap the tag to switch. Either way the writer is told that close variants count too, so banning *her breath hitched* also rules out *his breathing caught*.
+- **Add a phrase** and choose where it applies: **Everywhere**, **This story** (the board) or **This character**. A phrase you add starts as **banned**.
+- Each phrase is **banned** (don't use it) or **use less** (allowed, but only where it really fits). **To switch, tap the small *banned* / *use less* label next to the phrase** on the list. Either way the writer is told that close variants count too, so banning *her breath hitched* also rules out *his breathing caught*.
 - **Learned phrases**: after each reply Onyx Quill counts, without any AI, the phrases of three to five words that the writer used in at least 4 of the last 15 replies. When one passes that, Mero asks in Requests: **Ban it**, **Use it less**, or **It's fine** (never asked again; good for a catchphrase). "It's fine" phrases are listed at the bottom; ✕ lets her ask again.
 - **What the writer gets**: one or two 🚫 lines in the author's notes, with only the phrases it actually used in the last 15 replies, never the whole list. The box under the list shows what goes out right now.
 - **In the chat**, a listed phrase gets a wavy underline: a banned one wherever it shows up, a "use less" one only when it came back within 5 replies. Tap it for **Rewrite this line** or **It's fine here** (no underline in that reply).

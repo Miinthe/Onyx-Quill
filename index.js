@@ -634,6 +634,9 @@ function _renderPipelineToast(text, phaseKey = null) {
         target.prepend(el);
     }
     el.classList.remove('dle-toast-out');
+    // the bar knows it is working by a class, not only by CSS :has() — on Miinthe's phone the buttons stayed and the
+    // line ran over them (2026-11-07); on a phone the whole row is the line while it works
+    document.getElementById('dle-bar')?.classList.toggle('dle-working', !!el.closest('#dle-bar'));
     // Resurrection: a pending slide-out removal (stored fallback timer + animationend handler)
     // would otherwise remove this now-live node mid-pipeline. Cancel both — same node ref.
     if (_pipelineToastFallbackTimer) { clearTimeout(_pipelineToastFallbackTimer); _pipelineToastFallbackTimer = null; }
@@ -711,6 +714,7 @@ function _removePipelineStatus() {
         return;
     }
     _pipelineToastShownAt = 0;
+    document.getElementById('dle-bar')?.classList.remove('dle-working');
     // Clear any stale slide-out artifacts before re-arming (e.g. back-to-back removes).
     if (_pipelineToastFallbackTimer) { clearTimeout(_pipelineToastFallbackTimer); _pipelineToastFallbackTimer = null; }
     if (_pipelineToastAnimEndHandler) { el.removeEventListener('animationend', _pipelineToastAnimEndHandler); _pipelineToastAnimEndHandler = null; }

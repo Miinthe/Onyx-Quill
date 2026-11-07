@@ -47,8 +47,11 @@
 /* the line starts right after those two buttons, not halfway along the bar (Miinthe 2026-10-18) */
 #dle-bar:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main { flex: 0 0 auto; }
 #dle-bar-work #dle-pipeline-status goo-spinner { flex: none; }
-#dle-bar.phone:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main > .dle-db:not(.small) { flex: 0 0 44px; }
+#dle-bar.phone:has(#dle-pipeline-status:not(.dle-toast-out)) .dle-bar-main > .dle-db:not(.small) { flex: 0 0 44px; width: 44px; }   /* width too: Safari (every iPhone browser) sized the row by the icons, not 44px, and the line started on the side panel button (Miinthe's screenshot 2026-11-07) */
 #dle-bar.phone #dle-bar-work #dle-pipeline-status { gap: 6px; padding: 0 4px; }
+/* phone: while it works, the line is the whole row — no buttons under it (Miinthe 2026-11-07: the spinner sat on the side
+   panel button). A class set by index.js, so it holds even where :has() doesn't update */
+#dle-bar.phone.dle-working .dle-bar-main { display: none; }
 #dle-bar-work #dle-pipeline-status {
     position: static; flex: 1; min-width: 0; height: 34px; padding: 0 8px; gap: 8px; border: 0; border-radius: 8px; background: transparent;
     color: var(--dk-muted); font: var(--dk-fs)/1 var(--dk-f-body); font-style: normal; pointer-events: auto;

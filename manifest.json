@@ -8,7 +8,7 @@
     "js": "index.js",
     "css": "style.css",
     "author": "Miinthe",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "homePage": "https://github.com/Miinthe/Onyx-Quill",
     "minimum_client_version": "1.12.14"
 }
