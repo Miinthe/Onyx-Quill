@@ -259,6 +259,31 @@ test('session folder: the letter must be a whole token, not a word prefix', () =
     assertEqual(sf(['Wren'], 'a', folders), '01 Sessions', "'Archive' must not match letter a");
 });
 
+// 2026-11-07 live: the Dragon chat (context "Corvin; The Dragon's Fated Mate", card "Emperor
+// Corvin", run a) had no folder yet, and its Scribe note was filed into the Fox story's A folder
+// because the short name "corvin" matched it.
+const DRAGON = ["Corvin; The Dragon's Fated Mate", 'Emperor Corvin'];
+test('session folder: REGRESSION — another story of the same character is never the folder', () => {
+    assertEqual(sf(DRAGON, 'a'), '01 Sessions', "no Dragon A-folder yet: flat, not the Fox story's A folder");
+});
+
+test("session folder: the story's own folder wins over the same character's other story", () => {
+    const folders = [...SESSION_FOLDERS, { path: "01 Sessions/A; Corvin; The Dragon's Fated Mate" }];
+    assertEqual(sf(DRAGON, 'a', folders), "01 Sessions/A; Corvin; The Dragon's Fated Mate", 'Dragon a -> Dragon A folder');
+    assertEqual(sf(['Corvin; A Fox as a Pet is an Ask for Trouble', 'Corvin; A Fox as a Pet is an Ask for Trouble'], 'a', folders),
+        '01 Sessions/A; Corvin; A Fox as a Pet is an Ask for Trouble', 'Fox a still -> Fox A folder');
+});
+
+test('session folder: a story-less card name cannot pull a named story into another story', () => {
+    assertEqual(sf(["Corvin; The Dragon's Fated Mate", 'Corvin'], 'b'), '01 Sessions',
+        "the card 'Corvin' alone must not reach the Fox B folder when the chat names the Dragon story");
+});
+
+test('session folder: story names compare without case or extra spaces', () => {
+    const folders = [{ path: "01 Sessions/A; Corvin;  the dragon's fated mate" }];
+    assertEqual(sf(DRAGON, 'a', folders), "01 Sessions/A; Corvin;  the dragon's fated mate", 'same story, different spelling of spaces/case');
+});
+
 // ── cascade_links — exercised against the REAL matchEntries() ──────────────
 // Patch 14: cascade used a snapshot taken before the loop, so entries pulled in BY a
 // cascade never had their own links read — A -> B -> C stopped at B.

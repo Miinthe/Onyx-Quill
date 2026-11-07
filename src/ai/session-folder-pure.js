@@ -62,7 +62,29 @@ export function resolveSessionFolder(baseFolder, charNames, instance, folders) {
         }
     }
 
+    // 2026-11-07: one character can have several stories ("Corvin; A Fox as a Pet…" and
+    // "Corvin; The Dragon's Fated Mate"). The short name "corvin" matches both stories'
+    // folders, so the Dragon's run-A notes landed in the Fox story's run-A folder. When the
+    // chat names its story (the part after the first `;`), a folder naming a DIFFERENT story
+    // is never this chat's folder — whichever name matched.
+    const norm = t => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const storyOfName = (raw) => {
+        const parts = String(raw || '').split(';').map(norm).filter(Boolean);
+        return parts.length > 1 ? parts.slice(1).join('; ') : '';
+    };
+    const chatStory = (Array.isArray(charNames) ? charNames : [charNames]).map(storyOfName).find(Boolean) || '';
+    const storyOfFolder = (pth) => {
+        const parts = leafOf(pth).split(';').map(norm).filter(Boolean);
+        return parts.length > 2 ? parts.slice(2).join('; ') : '';
+    };
+    const otherStory = pth => {
+        if (!chatStory) return false;
+        const fs = storyOfFolder(pth);
+        return !!fs && fs !== chatStory;
+    };
+
     const withChar = startsWithLetter.filter(pth => {
+        if (otherStory(pth)) return false;
         const leaf = leafOf(pth).toLowerCase();
         return needles.some(n => leaf.includes(n));
     });
